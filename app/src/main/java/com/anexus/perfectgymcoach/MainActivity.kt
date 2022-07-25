@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.LineWeight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
@@ -21,6 +20,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import com.anexus.perfectgymcoach.screens.*
+import com.anexus.perfectgymcoach.screens.workout_plan.ChangePlan
 
 
 class MainActivity : ComponentActivity() {
@@ -31,9 +32,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             // navigation controller for everything (main screen)
             val navControllerMain = rememberNavController()
-            val fragments = listOf(Screen.Home, Screen.History, Screen.Statistics, Screen.Profile)
-            //use R8 / ProGuard to remove unused icons from your application.
-            val icons = listOf(Icons.Outlined.Home, Icons.Outlined.History, Icons.Outlined.Analytics, Icons.Outlined.Person)
+            val fragments = listOf( // FIXME: should probably be moved inside class
+                NavigationScreen.Home,
+                NavigationScreen.History,
+                NavigationScreen.Statistics,
+                NavigationScreen.Profile
+            )
 
             // scroll behaviour for top bar
             val decayAnimationSpec = rememberSplineBasedDecay<Float>()
@@ -45,11 +49,12 @@ class MainActivity : ComponentActivity() {
             PerfectGymCoachTheme {
 
                 NavHost(navController = navControllerMain,
-                    startDestination = Screen.Main.route,
+                    startDestination = MainScreen.Main.route,
                     modifier = Modifier.fillMaxSize()){
-                    composable(Screen.Program.route) { Program(navControllerMain) }
-                    composable(Screen.ChangePlan.route) { ChangePlan(navControllerMain) }
-                    navigation(startDestination = Screen.Home.route, route = Screen.Main.route){
+                    composable(MainScreen.Program.route) { Program(navControllerMain) }
+                    composable(MainScreen.ChangePlan.route) { ChangePlan(navControllerMain) }
+                    navigation(startDestination = NavigationScreen.Home.route,
+                        route = MainScreen.Main.route){
                         fragments.forEach { screen ->
                             composable(screen.route){
                             Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -73,9 +78,9 @@ class MainActivity : ComponentActivity() {
                                     NavigationBar {
                                         val navBackStackEntry by navControllerMain.currentBackStackEntryAsState()
                                         val currentDestination = navBackStackEntry?.destination
-                                        fragments.forEachIndexed { index, screen ->
+                                        fragments.forEach { screen ->
                                             NavigationBarItem(
-                                                icon = { Icon(icons[index], contentDescription = null) },
+                                                icon = { Icon(screen.icon, contentDescription = null) },
                                                 label = { Text(stringResource(screen.resourceId)) },
                                                 selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                                                 onClick = {
@@ -104,48 +109,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Home", "History", "Statistics", "Profile")
-    //use R8 / ProGuard to remove unused icons from your application.
-    val icons = listOf(Icons.Outlined.Home, Icons.Outlined.History, Icons.Outlined.Analytics, Icons.Outlined.Person)
-    PerfectGymCoachTheme {
-        // A surface container using the 'background' color from the theme
-
-        Scaffold(topBar = {
-            SmallTopAppBar(title = { Text("Home") })
-        }, content = { innerPadding ->
-            Column(modifier = Modifier
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())) {
-                repeat(30) {
-                    Card(Modifier.fillMaxWidth()) {
-                        Greeting("Android")
-                        Greeting("Alessio")
-                    }
-                }
-            }}, bottomBar = {
-            NavigationBar {
-                items.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        icon = { Icon(icons[index], contentDescription = null) },
-                        label = { Text(item) },
-                        selected = selectedItem == index,
-                        onClick = { selectedItem = index }
-                    )
-                }
-            }})
     }
 }
