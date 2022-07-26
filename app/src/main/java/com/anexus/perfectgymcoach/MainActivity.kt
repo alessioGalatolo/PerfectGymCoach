@@ -6,12 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.*
 import com.anexus.perfectgymcoach.ui.theme.PerfectGymCoachTheme
 import androidx.compose.material3.*
@@ -21,9 +17,9 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.anexus.perfectgymcoach.screens.*
-import com.anexus.perfectgymcoach.screens.workout_plan.ChangePlan
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
