@@ -2,6 +2,10 @@ package com.anexus.perfectgymcoach.screens
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
@@ -17,18 +21,20 @@ sealed interface Screen{
 sealed class MainScreen(override val route: String,
                         @StringRes override val resourceId: Int) : Screen {
     object Main : MainScreen("main", R.string.main)
-    object Program : MainScreen("program", R.string.program)
+    object Workout : MainScreen("workout", R.string.workout)
     object ChangePlan : MainScreen("change_plan", R.string.change_plan)
+    object Program : MainScreen("program", R.string.program)
 }
 
 sealed class NavigationScreen(
     override val route: String,
     @StringRes override val resourceId: Int,
-    val icon: ImageVector) : Screen{
+    val icon: ImageVector,
+    val iconSelected: ImageVector) : Screen{
     // TODO: use R8 / ProGuard to remove unused icons from your application.
 
-    object Home : NavigationScreen("home", R.string.home, Icons.Outlined.Home)
-    object History : NavigationScreen("history", R.string.history, Icons.Outlined.History)
-    object Statistics : NavigationScreen("statistics", R.string.statistics, Icons.Outlined.Analytics)
-    object Profile : NavigationScreen("profile", R.string.profile, Icons.Outlined.Person)
+    object Home : NavigationScreen("home", R.string.home, Icons.Outlined.Home, Icons.Filled.Home)
+    object History : NavigationScreen("history", R.string.history, Icons.Outlined.History, Icons.Filled.History)
+    object Statistics : NavigationScreen("statistics", R.string.statistics, Icons.Outlined.Analytics, Icons.Filled.Analytics)
+    object Profile : NavigationScreen("profile", R.string.profile, Icons.Outlined.Person, Icons.Filled.Person)
 }

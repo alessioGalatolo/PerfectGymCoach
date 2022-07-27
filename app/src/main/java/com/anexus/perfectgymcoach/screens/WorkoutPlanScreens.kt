@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,57 +45,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import androidx.hilt.navigation.compose.hiltViewModel
-
-data class PlansState(
-    val workoutPlans: List<WorkoutPlan> = emptyList(),
-    val openAddPlanDialogue: Boolean = false
-)
-
-sealed class PlansEvent{
-    object TogglePlanDialogue : PlansEvent()
-
-    data class AddPlan(val name: String): PlansEvent()
-
-    // TODO: ChangeOrder
-    // TODO: RemovePlan
-}
-
-@HiltViewModel
-class PlansViewModel @Inject constructor(private val repository: WorkoutPlanRepository): ViewModel() {
-    private val _state = mutableStateOf(PlansState())
-    val state: State<PlansState> = _state
-
-    init {
-        viewModelScope.launch {
-            repository.getPlans().collect{
-                _state.value = state.value.copy(
-                    workoutPlans = it
-                )
-            }
-        }
-    }
-
-    fun onEvent(event: PlansEvent){
-        when (event) {
-            is PlansEvent.AddPlan -> {
-                viewModelScope.launch {
-                    repository.addPlan(WorkoutPlan(0, event.name))
-                }
-
-//                _state.value = state.value.copy(
-//                    workoutPlans = state.value.workoutPlans + listOf(WorkoutPlan(event.name))
-//                )
-            }
-            is PlansEvent.TogglePlanDialogue -> {
-                _state.value = state.value.copy(
-                    openAddPlanDialogue = !state.value.openAddPlanDialogue
-                )
-            }
-
-        }
-    }
-
-}
+import com.anexus.perfectgymcoach.viewmodels.PlansEvent
+import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,10 +56,8 @@ fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hil
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         decayAnimationSpec,
         rememberTopAppBarScrollState()
-    )
-//    val openDialog = remember { mutableStateOf(false) }
-//    val plans = mutableListOf<WorkoutPlan>() // TODO: get list from somewhere
-//    plans.add(WorkoutPlan("Hellooo"))
+    ) // FIXME: is it even used?
+
     // FIXME: should not propagate the entire viewModel, use lambda instead
     CreatePlanDialogue(viewModel)
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -143,10 +93,10 @@ fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hil
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Inventory, // TODO: not the right icon
+                            imageVector = Icons.Filled.ContentPaste,
                             contentDescription = "",
                             modifier = Modifier.size(160.dp)
-                        ) //TODO
+                        )
                         Text(
                             stringResource(id = R.string.empty_plans),
                             modifier = Modifier.padding(16.dp)
@@ -160,6 +110,9 @@ fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hil
                     ) {
                         items(items = viewModel.state.value.workoutPlans, key = { it }) { plan ->
                             Card(
+                                onClick = {
+                                    navController.navigate("${MainScreen.Program.route}/${plan.name}")
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -181,9 +134,8 @@ fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hil
 
                                     Column {
                                         Text(text = plan.name)
-                                        // Add a vertical space between the author and message texts
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Some exercises...") // TODO
+                                        Text(text = "Some program names...") // TODO
                                     }
                                 }
                             }

@@ -28,7 +28,7 @@ fun Home(navController: NavHostController) {
             .fillMaxWidth()
             .padding(all = 8.dp),
             onClick = {
-                navController.navigate(MainScreen.Program.route)
+                navController.navigate(MainScreen.Workout.route)
             }) {
             Row {
                 Image(

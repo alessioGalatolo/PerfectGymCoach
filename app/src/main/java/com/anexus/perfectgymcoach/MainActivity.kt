@@ -47,7 +47,10 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navControllerMain,
                     startDestination = MainScreen.Main.route,
                     modifier = Modifier.fillMaxSize()){
-                    composable(MainScreen.Program.route) { Program(navControllerMain) }
+                    composable(MainScreen.Workout.route) { Workout(navControllerMain) }
+                    composable("${MainScreen.Program.route}/{name}") {
+                        Program(navControllerMain, it.arguments?.getString("name"))
+                    }
                     composable(MainScreen.ChangePlan.route) { ChangePlan(navControllerMain) }
                     navigation(startDestination = NavigationScreen.Home.route,
                         route = MainScreen.Main.route){
@@ -57,7 +60,7 @@ class MainActivity : ComponentActivity() {
                                 topBar = {
                                     LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
                                         scrollBehavior = scrollBehavior,
-                                        actions = {IconButton(onClick = { /* doSomething() */ }) {
+                                        actions = {IconButton(onClick = { /* doSomething() */ }) { // TODO
                                             Icon(
                                                 imageVector = Icons.Filled.Settings,
                                                 contentDescription = "App settings"
@@ -75,10 +78,11 @@ class MainActivity : ComponentActivity() {
                                         val navBackStackEntry by navControllerMain.currentBackStackEntryAsState()
                                         val currentDestination = navBackStackEntry?.destination
                                         fragments.forEach { screen ->
+                                            val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                                             NavigationBarItem(
-                                                icon = { Icon(screen.icon, contentDescription = null) },
+                                                icon = {Icon(if (selected) screen.iconSelected else screen.icon, contentDescription = null) },
                                                 label = { Text(stringResource(screen.resourceId)) },
-                                                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                                                selected = selected,
                                                 onClick = {
                                                     navControllerMain.navigate(screen.route) {
                                                         // Pop up to the start destination of the graph to

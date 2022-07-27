@@ -11,4 +11,5 @@
     <string name="change_plan">Change plan</string>
     <string name="manage_workout_plans">Manage workout plans</string>
     <string name="empty_plans">This is where you workout plans will be shown, use the button below to create one!</string>
+    <string name="workout">Workout</string>
 </resources>
