@@ -22,5 +22,5 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideWorkoutPlanRepository(db: WorkoutPlanDatabase):WorkoutPlanRepository = WorkoutPlanRepository(db)
+    fun provideWorkoutPlanRepository(db: WorkoutPlanDatabase):WorkoutPlanRepository = WorkoutPlanRepository.getInstance(db)
 }

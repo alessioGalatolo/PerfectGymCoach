@@ -6,10 +6,15 @@
     <string name="profile">Profile</string>
     <string name="coming_next">Coming next</string>
     <string name="other_programs">Other programs</string>
-    <string name="program">Program</string>
+    <string name="add_program">Add Program</string>
     <string name="main">Main</string>
     <string name="change_plan">Change plan</string>
     <string name="manage_workout_plans">Manage workout plans</string>
-    <string name="empty_plans">This is where you workout plans will be shown, use the button below to create one!</string>
+    <string name="empty_plans">This is where your workout plans will be shown, use the button below to create one!</string>
     <string name="workout">Workout</string>
+    <string name="empty_programs">This is where your programs (single day schedule) will be shown, use the button below to create one!</string>
+    <string name="add_exercise">Add exercise</string>
+    <string name="exercises_by_muscle">Exercises by muscle</string>
+    <string name="view_exercises">View exercises</string>
+    <string name="empty_exercises">This is where your exercises will be shown, use the button below to add one!</string>
 </resources>

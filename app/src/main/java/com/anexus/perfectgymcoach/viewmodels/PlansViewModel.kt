@@ -18,7 +18,7 @@ data class PlansState(
 sealed class PlansEvent{
     object TogglePlanDialogue : PlansEvent()
 
-    data class AddPlan(val name: String): PlansEvent()
+    data class AddPlan(val workoutPlan: WorkoutPlan): PlansEvent()
 
     // TODO: ChangeOrder
     // TODO: RemovePlan
@@ -43,7 +43,7 @@ class PlansViewModel @Inject constructor(private val repository: WorkoutPlanRepo
         when (event) {
             is PlansEvent.AddPlan -> {
                 viewModelScope.launch {
-                    repository.addPlan(WorkoutPlan(name = event.name))
+                    repository.addPlan(event.workoutPlan)
                 }
             }
             is PlansEvent.TogglePlanDialogue -> {

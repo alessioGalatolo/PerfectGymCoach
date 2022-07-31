@@ -1,8 +1,5 @@
-@file:JvmName("WorkoutPlanKt")
-
 package com.anexus.perfectgymcoach.screens
 
-import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,42 +8,27 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.anexus.perfectgymcoach.viewmodels.PlansEvent
-import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
-
+import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hiltViewModel()) {
-    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        decayAnimationSpec,
-        rememberTopAppBarScrollState()
-    ) // FIXME: is it even used?
-
-    AddNameDialogue(
-        name = "plan",
-        dialogueIsOpen = viewModel.state.value.openAddPlanDialogue,
-        toggleDialogue = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
-        addName = { planName -> viewModel.onEvent(PlansEvent.AddPlan(WorkoutPlan(name = planName))) }
-    )
-    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+fun AddExercise(navController: NavHostController, programName: String, programId: Int,
+                viewModel: ExercisesViewModel = hiltViewModel()) {
+    Scaffold(
         topBar = {
-            SmallTopAppBar(title = { Text(stringResource(R.string.manage_workout_plans)) },
+            SmallTopAppBar(title = { Text(programName) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -58,31 +40,31 @@ fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hil
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 onClick = {
-                    viewModel.onEvent(PlansEvent.TogglePlanDialogue)
+                    navController.navigate("${MainScreen.ExercisesByMuscle.route}/$programName/$programId")
                 },
             ) {
                 Icon(
                     Icons.Filled.Add,
-                    contentDescription = "Add workout plan",
+                    contentDescription = "Add exercise",
                     modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
                 )
             }
         }, content = { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)){
-                if (viewModel.state.value.workoutPlans.isEmpty()) {
-                    // if you have no plans
+                if (viewModel.state.value.workoutExercises.isEmpty()) {
+                    // if you have no exercises
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.ContentPaste,
+                            imageVector = Icons.Filled.FitnessCenter,
                             contentDescription = "",
                             modifier = Modifier.size(160.dp)
                         )
                         Text(
-                            stringResource(id = R.string.empty_plans),
+                            stringResource(id = R.string.empty_exercises),
                             modifier = Modifier.padding(16.dp)
                         )
                     }
@@ -92,12 +74,12 @@ fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hil
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(16.dp)
                     ) {
-                        items(items = viewModel.state.value.workoutPlans, key = { it }) { plan ->
+                        items(items = viewModel.state.value.workoutExercises, key = { it }) { exercise ->
                             Card(
                                 onClick = {
-                                    navController.navigate(
-                                        "${MainScreen.AddProgram.route}/${plan.name}/${plan.id}"
-                                    )
+//                                    navController.navigate(
+//                                        "${MainScreen.AddExercise.route}/${program.name}/${program.id}"
+//                                    )
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -119,9 +101,9 @@ fun ChangePlan(navController: NavHostController, viewModel: PlansViewModel = hil
 //                Spacer(modifier = Modifier.width(8.dp))
 
                                     Column {
-                                        Text(text = plan.name)
+                                        Text(text = exercise.exerciseId.toString())
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Some program names...") // TODO
+                                        Text(text = "Some exercise parameters...") // TODO
                                     }
                                 }
                             }

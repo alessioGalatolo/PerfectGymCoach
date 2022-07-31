@@ -1,0 +1,64 @@
+package com.anexus.perfectgymcoach.viewmodels
+
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
+import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanRepository
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class ProgramsState(
+    val programs: List<WorkoutProgram> = emptyList(),
+    val openAddProgramDialogue: Boolean = false
+)
+
+sealed class ProgramsEvent{
+    object ToggleProgramDialogue : ProgramsEvent()
+
+    data class GetPrograms(val planId: Int): ProgramsEvent()
+
+    data class AddProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
+
+    // TODO: ChangeOrder
+    // TODO: RemovePlan
+}
+
+@HiltViewModel
+class ProgramsViewModel @Inject constructor(private val repository: WorkoutPlanRepository): ViewModel() {
+    private val _state = mutableStateOf(ProgramsState())
+    val state: State<ProgramsState> = _state
+
+    private var getProgramsJob: Job? = null
+
+    fun onEvent(event: ProgramsEvent){
+        when (event) {
+            is ProgramsEvent.GetPrograms -> {
+                getProgramsJob?.cancel()
+                getProgramsJob = viewModelScope.launch {
+                    repository.getPrograms(event.planId).collect {
+                        _state.value = state.value.copy(
+                            programs = it
+                        )
+                    }
+                }
+            }
+            is ProgramsEvent.AddProgram -> {
+                viewModelScope.launch {
+                    repository.addProgram(event.workoutProgram)
+                }
+            }
+            is ProgramsEvent.ToggleProgramDialogue -> {
+                _state.value = state.value.copy(
+                    openAddProgramDialogue = !state.value.openAddProgramDialogue
+                )
+            }
+
+        }
+    }
+
+}

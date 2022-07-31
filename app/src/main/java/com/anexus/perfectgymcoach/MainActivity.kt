@@ -15,7 +15,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.anexus.perfectgymcoach.screens.*
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -47,9 +49,39 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navControllerMain,
                     startDestination = MainScreen.Main.route,
                     modifier = Modifier.fillMaxSize()){
+
+                    // FIXME: should maybe be moved to a single navigation
                     composable(MainScreen.Workout.route) { Workout(navControllerMain) }
-                    composable("${MainScreen.Program.route}/{name}") {
-                        Program(navControllerMain, it.arguments?.getString("name"))
+                    composable("${MainScreen.AddProgram.route}/{name}/{planId}",
+                        arguments = listOf(navArgument("planId") { type = NavType.IntType })
+                    ) {
+                        AddProgram(navControllerMain,
+                            it.arguments?.getString("name") ?: "",
+                            it.arguments?.getInt("planId") ?: 0)
+                    }
+                    composable("${MainScreen.AddExercise.route}/{name}/{programId}",
+                        arguments = listOf(navArgument("programId") { type = NavType.IntType })
+                    ) {
+                        AddExercise(navControllerMain,
+                            it.arguments?.getString("name") ?: "",
+                            it.arguments?.getInt("programId") ?: 0)
+                    }
+                    composable("${MainScreen.ExercisesByMuscle.route}/{name}/{programId}",
+                        arguments = listOf(navArgument("programId") { type = NavType.IntType })
+                    ) {
+                        ExercisesByMuscle(navControllerMain,
+                            it.arguments?.getString("name") ?: "",
+                            it.arguments?.getInt("programId") ?: 0)
+                    }
+                    composable("${MainScreen.ViewExercises.route}/{name}/{programId}/{muscle}",
+                        arguments = listOf(
+                            navArgument("programId") { type = NavType.IntType },
+                            navArgument("muscle") { type = NavType.IntType })
+                    ) {
+                        ViewExercises(navControllerMain,
+                            it.arguments?.getString("name") ?: "",
+                            it.arguments?.getInt("programId") ?: 0,
+                            it.arguments?.getInt("muscle") ?: -1)
                     }
                     composable(MainScreen.ChangePlan.route) { ChangePlan(navControllerMain) }
                     navigation(startDestination = NavigationScreen.Home.route,
