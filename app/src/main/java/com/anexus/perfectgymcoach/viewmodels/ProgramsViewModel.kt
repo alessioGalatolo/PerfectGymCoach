@@ -4,7 +4,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanRepository
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +14,7 @@ import javax.inject.Inject
 
 data class ProgramsState(
     val programs: List<WorkoutProgram> = emptyList(),
+    val exercises: List<List<WorkoutExercise>> = emptyList(),
     val openAddProgramDialogue: Boolean = false
 )
 
@@ -42,7 +43,8 @@ class ProgramsViewModel @Inject constructor(private val repository: WorkoutPlanR
                 getProgramsJob = viewModelScope.launch {
                     repository.getPrograms(event.planId).collect {
                         _state.value = state.value.copy(
-                            programs = it
+                            programs = it.keys.toList(),
+                            exercises = it.values.toList()
                         )
                     }
                 }

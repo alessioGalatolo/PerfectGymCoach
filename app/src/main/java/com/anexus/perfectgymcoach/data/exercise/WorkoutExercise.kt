@@ -1,34 +1,38 @@
 package com.anexus.perfectgymcoach.data.exercise
 
+import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
-import androidx.room.ForeignKey.CASCADE
+import androidx.room.ForeignKey.Companion.CASCADE
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 @Entity(
     foreignKeys = [
         ForeignKey(
             entity = WorkoutProgram::class,
-            parentColumns = ["id"],
-            childColumns = ["programId"],
+            parentColumns = ["programId"],
+            childColumns = ["extProgramId"],
             onDelete = CASCADE
         ),
         ForeignKey(
             entity = Exercise::class,
-            parentColumns = ["id"],
-            childColumns = ["exerciseId"],
+            parentColumns = ["exerciseId"],
+            childColumns = ["extExerciseId"],
             onDelete = CASCADE  // FIXME? not sure it should cascade
         )
     ]
 )
 data class WorkoutExercise (
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val programId: Int,
-    val exerciseId: Int,
+    @PrimaryKey(autoGenerate = true) val workoutExerciseId: Int = 0,
+    val extProgramId: Int,
+    val extExerciseId: Int,
+    val name: String, // redundant but simplifies a lot
     val sets: Int,
     val reps: Int,
     val rest: Int,
     val supersetExercise: Int = 0 // TODO: should be foreign key
     // TODO: old record, etc. <- do not put here
-    )
+    ) : Parcelable

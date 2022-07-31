@@ -12,7 +12,7 @@ class WorkoutPlanRepository @Inject constructor(private val db: WorkoutPlanDatab
 
     fun getPlans() = db.workoutPlanDao.getPlans()
 
-    fun getPrograms(planId: Int) = db.workoutProgramDao.getPrograms(planId)
+    fun getPrograms(planId: Int): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> = db.workoutProgramDao.getPrograms(planId)
 
     fun getWorkoutExercises(programId: Int) = db.workoutExerciseDao.getExercises(programId)
 

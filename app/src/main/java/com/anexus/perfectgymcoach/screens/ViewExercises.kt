@@ -28,6 +28,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
@@ -109,11 +111,12 @@ fun ViewExercises(navController: NavHostController, programName: String,
     AddExerciseDialogue(
         viewModel.state.value.openAddExerciseDialogue,
         { viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue) },
-        { eId, sets, reps, rest ->
+        { eId, name, sets, reps, rest ->
             viewModel.onEvent(ExercisesEvent.AddWorkoutExercise(
                 WorkoutExercise(
-                programId = programId,
-                exerciseId = eId,
+                extProgramId = programId,
+                extExerciseId = eId,
+                name = name,
                 sets = sets,
                 reps = reps,
                 rest = rest
@@ -181,55 +184,87 @@ fun ViewExercises(navController: NavHostController, programName: String,
 fun AddExerciseDialogue(
     dialogueIsOpen: Boolean,
     toggleDialogue: () -> Unit,
-    addExercise: (Int, Int, Int, Int) -> Unit
+    addExercise: (Int, String, Int, Int, Int) -> Unit
 ) {
     // alert dialogue to enter the workout plan/program name
 
     var text by rememberSaveable { mutableStateOf("") }
     if (dialogueIsOpen) {
-        AlertDialog(
+        Dialog(
             onDismissRequest = {
-                // Dismiss the dialog when the user clicks outside the dialog or on the back
-                // button. If you want to disable that functionality, simply use an empty
-                // onDismissRequest.
                 toggleDialogue()
             },
-            title = {
-                Text(text = "Add exercise")
-            },
-            text = {
-                val keyboardController = LocalSoftwareKeyboardController.current
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false // experimental
+            )
+        ) {
+            Surface(modifier = Modifier.fillMaxSize()) {
 
-                TextField(value = text,
-                    onValueChange = { text = it },
-                    label = { Text("Name of the " ) },
-                    keyboardActions = KeyboardActions(onDone = {
-                        keyboardController?.hide()
-                    }),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    singleLine = true)
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-//                        addExercise(text.trim())
-                        toggleDialogue()
-                        text = ""
-                    }
-                ) {
-                    Text("Confirm")
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    TextField(value = text,
+                        onValueChange = { text = it },
+                        label = { Text("Name of the " ) },
+                        keyboardActions = KeyboardActions(onDone = {
+                            keyboardController?.hide()
+                        }),
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        singleLine = true)
+
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        toggleDialogue()
-                    }
-                ) {
-                    Text("Cancel")
-                }
+
             }
-        )
+        }
+
     }
 }
+//        AlertDialog(
+//            onDismissRequest = {
+//                // Dismiss the dialog when the user clicks outside the dialog or on the back
+//                // button. If you want to disable that functionality, simply use an empty
+//                // onDismissRequest.
+//                toggleDialogue()
+//            },
+//            title = {
+//                Text(text = "Add exercise")
+//            },
+//            text = {
+//                val keyboardController = LocalSoftwareKeyboardController.current
+//
+//                TextField(value = text,
+//                    onValueChange = { text = it },
+//                    label = { Text("Name of the " ) },
+//                    keyboardActions = KeyboardActions(onDone = {
+//                        keyboardController?.hide()
+//                    }),
+//                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+//                    singleLine = true)
+//
+//            },
+//            confirmButton = {
+//                TextButton(
+//                    onClick = {
+////                        addExercise(text.trim())
+//                        toggleDialogue()
+//                        text = ""
+//                    }
+//                ) {
+//                    Text("Confirm")
+//                }
+//            },
+//            dismissButton = {
+//                TextButton(
+//                    onClick = {
+//                        toggleDialogue()
+//                    }
+//                ) {
+//                    Text("Cancel")
+//                }
+//            }
+//        )
+

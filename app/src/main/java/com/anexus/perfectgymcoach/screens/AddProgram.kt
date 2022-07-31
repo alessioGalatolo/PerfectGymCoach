@@ -4,11 +4,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -30,12 +34,12 @@ fun AddProgram(navController: NavHostController, name: String, planId: Int,
                viewModel: ProgramsViewModel = hiltViewModel()) {
     viewModel.onEvent(ProgramsEvent.GetPrograms(planId))
     AddNameDialogue(
-        name = "plan",
+        name = "program",
         dialogueIsOpen = viewModel.state.value.openAddProgramDialogue,
         toggleDialogue = { viewModel.onEvent(ProgramsEvent.ToggleProgramDialogue) },
         addName = { programName ->
             viewModel.onEvent(ProgramsEvent.AddProgram(WorkoutProgram(
-                planId = planId,
+                extPlanId = planId,
                 name = programName
             ))) }
     )
@@ -65,7 +69,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Int,
         }, content = { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)){
                 if (viewModel.state.value.programs.isEmpty()) {
-                    // if you have no plans
+                    // if you have no programs
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
@@ -82,16 +86,18 @@ fun AddProgram(navController: NavHostController, name: String, planId: Int,
                         )
                     }
                 } else {
-                    // if you have some plans
+                    // if you have some programs
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(16.dp)
                     ) {
-                        items(items = viewModel.state.value.programs, key = { it }) { program ->
+                        itemsIndexed(viewModel.state.value.programs, key = { _, it -> it }) { index, programEntry ->
                             Card(
                                 onClick = {
                                     navController.navigate(
-                                        "${MainScreen.AddExercise.route}/${program.name}/${program.id}"
+                                        "${MainScreen.AddExercise.route}/" +
+                                                "${programEntry.name}/" +
+                                                "${programEntry.programId}"
                                     )
                                 },
                                 modifier = Modifier
@@ -104,7 +110,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Int,
                                         contentDescription = "Contact profile picture",
                                         modifier = Modifier
                                             // Set image size to 40 dp
-                                            .size(40.dp)
+                                            .size(160.dp)
                                             .padding(all = 4.dp)
                                             // Clip image to be shaped as a circle
                                             .clip(CircleShape)
@@ -114,9 +120,11 @@ fun AddProgram(navController: NavHostController, name: String, planId: Int,
 //                Spacer(modifier = Modifier.width(8.dp))
 
                                     Column {
-                                        Text(text = program.name)
+                                        Text(text = programEntry.name, style = MaterialTheme.typography.headlineSmall)
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Some exercise names...") // TODO
+                                        viewModel.state.value.exercises[index].forEach {
+                                            Text(text = it.name)
+                                        }// TODO
                                     }
                                 }
                             }

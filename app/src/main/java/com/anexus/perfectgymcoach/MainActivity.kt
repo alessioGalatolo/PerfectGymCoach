@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                             it.arguments?.getInt("programId") ?: 0,
                             it.arguments?.getInt("muscle") ?: -1)
                     }
-                    composable(MainScreen.ChangePlan.route) { ChangePlan(navControllerMain) }
+                    composable(MainScreen.ChangePlan.route) { AddWorkoutPlan(navControllerMain) }
                     navigation(startDestination = NavigationScreen.Home.route,
                         route = MainScreen.Main.route){
                         fragments.forEach { screen ->

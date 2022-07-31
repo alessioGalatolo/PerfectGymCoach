@@ -21,12 +21,14 @@ import com.anexus.perfectgymcoach.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Home(navController: NavHostController) {
-    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+    Column(modifier = Modifier
+        .verticalScroll(rememberScrollState())
+        .padding(8.dp)) {
         // Coming next
         Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)
         ElevatedCard(modifier = Modifier
             .fillMaxWidth()
-            .padding(all = 8.dp),
+            .padding(all = 4.dp),
             onClick = {
                 navController.navigate(MainScreen.Workout.route)
             }) {
@@ -56,33 +58,31 @@ fun Home(navController: NavHostController) {
         }
         Text(text = stringResource(id = R.string.other_programs), fontWeight = FontWeight.Bold)
         repeat(6) {
-            Card(modifier = Modifier
+            Row (modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp, vertical = 2.dp)) {
-                Row {
-                    Image(
-                        painter = painterResource(R.drawable.full_body),
-                        contentDescription = "Contact profile picture",
-                        modifier = Modifier
-                            // Set image size to 40 dp
-                            .size(60.dp)
-                            .padding(all = 4.dp)
-                            // Clip image to be shaped as a circle
-                            .clip(CircleShape)
-                    )
+                Image(
+                    painter = painterResource(R.drawable.full_body),
+                    contentDescription = "Contact profile picture",
+                    modifier = Modifier
+                        // Set image size to 40 dp
+                        .size(60.dp)
+                        .padding(all = 4.dp)
+                        // Clip image to be shaped as a circle
+                        .clip(CircleShape)
+                )
 
-                    // Add a horizontal space between the image and the column
-                    Spacer(modifier = Modifier.width(8.dp))
+                // Add a horizontal space between the image and the column
+                Spacer(modifier = Modifier.width(8.dp))
 
-                    Column {
-                        Text(text = "msg.author")
-                        // Add a vertical space between the author and message texts
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "msg.body")
-                    }
+                Column (modifier = Modifier.align(Alignment.CenterVertically)){
+                    Text(text = "msg.author")
+                    // Add a vertical space between the author and message texts
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "msg.body")
                 }
-
             }
+//            Divider()
 
             Spacer(modifier = Modifier.height(4.dp))
         }
