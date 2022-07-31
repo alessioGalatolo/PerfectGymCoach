@@ -105,6 +105,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
 fun ViewExercises(navController: NavHostController, programName: String,
                   programId: Int, muscleOrdinal: Int, viewModel: ExercisesViewModel = hiltViewModel()
 ) {
+    viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.values()[muscleOrdinal]))
     AddExerciseDialogue(
         viewModel.state.value.openAddExerciseDialogue,
         { viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue) },

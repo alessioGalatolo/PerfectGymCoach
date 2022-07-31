@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.data.exercise.ExerciseDao
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseDao
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramDao
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Database(
     entities =
@@ -34,13 +34,22 @@ abstract class WorkoutPlanDatabase: RoomDatabase() {
         @Volatile
         private var instance: WorkoutPlanDatabase? = null
 
-        fun getInstance(context: Context): WorkoutPlanDatabase {
+        fun getInstance(context: Context, scope: CoroutineScope): WorkoutPlanDatabase {
             return instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context,
                     WorkoutPlanDatabase::class.java,
                     "workout-plan-database"
-                ).createFromAsset("workout-plan-database.db").build()
+                ).addCallback(object : RoomDatabase.Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        super.onCreate(db)
+                        //pre-populate data
+                        scope.launch {
+                            instance?.let{it.exerciseDao.insertAll(INITIAL_EXERCISE_DATA)}
+                        }
+                    }
+                })
+                    .build()
                     .also { instance = it }
             }
         }
