@@ -20,12 +20,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExercise(navController: NavHostController, programName: String, programId: Int,
                 viewModel: ExercisesViewModel = hiltViewModel()) {
+    viewModel.onEvent(ExercisesEvent.GetWorkoutExercises(programId))
     Scaffold(
         topBar = {
             SmallTopAppBar(title = { Text(programName) },
@@ -50,61 +52,59 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                 )
             }
         }, content = { innerPadding ->
-            Column(modifier = Modifier.padding(innerPadding)){
-                if (viewModel.state.value.workoutExercises.isEmpty()) {
-                    // if you have no exercises
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.FitnessCenter,
-                            contentDescription = "",
-                            modifier = Modifier.size(160.dp)
-                        )
-                        Text(
-                            stringResource(id = R.string.empty_exercises),
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                } else {
-                    // if you have some plans
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(16.dp)
-                    ) {
-                        items(items = viewModel.state.value.workoutExercises, key = { it }) { exercise ->
-                            Card(
-                                onClick = {
+            if (viewModel.state.value.workoutExercises.isEmpty()) {
+                // if you have no exercises
+                Column(
+                    modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.FitnessCenter,
+                        contentDescription = "",
+                        modifier = Modifier.size(160.dp)
+                    )
+                    Text(
+                        stringResource(id = R.string.empty_exercises),
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                // if you have some plans
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = innerPadding
+                ) {
+                    items(items = viewModel.state.value.workoutExercises, key = { it }) { exercise ->
+                        Card(
+                            onClick = {
 //                                    navController.navigate(
 //                                        "${MainScreen.AddExercise.route}/${program.name}/${program.id}"
 //                                    )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                            ) {
-                                Row {
-                                    Image(
-                                        painter = painterResource(R.drawable.full_body),
-                                        contentDescription = "Contact profile picture",
-                                        modifier = Modifier
-                                            // Set image size to 40 dp
-                                            .size(40.dp)
-                                            .padding(all = 4.dp)
-                                            // Clip image to be shaped as a circle
-                                            .clip(CircleShape)
-                                    )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        ) {
+                            Row {
+                                Image(
+                                    painter = painterResource(R.drawable.full_body),
+                                    contentDescription = "Contact profile picture",
+                                    modifier = Modifier
+                                        // Set image size to 40 dp
+                                        .size(40.dp)
+                                        .padding(all = 4.dp)
+                                        // Clip image to be shaped as a circle
+                                        .clip(CircleShape)
+                                )
 
-                                    // Add a horizontal space between the image and the column
+                                // Add a horizontal space between the image and the column
 //                Spacer(modifier = Modifier.width(8.dp))
 
-                                    Column {
-                                        Text(text = exercise.extExerciseId.toString())
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Some exercise parameters...") // TODO
-                                    }
+                                Column {
+                                    Text(text = exercise.extExerciseId.toString())
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(text = "Some exercise parameters...") // TODO
                                 }
                             }
                         }

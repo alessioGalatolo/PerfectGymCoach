@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,7 +64,9 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                     }
                 })
         }, content = { innerPadding ->
-            Column(modifier = Modifier.padding(innerPadding).verticalScroll(rememberScrollState())){
+            Column(modifier = Modifier
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())){
                 Exercise.Muscle.values().forEach {
                     Card(
                         onClick = {
@@ -89,7 +93,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                             // Add a horizontal space between the image and the column
 //                Spacer(modifier = Modifier.width(8.dp))
 
-                            Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+                            Column(modifier = Modifier.align(CenterVertically)) {
                                 Text(text = it.muscleName, fontWeight = FontWeight.Bold)
 //                                Spacer(modifier = Modifier.height(4.dp))
 //                                Text(text = "Some exercise names...") // TODO
@@ -144,9 +148,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                 items(items = viewModel.state.value.exercises, key = { it }) { exercise ->
                     Card(
                         onClick = {
-//                                    navController.navigate(
-//                                        "${MainScreen.AddExercise.route}/${program.name}/${program.id}"
-//                                    )
+                            viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -160,17 +162,18 @@ fun ViewExercises(navController: NavHostController, programName: String,
                                     // Set image size to 40 dp
                                     .size(40.dp)
                                     .padding(all = 4.dp)
+                                    .align(Alignment.Companion.CenterVertically)
                                     // Clip image to be shaped as a circle
                                     .clip(CircleShape)
                             )
 
                             // Add a horizontal space between the image and the column
-//                Spacer(modifier = Modifier.width(8.dp))
 
                             Column {
                                 Text(text = exercise.name)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(text = "Some exercise parameters...") // TODO
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
                     }
@@ -179,7 +182,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
         })
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddExerciseDialogue(
     dialogueIsOpen: Boolean,
@@ -198,27 +201,44 @@ fun AddExerciseDialogue(
                 usePlatformDefaultWidth = false // experimental
             )
         ) {
-            Surface(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                topBar = {
+                    SmallTopAppBar(title = { Text("TODO") },
+                        navigationIcon = {
+                            IconButton(onClick = { toggleDialogue() }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Close"
+                                )
+                            }
+                        }, actions = {
+                            TextButton(onClick = { /*TODO*/ }, modifier = Modifier.align(CenterVertically)) {
+                                Text(text = "Save")
+                            }
+                        })
+                }, content = { innerPadding ->
+                    Column(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Button(onClick = { addExercise(1, "Some exercise", 2, 3, 4); toggleDialogue() }) {
+                            Text("CLICK ME!")
+                        }
+                        val keyboardController = LocalSoftwareKeyboardController.current
+                        TextField(value = text,
+                            onValueChange = { text = it },
+                            label = { Text("Name of the " ) },
+                            keyboardActions = KeyboardActions(onDone = {
+                                keyboardController?.hide()
+                            }),
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                            singleLine = true)
 
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-
-                    val keyboardController = LocalSoftwareKeyboardController.current
-                    TextField(value = text,
-                        onValueChange = { text = it },
-                        label = { Text("Name of the " ) },
-                        keyboardActions = KeyboardActions(onDone = {
-                            keyboardController?.hide()
-                        }),
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                        singleLine = true)
-
-                }
-
-            }
+                    }
+                })
         }
 
     }
