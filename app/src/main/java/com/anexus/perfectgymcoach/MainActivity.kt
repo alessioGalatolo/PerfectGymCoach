@@ -23,10 +23,10 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             // navigation controller for everything (main screen)
             val navControllerMain = rememberNavController()
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
             val decayAnimationSpec = rememberSplineBasedDecay<Float>()
             val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
                 decayAnimationSpec,
-                rememberTopAppBarScrollState()
+                rememberTopAppBarState()
             )
 
             PerfectGymCoachTheme {
