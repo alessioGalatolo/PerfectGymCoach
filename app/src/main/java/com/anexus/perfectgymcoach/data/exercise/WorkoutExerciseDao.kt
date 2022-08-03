@@ -12,7 +12,7 @@ interface WorkoutExerciseDao {
     @Query(
         "SELECT * FROM workoutexercise " +
         "WHERE extProgramId LIKE :programId")
-    fun getExercises(programId: Int): Flow<List<WorkoutExercise>>
+    fun getExercises(programId: Long): Flow<List<WorkoutExercise>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: WorkoutExercise)

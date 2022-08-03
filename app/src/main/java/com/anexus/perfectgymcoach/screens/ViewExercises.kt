@@ -45,7 +45,7 @@ import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExercisesByMuscle(navController: NavHostController, programName: String,
-                      programId: Int/*, viewModel: ExercisesViewModel = hiltViewModel()*/
+                      programId: Long/*, viewModel: ExercisesViewModel = hiltViewModel()*/
 ) {
     // scroll behaviour for top bar
     val decayAnimationSpec = rememberSplineBasedDecay<Float>()
@@ -111,7 +111,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewExercises(navController: NavHostController, programName: String,
-                  programId: Int, muscleOrdinal: Int, viewModel: ExercisesViewModel = hiltViewModel()
+                  programId: Long, muscleOrdinal: Int, viewModel: ExercisesViewModel = hiltViewModel()
 ) {
     viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.values()[muscleOrdinal]))
     AddExerciseDialogue(
@@ -189,7 +189,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
 fun AddExerciseDialogue(
     dialogueIsOpen: Boolean,
     toggleDialogue: () -> Unit,
-    addExercise: (Int, String, Int, Int, Int) -> Unit
+    addExercise: (Long, String, Int, Int, Int) -> Unit
 ) {
     // alert dialogue to enter the workout plan/program name
 

@@ -17,4 +17,8 @@
     <string name="exercises_by_muscle">Exercises by muscle</string>
     <string name="view_exercises">View exercises</string>
     <string name="empty_exercises">This is where your exercises will be shown, use the button below to add one!</string>
+    <string name="current_plan">Current Plan</string>
+    <string name="empty_home">You have yet to create a workout plan, use the button below to create one!</string>
+    <string name="empty_home_program">This is where your upcoming programs (single day schedule) will be shown, use the button below to go to your plans, select one and add a program to it!</string>
+    <string name="change_workout_plan">Change workout plan</string>
 </resources>

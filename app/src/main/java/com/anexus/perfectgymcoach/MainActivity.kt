@@ -53,34 +53,34 @@ class MainActivity : ComponentActivity() {
                     // FIXME: should maybe be moved to a single navigation
                     composable(MainScreen.Workout.route) { Workout(navControllerMain) }
                     composable("${MainScreen.AddProgram.route}/{name}/{planId}",
-                        arguments = listOf(navArgument("planId") { type = NavType.IntType })
+                        arguments = listOf(navArgument("planId") { type = NavType.LongType })
                     ) {
                         AddProgram(navControllerMain,
                             it.arguments?.getString("name") ?: "",
-                            it.arguments?.getInt("planId") ?: 0)
+                            it.arguments?.getLong("planId") ?: 0L)
                     }
                     composable("${MainScreen.AddExercise.route}/{name}/{programId}",
-                        arguments = listOf(navArgument("programId") { type = NavType.IntType })
+                        arguments = listOf(navArgument("programId") { type = NavType.LongType })
                     ) {
                         AddExercise(navControllerMain,
                             it.arguments?.getString("name") ?: "",
-                            it.arguments?.getInt("programId") ?: 0)
+                            it.arguments?.getLong("programId") ?: 0L)
                     }
                     composable("${MainScreen.ExercisesByMuscle.route}/{name}/{programId}",
-                        arguments = listOf(navArgument("programId") { type = NavType.IntType })
+                        arguments = listOf(navArgument("programId") { type = NavType.LongType })
                     ) {
                         ExercisesByMuscle(navControllerMain,
                             it.arguments?.getString("name") ?: "",
-                            it.arguments?.getInt("programId") ?: 0)
+                            it.arguments?.getLong("programId") ?: 0L)
                     }
                     composable("${MainScreen.ViewExercises.route}/{name}/{programId}/{muscle}",
                         arguments = listOf(
-                            navArgument("programId") { type = NavType.IntType },
-                            navArgument("muscle") { type = NavType.IntType })
+                            navArgument("programId") { type = NavType.LongType },
+                            navArgument("muscle") { type = NavType.LongType })
                     ) {
                         ViewExercises(navControllerMain,
                             it.arguments?.getString("name") ?: "",
-                            it.arguments?.getInt("programId") ?: 0,
+                            it.arguments?.getLong("programId") ?: 0L,
                             it.arguments?.getInt("muscle") ?: -1)
                     }
                     composable(MainScreen.ChangePlan.route) { AddWorkoutPlan(navControllerMain) }

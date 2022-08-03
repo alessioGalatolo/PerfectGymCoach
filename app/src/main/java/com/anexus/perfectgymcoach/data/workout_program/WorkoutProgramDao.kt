@@ -15,7 +15,7 @@ interface WorkoutProgramDao {
         "LEFT JOIN workoutexercise ON `program`.programId = workoutexercise.extProgramId " +
         "WHERE `program`.extPlanId LIKE :planId"
     )
-    fun getPrograms(planId: Int): Flow<Map<WorkoutProgram, List<WorkoutExercise>>>
+    fun getPrograms(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(program: WorkoutProgram)

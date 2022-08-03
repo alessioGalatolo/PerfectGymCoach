@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,7 +35,6 @@ import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWorkoutPlan(navController: NavHostController, viewModel: PlansViewModel = hiltViewModel()) {
-
     AddNameDialogue(
         name = "plan",
         dialogueIsOpen = viewModel.state.value.openAddPlanDialogue,

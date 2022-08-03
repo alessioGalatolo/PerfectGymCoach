@@ -1,8 +1,10 @@
 package com.anexus.perfectgymcoach
 
 import android.content.Context
-import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanDatabase
-import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanRepository
+import android.content.SharedPreferences
+import androidx.datastore.preferences.preferencesDataStore
+import com.anexus.perfectgymcoach.data.WorkoutDatabase
+import com.anexus.perfectgymcoach.data.Repository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,9 +31,11 @@ object AppModule {
     fun provideWorkoutPlanDatabase(
         @ApplicationContext app: Context,
         scope: CoroutineScope
-    ): WorkoutPlanDatabase = WorkoutPlanDatabase.getInstance(app, scope)
+    ): WorkoutDatabase = WorkoutDatabase.getInstance(app, scope)
 
     @Singleton
     @Provides
-    fun provideWorkoutPlanRepository(db: WorkoutPlanDatabase):WorkoutPlanRepository = WorkoutPlanRepository.getInstance(db)
+    fun provideRepository(db: WorkoutDatabase, @ApplicationContext context: Context
+    ): Repository = Repository.getInstance(db, context)
+
 }

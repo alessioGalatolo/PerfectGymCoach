@@ -14,11 +14,13 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -33,7 +35,7 @@ import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProgram(navController: NavHostController, name: String, planId: Int,
+fun AddProgram(navController: NavHostController, name: String, planId: Long,
                viewModel: ProgramsViewModel = hiltViewModel()) {
     viewModel.onEvent(ProgramsEvent.GetPrograms(planId))
     AddNameDialogue(
@@ -98,50 +100,13 @@ fun AddProgram(navController: NavHostController, name: String, planId: Int,
                     contentPadding = innerPadding
                 ) {
                     itemsIndexed(viewModel.state.value.programs, key = { _, it -> it }) { index, programEntry ->
-                        ElevatedCard(
-                            onClick = {
-                                navController.navigate(
-                                    "${MainScreen.AddExercise.route}/" +
-                                            "${programEntry.name}/" +
-                                            "${programEntry.programId}"
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            Column (){
-                                Image(
-                                    painter = painterResource(R.drawable.sample_image),
-                                    contentDescription = "Contact profile picture",
-                                    alignment = Center,
-                                    modifier = Modifier
-                                        // Set image size to 40 dp
-                                        .fillMaxWidth()
-//                                        .size(160.dp)
-                                        .align(CenterHorizontally)
-                                        // Clip image to be shaped as a circle
-                                        .clip(AbsoluteRoundedCornerShape(12.dp))
-                                )
-
-                                Text(text = programEntry.name,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    modifier = Modifier.padding(horizontal = 8.dp))
-                                Spacer(modifier = Modifier.height(4.dp))
-                                viewModel.state.value.exercises[index].forEach {
-                                    Text(text = it.name,
-                                        modifier = Modifier.padding(horizontal = 8.dp))
-                                    Text(text = "Sets: ${it.sets} Reps: ${it.reps} Rest: ${it.rest}s",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.padding(horizontal = 8.dp))
-                                }// TODO
-                                Button(onClick = { /*TODO*/ },
-                                    modifier = Modifier.padding(8.dp)) {
-                                    Text("Start workout")
-                                }
-
-                            }
+                        WorkoutCard(programEntry, viewModel.state.value.exercises[index]) {
+                            navController.navigate(
+                                "${MainScreen.AddExercise.route}/" +
+                                        "${programEntry.name}/" +
+                                        "${programEntry.programId}"
+                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }

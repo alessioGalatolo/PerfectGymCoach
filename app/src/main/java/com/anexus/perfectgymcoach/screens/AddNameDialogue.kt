@@ -2,20 +2,19 @@ package com.anexus.perfectgymcoach.screens
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import kotlinx.coroutines.android.awaitFrame
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddNameDialogue(
     name: String,
@@ -26,6 +25,7 @@ fun AddNameDialogue(
     // alert dialogue to enter the workout plan/program name
 
     var text by rememberSaveable { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
     if (dialogueIsOpen) {
         AlertDialog(
             onDismissRequest = {
@@ -42,12 +42,22 @@ fun AddNameDialogue(
 
                 TextField(value = text,
                     onValueChange = { text = it },
+                    modifier = Modifier.focusRequester(focusRequester).onFocusChanged {
+                        if (it.isFocused) {
+                            keyboardController?.show()
+                        }
+                    },
                     label = { Text("Name of the $name" ) },
                     keyboardActions = KeyboardActions(onDone = {
                         keyboardController?.hide()
                     }),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     singleLine = true)
+                LaunchedEffect(focusRequester) {
+                    awaitFrame()
+                    awaitFrame()
+                    focusRequester.requestFocus()
+                }
             },
             confirmButton = {
                 TextButton(

@@ -5,8 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
-import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanRepository
+import com.anexus.perfectgymcoach.data.Repository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,7 +26,7 @@ sealed class PlansEvent{
 }
 
 @HiltViewModel
-class PlansViewModel @Inject constructor(private val repository: WorkoutPlanRepository): ViewModel() {
+class PlansViewModel @Inject constructor(private val repository: Repository): ViewModel() {
     private val _state = mutableStateOf(PlansState())
     val state: State<PlansState> = _state
 
@@ -43,7 +44,7 @@ class PlansViewModel @Inject constructor(private val repository: WorkoutPlanRepo
         when (event) {
             is PlansEvent.AddPlan -> {
                 viewModelScope.launch {
-                    repository.addPlan(event.workoutPlan)
+                    repository.setCurrentPlan(repository.addPlan(event.workoutPlan), overrideValue = false)
                 }
             }
             is PlansEvent.TogglePlanDialogue -> {

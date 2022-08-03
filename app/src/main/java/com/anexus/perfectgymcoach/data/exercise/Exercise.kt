@@ -8,7 +8,7 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 @Entity
 data class Exercise(
-    @PrimaryKey(autoGenerate = true) val exerciseId: Int = 0,
+    @PrimaryKey(autoGenerate = true) val exerciseId: Long = 0L,
     val name: String,
     val primaryMuscle: Muscle,
 //    val secondaryMuscles: List<Muscle>,

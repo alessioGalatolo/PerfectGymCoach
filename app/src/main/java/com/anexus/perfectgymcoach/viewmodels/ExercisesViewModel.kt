@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
-import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanRepository
+import com.anexus.perfectgymcoach.data.Repository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -21,7 +21,7 @@ data class ExercisesState(
 sealed class ExercisesEvent{
     object ToggleExerciseDialogue : ExercisesEvent()
 
-    data class GetWorkoutExercises(val programId: Int): ExercisesEvent()
+    data class GetWorkoutExercises(val programId: Long): ExercisesEvent()
 
     data class GetExercises(val muscle: Exercise.Muscle): ExercisesEvent()
 
@@ -32,7 +32,7 @@ sealed class ExercisesEvent{
 }
 
 @HiltViewModel
-class ExercisesViewModel @Inject constructor(private val repository: WorkoutPlanRepository): ViewModel() {
+class ExercisesViewModel @Inject constructor(private val repository: Repository): ViewModel() {
     private val _state = mutableStateOf(ExercisesState())
     val state: State<ExercisesState> = _state
 

@@ -19,7 +19,7 @@ import kotlinx.parcelize.Parcelize
 )
 @Parcelize
 data class WorkoutProgram(
-    @PrimaryKey(autoGenerate = true) val programId: Int = 0,
-    val extPlanId: Int,
+    @PrimaryKey(autoGenerate = true) val programId: Long = 0L,
+    val extPlanId: Long,
     val name: String
 ) : Parcelable

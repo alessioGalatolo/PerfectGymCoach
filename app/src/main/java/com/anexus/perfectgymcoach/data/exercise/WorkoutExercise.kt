@@ -26,9 +26,9 @@ import kotlinx.parcelize.Parcelize
     ]
 )
 data class WorkoutExercise (
-    @PrimaryKey(autoGenerate = true) val workoutExerciseId: Int = 0,
-    val extProgramId: Int,
-    val extExerciseId: Int,
+    @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
+    val extProgramId: Long,
+    val extExerciseId: Long,
     val name: String, // redundant but simplifies a lot
     val sets: Int,
     val reps: Int,

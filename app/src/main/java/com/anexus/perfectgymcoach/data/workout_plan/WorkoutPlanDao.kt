@@ -13,7 +13,7 @@ interface WorkoutPlanDao {
     fun getPlans(): Flow<List<WorkoutPlan>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(plan: WorkoutPlan)
+    suspend fun insert(plan: WorkoutPlan): Long
 
     // TODO: delete plan
 }

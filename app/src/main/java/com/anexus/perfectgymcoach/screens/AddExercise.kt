@@ -25,7 +25,7 @@ import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExercise(navController: NavHostController, programName: String, programId: Int,
+fun AddExercise(navController: NavHostController, programName: String, programId: Long,
                 viewModel: ExercisesViewModel = hiltViewModel()) {
     viewModel.onEvent(ExercisesEvent.GetWorkoutExercises(programId))
     Scaffold(

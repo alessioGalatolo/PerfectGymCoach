@@ -1,10 +1,15 @@
 package com.anexus.perfectgymcoach.screens
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,80 +19,98 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.viewmodels.HomeEvent
+import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
+import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Home(navController: NavHostController) {
-    Column(modifier = Modifier
-        .verticalScroll(rememberScrollState())
-        .padding(8.dp)) {
-        // Coming next
-        Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)
-        ElevatedCard(modifier = Modifier
-            .fillMaxWidth()
-            .padding(all = 4.dp),
-            onClick = {
-                navController.navigate(MainScreen.Workout.route)
-            }) {
-            Row {
-                Image(
-                    painter = painterResource(R.drawable.full_body),
-                    contentDescription = "Contact profile picture",
-                    modifier = Modifier
-                        // Set image size to 40 dp
-                        .size(160.dp)
-                        .padding(all = 4.dp)
-                        // Clip image to be shaped as a circle
-                        .clip(CircleShape)
+fun Home(navController: NavHostController,
+         viewModel: HomeViewModel = hiltViewModel()
+         ) {
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (viewModel.state.value.currentPlan == null) {
+            Text(
+                stringResource(id = R.string.empty_home),
+                modifier = Modifier.padding(16.dp)
+            )
+            LargeFloatingActionButton(
+                onClick = { navController.navigate(MainScreen.ChangePlan.route) },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) { Icon(imageVector = Icons.Filled.Add,
+                contentDescription = "",
+                modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize)) }
+        } else {
+            if (viewModel.state.value.programs.isEmpty()) {
+                Icon(
+                    imageVector = Icons.Filled.Description,
+                    contentDescription = "",
+                    modifier = Modifier.size(160.dp)
                 )
-
-                // Add a horizontal space between the image and the column
-//                Spacer(modifier = Modifier.width(8.dp))
-
-                Column {
-                    Text(text = "msg.author")
-                    // Add a vertical space between the author and message texts
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "msg.body")
-                }
-            }
-
-        }
-        Text(text = stringResource(id = R.string.other_programs), fontWeight = FontWeight.Bold)
-        repeat(6) {
-            Row (modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 2.dp)) {
-                Image(
-                    painter = painterResource(R.drawable.full_body),
-                    contentDescription = "Contact profile picture",
-                    modifier = Modifier
-                        // Set image size to 40 dp
-                        .size(60.dp)
-                        .padding(all = 4.dp)
-                        // Clip image to be shaped as a circle
-                        .clip(CircleShape)
+                Text(
+                    stringResource(id = R.string.empty_home_program),
+                    modifier = Modifier.padding(16.dp)
                 )
+            } else {
+                // Coming next
+                Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)
+//                WorkoutCard(program = viewModel.state.value.programs, exercises =) {
+//                    navController.navigate(MainScreen.Workout.route)
+//                }
+                Text(
+                    text = stringResource(id = R.string.other_programs),
+                    fontWeight = FontWeight.Bold
+                )
+                repeat(6) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.full_body),
+                            contentDescription = "Contact profile picture",
+                            modifier = Modifier
+                                // Set image size to 40 dp
+                                .size(60.dp)
+                                .padding(all = 4.dp)
+                                // Clip image to be shaped as a circle
+                                .clip(CircleShape)
+                        )
 
-                // Add a horizontal space between the image and the column
-                Spacer(modifier = Modifier.width(8.dp))
+                        // Add a horizontal space between the image and the column
+                        Spacer(modifier = Modifier.width(8.dp))
 
-                Column (modifier = Modifier.align(Alignment.CenterVertically)){
-                    Text(text = "msg.author")
-                    // Add a vertical space between the author and message texts
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "msg.body")
-                }
-            }
+                        Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+                            Text(text = "msg.author")
+                            // Add a vertical space between the author and message texts
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = "msg.body")
+                        }
+                    }
 //            Divider()
 
-            Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+            TextButton(
+                onClick = { navController.navigate(MainScreen.ChangePlan.route) },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) { Text(stringResource(R.string.change_workout_plan)) }
+            Spacer(modifier = Modifier.height(8.dp))
         }
-        TextButton(onClick = { navController.navigate(MainScreen.ChangePlan.route) },
-            modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("Change workout plan") }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
