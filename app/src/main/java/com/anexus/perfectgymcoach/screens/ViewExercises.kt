@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -25,7 +25,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -113,8 +113,9 @@ fun ViewExercises(navController: NavHostController, programName: String,
     val scope = rememberCoroutineScope()
     viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.values()[muscleOrdinal]))
     AddExerciseDialogue(
+        viewModel.state.value.exerciseToAdd,
         viewModel.state.value.openAddExerciseDialogue,
-        { viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue) },
+        { viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue()) },
         { eId, name, sets, reps, rest ->
             viewModel.onEvent(ExercisesEvent.AddWorkoutExercise(
                 WorkoutExercise(
@@ -125,7 +126,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                 reps = reps,
                 rest = rest
             )))
-            viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue)
+            viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue())
             scope.launch {
                 snackbarHostState.showSnackbar(
                     "Exercise was added to the program, you can continue adding"
@@ -154,7 +155,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                 items(items = viewModel.state.value.exercises, key = { it }) { exercise ->
                     Card(
                         onClick = {
-                            viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue)
+                            viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue(exercise))
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -191,13 +192,17 @@ fun ViewExercises(navController: NavHostController, programName: String,
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddExerciseDialogue(
+    exercise: Exercise?,
     dialogueIsOpen: Boolean,
     toggleDialogue: () -> Unit,
     addExerciseAndClose: (Long, String, Int, Int, Int) -> Unit
 ) {
-    // alert dialogue to enter the workout plan/program name
-
-    var text by rememberSaveable { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    val notesText = rememberSaveable { mutableStateOf("") }
+    val setsText = rememberSaveable { mutableStateOf("") }
+    val repsText = rememberSaveable { mutableStateOf("") }
+    val restText = rememberSaveable { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
     if (dialogueIsOpen) {
         Dialog(
             onDismissRequest = {
@@ -208,8 +213,9 @@ fun AddExerciseDialogue(
             )
         ) {
             Scaffold(
+                snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
-                    SmallTopAppBar(title = { Text("TODO") },
+                    SmallTopAppBar(title = { Text(exercise!!.name) },
                         navigationIcon = {
                             IconButton(onClick = { toggleDialogue() }) {
                                 Icon(
@@ -218,7 +224,24 @@ fun AddExerciseDialogue(
                                 )
                             }
                         }, actions = {
-                            TextButton(onClick = { /*TODO*/ }, modifier = Modifier.align(CenterVertically)) {
+                            TextButton(onClick = {
+                                if (setsText.value.isEmpty() ||
+                                    repsText.value.isEmpty() ||
+                                    restText.value.isEmpty()){
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            "Please fill every field in order to save"
+                                        )
+                                    }
+                                } else {
+                                    addExerciseAndClose(
+                                        exercise!!.exerciseId,
+                                        exercise.name,
+                                        setsText.value.toInt(),
+                                        repsText.value.toInt(),
+                                        restText.value.toInt())
+                                }
+                            }, modifier = Modifier.align(CenterVertically)) {
                                 Text(text = "Save")
                             }
                         })
@@ -227,70 +250,98 @@ fun AddExerciseDialogue(
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
+//                        verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Button(onClick = { addExerciseAndClose(1, "Some exercise", 2, 3, 4) }) {
-                            Text("CLICK ME!")
-                        }
-                        val keyboardController = LocalSoftwareKeyboardController.current
-                        TextField(value = text,
-                            onValueChange = { text = it },
-                            label = { Text("Name of the " ) },
-                            keyboardActions = KeyboardActions(onDone = {
-                                keyboardController?.hide()
-                            }),
-                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                            singleLine = true)
+                        Image(
+                            painterResource(id = R.drawable.sample_image),
+                            null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .clip(AbsoluteRoundedCornerShape(12.dp))
+                        ) // TODO: image of exercise
+                        Row (modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly){
+                            MyDropdownMenu( // FIXME: should check is int
+                                prompt = "Sets",
+                                options = (1..6).map { "$it" },
+                                text = setsText
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            MyDropdownMenu( // FIXME: should check is int
+                                prompt = "Reps",
+                                options = (1..12).map { "$it" },
+                                text = repsText
+                            )
 
+                        }
+                        MyDropdownMenu(prompt = "Rest",
+                            options = (15..120 step 15).map { "$it" },
+                            text = restText){
+                            Text("sec")
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = notesText.value,
+                            onValueChange = { notesText.value = it },
+                            label = { Text("Notes (optional)") }
+                        )
                     }
                 })
         }
-
     }
 }
-//        AlertDialog(
-//            onDismissRequest = {
-//                // Dismiss the dialog when the user clicks outside the dialog or on the back
-//                // button. If you want to disable that functionality, simply use an empty
-//                // onDismissRequest.
-//                toggleDialogue()
-//            },
-//            title = {
-//                Text(text = "Add exercise")
-//            },
-//            text = {
-//                val keyboardController = LocalSoftwareKeyboardController.current
-//
-//                TextField(value = text,
-//                    onValueChange = { text = it },
-//                    label = { Text("Name of the " ) },
-//                    keyboardActions = KeyboardActions(onDone = {
-//                        keyboardController?.hide()
-//                    }),
-//                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-//                    singleLine = true)
-//
-//            },
-//            confirmButton = {
-//                TextButton(
-//                    onClick = {
-////                        addExercise(text.trim())
-//                        toggleDialogue()
-//                        text = ""
-//                    }
-//                ) {
-//                    Text("Confirm")
-//                }
-//            },
-//            dismissButton = {
-//                TextButton(
-//                    onClick = {
-//                        toggleDialogue()
-//                    }
-//                ) {
-//                    Text("Cancel")
-//                }
-//            }
-//        )
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@Composable
+fun MyDropdownMenu(
+    prompt: String,
+    options: List<String>,
+    text: MutableState<String> = rememberSaveable { mutableStateOf("") },
+    expanded: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) },
+    trailingIcon: (@Composable () -> Unit)? = null
+){
+    val keyboardController = LocalSoftwareKeyboardController.current
+    ExposedDropdownMenuBox(
+        expanded = expanded.value,
+        onExpandedChange = { expanded.value = !expanded.value },
+    ) {
+        OutlinedTextField(
+            value = text.value,
+            singleLine = true,
+            onValueChange = { text.value = it },
+            label = { Text(prompt) },
+            trailingIcon = {
+                Row (verticalAlignment = Alignment.CenterVertically){
+                    trailingIcon?.invoke()
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
+                }},
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            keyboardActions = KeyboardActions(onDone = {
+                keyboardController?.hide()
+            }),
+            modifier = Modifier.widthIn(1.dp, Dp.Infinity)
+        )
+        // filter options based on text field value
+        val filteringOptions = options.filter { it.contains(text.value, ignoreCase = true) }
+        if (filteringOptions.isNotEmpty()) {
+            ExposedDropdownMenu(
+                expanded = expanded.value,
+                onDismissRequest = { expanded.value = false },
+            ) {
+                filteringOptions.forEach { selectionOption ->
+                    DropdownMenuItem(
+                        text = { Text(selectionOption) },
+                        onClick = {
+                            text.value = selectionOption
+                            expanded.value = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}

@@ -15,11 +15,12 @@ import javax.inject.Inject
 data class ExercisesState(
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
-    val openAddExerciseDialogue: Boolean = false
+    val openAddExerciseDialogue: Boolean = false,
+    val exerciseToAdd: Exercise? = null
 )
 
 sealed class ExercisesEvent{
-    object ToggleExerciseDialogue : ExercisesEvent()
+    data class ToggleExerciseDialogue(val exercise: Exercise? = null) : ExercisesEvent()
 
     data class GetWorkoutExercises(val programId: Long): ExercisesEvent()
 
@@ -27,8 +28,6 @@ sealed class ExercisesEvent{
 
     data class AddWorkoutExercise(val workoutExercise: WorkoutExercise): ExercisesEvent()
 
-    // TODO: ChangeOrder
-    // TODO: RemovePlan
 }
 
 @HiltViewModel
@@ -48,7 +47,8 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             }
             is ExercisesEvent.ToggleExerciseDialogue -> {
                 _state.value = state.value.copy(
-                    openAddExerciseDialogue = !state.value.openAddExerciseDialogue
+                    openAddExerciseDialogue = !state.value.openAddExerciseDialogue,
+                    exerciseToAdd = event.exercise
                 )
             }
             is ExercisesEvent.GetWorkoutExercises -> {

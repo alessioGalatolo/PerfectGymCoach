@@ -78,7 +78,7 @@ fun WorkoutCard(program: WorkoutProgram,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedButton(onClick = { navController.navigate(MainScreen.Workout.route) },
+                Button(onClick = { navController.navigate(MainScreen.Workout.route) },
                     modifier = Modifier
                         .padding(8.dp)
                     /*.align(Alignment.End)*/) {

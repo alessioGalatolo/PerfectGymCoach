@@ -102,9 +102,11 @@ fun AddExercise(navController: NavHostController, programName: String, programId
 //                Spacer(modifier = Modifier.width(8.dp))
 
                                 Column {
-                                    Text(text = exercise.extExerciseId.toString())
+                                    Text(text = exercise.name)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = "Some exercise parameters...") // TODO
+                                    Text(text = "Sets: ${exercise.sets} " +
+                                            "Reps: ${exercise.reps} " +
+                                            "Rest: ${exercise.rest}") // TODO
                                 }
                             }
                         }

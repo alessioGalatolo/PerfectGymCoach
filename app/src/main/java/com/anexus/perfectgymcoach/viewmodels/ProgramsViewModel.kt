@@ -29,6 +29,8 @@ sealed class ProgramsEvent{
 
     data class AddProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
 
+    data class RenameProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
+
     // TODO: ChangeOrder
     // TODO: RemovePlan
 }
@@ -69,6 +71,9 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                     programToBeChanged = event.programId
                 )
 
+            }
+            is ProgramsEvent.RenameProgram -> {
+                repository.renameProgram(event.workoutProgram)
             }
         }
     }

@@ -71,6 +71,8 @@ class Repository @Inject constructor(
 
     suspend fun addWorkoutExercise(exercise: WorkoutExercise) = db.workoutExerciseDao.insert(exercise)
 
+    fun renameProgram(program: WorkoutProgram) = db.workoutProgramDao.update(program)
+
     companion object {
 
         // For Singleton instantiation

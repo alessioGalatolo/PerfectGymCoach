@@ -17,8 +17,10 @@ interface WorkoutProgramDao {
     )
     fun getPrograms(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insert(program: WorkoutProgram): Long
 
+    @Insert
+    fun update(program: WorkoutProgram)
     // TODO: delete plan
 }
