@@ -16,11 +16,11 @@ import kotlinx.coroutines.android.awaitFrame
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun AddNameDialogue(
-    name: String,
+fun InsertNameDialog(
+    prompt: String,
     dialogueIsOpen: Boolean,
     toggleDialogue: () -> Unit,
-    addName: (String) -> Unit
+    insertName: (String) -> Unit
 ) {
     // alert dialogue to enter the workout plan/program name
 
@@ -35,7 +35,7 @@ fun AddNameDialogue(
                 toggleDialogue()
             },
             title = {
-                Text(text = "Create workout $name")
+                Text(text = "Enter ${prompt.lowercase()}")
             },
             text = {
                 val keyboardController = LocalSoftwareKeyboardController.current
@@ -47,7 +47,7 @@ fun AddNameDialogue(
                             keyboardController?.show()
                         }
                     },
-                    label = { Text("Name of the $name" ) },
+                    label = { Text(prompt) },
                     keyboardActions = KeyboardActions(onDone = {
                         keyboardController?.hide()
                     }),
@@ -62,7 +62,7 @@ fun AddNameDialogue(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        addName(text.trim())
+                        insertName(text.trim())
                         toggleDialogue()
                         text = ""
                     }

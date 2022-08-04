@@ -1,29 +1,53 @@
 package com.anexus.perfectgymcoach.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutCard(program: WorkoutProgram,
                 exercises: List<WorkoutExercise>,
-                onCardClick: () -> Unit){
+                onCardClick: () -> Unit,
+                onCardLongPress: () -> Unit,
+                navController: NavHostController){
+    val haptic = LocalHapticFeedback.current
     ElevatedCard(
-        onClick = onCardClick,
         modifier = Modifier
             .fillMaxWidth()
-    ) {
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = rememberRipple(),
+                onClick = onCardClick,
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onCardLongPress()
+                }))
+    {
         Column {
             Image(
                 painter = painterResource(R.drawable.sample_image),
@@ -50,24 +74,21 @@ fun WorkoutCard(program: WorkoutProgram,
                     modifier = Modifier.padding(horizontal = 8.dp))
             }// TODO
             Spacer(modifier = Modifier.height(8.dp))
-            Divider()
             Row (verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                TextButton(onClick = { /*TODO*/ }) {
-                    Text(text = "See all")
-                }
-                OutlinedButton(onClick = { /*TODO*/ },
+                OutlinedButton(onClick = { navController.navigate(MainScreen.Workout.route) },
                     modifier = Modifier
                         .padding(8.dp)
                     /*.align(Alignment.End)*/) {
                     Text("Start workout")
                 }
+                IconButton(onClick = { navController.navigate(
+                    "${MainScreen.AddExercise.route}/${program.name}/${program.programId}") }) {
+                    Icon(Icons.Filled.Edit, null)
+                }
             }
-
-
-
         }
     }
-    Spacer(modifier = Modifier.height(8.dp))
 }

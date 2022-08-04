@@ -2,7 +2,6 @@ package com.anexus.perfectgymcoach.screens
 
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,17 +14,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -41,6 +36,7 @@ import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +109,8 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
 fun ViewExercises(navController: NavHostController, programName: String,
                   programId: Long, muscleOrdinal: Int, viewModel: ExercisesViewModel = hiltViewModel()
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.values()[muscleOrdinal]))
     AddExerciseDialogue(
         viewModel.state.value.openAddExerciseDialogue,
@@ -126,12 +124,18 @@ fun ViewExercises(navController: NavHostController, programName: String,
                 sets = sets,
                 reps = reps,
                 rest = rest
-            )
-            ))
+            )))
+            viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue)
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    "Exercise was added to the program, you can continue adding"
+                )
+            }
         }
 
     )
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SmallTopAppBar(title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
                 navigationIcon = {
@@ -189,7 +193,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
 fun AddExerciseDialogue(
     dialogueIsOpen: Boolean,
     toggleDialogue: () -> Unit,
-    addExercise: (Long, String, Int, Int, Int) -> Unit
+    addExerciseAndClose: (Long, String, Int, Int, Int) -> Unit
 ) {
     // alert dialogue to enter the workout plan/program name
 
@@ -226,7 +230,7 @@ fun AddExerciseDialogue(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Button(onClick = { addExercise(1, "Some exercise", 2, 3, 4); toggleDialogue() }) {
+                        Button(onClick = { addExerciseAndClose(1, "Some exercise", 2, 3, 4) }) {
                             Text("CLICK ME!")
                         }
                         val keyboardController = LocalSoftwareKeyboardController.current

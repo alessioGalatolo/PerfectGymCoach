@@ -14,6 +14,7 @@ import javax.inject.Inject
 
 data class HomeState(
     val currentPlan: Long? = null,
+    val currentProgram: Long? = null,
     val programs: List<WorkoutProgram> = emptyList(),
     val exercises: List<List<WorkoutExercise>> = emptyList(),
     val openAddProgramDialogue: Boolean = false
@@ -52,6 +53,11 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
                     }
                 }
 
+            }
+        }
+        viewModelScope.launch {
+            repository.getCurrentProgram().collect{
+                _state.value = state.value.copy(currentProgram = it)
             }
         }
     }

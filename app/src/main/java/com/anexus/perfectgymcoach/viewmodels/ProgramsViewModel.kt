@@ -15,11 +15,15 @@ import javax.inject.Inject
 data class ProgramsState(
     val programs: List<WorkoutProgram> = emptyList(),
     val exercises: List<List<WorkoutExercise>> = emptyList(),
-    val openAddProgramDialogue: Boolean = false
+    val openAddProgramDialog: Boolean = false,
+    val openChangeNameDialog: Boolean = false,
+    val programToBeChanged: Long = 0
 )
 
 sealed class ProgramsEvent{
-    object ToggleProgramDialogue : ProgramsEvent()
+    object ToggleAddProgramDialog : ProgramsEvent()
+
+    data class ToggleChangeNameDialog(val programId: Long = 0) : ProgramsEvent()
 
     data class GetPrograms(val planId: Long): ProgramsEvent()
 
@@ -51,15 +55,21 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
             }
             is ProgramsEvent.AddProgram -> {
                 viewModelScope.launch {
-                    repository.addProgram(event.workoutProgram)
+                    repository.setCurrentProgram(repository.addProgram(event.workoutProgram), false)
                 }
             }
-            is ProgramsEvent.ToggleProgramDialogue -> {
+            is ProgramsEvent.ToggleAddProgramDialog -> {
                 _state.value = state.value.copy(
-                    openAddProgramDialogue = !state.value.openAddProgramDialogue
+                    openAddProgramDialog = !state.value.openAddProgramDialog
                 )
             }
+            is ProgramsEvent.ToggleChangeNameDialog -> {
+                _state.value = state.value.copy(
+                    openChangeNameDialog = !state.value.openChangeNameDialog,
+                    programToBeChanged = event.programId
+                )
 
+            }
         }
     }
 

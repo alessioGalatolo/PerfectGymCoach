@@ -1,30 +1,19 @@
 package com.anexus.perfectgymcoach.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.Center
-import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -36,18 +25,36 @@ import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProgram(navController: NavHostController, name: String, planId: Long,
+               openDialogNow: Boolean,
                viewModel: ProgramsViewModel = hiltViewModel()) {
     viewModel.onEvent(ProgramsEvent.GetPrograms(planId))
-    AddNameDialogue(
-        name = "program",
-        dialogueIsOpen = viewModel.state.value.openAddProgramDialogue,
-        toggleDialogue = { viewModel.onEvent(ProgramsEvent.ToggleProgramDialogue) },
-        addName = { programName ->
+    InsertNameDialog(
+        prompt = "Name of the new program",
+        dialogueIsOpen = viewModel.state.value.openAddProgramDialog,
+        toggleDialogue = { viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog) },
+        insertName = { programName ->
             viewModel.onEvent(ProgramsEvent.AddProgram(WorkoutProgram(
                 extPlanId = planId,
                 name = programName
             ))) }
     )
+    InsertNameDialog(
+        prompt = "New name of the program",
+        dialogueIsOpen = viewModel.state.value.openChangeNameDialog,
+        toggleDialogue = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
+        insertName = { viewModel.onEvent(ProgramsEvent.AddProgram(
+            WorkoutProgram(
+                programId = viewModel.state.value.programToBeChanged,
+                extPlanId = planId,
+                name = it
+            )
+        )) }
+    )
+    val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
+    if (openDialog.value){
+        viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
+        openDialog.value = false
+    }
     Scaffold(
         topBar = {
             SmallTopAppBar(title = { Text(name) },
@@ -62,7 +69,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 onClick = {
-                    viewModel.onEvent(ProgramsEvent.ToggleProgramDialogue)
+                    viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
                 },
             ) {
                 Icon(
@@ -100,13 +107,20 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                     contentPadding = innerPadding
                 ) {
                     itemsIndexed(viewModel.state.value.programs, key = { _, it -> it }) { index, programEntry ->
-                        WorkoutCard(programEntry, viewModel.state.value.exercises[index]) {
-                            navController.navigate(
-                                "${MainScreen.AddExercise.route}/" +
-                                        "${programEntry.name}/" +
-                                        "${programEntry.programId}"
-                            )
-                        }
+                        WorkoutCard(
+                            programEntry,
+                            viewModel.state.value.exercises[index],
+                            onCardClick = {
+                                navController.navigate(
+                                    "${MainScreen.AddExercise.route}/" +
+                                            "${programEntry.name}/" +
+                                            "${programEntry.programId}"
+                                )
+                            }, onCardLongPress = {
+                                viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog(programEntry.programId))
+                            }, navController = navController
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }

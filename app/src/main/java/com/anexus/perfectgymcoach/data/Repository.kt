@@ -29,6 +29,7 @@ class Repository @Inject constructor(
     private val context: Context
 ) {
     private val CURRENT_PLAN = longPreferencesKey("Current plan")
+    private val CURRENT_PROGRAM = longPreferencesKey("Current program")
 
     fun getPlans() = db.workoutPlanDao.getPlans()
 
@@ -50,6 +51,16 @@ class Repository @Inject constructor(
         context.dataStore.edit {
             if (it[CURRENT_PLAN] == null || overrideValue){
                 it[CURRENT_PLAN] = planId
+            }
+        }
+    }
+
+    fun getCurrentProgram(): Flow<Long?> = context.dataStore.data.map{ it[CURRENT_PROGRAM] }
+
+    suspend fun setCurrentProgram(programId: Long, overrideValue: Boolean){
+        context.dataStore.edit {
+            if (it[CURRENT_PROGRAM] == null || overrideValue){
+                it[CURRENT_PROGRAM] = programId
             }
         }
     }

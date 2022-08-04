@@ -2,25 +2,21 @@
 
 package com.anexus.perfectgymcoach.screens
 
-import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,13 +30,20 @@ import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddWorkoutPlan(navController: NavHostController, viewModel: PlansViewModel = hiltViewModel()) {
-    AddNameDialogue(
-        name = "plan",
+fun AddWorkoutPlan(navController: NavHostController,
+                   openDialogNow: Boolean,
+                   viewModel: PlansViewModel = hiltViewModel()) {
+    InsertNameDialog(
+        prompt = "Name of the new plan",
         dialogueIsOpen = viewModel.state.value.openAddPlanDialogue,
         toggleDialogue = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
-        addName = { planName -> viewModel.onEvent(PlansEvent.AddPlan(WorkoutPlan(name = planName))) }
+        insertName = { planName -> viewModel.onEvent(PlansEvent.AddPlan(WorkoutPlan(name = planName))) }
     )
+    val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
+    if (openDialog.value){
+        viewModel.onEvent(PlansEvent.TogglePlanDialogue)
+        openDialog.value = false
+    }
     Scaffold(
         topBar = {
             SmallTopAppBar(title = { Text(stringResource(R.string.manage_workout_plans)) },
@@ -68,7 +71,9 @@ fun AddWorkoutPlan(navController: NavHostController, viewModel: PlansViewModel =
             if (viewModel.state.value.workoutPlans.isEmpty()) {
                 // if you have no plans
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -91,7 +96,7 @@ fun AddWorkoutPlan(navController: NavHostController, viewModel: PlansViewModel =
                         Card(
                             onClick = {
                                 navController.navigate(
-                                    "${MainScreen.AddProgram.route}/${plan.name}/${plan.planId}"
+                                    "${MainScreen.AddProgram.route}/${plan.name}/${plan.planId}/${false}"
                                 )
                             },
                             modifier = Modifier

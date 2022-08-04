@@ -34,27 +34,30 @@ import javax.inject.Inject
 fun Home(navController: NavHostController,
          viewModel: HomeViewModel = hiltViewModel()
          ) {
-    Column(
-        modifier = Modifier
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (viewModel.state.value.currentPlan == null) {
-            Text(
-                stringResource(id = R.string.empty_home),
-                modifier = Modifier.padding(16.dp)
-            )
-            LargeFloatingActionButton(
-                onClick = { navController.navigate(MainScreen.ChangePlan.route) },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) { Icon(imageVector = Icons.Filled.Add,
-                contentDescription = "",
-                modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize)) }
-        } else {
-            if (viewModel.state.value.programs.isEmpty()) {
+
+    if (viewModel.state.value.currentPlan == null) {
+        Scaffold(
+            floatingActionButton = {
+                LargeFloatingActionButton(
+                    onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${true}") }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize)
+                    )
+                }
+            }) {
+            Column(modifier = Modifier.padding(it)) {
+                Text(
+                    stringResource(id = R.string.empty_home),
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+    } else {
+        if (viewModel.state.value.programs.isEmpty()) {
+            Column (horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     imageVector = Icons.Filled.Description,
                     contentDescription = "",
@@ -64,12 +67,41 @@ fun Home(navController: NavHostController,
                     stringResource(id = R.string.empty_home_program),
                     modifier = Modifier.padding(16.dp)
                 )
-            } else {
+                Button(onClick = {
+                    navController.navigate( // FIXME: empty plan name
+                        "${MainScreen.AddProgram.route}/ /${viewModel.state.value.currentPlan!!}/${true}")
+                }) {
+                    Text(stringResource(id = R.string.add_program))
+                }
+
+            }
+        } else {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)) {
                 // Coming next
                 Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)
-//                WorkoutCard(program = viewModel.state.value.programs, exercises =) {
-//                    navController.navigate(MainScreen.Workout.route)
-//                }
+                val currentProgram = viewModel.state.value.programs.find {
+                    it.programId == viewModel.state.value.currentProgram!!
+                }!!
+                val currentExercises =
+                    viewModel.state.value.exercises[viewModel.state.value.programs.indexOf(
+                        currentProgram
+                    )]
+                WorkoutCard(
+                    program = currentProgram,
+                    exercises = currentExercises,
+                    onCardClick = { navController.navigate(MainScreen.Workout.route) },
+                    onCardLongPress = {
+                        navController.navigate(
+                            "${MainScreen.AddExercise.route}/" +
+                                    "${currentProgram.name}/" +
+                                    "${currentProgram.programId}"
+                        )
+                    }, navController = navController
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(id = R.string.other_programs),
                     fontWeight = FontWeight.Bold
@@ -105,12 +137,12 @@ fun Home(navController: NavHostController,
 
                     Spacer(modifier = Modifier.height(4.dp))
                 }
+                TextButton(
+                    onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${false}" ) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) { Text(stringResource(R.string.change_workout_plan)) }
+                Spacer(modifier = Modifier.height(8.dp))
             }
-            TextButton(
-                onClick = { navController.navigate(MainScreen.ChangePlan.route) },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) { Text(stringResource(R.string.change_workout_plan)) }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

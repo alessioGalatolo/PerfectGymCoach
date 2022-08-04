@@ -52,12 +52,17 @@ class MainActivity : ComponentActivity() {
 
                     // FIXME: should maybe be moved to a single navigation
                     composable(MainScreen.Workout.route) { Workout(navControllerMain) }
-                    composable("${MainScreen.AddProgram.route}/{name}/{planId}",
-                        arguments = listOf(navArgument("planId") { type = NavType.LongType })
+                    composable("${MainScreen.AddProgram.route}/{name}/{planId}/{openDialogNow}",
+                        arguments = listOf(
+                            navArgument("planId") { type = NavType.LongType },
+                            navArgument("openDialogNow") { type = NavType.BoolType }
+                        )
                     ) {
                         AddProgram(navControllerMain,
                             it.arguments?.getString("name") ?: "",
-                            it.arguments?.getLong("planId") ?: 0L)
+                            it.arguments?.getLong("planId") ?: 0L,
+                            it.arguments?.getBoolean("openDialogNow") ?: false
+                        )
                     }
                     composable("${MainScreen.AddExercise.route}/{name}/{programId}",
                         arguments = listOf(navArgument("programId") { type = NavType.LongType })
@@ -76,14 +81,18 @@ class MainActivity : ComponentActivity() {
                     composable("${MainScreen.ViewExercises.route}/{name}/{programId}/{muscle}",
                         arguments = listOf(
                             navArgument("programId") { type = NavType.LongType },
-                            navArgument("muscle") { type = NavType.LongType })
+                            navArgument("muscle") { type = NavType.IntType })
                     ) {
                         ViewExercises(navControllerMain,
                             it.arguments?.getString("name") ?: "",
                             it.arguments?.getLong("programId") ?: 0L,
                             it.arguments?.getInt("muscle") ?: -1)
                     }
-                    composable(MainScreen.ChangePlan.route) { AddWorkoutPlan(navControllerMain) }
+                    composable("${MainScreen.ChangePlan.route}/{openDialogNow}",
+                    arguments = listOf(navArgument("openDialogNow") {type = NavType.BoolType})) {
+                        AddWorkoutPlan(navControllerMain,
+                            it.arguments?.getBoolean("openDialogNow")?: false)
+                    }
                     navigation(startDestination = NavigationScreen.Home.route,
                         route = MainScreen.Main.route){
                         fragments.forEach { screen ->
