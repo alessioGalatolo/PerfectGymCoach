@@ -17,5 +17,4 @@ interface WorkoutExerciseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: WorkoutExercise)
 
-    // TODO: delete plan
 }

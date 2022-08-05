@@ -73,6 +73,11 @@ fun Home(navController: NavHostController,
                 }) {
                     Text(stringResource(id = R.string.add_program))
                 }
+                TextButton(
+                    onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${false}" ) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) { Text(stringResource(R.string.change_workout_plan)) }
+                Spacer(modifier = Modifier.height(8.dp))
 
             }
         } else {

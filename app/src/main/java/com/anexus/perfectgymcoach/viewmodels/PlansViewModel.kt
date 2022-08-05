@@ -13,13 +13,16 @@ import javax.inject.Inject
 
 data class PlansState(
     val workoutPlans: List<WorkoutPlan> = emptyList(),
-    val openAddPlanDialogue: Boolean = false
+    val openAddPlanDialogue: Boolean = false,
+    val currentPlanId: Long? = null
 )
 
 sealed class PlansEvent{
     object TogglePlanDialogue : PlansEvent()
 
     data class AddPlan(val workoutPlan: WorkoutPlan): PlansEvent()
+
+    data class SetCurrentPlan(val planId: Long): PlansEvent()
 
     // TODO: ChangeOrder
     // TODO: RemovePlan
@@ -33,8 +36,28 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
     init {
         viewModelScope.launch {
             repository.getPlans().collect{
+                var ordered = it
+                if (state.value.currentPlanId != null){
+                    ordered = it.sortedByDescending { plan ->
+                        if (plan.planId == state.value.currentPlanId) 1 else 0
+                    }
+                }
                 _state.value = state.value.copy(
-                    workoutPlans = it
+                    workoutPlans = ordered
+                )
+            }
+        }
+        viewModelScope.launch {
+            repository.getCurrentPlan().collect {
+                var ordered = state.value.workoutPlans
+                if (it != null){
+                    ordered = ordered.sortedByDescending { plan ->
+                        if (plan.planId == it) 1 else 0
+                    }
+                }
+                _state.value = state.value.copy(
+                    workoutPlans = ordered,
+                    currentPlanId = it
                 )
             }
         }
@@ -52,7 +75,11 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
                     openAddPlanDialogue = !state.value.openAddPlanDialogue
                 )
             }
-
+            is PlansEvent.SetCurrentPlan -> {
+                viewModelScope.launch{
+                    repository.setCurrentPlan(event.planId, overrideValue = true)
+                }
+            }
         }
     }
 

@@ -24,5 +24,4 @@ interface ExerciseDao {
     @Insert(onConflict = REPLACE)
     fun insertAll(exercises: List<Exercise>)
 
-    // TODO: delete plan
 }
