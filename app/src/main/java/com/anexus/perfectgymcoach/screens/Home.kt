@@ -97,7 +97,7 @@ fun Home(navController: NavHostController,
                 WorkoutCard(
                     program = currentProgram,
                     exercises = currentExercises,
-                    onCardClick = { navController.navigate(MainScreen.Workout.route) },
+                    onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}") },
                     onCardLongPress = {
                         navController.navigate(
                             "${MainScreen.AddExercise.route}/" +

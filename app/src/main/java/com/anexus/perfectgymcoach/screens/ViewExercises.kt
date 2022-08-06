@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -25,6 +26,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -198,10 +200,10 @@ fun AddExerciseDialogue(
     addExerciseAndClose: (Long, String, Int, Int, Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val notesText = rememberSaveable { mutableStateOf("") }
-    val setsText = rememberSaveable { mutableStateOf("") }
-    val repsText = rememberSaveable { mutableStateOf("") }
-    val restText = rememberSaveable { mutableStateOf("") }
+    val notesText = remember { mutableStateOf("") }
+    val setsText = remember { mutableStateOf("") }
+    val repsText = remember { mutableStateOf("") }
+    val restText = remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     if (dialogueIsOpen) {
         Dialog(
@@ -241,6 +243,10 @@ fun AddExerciseDialogue(
                                         repsText.value.toInt(),
                                         restText.value.toInt())
                                 }
+                                setsText.value = ""
+                                repsText.value = ""
+                                restText.value = ""
+                                notesText.value = "" // FIXME notes are not used
                             }, modifier = Modifier.align(CenterVertically)) {
                                 Text(text = "Save")
                             }
@@ -268,19 +274,22 @@ fun AddExerciseDialogue(
                             MyDropdownMenu( // FIXME: should check is int
                                 prompt = "Sets",
                                 options = (1..6).map { "$it" },
-                                text = setsText
+                                text = setsText,
+                                keyboardType = KeyboardType.Number
                             )
                             Spacer(Modifier.width(8.dp))
                             MyDropdownMenu( // FIXME: should check is int
                                 prompt = "Reps",
                                 options = (1..12).map { "$it" },
-                                text = repsText
+                                text = repsText,
+                                keyboardType = KeyboardType.Number
                             )
 
                         }
                         MyDropdownMenu(prompt = "Rest",
                             options = (15..120 step 15).map { "$it" },
-                            text = restText){
+                            text = restText,
+                            keyboardType = KeyboardType.Number){
                             Text("sec")
                         }
                         Spacer(Modifier.height(16.dp))
@@ -302,6 +311,7 @@ fun MyDropdownMenu(
     options: List<String>,
     text: MutableState<String> = rememberSaveable { mutableStateOf("") },
     expanded: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) },
+    keyboardType: KeyboardType = KeyboardType.Text,
     trailingIcon: (@Composable () -> Unit)? = null
 ){
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -315,7 +325,7 @@ fun MyDropdownMenu(
             onValueChange = { text.value = it },
             label = { Text(prompt) },
             trailingIcon = {
-                Row (verticalAlignment = Alignment.CenterVertically){
+                Row (verticalAlignment = CenterVertically){
                     trailingIcon?.invoke()
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
                 }},
@@ -323,6 +333,7 @@ fun MyDropdownMenu(
             keyboardActions = KeyboardActions(onDone = {
                 keyboardController?.hide()
             }),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             modifier = Modifier.widthIn(1.dp, Dp.Infinity)
         )
         // filter options based on text field value

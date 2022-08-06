@@ -51,7 +51,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()){
 
                     // FIXME: should maybe be moved to a single navigation
-                    composable(MainScreen.Workout.route) { Workout(navControllerMain) }
+                    composable("${MainScreen.Workout.route}/{programId}",
+                        arguments = listOf(navArgument("programId") { type = NavType.LongType }))
+                    { Workout(navControllerMain, it.arguments?.getLong("programId") ?: 0L) }
                     composable("${MainScreen.AddProgram.route}/{name}/{planId}/{openDialogNow}",
                         arguments = listOf(
                             navArgument("planId") { type = NavType.LongType },
