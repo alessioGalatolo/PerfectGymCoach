@@ -2,6 +2,7 @@ package com.anexus.perfectgymcoach.screens
 
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -53,16 +55,28 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
     )
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(title = { Text("Add exercise to $programName") },
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Go back"
-                        )
-                    }
-                })
+            val backgroundColors = TopAppBarDefaults.centerAlignedTopAppBarColors()
+            val backgroundColor = backgroundColors.containerColor(
+                colorTransitionFraction = scrollBehavior.state.collapsedFraction
+            ).value
+            val foregroundColors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent
+            )
+            Box (modifier = Modifier.background(backgroundColor)) {
+                LargeTopAppBar(title = { Text("Add exercise to $programName") },
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.Filled.ArrowBack,
+                                contentDescription = "Go back"
+                            )
+                        }
+                    }, modifier = Modifier.statusBarsPadding(),
+                    colors = foregroundColors
+                )
+            }
         }, content = { innerPadding ->
             Column(modifier = Modifier
                 .padding(innerPadding)
@@ -148,7 +162,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                             contentDescription = "Go back"
                         )
                     }
-                })
+                }, modifier = Modifier.statusBarsPadding())
         }, content = { innerPadding ->
             // if you have some plans
             LazyColumn(

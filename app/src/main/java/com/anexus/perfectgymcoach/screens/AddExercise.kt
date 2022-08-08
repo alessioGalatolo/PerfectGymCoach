@@ -38,7 +38,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                             contentDescription = "Go back"
                         )
                     }
-                })
+                }, modifier = Modifier.statusBarsPadding())
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 onClick = {

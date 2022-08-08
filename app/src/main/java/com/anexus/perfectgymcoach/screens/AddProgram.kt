@@ -65,7 +65,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                             contentDescription = "Go back"
                         )
                     }
-                })
+                }, modifier = Modifier.statusBarsPadding())
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 onClick = {

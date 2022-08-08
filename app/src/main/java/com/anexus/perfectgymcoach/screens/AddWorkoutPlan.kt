@@ -63,7 +63,7 @@ fun AddWorkoutPlan(navController: NavHostController,
                             contentDescription = "Go back"
                         )
                     }
-                })
+                }, modifier = Modifier.statusBarsPadding())
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 onClick = {
