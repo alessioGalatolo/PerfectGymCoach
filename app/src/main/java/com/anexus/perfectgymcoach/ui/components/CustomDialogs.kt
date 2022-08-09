@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui.components
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions

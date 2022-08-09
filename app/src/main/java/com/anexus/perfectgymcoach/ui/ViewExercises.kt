@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui
 
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Image
@@ -38,6 +38,7 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 import kotlinx.coroutines.launch
@@ -151,18 +152,14 @@ fun ViewExercises(navController: NavHostController, programName: String,
         }
 
     )
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            SmallTopAppBar(title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Go back"
-                        )
-                    }
-                }, modifier = Modifier.statusBarsPadding())
+             PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
+                 Text(Exercise.Muscle.values()[muscleOrdinal].muscleName)
+             }
         }, content = { innerPadding ->
             // if you have some plans
             LazyColumn(

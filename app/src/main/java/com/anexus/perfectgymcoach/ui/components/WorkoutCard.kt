@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -27,6 +27,7 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.ui.MainScreen
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable

@@ -24,6 +24,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.anexus.perfectgymcoach.screens.*
+import com.anexus.perfectgymcoach.ui.*
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -134,11 +135,11 @@ class MainActivity : ComponentActivity() {
                                 Scaffold(modifier = Modifier
                                     .nestedScroll(scrollBehavior.nestedScrollConnection),
                                     topBar = {
-                                        val backgroundColors = TopAppBarDefaults.centerAlignedTopAppBarColors()
+                                        val backgroundColors = TopAppBarDefaults.largeTopAppBarColors()
                                         val backgroundColor = backgroundColors.containerColor(
                                             colorTransitionFraction = scrollBehavior.state.collapsedFraction
                                         ).value
-                                        val foregroundColors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                        val foregroundColors = TopAppBarDefaults.largeTopAppBarColors(
                                             containerColor = Color.Transparent,
                                             scrolledContainerColor = Color.Transparent
                                         )
@@ -167,12 +168,12 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }, bottomBar = {
                                         val backgroundColor = NavigationBarDefaults.containerColor
-                                        Box (modifier = Modifier.background(backgroundColor)) {
-                                            NavigationBar(Modifier.windowInsetsPadding(
-                                                WindowInsets
-                                                    .navigationBars
-                                                    .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top) //FIXME visual bug with expanded navbar
-                                            )) {
+                                        Surface (modifier = Modifier.background(backgroundColor),
+
+                                            tonalElevation = NavigationBarDefaults.Elevation) {
+                                            NavigationBar(Modifier.navigationBarsPadding(),
+                                                containerColor = Color.Transparent
+                                            ) {
                                                 val navBackStackEntry by navControllerMain.currentBackStackEntryAsState()
                                                 val currentDestination =
                                                     navBackStackEntry?.destination

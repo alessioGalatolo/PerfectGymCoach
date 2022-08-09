@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons

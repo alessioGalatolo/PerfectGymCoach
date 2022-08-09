@@ -1,17 +1,25 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui
 
+import android.view.RoundedCorner
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.AlertDialogDefaults.titleContentColor
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
@@ -39,7 +47,7 @@ fun Workout(navController: NavHostController, programId: Long,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
     viewModel.onEvent(WorkoutEvent.GetWorkoutExercises(programId))
-
+    val deviceCornerRadius = 12.dp // TODO: should be same as device (waiting compose API)
 
     // make status bar transparent to see image behind
     val sysUiController = rememberSystemUiController()
@@ -74,7 +82,7 @@ fun Workout(navController: NavHostController, programId: Long,
             null,
             modifier = Modifier
                 .fillMaxWidth()
-//                .clip(AbsoluteRoundedCornerShape(12.dp)
+//                .clip(AbsoluteRoundedCornerShape(deviceCornerRadius))
                 .onGloballyPositioned { coordinates ->
                     imageHeight = coordinates.size.height
                 }
@@ -82,6 +90,7 @@ fun Workout(navController: NavHostController, programId: Long,
 
         Scaffold (
             containerColor = Transparent,
+//            floatingActionButton = ,
             topBar = {
                 val backgroundColors = TopAppBarDefaults.smallTopAppBarColors(
                     containerColor = Transparent,
@@ -101,7 +110,7 @@ fun Workout(navController: NavHostController, programId: Long,
                     SmallTopAppBar(
                         title = {
                             // animate text alpha with scrolling
-                            ProvideTextStyle(value = MaterialTheme.typography.headlineSmall) {
+                            ProvideTextStyle(value = MaterialTheme.typography.titleLarge) {
                                 CompositionLocalProvider(
                                     LocalContentColor provides titleContentColor.copy(alpha = transition),
                                     content = { Text(currentExercise?.name ?: "") }
@@ -113,78 +122,76 @@ fun Workout(navController: NavHostController, programId: Long,
                             containerColor = Transparent,
                             scrolledContainerColor = Transparent
                         ),
-                        actions = {
-                            IconButton(onClick = { /* doSomething() */ }) {
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
-                                    imageVector = Icons.Filled.Settings,
-                                    contentDescription = "App settings"
+                                    imageVector = Icons.Filled.ArrowBack,
+                                    contentDescription = "Go back"
                                 )
                             }
                         }, modifier = Modifier.statusBarsPadding()
                     )
                 }
         }, content = {
-            Column(
-                Modifier
-                    .padding(it)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .verticalScroll(rememberScrollState())
+            Box(Modifier.padding(it)) {
+                var bottomBarHeight by remember { mutableStateOf(0) }
+                Column(
+                    Modifier
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .verticalScroll(rememberScrollState())
+                        .navigationBarsPadding()
+                        .padding(bottom = with(localDensity) { bottomBarHeight.toDp() })
+                        .fillMaxSize()
+                ) {
+                    // space the same as the image height
+                    Spacer(modifier = Modifier.height(contentBelowImage))
+                    Surface(
+                        shape = ReversedCornersShape(deviceCornerRadius),
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                // space the same as the image height
-                Spacer(modifier = Modifier.height(contentBelowImage))
-                Surface(shape = ReversedCornersShape(12.dp), //TODO: set based on device corners
-                    modifier = Modifier.fillMaxSize()) {
-                    Column (Modifier.padding(horizontal = 16.dp)){
-                        Text(
-                            currentExercise?.name ?: "",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        repeat(25) {
-                            Spacer(Modifier.height(8.dp))
+                        Column(Modifier.padding(horizontal = 16.dp)) {
                             Text(
-                                "Some very long text",
-                                style = MaterialTheme.typography.headlineSmall
+                                currentExercise?.name ?: "",
+                                style = MaterialTheme.typography.headlineMedium
                             )
+                            repeat(25) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Some very long text",
+                                    style = MaterialTheme.typography.headlineSmall
+                                )
+                            }
                         }
+                    }
+                }
+                Surface (tonalElevation = NavigationBarDefaults.Elevation,
+                    modifier = Modifier
+                        .background(NavigationBarDefaults.containerColor)
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .wrapContentHeight(CenterVertically)
+                        .onGloballyPositioned { coord -> bottomBarHeight = coord.size.height }){
+                    Row (Modifier
+                        .padding(horizontal = 16.dp)
+                        .navigationBarsPadding()
+                        .imePadding()
+                    ) {
+                        val reps = remember { mutableStateOf(currentExercise?.reps ?: 0) } // fixme
+                        TextFieldWithButtons(
+                            "Reps",
+                            initialValue = reps,
+                            increment = 1
+                        )
+                        TextFieldWithButtons(
+                            "Weight",
+                            initialValue = mutableStateOf(0),
+                            2
+                        ) // FIXME: equipment2increment[currentExercise?]
                     }
                 }
             }
         })
     }
-//    { innerPadding ->
-//                Column(
-//                    modifier = Modifier
-//                        .fillMaxSize()
-//                .padding(innerPadding)
-//                        .padding(horizontal = 16.dp)
-//                        .verticalScroll(rememberScrollState())
-//                ) {
-//
-//                    repeat(20) {
-//                        Text("Some very long text", style = MaterialTheme.typography.headlineMedium)
-//                    }
-//                }
-//            }, bottomBar = {
-//                Column(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(horizontal = 16.dp, vertical = 8.dp)
-//                        .wrapContentHeight(CenterVertically)
-//                ) {
-//                    val reps = remember { mutableStateOf(currentExercise?.reps ?: 0) } // fixme
-//                    TextFieldWithButtons(
-//                        "Reps",
-//                        initialValue = reps,
-//                        increment = 1
-//                    )
-//                    TextFieldWithButtons(
-//                        "Weight",
-//                        initialValue = mutableStateOf(0),
-//                        2
-//                    ) // FIXME: equipment2increment[currentExercise?]
-//                }
-//            })
-//    }
 }
 
 class ReversedCornersShape(private val radius: Dp) : Shape {
@@ -233,23 +240,27 @@ class ReversedCornersShape(private val radius: Dp) : Shape {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TextFieldWithButtons(prompt: String, initialValue: MutableState<Int> = mutableStateOf(0), increment: Int) {
+fun RowScope.TextFieldWithButtons(
+    prompt: String,
+    initialValue: MutableState<Int> = mutableStateOf(0),
+    increment: Int
+) {
     Row(verticalAlignment = CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().weight(1f, true)
     ) {
         var text by remember { mutableStateOf("${initialValue.value}") }
+        IconButton(onClick = { text = "${text.toInt() - increment}" }, modifier = Modifier.weight(0.3f)) {
+            Icon(Icons.Filled.Remove, null)
+        }
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
             singleLine = true,
             label = { Text(prompt) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.widthIn(1.dp, Dp.Infinity)
+            modifier = Modifier.widthIn(1.dp, Dp.Infinity).heightIn(1.dp, Dp.Infinity).weight(0.5f)
         )
-        IconButton(onClick = { text = "${text.toInt() - increment}" }) {
-            Icon(Icons.Filled.Remove, null)
-        }
-        IconButton(onClick = { text = "${text.toInt() + increment}" }) {
+        IconButton(onClick = { text = "${text.toInt() + increment}" }, modifier = Modifier.weight(0.3f)) {
             Icon(Icons.Filled.Add, null)
         }
     }

@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -14,12 +14,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 
@@ -28,17 +30,13 @@ import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 fun AddExercise(navController: NavHostController, programName: String, programId: Long,
                 viewModel: ExercisesViewModel = hiltViewModel()) {
     viewModel.onEvent(ExercisesEvent.GetWorkoutExercises(programId))
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            SmallTopAppBar(title = { Text(programName) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Go back"
-                        )
-                    }
-                }, modifier = Modifier.statusBarsPadding())
+            PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
+                Text(programName)
+            }
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 onClick = {
@@ -55,7 +53,9 @@ fun AddExercise(navController: NavHostController, programName: String, programId
             if (viewModel.state.value.workoutExercises.isEmpty()) {
                 // if you have no exercises
                 Column(
-                    modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {

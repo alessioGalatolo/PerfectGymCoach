@@ -37,6 +37,7 @@ data class Exercise(
     }
 
     companion object{
+        // TODO: assumes international system (kg), add support for americans
         val equipment2increment = mapOf(
             Pair(Equipment.BARBELL, 2.5),
             Pair(Equipment.BODY_WEIGHT, 2.5),

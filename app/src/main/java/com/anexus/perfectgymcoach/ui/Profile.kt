@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,13 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun History(onNavigate: NavHostController) {
+fun Profile(onNavigate: NavHostController) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         repeat(30) {
             Card(Modifier.fillMaxWidth()) {
-                Text("History")
+                Text("Profile")
                 Text("Alessio")
             }
         }

@@ -1,5 +1,6 @@
-package com.anexus.perfectgymcoach.screens
+package com.anexus.perfectgymcoach.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -13,12 +14,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
+import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
+import com.anexus.perfectgymcoach.ui.components.WorkoutCard
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
 
@@ -55,17 +62,13 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
         viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
         openDialog.value = false
     }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
+        rememberTopAppBarState()
+    )
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            SmallTopAppBar(title = { Text(name) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Go back"
-                        )
-                    }
-                }, modifier = Modifier.statusBarsPadding())
+            PGCSmallTopBar(scrollBehavior, navController) { Text(name) }
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 onClick = {
@@ -121,6 +124,11 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                             }, navController = navController
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    item{
+                        var finalSpacerSize = 96.dp // large fab size FIXME: not hardcode
+                        finalSpacerSize += 8.dp + WindowInsets.Companion.navigationBars.asPaddingValues().calculateBottomPadding()
+                        Spacer(modifier = Modifier.height(finalSpacerSize))
                     }
                 }
             }
