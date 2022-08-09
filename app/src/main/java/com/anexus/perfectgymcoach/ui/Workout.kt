@@ -171,22 +171,30 @@ fun Workout(navController: NavHostController, programId: Long,
                         .align(Alignment.BottomCenter)
                         .wrapContentHeight(CenterVertically)
                         .onGloballyPositioned { coord -> bottomBarHeight = coord.size.height }){
-                    Row (Modifier
-                        .padding(horizontal = 16.dp)
-                        .navigationBarsPadding()
-                        .imePadding()
-                    ) {
-                        val reps = remember { mutableStateOf(currentExercise?.reps ?: 0) } // fixme
-                        TextFieldWithButtons(
-                            "Reps",
-                            initialValue = reps,
-                            increment = 1
-                        )
-                        TextFieldWithButtons(
-                            "Weight",
-                            initialValue = mutableStateOf(0),
-                            2
-                        ) // FIXME: equipment2increment[currentExercise?]
+                    Column (
+                        Modifier
+                            .padding(horizontal = 16.dp)
+                            .navigationBarsPadding()
+                            .imePadding()){
+                        Row{
+                            val reps =
+                                remember { mutableStateOf(currentExercise?.reps ?: 0) } // fixme
+                            TextFieldWithButtons(
+                                "Reps",
+                                initialValue = reps,
+                                increment = 1
+                            )
+                            TextFieldWithButtons(
+                                "Weight",
+                                initialValue = mutableStateOf(0),
+                                2
+                            ) // FIXME: equipment2increment[currentExercise?]
+                        }
+                        Row (Modifier.fillMaxWidth()){
+                            Button(onClick = { /*TODO*/ }, Modifier.fillMaxWidth()) {
+                                Text("Complete")
+                            }
+                        }
                     }
                 }
             }
@@ -246,7 +254,9 @@ fun RowScope.TextFieldWithButtons(
     increment: Int
 ) {
     Row(verticalAlignment = CenterVertically,
-        modifier = Modifier.fillMaxWidth().weight(1f, true)
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f, true)
     ) {
         var text by remember { mutableStateOf("${initialValue.value}") }
         IconButton(onClick = { text = "${text.toInt() - increment}" }, modifier = Modifier.weight(0.3f)) {
@@ -258,7 +268,10 @@ fun RowScope.TextFieldWithButtons(
             singleLine = true,
             label = { Text(prompt) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.widthIn(1.dp, Dp.Infinity).heightIn(1.dp, Dp.Infinity).weight(0.5f)
+            modifier = Modifier
+                .widthIn(1.dp, Dp.Infinity)
+                .heightIn(1.dp, Dp.Infinity)
+                .weight(0.5f)
         )
         IconButton(onClick = { text = "${text.toInt() + increment}" }, modifier = Modifier.weight(0.3f)) {
             Icon(Icons.Filled.Add, null)
