@@ -23,7 +23,6 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import com.anexus.perfectgymcoach.screens.*
 import com.anexus.perfectgymcoach.ui.*
 import dagger.hilt.android.AndroidEntryPoint
 

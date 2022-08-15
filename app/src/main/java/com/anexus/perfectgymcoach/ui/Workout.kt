@@ -6,16 +6,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.AlertDialogDefaults.titleContentColor
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -26,12 +26,18 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
@@ -39,9 +45,12 @@ import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import java.text.SimpleDateFormat
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun Workout(navController: NavHostController, programId: Long,
     viewModel: WorkoutViewModel = hiltViewModel()
@@ -73,6 +82,12 @@ fun Workout(navController: NavHostController, programId: Long,
         currentExercise =
             viewModel.state.value.workoutExercises[viewModel.state.value.currentExercise!!]
     }
+    var timer = ""
+    if (viewModel.state.value.workoutStarted != null){
+        timer = " " + viewModel.state.value.workoutStarted!!.toDuration(DurationUnit.SECONDS).toString()
+    }
+
+    val haptic = LocalHapticFeedback.current
     Box (
         Modifier
             .background(Transparent)
@@ -125,11 +140,22 @@ fun Workout(navController: NavHostController, programId: Long,
                         navigationIcon = {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
-                                    imageVector = Icons.Filled.ArrowBack,
-                                    contentDescription = "Go back"
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Go back" // TODO: cancel workout?
                                 )
                             }
-                        }, modifier = Modifier.statusBarsPadding()
+                        },
+                        actions = {
+                            Row (verticalAlignment = CenterVertically) {
+                                Text(timer, style = MaterialTheme.typography.titleLarge)
+                                if (timer.isNotEmpty()){
+                                    IconButton(onClick = { /*TODO*/ }) {
+                                        Icon(Icons.Default.Done, null)
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.statusBarsPadding()
                     )
                 }
         }, content = {
@@ -144,26 +170,103 @@ fun Workout(navController: NavHostController, programId: Long,
                         .fillMaxSize()
                 ) {
                     // space the same as the image height
-                    Spacer(modifier = Modifier.height(contentBelowImage))
+                    Spacer(modifier = Modifier
+                        .height(contentBelowImage)
+                        .zIndex(1f))
                     Surface(
                         shape = ReversedCornersShape(deviceCornerRadius),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        Column(Modifier.padding(horizontal = 16.dp)) {
-                            Text(
-                                currentExercise?.name ?: "",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                            repeat(25) {
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Some very long text",
-                                    style = MaterialTheme.typography.headlineSmall
-                                )
+                        Column(
+                            Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp)) {
+                            Row(Modifier.fillMaxWidth(),
+                                verticalAlignment = CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ){
+                                IconButton(onClick = { viewModel.onEvent(WorkoutEvent.PreviousExercise) },
+                                    enabled = (viewModel.state.value.currentExercise ?: 0) > 0
+                                ) {
+                                    Icon(Icons.Outlined.ArrowBack, null)
+                                }
+                                Row (verticalAlignment = CenterVertically,
+                                    horizontalArrangement = Arrangement.Center){
+                                    ProvideTextStyle(value = MaterialTheme.typography.headlineMedium) {
+                                        CompositionLocalProvider(
+                                            content = { Text(currentExercise?.name ?: "") }
+                                        )
+                                    }
+//                                    ExerciseSettingsMenu()
+                                }
+                                IconButton(onClick = { viewModel.onEvent(WorkoutEvent.NextExercise) },
+                                    enabled =  (viewModel.state.value.currentExercise ?: Int.MAX_VALUE) < viewModel.state.value.workoutExercises.size-1) {
+                                    Icon(Icons.Outlined.ArrowForward, null)
+                                }
+                            }
+
+                            // content
+                            if (currentExercise != null) {
+                                Row (verticalAlignment = CenterVertically) {
+                                    Text(
+                                        "Current", Modifier.padding(vertical = 8.dp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    ExerciseSettingsMenu()
+//                                    TextButton(onClick = { /*TODO*/ }) {
+//                                        Text("Change exercise")
+//                                    }
+                                }
+                                ElevatedCard (Modifier.fillMaxWidth()){
+                                    var checkedNumber by remember { mutableStateOf(0) }
+                                    Column (Modifier.padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally){
+                                        repeat(currentExercise.sets) { setCount ->
+                                            Row(
+                                                verticalAlignment = CenterVertically,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .combinedClickable(onLongClick = {
+                                                        haptic.performHapticFeedback(
+                                                            HapticFeedbackType.LongPress
+                                                        )
+                                                        // TODO: open dialogue to modify
+                                                    }, onClick = {
+                                                        checkedNumber = setCount
+                                                    })
+                                            ) {
+                                                FilledIconToggleButton(checked = checkedNumber == setCount,
+                                                    onCheckedChange = { checkedNumber = setCount }) {
+                                                    Text((setCount+1).toString())
+                                                }
+                                                Spacer(Modifier.width(8.dp))
+                                                Text("Reps: .. Weight: .. kg")
+                                            }
+                                        }
+                                        TextButton(onClick = { /*TODO*/ }) {
+                                            Text("Add set")
+                                        }
+                                    }
+                                }
+//                                if (There is history){
+                                Text("History", Modifier.padding(vertical = 8.dp), fontWeight = FontWeight.Bold)
+                                repeat(4){
+                                    Card (Modifier.fillMaxWidth()){
+                                        Column(Modifier.padding(8.dp)) {
+                                            Text(it.toString())
+                                            repeat(5) {
+                                                Text("Some exercise history")
+                                            }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                }
                             }
                         }
                     }
                 }
+
+                // bottom bar
                 Surface (tonalElevation = NavigationBarDefaults.Elevation,
                     modifier = Modifier
                         .background(NavigationBarDefaults.containerColor)
@@ -176,29 +279,86 @@ fun Workout(navController: NavHostController, programId: Long,
                             .padding(horizontal = 16.dp)
                             .navigationBarsPadding()
                             .imePadding()){
-                        Row{
-                            val reps =
-                                remember { mutableStateOf(currentExercise?.reps ?: 0) } // fixme
-                            TextFieldWithButtons(
-                                "Reps",
-                                initialValue = reps,
-                                increment = 1
-                            )
-                            TextFieldWithButtons(
-                                "Weight",
-                                initialValue = mutableStateOf(0),
-                                2
-                            ) // FIXME: equipment2increment[currentExercise?]
+                        if (viewModel.state.value.workoutStarted != null) {
+                            Row {
+                                val reps =
+                                    remember { mutableStateOf(currentExercise?.reps ?: 0) } // fixme
+                                TextFieldWithButtons(
+                                    "Reps",
+                                    initialValue = reps,
+                                    increment = 1
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                TextFieldWithButtons(
+                                    "Weight",
+                                    initialValue = mutableStateOf(0),
+                                    2
+                                ) // FIXME: equipment2increment[currentExercise?]
+                            }
                         }
                         Row (Modifier.fillMaxWidth()){
-                            Button(onClick = { /*TODO*/ }, Modifier.fillMaxWidth()) {
-                                Text("Complete")
+                            if (viewModel.state.value.workoutStarted != null) {
+                                Button(onClick = { /*TODO*/ }, Modifier.fillMaxWidth()) {
+                                    Text("Complete")
+                                }
+                            } else {
+                                Button(onClick = {viewModel.onEvent(WorkoutEvent.StartWorkout)},
+                                    Modifier.fillMaxWidth()){
+                                    Text("Start workout")
+                                }
                             }
                         }
                     }
                 }
             }
         })
+    }
+}
+
+@Composable
+fun ExerciseSettingsMenu() {
+    Box(
+        modifier = Modifier.wrapContentSize()
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Default.MoreVert,
+                contentDescription = "Localized description"
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Change exercise") },
+                onClick = { /* Handle edit! */ },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Edit,
+                        contentDescription = null
+                    )
+                })
+            DropdownMenuItem(
+                text = { Text("Send Feedback") },
+                onClick = { /* Handle send feedback! */ },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Email,
+                        contentDescription = null
+                    )
+                })
+            DropdownMenuItem(
+                text = { Text("Cancel workout") },
+                onClick = { /* Handle cancel! */ },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Close,
+                        contentDescription = null
+                    )
+                })
+        }
     }
 }
 
@@ -278,3 +438,9 @@ fun RowScope.TextFieldWithButtons(
         }
     }
 }
+
+//@Preview
+//@Composable
+//fun WorkoutScreenPreview() {
+//
+//}

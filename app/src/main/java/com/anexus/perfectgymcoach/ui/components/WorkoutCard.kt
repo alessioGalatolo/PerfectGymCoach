@@ -73,7 +73,7 @@ fun WorkoutCard(program: WorkoutProgram,
                 Text(text = "Sets: ${it.sets} Reps: ${it.reps} Rest: ${it.rest}s",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 8.dp))
-            }// TODO
+            }// TODO: maybe improve
             Spacer(modifier = Modifier.height(8.dp))
             Row (verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,

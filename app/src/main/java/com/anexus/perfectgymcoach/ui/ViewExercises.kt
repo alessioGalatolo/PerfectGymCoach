@@ -238,6 +238,7 @@ fun AddExerciseDialogue(
                             }
                         }, actions = {
                             TextButton(onClick = {
+                                // TODO: add mark on required fields
                                 if (setsText.value.isEmpty() ||
                                     repsText.value.isEmpty() ||
                                     restText.value.isEmpty()){

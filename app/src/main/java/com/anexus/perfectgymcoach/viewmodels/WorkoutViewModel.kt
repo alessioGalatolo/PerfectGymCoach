@@ -9,16 +9,26 @@ import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
 data class WorkoutState(
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
-    val currentExercise: Int? = null
+    val currentExercise: Int? = null,
+    val workoutStarted: Long? = null
 )
 
 sealed class WorkoutEvent{
+    object StartWorkout: WorkoutEvent()
+
+    object NextExercise: WorkoutEvent()
+
+    object PreviousExercise: WorkoutEvent()
+
     data class ToggleExerciseDialogue(val exercise: Exercise? = null) : WorkoutEvent()
 
     data class GetWorkoutExercises(val programId: Long): WorkoutEvent()
@@ -35,6 +45,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     val state: State<WorkoutState> = _state
 
     private var getExercisesJob: Job? = null
+    private var timerJob: Job? = null
 
     fun onEvent(event: WorkoutEvent){
         when (event) {
@@ -67,6 +78,20 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     }
                 }
             }
+            WorkoutEvent.StartWorkout -> {
+                _state.value = state.value.copy(workoutStarted = 0)
+                timerJob?.cancel(CancellationException("Duplicate call"))
+                timerJob = flow {
+                    var counter = 0
+                    while (true) {
+                        emit(counter++)
+                        delay(1000)
+                    }
+                }.onEach {_state.value = state.value.copy(workoutStarted = state.value.workoutStarted!!+1)}
+                .launchIn(viewModelScope)
+            }
+            WorkoutEvent.NextExercise -> _state.value = state.value.copy(currentExercise = state.value.currentExercise!!+1)
+            WorkoutEvent.PreviousExercise -> _state.value = state.value.copy(currentExercise = state.value.currentExercise!!-1)
         }
     }
 

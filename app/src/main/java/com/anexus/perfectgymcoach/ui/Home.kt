@@ -12,9 +12,12 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +38,7 @@ import javax.inject.Inject
 fun Home(navController: NavHostController,
          viewModel: HomeViewModel = hiltViewModel()
          ) {
+    val haptic = LocalHapticFeedback.current
 
     if (viewModel.state.value.currentPlan == null) {
         Scaffold(
@@ -97,6 +101,7 @@ fun Home(navController: NavHostController,
                     WorkoutCard(
                         program = currentProgram,
                         exercises = currentExercises,
+                        // TODO: add message when no exercises in the program
                         onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}") },
                         onCardLongPress = {
                             navController.navigate(
@@ -120,7 +125,9 @@ fun Home(navController: NavHostController,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 4.dp, vertical = 2.dp)
-                            .combinedClickable (onLongClick = {navController.navigate(
+                            .combinedClickable (onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                navController.navigate(
                                 "${MainScreen.AddExercise.route}/" +
                                         "${it.name}/" +
                                         "${it.programId}"
