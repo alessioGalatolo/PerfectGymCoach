@@ -133,13 +133,12 @@ fun ViewExercises(navController: NavHostController, programName: String,
         viewModel.state.value.exerciseToAdd,
         viewModel.state.value.openAddExerciseDialogue,
         { viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue()) },
-        { eId, name, sets, reps, rest ->
+        { eId, name, reps, rest ->
             viewModel.onEvent(ExercisesEvent.AddWorkoutExercise(
                 WorkoutExercise(
                 extProgramId = programId,
                 extExerciseId = eId,
                 name = name,
-                sets = sets,
                 reps = reps,
                 rest = rest
             )))
@@ -208,7 +207,7 @@ fun AddExerciseDialogue(
     exercise: Exercise?,
     dialogueIsOpen: Boolean,
     toggleDialogue: () -> Unit,
-    addExerciseAndClose: (Long, String, Int, Int, Int) -> Unit
+    addExerciseAndClose: (Long, String, List<Int>, Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val notesText = remember { mutableStateOf("") }
@@ -251,8 +250,8 @@ fun AddExerciseDialogue(
                                     addExerciseAndClose(
                                         exercise!!.exerciseId,
                                         exercise.name,
-                                        setsText.value.toInt(),
-                                        repsText.value.toInt(),
+                                        // TODO: add option to have different reps number
+                                        List(setsText.value.toInt()) { repsText.value.toInt() },
                                         restText.value.toInt())
                                 }
                                 setsText.value = ""

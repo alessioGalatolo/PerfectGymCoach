@@ -221,7 +221,7 @@ fun Workout(navController: NavHostController, programId: Long,
                                     var checkedNumber by remember { mutableStateOf(0) }
                                     Column (Modifier.padding(8.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally){
-                                        repeat(currentExercise.sets) { setCount ->
+                                        currentExercise.reps.forEachIndexed() {setCount, repsCount ->
                                             Row(
                                                 verticalAlignment = CenterVertically,
                                                 modifier = Modifier
@@ -240,7 +240,7 @@ fun Workout(navController: NavHostController, programId: Long,
                                                     Text((setCount+1).toString())
                                                 }
                                                 Spacer(Modifier.width(8.dp))
-                                                Text("Reps: .. Weight: .. kg")
+                                                Text("Reps: $repsCount Weight: .. kg")
                                             }
                                         }
                                         TextButton(onClick = { /*TODO*/ }) {
@@ -282,7 +282,7 @@ fun Workout(navController: NavHostController, programId: Long,
                         if (viewModel.state.value.workoutStarted != null) {
                             Row {
                                 val reps =
-                                    remember { mutableStateOf(currentExercise?.reps ?: 0) } // fixme
+                                    remember { mutableStateOf(currentExercise?.reps?.get(0) ?: 0) } // fixme
                                 TextFieldWithButtons(
                                     "Reps",
                                     initialValue = reps,

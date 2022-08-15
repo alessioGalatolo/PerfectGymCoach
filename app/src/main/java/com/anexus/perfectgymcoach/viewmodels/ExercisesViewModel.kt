@@ -36,12 +36,12 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
     val state: State<ExercisesState> = _state
 
     private var getExercisesJob: Job? = null
+    private var getWorkoutExercisesJob: Job? = null
 
     fun onEvent(event: ExercisesEvent){
         when (event) {
             is ExercisesEvent.AddWorkoutExercise -> {
-                getExercisesJob?.cancel()
-                getExercisesJob = viewModelScope.launch {
+                viewModelScope.launch {
                     repository.addWorkoutExercise(event.workoutExercise)
                 }
             }
@@ -52,7 +52,8 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 )
             }
             is ExercisesEvent.GetWorkoutExercises -> {
-                viewModelScope.launch {
+                getWorkoutExercisesJob?.cancel()
+                getWorkoutExercisesJob = viewModelScope.launch {
                     repository.getWorkoutExercises(event.programId).collect {
                         _state.value = state.value.copy(
                             workoutExercises = it
@@ -61,7 +62,8 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 }
             }
             is ExercisesEvent.GetExercises -> {
-                viewModelScope.launch {
+                getExercisesJob?.cancel()
+                getExercisesJob = viewModelScope.launch {
                     repository.getExercises(event.muscle).collect {
                         _state.value = state.value.copy(
                             exercises = it

@@ -70,7 +70,7 @@ fun WorkoutCard(program: WorkoutProgram,
             exercises.forEach {
                 Text(text = it.name,
                     modifier = Modifier.padding(horizontal = 8.dp))
-                Text(text = "Sets: ${it.sets} Reps: ${it.reps} Rest: ${it.rest}s",
+                Text(text = "Sets: ${it.reps.size} Reps: ${it.reps.joinToString(", ")} Rest: ${it.rest}s",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 8.dp))
             }// TODO: maybe improve

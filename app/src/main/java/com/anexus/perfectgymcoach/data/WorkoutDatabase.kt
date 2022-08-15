@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
     version = 1,
     exportSchema = true
 )
+@TypeConverters(Converters::class)
 abstract class WorkoutDatabase: RoomDatabase() {
     abstract val workoutPlanDao: WorkoutPlanDao
     abstract val workoutProgramDao: WorkoutProgramDao

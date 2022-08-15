@@ -29,9 +29,8 @@ data class WorkoutExercise (
     @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
-    val name: String, // redundant but simplifies a lot
-    val sets: Int,
-    val reps: Int,
+    val name: String, // FIXME: redundant but simplifies a lot
+    val reps: List<Int>,
     val rest: Int,
     val supersetExercise: Int = 0 // TODO: should be foreign key
     // TODO: old record, etc. <- do not put here
