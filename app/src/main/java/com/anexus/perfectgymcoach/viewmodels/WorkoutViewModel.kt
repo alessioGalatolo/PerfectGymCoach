@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,6 +20,7 @@ data class WorkoutState(
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
     val currentExercise: Int? = null,
+    val currentExerciseRecords: List<ExerciseRecord> = emptyList(),
     val workoutStarted: Long? = null
 )
 
@@ -35,6 +37,8 @@ sealed class WorkoutEvent{
 
     data class GetExercises(val muscle: Exercise.Muscle): WorkoutEvent()
 
+    data class GetExerciseRecords(val exerciseId: Long): WorkoutEvent()
+
     data class AddWorkoutExercise(val workoutExercise: WorkoutExercise): WorkoutEvent()
 
 }
@@ -44,14 +48,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private val _state = mutableStateOf(WorkoutState())
     val state: State<WorkoutState> = _state
 
-    private var getExercisesJob: Job? = null
+    private var getExercisesJob: Job? = null // FIXME
     private var timerJob: Job? = null
 
     fun onEvent(event: WorkoutEvent){
         when (event) {
             is WorkoutEvent.AddWorkoutExercise -> {
-                getExercisesJob?.cancel()
-                getExercisesJob = viewModelScope.launch {
+
+                viewModelScope.launch {
                     repository.addWorkoutExercise(event.workoutExercise)
                 }
             }
@@ -78,7 +82,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     }
                 }
             }
-            WorkoutEvent.StartWorkout -> {
+            is WorkoutEvent.StartWorkout -> {
                 _state.value = state.value.copy(workoutStarted = 0)
                 timerJob?.cancel(CancellationException("Duplicate call"))
                 timerJob = flow {
@@ -90,8 +94,21 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 }.onEach {_state.value = state.value.copy(workoutStarted = state.value.workoutStarted!!+1)}
                 .launchIn(viewModelScope)
             }
-            WorkoutEvent.NextExercise -> _state.value = state.value.copy(currentExercise = state.value.currentExercise!!+1)
-            WorkoutEvent.PreviousExercise -> _state.value = state.value.copy(currentExercise = state.value.currentExercise!!-1)
+            is WorkoutEvent.NextExercise ->
+                _state.value = state.value.copy(currentExercise = state.value.currentExercise!!+1)
+            is WorkoutEvent.PreviousExercise ->
+                _state.value = state.value.copy(currentExercise = state.value.currentExercise!!-1)
+            is WorkoutEvent.GetExerciseRecords -> {
+                viewModelScope.launch {
+                    repository.getExerciseRecords(event.exerciseId).collect {
+                        // TODO: sort by date before putting in
+                        // TODO: implement some sort of caching
+                        _state.value = state.value.copy(
+                            currentExerciseRecords = it
+                        )
+                    }
+                }
+            }
         }
     }
 

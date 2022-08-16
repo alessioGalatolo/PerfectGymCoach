@@ -1,17 +1,11 @@
 package com.anexus.perfectgymcoach.data
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.core.content.res.TypedArrayUtils.getString
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
@@ -28,14 +22,17 @@ class Repository @Inject constructor(
     private val db: WorkoutDatabase,
     private val context: Context
 ) {
-    private val CURRENT_PLAN = longPreferencesKey("Current plan")
-    private val CURRENT_PROGRAM = longPreferencesKey("Current program")
+    private val currentPlan = longPreferencesKey("Current plan")
+    private val currentProgram = longPreferencesKey("Current program")
+    private val currentWorkout = longPreferencesKey("Current workout") // TODO
 
     fun getPlans() = db.workoutPlanDao.getPlans()
 
     fun getPrograms(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> = db.workoutProgramDao.getPrograms(planId)
 
     fun getWorkoutExercises(programId: Long) = db.workoutExerciseDao.getExercises(programId)
+
+    fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
 
     fun getExercises(muscle: Exercise.Muscle): Flow<List<Exercise>> {
         return if (muscle == Exercise.Muscle.EVERYTHING) {
@@ -45,22 +42,22 @@ class Repository @Inject constructor(
         }
     }
 
-    fun getCurrentPlan(): Flow<Long?> = context.dataStore.data.map{ it[CURRENT_PLAN] }
+    fun getCurrentPlan(): Flow<Long?> = context.dataStore.data.map{ it[currentPlan] }
 
     suspend fun setCurrentPlan(planId: Long, overrideValue: Boolean){
         context.dataStore.edit {
-            if (it[CURRENT_PLAN] == null || overrideValue){
-                it[CURRENT_PLAN] = planId
+            if (it[currentPlan] == null || overrideValue){
+                it[currentPlan] = planId
             }
         }
     }
 
-    fun getCurrentProgram(): Flow<Long?> = context.dataStore.data.map{ it[CURRENT_PROGRAM] }
+    fun getCurrentProgram(): Flow<Long?> = context.dataStore.data.map{ it[currentProgram] }
 
     suspend fun setCurrentProgram(programId: Long, overrideValue: Boolean){
         context.dataStore.edit {
-            if (it[CURRENT_PROGRAM] == null || overrideValue){
-                it[CURRENT_PROGRAM] = programId
+            if (it[currentProgram] == null || overrideValue){
+                it[currentProgram] = programId
             }
         }
     }

@@ -29,4 +29,18 @@ class Converters {
         return gson.fromJson(value, type)
     }
 
+    @TypeConverter
+    fun listFloatToString(value: List<Float>): String {
+        val gson = Gson()
+        val type = object : TypeToken<List<Float>>() {}.type
+        return gson.toJson(value, type)
+    }
+
+    @TypeConverter
+    fun stringToListFloat(value: String): List<Float> {
+        val gson = Gson()
+        val type = object : TypeToken<List<Float>>() {}.type
+        return gson.fromJson(value, type)
+    }
+
 }

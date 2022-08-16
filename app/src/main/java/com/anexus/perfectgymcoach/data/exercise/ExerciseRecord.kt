@@ -4,15 +4,15 @@ import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import com.anexus.perfectgymcoach.data.workout.Workout
-import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import kotlinx.parcelize.Parcelize
+import java.util.*
 
 @Parcelize
 @Entity(
     foreignKeys = [
         ForeignKey(
-            entity = Workout::class,
+            entity = WorkoutRecord::class,
             parentColumns = ["workoutId"],
             childColumns = ["extWorkoutId"],
 //            onDelete = ForeignKey.CASCADE
@@ -29,6 +29,7 @@ data class ExerciseRecord(
     @PrimaryKey(autoGenerate = true) val recordId: Long = 0L,
     val extExerciseId: Long,
     val extWorkoutId: Long,
+    val date: Calendar, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
     val tare: Float = 0f // e.g. barbell weight or bodyweight
