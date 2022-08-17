@@ -4,16 +4,15 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import java.util.Calendar
+import java.util.*
 
 /**
  * Type converters to allow Room to reference complex data types.
  */
 class Converters {
-    @TypeConverter fun calendarToDatestamp(calendar: Calendar): Long = calendar.timeInMillis
+    @TypeConverter fun dateToDatestamp(date: Date?): Long = date?.time ?: 0L
 
-    @TypeConverter fun datestampToCalendar(value: Long): Calendar =
-        Calendar.getInstance().apply { timeInMillis = value }
+    @TypeConverter fun datestampToDate(value: Long): Date = Date(value)
 
     @TypeConverter
     fun listIntToString(value: List<Int>): String {

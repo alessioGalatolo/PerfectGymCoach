@@ -1,44 +1,25 @@
 package com.anexus.perfectgymcoach.ui
 
-import android.view.RoundedCorner
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.material3.AlertDialogDefaults.titleContentColor
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.Center
-import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.*
-import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
@@ -47,13 +28,18 @@ import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.ui.components.FullScreenImageCard
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import java.text.SimpleDateFormat
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.HorizontalPagerIndicator
+import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.launch
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalPagerApi::class
+)
 @Composable
 fun Workout(navController: NavHostController, programId: Long,
     viewModel: WorkoutViewModel = hiltViewModel()
@@ -62,200 +48,297 @@ fun Workout(navController: NavHostController, programId: Long,
 
     var currentExercise: WorkoutExercise? = null
     val currentExerciseRecords: List<ExerciseRecord> = viewModel.state.value.currentExerciseRecords
-    if (viewModel.state.value.currentExercise != null &&
-            viewModel.state.value.workoutExercises.isNotEmpty()) {
-        currentExercise =
-            viewModel.state.value.workoutExercises[viewModel.state.value.currentExercise!!]
-        viewModel.onEvent(WorkoutEvent.GetExerciseRecords(currentExercise.extExerciseId))
-    }
     var timer = ""
-    if (viewModel.state.value.workoutStarted != null){
-        timer = " " + viewModel.state.value.workoutStarted!!.toDuration(DurationUnit.SECONDS).toString()
+    if (viewModel.state.value.workoutTime != null){
+        timer = " " + viewModel.state.value.workoutTime!!.toDuration(DurationUnit.SECONDS).toString()
     }
 
     val haptic = LocalHapticFeedback.current
 
-    val title = @Composable { Text(currentExercise?.name ?: "") }
+    val scope = rememberCoroutineScope()
 
-    FullScreenImageCard(
-        topAppBarNavigationIcon = {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = "Go back" // TODO: cancel workout?
-                )
-            }
-        },
-        topAppBarActions = {
-            Row (verticalAlignment = CenterVertically) {
-                Text(timer, style = MaterialTheme.typography.titleLarge)
-                if (timer.isNotEmpty()){
-                    IconButton(onClick = { /*TODO*/ }) {
-                        Icon(Icons.Default.Done, null)
+    val title = @Composable { Text(currentExercise?.name ?: "End") }
+
+    val pagerState = rememberPagerState()
+
+    if (viewModel.state.value.workoutExercises.isNotEmpty()) {
+        if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {
+            currentExercise = viewModel.state.value.workoutExercises[pagerState.currentPage]
+            viewModel.onEvent(WorkoutEvent.GetExerciseRecords(currentExercise.extExerciseId, pagerState.currentPage))
+        }
+
+        FullScreenImageCard(
+            topAppBarNavigationIcon = {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Go back" // TODO: cancel workout?
+                    )
+                }
+            },
+            topAppBarActions = {
+                Row(verticalAlignment = CenterVertically) {
+                    Text(timer, style = MaterialTheme.typography.titleLarge)
+                    if (timer.isNotEmpty()) {
+                        IconButton(onClick = { /*TODO*/ }) {
+                            Icon(Icons.Default.Done, null)
+                        }
                     }
                 }
-            }
-        },
-        title = title,
-        image = {
-            Image(
-                painterResource(id = R.drawable.sample_image),
-                null,
-                modifier = it
-            ) // TODO: image of exercise
-        },
-        content = {
-            Column(
-                Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 8.dp)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ){
-                    IconButton(onClick = { viewModel.onEvent(WorkoutEvent.PreviousExercise) },
-                        enabled = (viewModel.state.value.currentExercise ?: 0) > 0
+            },
+            title = title,
+            image = { modifier ->
+                Box (Modifier.wrapContentHeight(Top), contentAlignment = TopCenter) {
+                    Image(
+                        painterResource(id = R.drawable.sample_image),
+                        null,
+                        modifier
+                    ) // TODO: image of exercise
+                    HorizontalPagerIndicator(
+                        pagerState = pagerState,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp),
+                    )
+                }
+            },
+            content = {
+                Column(
+                    Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp)
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(Icons.Outlined.ArrowBack, null)
-                    }
-                    Row (verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center){
-                        ProvideTextStyle(value = MaterialTheme.typography.headlineMedium) {
-                            CompositionLocalProvider(
-                                content = title
-                            )
+                        IconButton(
+                            onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage-1) }},
+                            enabled = pagerState.currentPage > 0
+                        ) {
+                            Icon(Icons.Outlined.ArrowBack, null)
                         }
-//                                    ExerciseSettingsMenu()
+                        Row(
+                            verticalAlignment = CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            ProvideTextStyle(value = MaterialTheme.typography.headlineMedium) {
+                                CompositionLocalProvider(
+                                    content = title
+                                )
+                            }
+//                                ExerciseSettingsMenu()
+                        }
+                        IconButton(
+                            onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage+1) }},
+                            enabled = pagerState.currentPage < pagerState.pageCount-1
+                        ) {
+                            Icon(Icons.Outlined.ArrowForward, null)
+                        }
                     }
-                    IconButton(onClick = { viewModel.onEvent(WorkoutEvent.NextExercise) },
-                        enabled =  (viewModel.state.value.currentExercise ?: Int.MAX_VALUE) < viewModel.state.value.workoutExercises.size-1) {
-                        Icon(Icons.Outlined.ArrowForward, null)
-                    }
-                }
-
-                // content
-                if (currentExercise != null) {
-                    Row (verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "Current", Modifier.padding(vertical = 8.dp),
-                            fontWeight = FontWeight.Bold
-                        )
-                        ExerciseSettingsMenu()
-//                                    TextButton(onClick = { /*TODO*/ }) {
-//                                        Text("Change exercise")
-//                                    }
-                    }
-                    ElevatedCard (Modifier.fillMaxWidth()){
-                        var checkedNumber by remember { mutableStateOf(0) }
-                        Column (
-                            Modifier.padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally){
-                            currentExercise.reps.forEachIndexed() {setCount, repsCount ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .combinedClickable(onLongClick = {
-                                            haptic.performHapticFeedback(
-                                                HapticFeedbackType.LongPress
-                                            )
-                                            // TODO: open dialogue to modify
-                                        }, onClick = {
-                                            checkedNumber = setCount
-                                        })
-                                ) {
-                                    FilledIconToggleButton(checked = checkedNumber == setCount,
-                                        onCheckedChange = { checkedNumber = setCount }) {
-                                        Text((setCount+1).toString())
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Reps: $repsCount Weight: .. kg")
+                    // TODO: add additional page for finishing workout
+                    HorizontalPager(
+                        count = viewModel.state.value.workoutExercises.size+1,
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Top
+                    ) { page ->
+                        if (page == viewModel.state.value.workoutExercises.size) {
+                            Text("Workout completed")
+                        } else {
+                            val repsDone = mutableStateOf(0)
+                            if (viewModel.state.value.currentExerciseCurrentRecord != null) {
+                                repsDone.value =
+                                    viewModel.state.value.currentExerciseCurrentRecord!!.reps.size
+                            }
+                            var checkedNumberReps by remember { mutableStateOf(0) }
+                            checkedNumberReps = repsDone.value
+                            Column() {
+                                // content
+                                Row(verticalAlignment = CenterVertically) {
+                                    Text(
+                                        "Current", Modifier.padding(vertical = 8.dp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    ExerciseSettingsMenu()
+                                    //                                    TextButton(onClick = { /*TODO*/ }) {
+                                    //                                        Text("Change exercise")
+                                    //                                    }
                                 }
-                            }
-                            TextButton(onClick = { /*TODO*/ }) {
-                                Text("Add set")
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (currentExerciseRecords.isNotEmpty()) {
-                        Text(
-                            "History",
-                            Modifier.padding(bottom = 8.dp),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    currentExerciseRecords.forEach { record ->
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(8.dp)) {
-                                Text("${record.date}", style = MaterialTheme.typography.bodyLarge) // FIXME
-                                Text("Tare: ${record.tare}") // FIXME
-                                record.reps.forEachIndexed { index, rep ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .combinedClickable(onLongClick = {
-                                                haptic.performHapticFeedback(
-                                                    HapticFeedbackType.LongPress
-                                                )
-                                                // TODO: maybe nothing
-                                            }, onClick = {
-                                                // TODO: copy values to bottom bar
-                                            })
+                                ElevatedCard(Modifier.fillMaxWidth()) {
+                                    Column(
+                                        Modifier.padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        FilledIconToggleButton(checked = false, // FIXME: can use different component?
-                                            onCheckedChange = { }) {
-                                            Text((index+1).toString())
+                                        viewModel.state.value.workoutExercises[page].reps.forEachIndexed { setCount, repsCount ->
+                                            val toBeDone = repsDone.value <= setCount
+                                            Row(
+                                                verticalAlignment = CenterVertically,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .combinedClickable(onLongClick = {
+                                                        haptic.performHapticFeedback(
+                                                            HapticFeedbackType.LongPress
+                                                        )
+                                                        // TODO: open dialogue to modify
+                                                    }, onClick = {
+                                                        checkedNumberReps = setCount
+                                                    })
+                                            ) {
+                                                FilledIconToggleButton(
+                                                    enabled = toBeDone,
+                                                    checked = checkedNumberReps == setCount,
+                                                    onCheckedChange = {
+                                                        checkedNumberReps = setCount
+                                                    }) {
+                                                    Text((setCount + 1).toString())
+                                                }
+                                                Spacer(Modifier.width(8.dp))
+                                                if (toBeDone) {
+                                                    Text("Reps: $repsCount Weight: .. kg")
+                                                } else {
+                                                    Text(
+                                                        "Reps: ${viewModel.state.value.currentExerciseCurrentRecord!!.reps[setCount]} " +
+                                                                "Weight: ${viewModel.state.value.currentExerciseCurrentRecord!!.weights[setCount]}"
+                                                    )
+                                                }
+                                            }
                                         }
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Reps: $rep Weight: ${record.weights[index]} kg",
-                                            color = MaterialTheme.colorScheme.outline)
+                                        TextButton(onClick = { /*TODO*/ }) {
+                                            Text("Add set")
+                                        }
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                if (currentExerciseRecords.isNotEmpty()) {
+                                    Text(
+                                        "History",
+                                        Modifier.padding(bottom = 8.dp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                currentExerciseRecords.sortedByDescending { it.date }
+                                    .forEach { record ->
+                                        Card(Modifier.fillMaxWidth()) {
+                                            Column(Modifier.padding(8.dp)) {
+                                                Text(
+                                                    record.date,
+                                                    style = MaterialTheme.typography.bodyLarge
+                                                ) // FIXME
+                                                Text("Tare: ${record.tare}") // FIXME
+                                                record.reps.forEachIndexed { index, rep ->
+                                                    Row(
+                                                        verticalAlignment = CenterVertically,
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .combinedClickable(onLongClick = {
+                                                                haptic.performHapticFeedback(
+                                                                    HapticFeedbackType.LongPress
+                                                                )
+                                                                // TODO: maybe nothing
+                                                            }, onClick = {
+                                                                // TODO: copy values to bottom bar
+                                                            })
+                                                    ) {
+                                                        FilledIconToggleButton(checked = false, // FIXME: can use different component?
+                                                            onCheckedChange = { }) {
+                                                            Text((index + 1).toString())
+                                                        }
+                                                        Spacer(Modifier.width(8.dp))
+                                                        Text(
+                                                            "Reps: $rep Weight: ${record.weights[index]} kg",
+                                                            color = MaterialTheme.colorScheme.outline
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                    }
                             }
                         }
-                        Spacer(Modifier.height(8.dp))
                     }
                 }
-            }
-        },
-        bottomBar = {
-            Column (
-                Modifier.padding(it).padding(horizontal = 16.dp)){
-                if (viewModel.state.value.workoutStarted != null) {
-                    Row {
-                        val reps =
-                            remember { mutableStateOf(currentExercise?.reps?.get(0) ?: 0) } // fixme
-                        TextFieldWithButtons(
-                            "Reps",
-                            initialValue = reps,
-                            increment = 1
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        TextFieldWithButtons(
-                            "Weight",
-                            initialValue = mutableStateOf(0),
-                            2
-                        ) // FIXME: equipment2increment[currentExercise?]
-                    }
-                }
-                Row (Modifier.fillMaxWidth()){
-                    if (viewModel.state.value.workoutStarted != null) {
-                        Button(onClick = { /*TODO*/ }, Modifier.fillMaxWidth()) {
-                            Text("Complete")
-                        }
-                    } else {
-                        Button(onClick = {viewModel.onEvent(WorkoutEvent.StartWorkout)},
-                            Modifier.fillMaxWidth()){
+            },
+            bottomBar = {
+                Column(
+                    Modifier
+                        .padding(it)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    if (viewModel.state.value.workoutTime == null){
+
+                        Button(
+                            onClick = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
+                            Modifier.fillMaxWidth()
+                        ) {
                             Text("Start workout")
                         }
+                    } else if (currentExercise == null){
+                        Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Complete workout")
+                        }
+                    } else if ((viewModel.state.value.currentExerciseCurrentRecord?.reps?.size
+                            ?: 0) >= currentExercise.reps.size
+                    ) {
+                        OutlinedButton(
+                            onClick = { /* TODO */ },
+                            Modifier.fillMaxWidth()
+                        ) {
+                            Text("Add set")
+                        }
+                        Button(
+                            onClick = { scope.launch{pagerState.animateScrollToPage(pagerState.currentPage+1) }},
+                            Modifier.fillMaxWidth()
+                        ) {
+                            Text("Next exercise")
+                        }
+
+                    } else {
+                        val reps =
+                            rememberSaveable {
+                                mutableStateOf(
+                                    currentExercise.reps[0].toString()
+                                )
+                            } // fixme
+                        val weight = rememberSaveable { mutableStateOf(0f.toString()) }
+                        Row (Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly) {
+                            TextFieldWithButtons(
+                                "Reps",
+                                text = reps,
+                                onIncrement = { txt -> (txt.toInt() + 1).toString() },
+                                onDecrement = { txt -> (txt.toInt() - 1).toString() }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            TextFieldWithButtons(
+                                "Weight",
+                                text = weight,
+                                onIncrement = { txt -> (txt.toFloat() + 2).toString() },
+                                onDecrement = { txt -> (txt.toFloat() - 2).toString() }
+                            ) // FIXME: equipment2increment[currentExercise?]
+                        }
+                        Row(Modifier.fillMaxWidth()) {
+                            Button(
+                                onClick = {
+                                    viewModel.onEvent(WorkoutEvent.CompleteSet(
+                                        reps.value.toInt(),
+                                        weight.value.toFloat(),
+                                        currentExercise.extExerciseId,
+                                        pagerState.currentPage
+                                    ))
+                                },
+                                Modifier.fillMaxWidth()
+                            ) {
+                                Text("Complete")
+                            }
+                        }
                     }
                 }
             }
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -309,21 +392,21 @@ fun ExerciseSettingsMenu() {
 @Composable
 fun RowScope.TextFieldWithButtons(
     prompt: String,
-    initialValue: MutableState<Int> = mutableStateOf(0),
-    increment: Int
+    text: MutableState<String>,
+    onIncrement: (String) -> String,
+    onDecrement: (String) -> String
 ) {
     Row(verticalAlignment = CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .weight(1f, true)
     ) {
-        var text by remember { mutableStateOf("${initialValue.value}") }
-        IconButton(onClick = { text = "${text.toInt() - increment}" }, modifier = Modifier.weight(0.3f)) {
+        IconButton(onClick = { text.value = onDecrement(text.value) }, modifier = Modifier.weight(0.3f)) {
             Icon(Icons.Filled.Remove, null)
         }
         OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
+            value = text.value,
+            onValueChange = { text.value = it },
             singleLine = true,
             label = { Text(prompt) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -332,7 +415,7 @@ fun RowScope.TextFieldWithButtons(
                 .heightIn(1.dp, Dp.Infinity)
                 .weight(0.5f)
         )
-        IconButton(onClick = { text = "${text.toInt() + increment}" }, modifier = Modifier.weight(0.3f)) {
+        IconButton(onClick = { text.value = onIncrement(text.value) }, modifier = Modifier.weight(0.3f)) {
             Icon(Icons.Filled.Add, null)
         }
     }

@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.R
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -39,7 +40,7 @@ fun FullScreenImageCard(
     topAppBarNavigationIcon: @Composable () -> Unit,
     topAppBarActions: @Composable RowScope.() -> Unit,
     title: @Composable () -> Unit,
-    image: @Composable (Modifier) -> Unit,
+    image: @Composable BoxScope.(Modifier) -> Unit,
     content: @Composable () -> Unit,
     bottomBar: @Composable (PaddingValues) -> Unit
 ) {
@@ -64,10 +65,8 @@ fun FullScreenImageCard(
         rememberTopAppBarState()
     )
 
-    Box (
-        Modifier
-            .background(Color.Transparent)
-            .fillMaxSize()){
+    Box (contentAlignment = TopCenter,
+        modifier = Modifier.background(Color.Transparent).fillMaxSize()){
         image(
             Modifier
                 .fillMaxWidth()

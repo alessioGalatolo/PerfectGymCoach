@@ -93,7 +93,7 @@ fun Home(navController: NavHostController,
                 val currentExercises =
                     viewModel.state.value.exercises[viewModel.state.value.programs.indexOf(
                         currentProgram
-                    )]
+                    )].sortedBy { it.workoutExerciseId }
                 item{
                     // Coming next
                     Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)

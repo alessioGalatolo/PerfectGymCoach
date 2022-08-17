@@ -3,6 +3,7 @@ package com.anexus.perfectgymcoach.data.workout_record
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import kotlinx.coroutines.flow.Flow
 
@@ -17,8 +18,8 @@ interface WorkoutRecordDao {
 //    fun getPrograms(planId: Long): Flow<Map<WorkoutRecord, List<WorkoutExercise>>>
 
     @Insert
-    suspend fun insert(program: WorkoutRecord): Long
+    suspend fun insert(workoutRecord: WorkoutRecord): Long
 
-    @Insert
-    fun update(program: WorkoutRecord)
+    @Update
+    suspend fun update(workoutRecord: WorkoutRecord)
 }

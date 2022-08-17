@@ -20,8 +20,8 @@ import java.util.*
 data class WorkoutRecord(
     @PrimaryKey(autoGenerate = true) val workoutId: Long = 0L,
     val extProgramId: Long,
-    val startDate: Calendar,
-    val endDate: Calendar,
-    val duration: Long // seconds
+    val startDate: Date,
+    val endDate: Date? = null,
+    val duration: Long? = null// seconds
 //    val calories: Long
 ) : Parcelable
