@@ -42,11 +42,13 @@ fun InsertNameDialog(
 
                 TextField(value = text,
                     onValueChange = { text = it },
-                    modifier = Modifier.focusRequester(focusRequester).onFocusChanged {
-                        if (it.isFocused) {
-                            keyboardController?.show()
-                        }
-                    },
+                    modifier = Modifier
+                        .focusRequester(focusRequester)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                keyboardController?.show()
+                            }
+                        },
                     label = { Text(prompt) },
                     keyboardActions = KeyboardActions(onDone = {
                         keyboardController?.hide()
@@ -77,6 +79,49 @@ fun InsertNameDialog(
                     }
                 ) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun CancelWorkoutDialog(
+    dialogueIsOpen: Boolean,
+    toggleDialog: () -> Unit,
+    cancelWorkout: () -> Unit,
+    deleteData: () -> Unit
+) {
+    if (dialogueIsOpen) {
+        AlertDialog(
+            onDismissRequest = {
+                toggleDialog()
+            },
+            title = {
+                Text(text = "Delete workout data?")
+            },
+            text = {
+                Text(text = "Do you want to delete the recorded exercise data as well as cancelling the workout? (Go back or tap anywhere outside this dialog to keep working out)")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        toggleDialog()
+                        deleteData()
+                        cancelWorkout()
+                    }
+                ) {
+                    Text("Delete data and cancel workout")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        toggleDialog()
+                        cancelWorkout()
+                    }
+                ) {
+                    Text("Cancel workout")
                 }
             }
         )

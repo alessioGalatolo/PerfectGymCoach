@@ -10,16 +10,17 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface WorkoutRecordDao {
 
-//    @Query(
-//        "SELECT * FROM workoutrecord " +
-//        "LEFT JOIN workoutexercise ON `program`.programId = workoutexercise.extProgramId " +
-//        "WHERE `program`.extPlanId LIKE :planId"
-//    )
-//    fun getPrograms(planId: Long): Flow<Map<WorkoutRecord, List<WorkoutExercise>>>
+    @Query(
+        "SELECT * FROM workoutrecord"
+    )
+    fun getRecords(): Flow<List<WorkoutRecord>>
 
     @Insert
     suspend fun insert(workoutRecord: WorkoutRecord): Long
 
     @Update
-    suspend fun update(workoutRecord: WorkoutRecord)
+    fun update(workoutRecord: WorkoutRecord)
+
+    @Update(entity = WorkoutRecord::class)
+    suspend fun updateFinish(workoutRecordFinish: WorkoutRecordFinish)
 }

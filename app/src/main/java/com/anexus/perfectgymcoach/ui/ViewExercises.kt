@@ -136,11 +136,11 @@ fun ViewExercises(navController: NavHostController, programName: String,
         { eId, name, reps, rest ->
             viewModel.onEvent(ExercisesEvent.AddWorkoutExercise(
                 WorkoutExercise(
-                extProgramId = programId,
-                extExerciseId = eId,
-                name = name,
-                reps = reps,
-                rest = rest
+                    extProgramId = programId,
+                    extExerciseId = eId,
+                    name = name,
+                    reps = reps,
+                    rest = rest
             )))
             viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue())
             scope.launch {

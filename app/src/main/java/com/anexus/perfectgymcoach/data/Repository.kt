@@ -12,6 +12,7 @@ import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
+import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -35,6 +36,8 @@ class Repository @Inject constructor(
     fun getWorkoutExercises(programId: Long) = db.workoutExerciseDao.getExercises(programId)
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
+
+    fun getWorkoutHistory() = db.workoutRecordDao.getRecords()
 
     fun getExercises(muscle: Exercise.Muscle): Flow<List<Exercise>> {
         return if (muscle == Exercise.Muscle.EVERYTHING) {
@@ -71,6 +74,8 @@ class Repository @Inject constructor(
     suspend fun addWorkoutExercise(exercise: WorkoutExercise) = db.workoutExerciseDao.insert(exercise)
 
     suspend fun addWorkoutRecord(workoutRecord: WorkoutRecord) = db.workoutRecordDao.insert(workoutRecord)
+
+    suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 
     suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
 

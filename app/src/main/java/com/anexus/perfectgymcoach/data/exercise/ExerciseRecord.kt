@@ -6,6 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import kotlinx.parcelize.Parcelize
+import java.util.*
 
 @Parcelize
 @Entity(
@@ -29,7 +30,7 @@ data class ExerciseRecord(
     val extExerciseId: Long,
     val extWorkoutId: Long,
     val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
-    val date: String, // redundant but simplifies
+    val date: Calendar, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
     val tare: Float = 0f // e.g. barbell weight or bodyweight

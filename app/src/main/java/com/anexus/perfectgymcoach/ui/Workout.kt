@@ -1,5 +1,6 @@
 package com.anexus.perfectgymcoach.ui
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.*
@@ -25,6 +27,7 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.ui.components.CancelWorkoutDialog
 import com.anexus.perfectgymcoach.ui.components.FullScreenImageCard
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
@@ -33,6 +36,7 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -46,11 +50,17 @@ fun Workout(navController: NavHostController, programId: Long,
 ) {
     viewModel.onEvent(WorkoutEvent.GetWorkoutExercises(programId))
 
+    CancelWorkoutDialog(
+        dialogueIsOpen = viewModel.state.value.cancelWorkoutDialogOpen,
+        toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog) },
+        cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navController.popBackStack() },
+        deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) }
+    )
     var currentExercise: WorkoutExercise? = null
     val currentExerciseRecords: List<ExerciseRecord> = viewModel.state.value.currentExerciseRecords
     var timer = ""
     if (viewModel.state.value.workoutTime != null){
-        timer = " " + viewModel.state.value.workoutTime!!.toDuration(DurationUnit.SECONDS).toString()
+        timer = " " + DateUtils.formatElapsedTime(viewModel.state.value.workoutTime!!)
     }
 
     val haptic = LocalHapticFeedback.current
@@ -61,6 +71,11 @@ fun Workout(navController: NavHostController, programId: Long,
 
     val pagerState = rememberPagerState()
 
+    val completeWorkout: () -> Unit = {    // TODO: should go to recap screen
+        viewModel.onEvent(WorkoutEvent.FinishWorkout)
+        navController.popBackStack()
+    }
+
     if (viewModel.state.value.workoutExercises.isNotEmpty()) {
         if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {
             currentExercise = viewModel.state.value.workoutExercises[pagerState.currentPage]
@@ -69,7 +84,12 @@ fun Workout(navController: NavHostController, programId: Long,
 
         FullScreenImageCard(
             topAppBarNavigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(onClick = {
+                    if (viewModel.state.value.workoutTime == null)
+                        navController.popBackStack()
+                    else
+                        viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
+                }) {
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = "Go back" // TODO: cancel workout?
@@ -80,8 +100,8 @@ fun Workout(navController: NavHostController, programId: Long,
                 Row(verticalAlignment = CenterVertically) {
                     Text(timer, style = MaterialTheme.typography.titleLarge)
                     if (timer.isNotEmpty()) {
-                        IconButton(onClick = { /*TODO*/ }) {
-                            Icon(Icons.Default.Done, null)
+                        TextButton(onClick = completeWorkout ) {
+                            Text("Finish")
                         }
                     }
                 }
@@ -145,6 +165,7 @@ fun Workout(navController: NavHostController, programId: Long,
                         verticalAlignment = Top
                     ) { page ->
                         if (page == viewModel.state.value.workoutExercises.size) {
+                            // page for finishing the workout
                             Text("Workout completed")
                         } else {
                             val repsDone = mutableStateOf(0)
@@ -154,7 +175,7 @@ fun Workout(navController: NavHostController, programId: Long,
                             }
                             var checkedNumberReps by remember { mutableStateOf(0) }
                             checkedNumberReps = repsDone.value
-                            Column() {
+                            Column {
                                 // content
                                 Row(verticalAlignment = CenterVertically) {
                                     Text(
@@ -200,12 +221,13 @@ fun Workout(navController: NavHostController, programId: Long,
                                                 } else {
                                                     Text(
                                                         "Reps: ${viewModel.state.value.currentExerciseCurrentRecord!!.reps[setCount]} " +
-                                                                "Weight: ${viewModel.state.value.currentExerciseCurrentRecord!!.weights[setCount]}"
+                                                                "Weight: ${viewModel.state.value.currentExerciseCurrentRecord!!.weights[setCount]}",
+                                                        color = MaterialTheme.colorScheme.outline
                                                     )
                                                 }
                                             }
                                         }
-                                        TextButton(onClick = { /*TODO*/ }) {
+                                        TextButton(onClick = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(page)) }) {
                                             Text("Add set")
                                         }
                                     }
@@ -222,9 +244,11 @@ fun Workout(navController: NavHostController, programId: Long,
                                     .forEach { record ->
                                         Card(Modifier.fillMaxWidth()) {
                                             Column(Modifier.padding(8.dp)) {
+                                                val dateFormat = SimpleDateFormat("d MMM (yy)")
                                                 Text(
-                                                    record.date,
-                                                    style = MaterialTheme.typography.bodyLarge
+                                                    dateFormat.format(record.date.time),
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    fontStyle = FontStyle.Italic
                                                 ) // FIXME
                                                 Text("Tare: ${record.tare}") // FIXME
                                                 record.reps.forEachIndexed { index, rep ->
@@ -268,7 +292,7 @@ fun Workout(navController: NavHostController, programId: Long,
                         .padding(horizontal = 16.dp)
                 ) {
                     if (viewModel.state.value.workoutTime == null){
-
+                        // workout has not started
                         Button(
                             onClick = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
                             Modifier.fillMaxWidth()
@@ -276,14 +300,19 @@ fun Workout(navController: NavHostController, programId: Long,
                             Text("Start workout")
                         }
                     } else if (currentExercise == null){
-                        Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()) {
+                        // workout has started and it is on the end page
+                        Button(onClick = completeWorkout,
+                            modifier = Modifier.fillMaxWidth()) {
                             Text("Complete workout")
                         }
                     } else if ((viewModel.state.value.currentExerciseCurrentRecord?.reps?.size
                             ?: 0) >= currentExercise.reps.size
                     ) {
+                        // workout started and the user has done all the reps in the page
                         OutlinedButton(
-                            onClick = { /* TODO */ },
+                            onClick = {
+                                viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage))
+                                      },
                             Modifier.fillMaxWidth()
                         ) {
                             Text("Add set")
@@ -296,12 +325,13 @@ fun Workout(navController: NavHostController, programId: Long,
                         }
 
                     } else {
+                        // normal case
                         val reps =
                             rememberSaveable {
                                 mutableStateOf(
                                     currentExercise.reps[0].toString()
                                 )
-                            } // fixme
+                            } // fixme, does not update on page (exercise) change
                         val weight = rememberSaveable { mutableStateOf(0f.toString()) }
                         Row (Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -340,6 +370,7 @@ fun Workout(navController: NavHostController, programId: Long,
         )
     }
 }
+
 
 @Composable
 fun ExerciseSettingsMenu() {
@@ -420,9 +451,3 @@ fun RowScope.TextFieldWithButtons(
         }
     }
 }
-
-//@Preview
-//@Composable
-//fun WorkoutScreenPreview() {
-//
-//}
