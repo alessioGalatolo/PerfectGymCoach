@@ -71,6 +71,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
             PGCSmallTopBar(scrollBehavior, navController) { Text(name) }
         }, floatingActionButton = {
             LargeFloatingActionButton (
+                modifier = Modifier.navigationBarsPadding(),
                 onClick = {
                     viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
                 },
@@ -126,9 +127,10 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     item{
-                        var finalSpacerSize = 96.dp // large fab size FIXME: not hardcode
-                        finalSpacerSize += 8.dp + WindowInsets.Companion.navigationBars.asPaddingValues().calculateBottomPadding()
-                        Spacer(modifier = Modifier.height(finalSpacerSize))
+                        var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode
+                        finalSpacerSize += 8.dp
+                        Spacer(modifier = Modifier.navigationBarsPadding())
+                        Spacer(Modifier.height(finalSpacerSize))
                     }
                 }
             }

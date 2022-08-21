@@ -2,6 +2,7 @@ package com.anexus.perfectgymcoach.data
 
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.time.LocalDateTime
@@ -17,19 +18,9 @@ class Converters {
 
     @TypeConverter
     fun listIntToString(value: List<Int>): String = if (value.isEmpty()) "" else value.joinToString(",")
-//    {
-//        val gson = Gson()
-//        val type = object : TypeToken<List<Int>>() {}.type
-//        return gson.toJson(value, type)
-//    }
 
     @TypeConverter
     fun stringToListInt(value: String): List<Int> = if (value.isEmpty()) emptyList() else value.split(",").map { it.toInt() }
-//    {
-//        val gson = Gson()
-//        val type = object : TypeToken<List<Int>>() {}.type
-//        return gson.fromJson(value, type)
-//    }
 
     @TypeConverter
     fun listFloatToString(value: List<Float>): String = if (value.isEmpty()) "" else value.joinToString(",")
@@ -37,4 +28,9 @@ class Converters {
     @TypeConverter
     fun stringToListFloat(value: String): List<Float> = if (value.isEmpty()) emptyList() else value.split(",").map { it.toFloat() }
 
+    @TypeConverter
+    fun listMuscleToListInt(value: List<Exercise.Muscle>): List<Int> = value.map { it.ordinal }
+
+    @TypeConverter
+    fun listIntToListMuscle(value: List<Int>): List<Exercise.Muscle> = value.map { Exercise.Muscle.values()[it] }
 }

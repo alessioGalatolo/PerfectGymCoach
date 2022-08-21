@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -37,8 +38,7 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
+import kotlin.math.min
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
@@ -46,9 +46,16 @@ import kotlin.time.toDuration
 )
 @Composable
 fun Workout(navController: NavHostController, programId: Long,
-    viewModel: WorkoutViewModel = hiltViewModel()
+            quickStart: Boolean,
+            viewModel: WorkoutViewModel = hiltViewModel()
 ) {
     viewModel.onEvent(WorkoutEvent.GetWorkoutExercises(programId))
+
+    val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
+    if (startWorkout.value){
+        viewModel.onEvent(WorkoutEvent.StartWorkout(programId))
+        startWorkout.value = false
+    }
 
     CancelWorkoutDialog(
         dialogueIsOpen = viewModel.state.value.cancelWorkoutDialogOpen,
@@ -67,9 +74,11 @@ fun Workout(navController: NavHostController, programId: Long,
 
     val scope = rememberCoroutineScope()
 
-    val title = @Composable { Text(currentExercise?.name ?: "End") }
+    val title = @Composable { Text(currentExercise?.name ?: "End", overflow = TextOverflow.Clip) }
 
     val pagerState = rememberPagerState()
+
+    val setsDone = mutableStateOf(0)
 
     val completeWorkout: () -> Unit = {    // TODO: should go to recap screen
         viewModel.onEvent(WorkoutEvent.FinishWorkout)
@@ -168,13 +177,12 @@ fun Workout(navController: NavHostController, programId: Long,
                             // page for finishing the workout
                             Text("Workout completed")
                         } else {
-                            val repsDone = mutableStateOf(0)
                             if (viewModel.state.value.currentExerciseCurrentRecord != null) {
-                                repsDone.value =
+                                setsDone.value =
                                     viewModel.state.value.currentExerciseCurrentRecord!!.reps.size
                             }
                             var checkedNumberReps by remember { mutableStateOf(0) }
-                            checkedNumberReps = repsDone.value
+                            checkedNumberReps = setsDone.value
                             Column {
                                 // content
                                 Row(verticalAlignment = CenterVertically) {
@@ -193,7 +201,7 @@ fun Workout(navController: NavHostController, programId: Long,
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         viewModel.state.value.workoutExercises[page].reps.forEachIndexed { setCount, repsCount ->
-                                            val toBeDone = repsDone.value <= setCount
+                                            val toBeDone = setsDone.value <= setCount
                                             Row(
                                                 verticalAlignment = CenterVertically,
                                                 modifier = Modifier
@@ -217,11 +225,17 @@ fun Workout(navController: NavHostController, programId: Long,
                                                 }
                                                 Spacer(Modifier.width(8.dp))
                                                 if (toBeDone) {
-                                                    Text("Reps: $repsCount Weight: .. kg")
+                                                    val currentRecord = currentExerciseRecords.firstOrNull()
+                                                    if (currentRecord != null) {
+                                                        val index = min(setCount, currentRecord.weights.size-1)
+                                                        Text("Reps: $repsCount Weight: ${ currentRecord.weights[index] } kg")
+                                                    } else {
+                                                        Text("Reps: $repsCount Weight: ... kg")
+                                                    }
                                                 } else {
                                                     Text(
                                                         "Reps: ${viewModel.state.value.currentExerciseCurrentRecord!!.reps[setCount]} " +
-                                                                "Weight: ${viewModel.state.value.currentExerciseCurrentRecord!!.weights[setCount]}",
+                                                                "Weight: ${viewModel.state.value.currentExerciseCurrentRecord!!.weights[setCount]} kg",
                                                         color = MaterialTheme.colorScheme.outline
                                                     )
                                                 }
@@ -326,13 +340,18 @@ fun Workout(navController: NavHostController, programId: Long,
 
                     } else {
                         // normal case
-                        val reps =
-                            rememberSaveable {
-                                mutableStateOf(
-                                    currentExercise.reps[0].toString()
+                        val reps = mutableStateOf(
+                                    currentExercise.reps[setsDone.value].toString()
                                 )
-                            } // fixme, does not update on page (exercise) change
-                        val weight = rememberSaveable { mutableStateOf(0f.toString()) }
+                            // fixme, does not update on page (exercise) change
+
+                        val weight = mutableStateOf(0f.toString())
+
+                        val currentRecord = currentExerciseRecords.firstOrNull()
+                        if (currentRecord != null) {
+                            val index = min(setsDone.value, currentRecord.weights.size-1)
+                            weight.value = currentRecord.weights[index].toString()
+                        }
                         Row (Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly) {
                             TextFieldWithButtons(

@@ -57,7 +57,7 @@ fun AddWorkoutPlan(navController: NavHostController,
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     Scaffold (
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) }, // FIXME: should be padded (navbar)
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
@@ -65,6 +65,7 @@ fun AddWorkoutPlan(navController: NavHostController,
             }
         }, floatingActionButton = {
             LargeFloatingActionButton (
+                modifier = Modifier.navigationBarsPadding(),
                 onClick = {
                     viewModel.onEvent(PlansEvent.TogglePlanDialogue)
                 },

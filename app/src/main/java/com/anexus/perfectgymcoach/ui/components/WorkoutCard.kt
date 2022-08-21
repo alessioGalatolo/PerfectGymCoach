@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Start
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -52,14 +54,11 @@ fun WorkoutCard(program: WorkoutProgram,
         Column {
             Image(
                 painter = painterResource(R.drawable.sample_image),
-                contentDescription = "Contact profile picture",
+                contentDescription = "Image of the exercise",
                 alignment = Alignment.Center,
                 modifier = Modifier
-                    // Set image size to 40 dp
                     .fillMaxWidth()
-//                                        .size(160.dp)
                     .align(Alignment.CenterHorizontally)
-                    // Clip image to be shaped as a circle
                     .clip(AbsoluteRoundedCornerShape(12.dp))
             )
 
@@ -79,11 +78,13 @@ fun WorkoutCard(program: WorkoutProgram,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = { navController.navigate("${MainScreen.Workout.route}/${program.programId}") },
+                Button(onClick = { navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}") },
                     modifier = Modifier
                         .padding(8.dp)
                     /*.align(Alignment.End)*/) {
-                    Text("Start workout")
+                    Icon(Icons.Default.RocketLaunch, null)
+                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Quick start")
                 }
                 IconButton(onClick = { navController.navigate(
                     "${MainScreen.AddExercise.route}/${program.name}/${program.programId}") }) {

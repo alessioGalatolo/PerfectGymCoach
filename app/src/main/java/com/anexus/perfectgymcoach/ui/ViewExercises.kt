@@ -116,6 +116,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                         }
                     }
                 }
+                Spacer(Modifier.navigationBarsPadding())
             }
         }
     )
@@ -154,13 +155,12 @@ fun ViewExercises(navController: NavHostController, programName: String,
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
              PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
                  Text(Exercise.Muscle.values()[muscleOrdinal].muscleName)
              }
         }, content = { innerPadding ->
-            // if you have some plans
             LazyColumn(
                 contentPadding = innerPadding
             ) {
@@ -185,17 +185,23 @@ fun ViewExercises(navController: NavHostController, programName: String,
                                     // Clip image to be shaped as a circle
                                     .clip(CircleShape)
                             )
-
-                            // Add a horizontal space between the image and the column
-
                             Column {
-                                Text(text = exercise.name)
+                                Text(text = exercise.name, style = MaterialTheme.typography.titleLarge)
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "Some exercise parameters...") // TODO
+                                Text(text = "Primary muscle: ${exercise.primaryMuscle.muscleName}")
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = "Secondary muscles: ${
+                                    exercise.secondaryMuscles.joinToString(
+                                        ", "
+                                    ) { it.muscleName }
+                                }") // TODO
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
                     }
+                }
+                item {
+                    Spacer(Modifier.navigationBarsPadding())
                 }
             }
         })
@@ -225,6 +231,7 @@ fun AddExerciseDialogue(
             )
         ) {
             Scaffold(
+                modifier = Modifier.navigationBarsPadding().imePadding(),
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
                     SmallTopAppBar(title = { Text(exercise!!.name) },
@@ -236,12 +243,14 @@ fun AddExerciseDialogue(
                                 )
                             }
                         }, actions = {
+                            val keyboardController = LocalSoftwareKeyboardController.current
                             TextButton(onClick = {
                                 // TODO: add mark on required fields
                                 if (setsText.value.isEmpty() ||
                                     repsText.value.isEmpty() ||
                                     restText.value.isEmpty()){
                                     scope.launch {
+                                        keyboardController?.hide()
                                         snackbarHostState.showSnackbar(
                                             "Please fill every field in order to save"
                                         )
@@ -253,11 +262,11 @@ fun AddExerciseDialogue(
                                         // TODO: add option to have different reps number
                                         List(setsText.value.toInt()) { repsText.value.toInt() },
                                         restText.value.toInt())
+                                    setsText.value = ""
+                                    repsText.value = ""
+                                    restText.value = ""
+                                    notesText.value = "" // FIXME notes are not used
                                 }
-                                setsText.value = ""
-                                repsText.value = ""
-                                restText.value = ""
-                                notesText.value = "" // FIXME notes are not used
                             }, modifier = Modifier.align(CenterVertically)) {
                                 Text(text = "Save")
                             }
@@ -283,21 +292,21 @@ fun AddExerciseDialogue(
                             .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly){
                             MyDropdownMenu( // FIXME: should check is int
-                                prompt = "Sets",
+                                prompt = "Sets*",
                                 options = (1..6).map { "$it" },
                                 text = setsText,
                                 keyboardType = KeyboardType.Number
                             )
                             Spacer(Modifier.width(8.dp))
                             MyDropdownMenu( // FIXME: should check is int
-                                prompt = "Reps",
+                                prompt = "Reps*",
                                 options = (1..12).map { "$it" },
                                 text = repsText,
                                 keyboardType = KeyboardType.Number
                             )
 
                         }
-                        MyDropdownMenu(prompt = "Rest",
+                        MyDropdownMenu(prompt = "Rest*",
                             options = (15..120 step 15).map { "$it" },
                             text = restText,
                             keyboardType = KeyboardType.Number){

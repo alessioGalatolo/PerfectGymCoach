@@ -12,7 +12,7 @@ data class Exercise(
     val name: String,
     val equipment: Equipment,
     val primaryMuscle: Muscle,
-//    val secondaryMuscles: List<Muscle>,
+    val secondaryMuscles: List<Muscle>
 
 ) : Parcelable {
     enum class Muscle (val muscleName: String){

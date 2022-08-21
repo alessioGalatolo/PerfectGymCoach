@@ -53,8 +53,10 @@ class Repository @Inject constructor(
         context.dataStore.edit {
             if (it[currentPlan] == null || overrideValue){
                 it[currentPlan] = planId
+                it.remove(currentProgram)  // reset current program as a result
             }
         }
+
     }
 
     fun getCurrentProgram(): Flow<Long?> = context.dataStore.data.map{ it[currentProgram] }

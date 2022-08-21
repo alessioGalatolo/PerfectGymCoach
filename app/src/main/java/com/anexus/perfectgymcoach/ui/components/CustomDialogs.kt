@@ -58,6 +58,8 @@ fun InsertNameDialog(
                 LaunchedEffect(focusRequester) {
                     awaitFrame()
                     awaitFrame()
+                    awaitFrame()
+                    awaitFrame()
                     focusRequester.requestFocus()
                 }
             },

@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -102,7 +100,7 @@ fun Home(navController: NavHostController,
                         program = currentProgram,
                         exercises = currentExercises,
                         // TODO: add message when no exercises in the program
-                        onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}") },
+                        onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}/${false}") },
                         onCardLongPress = {
                             navController.navigate(
                                 "${MainScreen.AddExercise.route}/" +
@@ -122,37 +120,43 @@ fun Home(navController: NavHostController,
                 }
                 items(items = viewModel.state.value.programs.minus(currentProgram), key = { it }){
                     Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 4.dp, vertical = 2.dp)
-                            .combinedClickable (onLongClick = {
+                            .combinedClickable(onLongClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 navController.navigate(
-                                "${MainScreen.AddExercise.route}/" +
-                                        "${it.name}/" +
-                                        "${it.programId}"
-                            )}){
-                                navController.navigate("${MainScreen.Workout.route}/${it.programId}")
+                                    "${MainScreen.AddExercise.route}/" +
+                                            "${it.name}/" +
+                                            "${it.programId}"
+                                )
+                            }) {
+                                navController.navigate("${MainScreen.Workout.route}/${it.programId}/${false}")
                             }
                     ) {
                         Image(
                             painter = painterResource(R.drawable.full_body),
                             contentDescription = "Contact profile picture",
                             modifier = Modifier
-                                // Set image size to 40 dp
+                                // Set image size to 40 d
                                 .size(60.dp)
                                 .padding(all = 4.dp)
                                 // Clip image to be shaped as a circle
                                 .clip(CircleShape)
                         )
-                        // Add a horizontal space between the image and the column
-                        Spacer(modifier = Modifier.width(8.dp))
 
                         Column(modifier = Modifier.align(Alignment.CenterVertically)) {
                             Text(text = it.name)
                             // Add a vertical space between the author and message texts
-                            Spacer(modifier = Modifier.height(4.dp))
+//                            Spacer(modifier = Modifier.height(4.dp))
 //                            Text(text = "msg.body")
+                        }
+                        IconButton(onClick = {
+                            navController.navigate("${MainScreen.Workout.route}/${it.programId}/${true}")
+                        }) {
+                            Icon(Icons.Default.RocketLaunch, null)
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))

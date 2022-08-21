@@ -18,6 +18,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
+import androidx.navigation.NavArgument
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -65,10 +66,17 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     // FIXME: should maybe be moved to a single navigation
-                    composable("${MainScreen.Workout.route}/{programId}",
-                        arguments = listOf(navArgument("programId") { type = NavType.LongType })
+                    composable("${MainScreen.Workout.route}/{programId}/{quickStart}",
+                        arguments = listOf(
+                            navArgument("programId") { type = NavType.LongType },
+                            navArgument("quickStart") { type = NavType.BoolType }
+                        )
                     )
-                    { Workout(navControllerMain, it.arguments?.getLong("programId") ?: 0L) }
+                    { Workout(
+                        navControllerMain,
+                        it.arguments?.getLong("programId") ?: 0L,
+                        it.arguments?.getBoolean("quickStart") ?: false
+                    )}
                     composable("${MainScreen.AddProgram.route}/{name}/{planId}/{openDialogNow}",
                         arguments = listOf(
                             navArgument("planId") { type = NavType.LongType },
