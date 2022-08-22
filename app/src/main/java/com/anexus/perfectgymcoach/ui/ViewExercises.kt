@@ -280,7 +280,7 @@ fun AddExerciseDialogue(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Image(
-                            painterResource(id = R.drawable.sample_image),
+                            painterResource(id = exercise!!.image),
                             null,
                             modifier = Modifier
                                 .fillMaxWidth()

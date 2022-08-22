@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
@@ -32,6 +33,8 @@ class Repository @Inject constructor(
     fun getPlans() = db.workoutPlanDao.getPlans()
 
     fun getPrograms(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> = db.workoutProgramDao.getPrograms(planId)
+
+    fun getWorkoutExercisesAndInfo(programId: Long): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programId)
 
     fun getWorkoutExercises(programId: Long) = db.workoutExerciseDao.getExercises(programId)
 

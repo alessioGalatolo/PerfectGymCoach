@@ -21,4 +21,5 @@
     <string name="empty_home">You have yet to create a workout plan, use the button below to create one!</string>
     <string name="empty_home_program">The workout plan you has selected as current has no programs (single day schedule) inside. Use the button below to select a different plan or to add a program</string>
     <string name="change_workout_plan">Change workout plan</string>
+    <string name="workout_empty_exercises">You have no exercises added to this program, use the button below to add some!</string>
 </resources>

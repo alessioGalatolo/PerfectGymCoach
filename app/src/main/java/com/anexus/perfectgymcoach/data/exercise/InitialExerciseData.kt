@@ -1,5 +1,7 @@
 package com.anexus.perfectgymcoach.data.exercise
 
+import com.anexus.perfectgymcoach.R
+
 val INITIAL_EXERCISE_DATA = listOf(
     // TODO: should have some kind of variation system
 
@@ -11,19 +13,22 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Bench press",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.bench_press
     ),
     Exercise(
         name = "Inclined bench press",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.bench_press  // FIXME
     ),
     Exercise(
         name = "Declined bench press",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.bench_press // FIXME
     ),
 
     // Cables chest
@@ -31,7 +36,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Cable crossover",
         equipment = Exercise.Equipment.CABLES,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = emptyList()
+        secondaryMuscles = emptyList(),
+        image = R.drawable.cable_crossover
     ),
 
     // Bodyweight chest
@@ -39,37 +45,43 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Chest dip",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.chest_dip
     ),
     Exercise(
         name = "Push up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.push_up
     ),
     Exercise(
         name = "Inclined push up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.push_up // FIXME
     ),
     Exercise(
         name = "Declined push up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.push_up // FIXME
     ),
     Exercise(
         name = "Single arm push up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.push_up // FIXME
     ),
     Exercise(
         name = "Wide arms push up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.push_up // FIXME
     ),
 
     // Machine chest
@@ -77,13 +89,15 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Chest press",
         equipment = Exercise.Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.chest_press
     ),
     Exercise(
         name = "Machine fly",
         equipment = Exercise.Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = emptyList()
+        secondaryMuscles = emptyList(),
+        image = R.drawable.machine_fly
     ),
 
     // Dumbbell chest
@@ -91,37 +105,43 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Dumbbell bench press",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.dumbbell_bench_press
     ),
     Exercise(
         name = "Dumbbell inclined bench press",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.dumbbell_bench_press // Fixme
     ),
     Exercise(
         name = "Dumbbell declined bench press",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.dumbbell_bench_press // Fixme
     ),
     Exercise(
         name = "Dumbbell fly",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.dumbbell_bench_press // Fixme
     ),
     Exercise(
         name = "Pullover",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.BACK)
+        secondaryMuscles = listOf(Exercise.Muscle.BACK),
+        image = R.drawable.dumbbell_bench_press // Fixme
     ),
     Exercise(
         name = "Single arm bench press",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.dumbbell_bench_press // Fixme
     ),
 
     /*

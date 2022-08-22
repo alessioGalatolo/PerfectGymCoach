@@ -168,6 +168,12 @@ fun Home(navController: NavHostController,
                             onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${false}") },
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) { Text(stringResource(R.string.change_workout_plan)) }
+                        TextButton(onClick = {
+                            navController.navigate( // FIXME: empty plan name
+                                "${MainScreen.AddProgram.route}/ /${viewModel.state.value.currentPlan!!}/${true}")
+                        }) {
+                            Text(stringResource(id = R.string.add_program))
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }

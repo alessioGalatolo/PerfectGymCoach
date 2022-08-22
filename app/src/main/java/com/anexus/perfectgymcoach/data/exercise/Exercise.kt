@@ -3,6 +3,7 @@ package com.anexus.perfectgymcoach.data.exercise
 import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.anexus.perfectgymcoach.R
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -12,7 +13,8 @@ data class Exercise(
     val name: String,
     val equipment: Equipment,
     val primaryMuscle: Muscle,
-    val secondaryMuscles: List<Muscle>
+    val secondaryMuscles: List<Muscle>,
+    val image: Int = R.drawable.sample_image
 
 ) : Parcelable {
     enum class Muscle (val muscleName: String){
@@ -38,12 +40,13 @@ data class Exercise(
 
     companion object{
         // TODO: assumes international system (kg), add support for americans
-        val equipment2increment = mapOf(
-            Pair(Equipment.BARBELL, 2.5),
-            Pair(Equipment.BODY_WEIGHT, 2.5),
-            Pair(Equipment.DUMBBELL, 2),
-            Pair(Equipment.CABLES, 2.5),
-            Pair(Equipment.MACHINE, 5),
+        val equipment2increment: Map<Equipment, Float> = mapOf(
+            Pair(Equipment.EVERYTHING, 1f),
+            Pair(Equipment.BARBELL, 2.5f),
+            Pair(Equipment.BODY_WEIGHT, 2.5f),
+            Pair(Equipment.DUMBBELL, 2f),
+            Pair(Equipment.CABLES, 2.5f),
+            Pair(Equipment.MACHINE, 5f),
         )
     }
 }

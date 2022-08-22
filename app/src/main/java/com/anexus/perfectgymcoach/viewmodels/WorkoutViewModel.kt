@@ -8,6 +8,7 @@ import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,12 +22,13 @@ import javax.inject.Inject
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
-    val workoutExercises: List<WorkoutExercise> = emptyList(),
-    val exercises: List<Exercise> = emptyList(),
+    val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
     val currentExerciseRecords: List<ExerciseRecord> = emptyList(), // old records
     val currentExerciseCurrentRecord: ExerciseRecord? = null, // records collected in the current workout
     val workoutTime: Long? = null, // in seconds
-    val workoutId: Long = 0
+    val workoutId: Long = 0,
+    val repsBottomBar: Int = 0, // reps to be displayed in bottom bar
+    val weightBottomBar: Float = 0f // weight to be displayed in bottom bar
 )
 
 sealed class WorkoutEvent{
@@ -39,8 +41,6 @@ sealed class WorkoutEvent{
     object DeleteCurrentRecords: WorkoutEvent()
 
     data class CompleteSet(
-        val reps: Int,
-        val weight: Float,
         val exerciseId: Long, // FIXME: may be redundant as can be get with exerciseInWorkout
         val exerciseInWorkout: Int
     ): WorkoutEvent()
@@ -51,11 +51,11 @@ sealed class WorkoutEvent{
 
     data class AddSetToExercise(val exerciseInWorkout: Int): WorkoutEvent()
 
-    data class GetExercises(val muscle: Exercise.Muscle): WorkoutEvent()
-
     data class GetExerciseRecords(val exerciseId: Long, val exerciseInWorkout: Int): WorkoutEvent()
 
-    data class AddWorkoutExercise(val workoutExercise: WorkoutExercise): WorkoutEvent()
+    data class UpdateReps(val newValue: Int): WorkoutEvent()
+
+    data class UpdateWeight(val newValue: Float): WorkoutEvent()
 
 }
 
@@ -70,36 +70,17 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
     fun onEvent(event: WorkoutEvent){
         when (event) {
-            is WorkoutEvent.AddWorkoutExercise -> {
-
-                viewModelScope.launch {
-                    repository.addWorkoutExercise(event.workoutExercise)
-                }
-            }
             is WorkoutEvent.ToggleCancelWorkoutDialog -> {
                 _state.value = state.value.copy(
                     cancelWorkoutDialogOpen = !state.value.cancelWorkoutDialogOpen
                 )
             }
             is WorkoutEvent.GetWorkoutExercises -> {
-                if (state.value.workoutExercises.isEmpty()) { // only retrieve once
+                if (state.value.workoutExercisesAndInfo.isEmpty()) { // only retrieve once
                     viewModelScope.launch {
-                        repository.getWorkoutExercises(event.programId)
-                            .first { // fixme: maybe just first emission
-                                _state.value = state.value.copy(
-                                    workoutExercises = it // todo: sort
-                                )
-                                true
-                            }
-                    }
-                }
-            }
-            is WorkoutEvent.GetExercises -> {
-                viewModelScope.launch {
-                    repository.getExercises(event.muscle).collect {
                         _state.value = state.value.copy(
-                            exercises = it
-                        )
+                            workoutExercisesAndInfo = repository.getWorkoutExercisesAndInfo(event.programId).first()
+                        ) // TODO: sort
                     }
                 }
             }
@@ -150,14 +131,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 extExerciseId = event.exerciseId,
                                 exerciseInWorkout = event.exerciseInWorkout,
                                 date = Calendar.getInstance(),
-                                reps = listOf(event.reps),
-                                weights = listOf(event.weight)
+                                reps = listOf(state.value.repsBottomBar),
+                                weights = listOf(state.value.weightBottomBar)
                             )
                         )
                     } else {
                         repository.addExerciseRecord(record.copy(
-                            reps = record.reps.plus(event.reps),
-                            weights = record.weights.plus(event.weight)
+                            reps = record.reps.plus(state.value.repsBottomBar),
+                            weights = record.weights.plus(state.value.weightBottomBar)
                         ))
                     }
                 }
@@ -175,13 +156,19 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.CancelWorkout -> { /*TODO()*/ }
             is WorkoutEvent.DeleteCurrentRecords -> { /*TODO()*/ }
             is WorkoutEvent.AddSetToExercise -> {
-                val newExs = state.value.workoutExercises
+                val newExs = state.value.workoutExercisesAndInfo
                 val newEx = newExs[event.exerciseInWorkout].copy(
                     reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last())
                 )
                 _state.value = state.value.copy(
-                    workoutExercises = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }
+                    workoutExercisesAndInfo = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }
                 )
+            }
+            is WorkoutEvent.UpdateReps -> {
+                _state.value = state.value.copy(repsBottomBar = event.newValue)
+            }
+            is WorkoutEvent.UpdateWeight -> {
+                _state.value = state.value.copy(weightBottomBar = event.newValue)
             }
         }
     }

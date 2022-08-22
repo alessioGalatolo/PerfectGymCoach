@@ -33,5 +33,17 @@ data class WorkoutExercise (
     val reps: List<Int>,
     val rest: Int,
     val supersetExercise: Int = 0 // TODO: should be foreign key
-    // TODO: old record, etc. <- do not put here
     ) : Parcelable
+
+@Parcelize
+data class WorkoutExerciseAndInfo (
+    @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
+    val extProgramId: Long,
+    val extExerciseId: Long,
+    val name: String, // FIXME: redundant but simplifies a lot
+    val reps: List<Int>,
+    val rest: Int,
+    val supersetExercise: Int = 0, // TODO: should be foreign key
+    val image: Int,
+    val equipment: Exercise.Equipment
+) : Parcelable
