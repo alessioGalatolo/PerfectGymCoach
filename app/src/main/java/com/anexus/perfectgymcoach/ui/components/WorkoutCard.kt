@@ -28,13 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.MainScreen
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutCard(program: WorkoutProgram,
-                exercises: List<WorkoutExercise>,
+                exercises: List<WorkoutExerciseAndInfo>,
                 onCardClick: () -> Unit,
                 onCardLongPress: () -> Unit,
                 navController: NavHostController){
@@ -78,7 +79,8 @@ fun WorkoutCard(program: WorkoutProgram,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = { navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}") },
+                Button(contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                    onClick = { navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}") },
                     modifier = Modifier
                         .padding(8.dp)
                     /*.align(Alignment.End)*/) {

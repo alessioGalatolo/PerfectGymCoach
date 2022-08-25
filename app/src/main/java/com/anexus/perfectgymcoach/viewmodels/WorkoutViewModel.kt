@@ -4,8 +4,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
@@ -41,7 +39,6 @@ sealed class WorkoutEvent{
     object DeleteCurrentRecords: WorkoutEvent()
 
     data class CompleteSet(
-        val exerciseId: Long, // FIXME: may be redundant as can be get with exerciseInWorkout
         val exerciseInWorkout: Int
     ): WorkoutEvent()
 
@@ -128,7 +125,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 extWorkoutId = state.value.workoutId,
-                                extExerciseId = event.exerciseId,
+                                extExerciseId = state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId,
                                 exerciseInWorkout = event.exerciseInWorkout,
                                 date = Calendar.getInstance(),
                                 reps = listOf(state.value.repsBottomBar),

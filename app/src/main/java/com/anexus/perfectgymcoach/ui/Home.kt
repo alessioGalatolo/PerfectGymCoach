@@ -1,6 +1,5 @@
 package com.anexus.perfectgymcoach.ui
 
-import android.content.Context
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,11 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
-import com.anexus.perfectgymcoach.viewmodels.HomeEvent
 import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
-import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -89,9 +83,9 @@ fun Home(navController: NavHostController,
                     it.programId == viewModel.state.value.currentProgram!!
                 }!!
                 val currentExercises =
-                    viewModel.state.value.exercises[viewModel.state.value.programs.indexOf(
-                        currentProgram
-                    )].sortedBy { it.workoutExerciseId }
+                    viewModel.state.value.exercisesAndInfo[currentProgram.programId]?.sortedBy {
+                        it.workoutExerciseId
+                    } ?: emptyList()
                 item{
                     // Coming next
                     Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)

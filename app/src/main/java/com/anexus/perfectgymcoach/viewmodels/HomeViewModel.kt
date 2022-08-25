@@ -4,19 +4,18 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
 data class HomeState(
     val currentPlan: Long? = null,
     val currentProgram: Long? = null,
     val programs: List<WorkoutProgram> = emptyList(),
-    val exercises: List<List<WorkoutExercise>> = emptyList(),
+    val exercisesAndInfo: Map<Long, List<WorkoutExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialogue: Boolean = false
 )
 
@@ -38,6 +37,7 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
     val state: State<HomeState> = _state
 
     private var collectProgramsJob: Job? = null
+    private var getWorkoutExercisesJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -47,9 +47,16 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
                 collectProgramsJob = this.launch {
                     repository.getPrograms(currentPlan?: 0L).collect {
                         _state.value = state.value.copy(
-                            programs = it.keys.toList(),
-                            exercises = it.values.toList()
+                            programs = it
                         )
+                        getWorkoutExercisesJob?.cancel()
+                        getWorkoutExercisesJob = this.launch {
+                            repository.getWorkoutExercisesAndInfo(it.map { prg -> prg.programId }).collect{ exList ->
+                                _state.value = state.value.copy(
+                                    exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }
+                                )
+                            }
+                        }
                     }
                 }
 

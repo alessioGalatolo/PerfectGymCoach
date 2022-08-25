@@ -29,7 +29,6 @@ data class WorkoutExercise (
     @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
-    val name: String, // FIXME: redundant but simplifies a lot
     val reps: List<Int>,
     val rest: Int,
     val supersetExercise: Int = 0 // TODO: should be foreign key
@@ -40,7 +39,7 @@ data class WorkoutExerciseAndInfo (
     @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
-    val name: String, // FIXME: redundant but simplifies a lot
+    val name: String,
     val reps: List<Int>,
     val rest: Int,
     val supersetExercise: Int = 0, // TODO: should be foreign key

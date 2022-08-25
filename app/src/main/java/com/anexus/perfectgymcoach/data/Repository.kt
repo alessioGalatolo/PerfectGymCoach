@@ -32,9 +32,13 @@ class Repository @Inject constructor(
 
     fun getPlans() = db.workoutPlanDao.getPlans()
 
-    fun getPrograms(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> = db.workoutProgramDao.getPrograms(planId)
+    fun getProgramMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> = db.workoutProgramDao.getProgramMapExercises(planId)
+
+    fun getPrograms(planId: Long) = db.workoutProgramDao.getPrograms(planId)
 
     fun getWorkoutExercisesAndInfo(programId: Long): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programId)
+
+    fun getWorkoutExercisesAndInfo(programIds: List<Long>): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programIds)
 
     fun getWorkoutExercises(programId: Long) = db.workoutExerciseDao.getExercises(programId)
 

@@ -1,5 +1,7 @@
 package com.anexus.perfectgymcoach.ui
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -16,8 +18,12 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Alignment.Companion.Top
 import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -26,12 +32,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.core.graphics.ColorUtils
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.palette.graphics.Palette
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise.Companion.equipment2increment
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.ui.components.CancelWorkoutDialog
 import com.anexus.perfectgymcoach.ui.components.FullScreenImageCard
@@ -79,7 +86,7 @@ fun Workout(navController: NavHostController, programId: Long,
             }
         }
     }
-    LaunchedEffect(key1 = currentExercise) {
+    LaunchedEffect(currentExercise) {
         if (currentExercise != null)
             viewModel.onEvent(
                 WorkoutEvent.GetExerciseRecords(
@@ -113,7 +120,7 @@ fun Workout(navController: NavHostController, programId: Long,
     }
 
     LaunchedEffect(currentExercise, setsDone){
-        if (currentExercise != null) {
+        if (currentExercise != null && setsDone.value < currentExercise!!.reps.size) {
             viewModel.onEvent(
                 WorkoutEvent.UpdateReps(
                     currentExercise!!.reps[setsDone.value]
@@ -137,6 +144,28 @@ fun Workout(navController: NavHostController, programId: Long,
 
     if (viewModel.state.value.workoutExercisesAndInfo.isNotEmpty()) {
         BackHandler(onBack = onClose)
+        val currentImageId by remember { derivedStateOf {
+            if (pagerState.currentPage == viewModel.state.value.workoutExercisesAndInfo.size)
+                R.drawable.finish_workout
+            else currentExercise!!.image
+        }}
+        val context = LocalContext.current
+        var brightImage = true
+//        LaunchedEffect(currentImageId){
+//            val imageBitmap = BitmapFactory.decodeResource(
+//                context.resources,
+//                currentImageId
+//            )
+//            Palette.from(imageBitmap).maximumColorCount(3)
+//                .clearFilters()
+//                .setRegion(0, 0, imageBitmap!!.width,50)
+//                .generate {
+//                    brightImage = ColorUtils.calculateLuminance(
+//                        it?.getDominantColor(Color.Black.toArgb()) ?: Color.Black.toArgb()
+//                    ) > 0.5f
+//                }
+//
+//        }
         FullScreenImageCard(
             topAppBarNavigationIcon = {
                 IconButton(onClick = onClose) {
@@ -160,13 +189,11 @@ fun Workout(navController: NavHostController, programId: Long,
             image = { modifier ->
                 Box(Modifier.wrapContentHeight(Top), contentAlignment = TopCenter) {
                     Image(
-                        painterResource(id =
-                            if (pagerState.currentPage == viewModel.state.value.workoutExercisesAndInfo.size)
-                                R.drawable.finish_workout
-                            else currentExercise!!.image),
+                        painterResource(id = currentImageId),
                         null,
                         modifier
                     )
+
                     HorizontalPagerIndicator(
                         pagerState = pagerState,
                         modifier = Modifier
@@ -175,6 +202,7 @@ fun Workout(navController: NavHostController, programId: Long,
                     )
                 }
             },
+            brightImage = brightImage,
             content = {
                 Column(
                     Modifier
@@ -336,93 +364,113 @@ fun Workout(navController: NavHostController, programId: Long,
                         }
                     }
                 }
-            },
-            bottomBar = {
-                Column(
-                    Modifier
-                        .padding(it)
-                        .padding(horizontal = 16.dp)
-                ) {
-                    if (viewModel.state.value.workoutTime == null){
-                        // workout has not started
-                        Button(
-                            onClick = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
-                            Modifier.fillMaxWidth()
-                        ) {
-                            Text("Start workout")
-                        }
-                    } else if (currentExercise == null){
-                        // workout has started and it is on the end page
-                        Button(onClick = completeWorkout,
-                            modifier = Modifier.fillMaxWidth()) {
-                            Text("Complete workout")
-                        }
-                    } else if ((viewModel.state.value.currentExerciseCurrentRecord?.reps?.size
-                            ?: 0) >= currentExercise!!.reps.size
+            }
+        ) {
+            Column(
+                Modifier
+                    .padding(it)
+                    .padding(horizontal = 16.dp)
+            ) {
+                if (viewModel.state.value.workoutTime == null) {
+                    // workout has not started
+                    Button(
+                        onClick = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
+                        Modifier.fillMaxWidth()
                     ) {
-                        // workout started and the user has done all the reps in the page
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage))
-                                      },
-                            Modifier.fillMaxWidth()
-                        ) {
-                            Text("Add set")
-                        }
-                        Button(
-                            onClick = { scope.launch{pagerState.animateScrollToPage(pagerState.currentPage+1) }},
-                            Modifier.fillMaxWidth()
-                        ) {
-                            Text("Next exercise")
-                        }
+                        Text("Start workout")
+                    }
+                } else if (currentExercise == null) {
+                    // workout has started and it is on the end page
+                    Button(
+                        onClick = completeWorkout,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Complete workout")
+                    }
+                } else if ((viewModel.state.value.currentExerciseCurrentRecord?.reps?.size
+                        ?: 0) >= currentExercise!!.reps.size
+                ) {
+                    // workout started and the user has done all the reps in the page
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage))
+                        },
+                        Modifier.fillMaxWidth()
+                    ) {
+                        Text("Add set")
+                    }
+                    Button(
+                        onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
+                        Modifier.fillMaxWidth()
+                    ) {
+                        Text("Next exercise")
+                    }
 
-                    } else {
-                        // normal case
-                        Row (Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly) {
-                            TextFieldWithButtons(
-                                "Reps",
-                                text = { viewModel.state.value.repsBottomBar.toString() },
-                                onNewText = { new -> viewModel.onEvent(WorkoutEvent.UpdateReps(new.toInt())) },
-                                onIncrement = { viewModel.onEvent(WorkoutEvent.UpdateReps(
-                                    viewModel.state.value.repsBottomBar + 1
-                                )) },
-                                onDecrement = { viewModel.onEvent(WorkoutEvent.UpdateReps(
-                                    viewModel.state.value.repsBottomBar - 1
-                                )) }
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            TextFieldWithButtons(
-                                "Weight",
-                                text = { viewModel.state.value.weightBottomBar.toString() },
-                                onNewText = { new -> viewModel.onEvent(WorkoutEvent.UpdateWeight(new.toFloat())) },
-                                onIncrement = { viewModel.onEvent(WorkoutEvent.UpdateWeight(
-                                    viewModel.state.value.weightBottomBar +
-                                            equipment2increment[currentExercise!!.equipment]!!
-                                )) },
-                                onDecrement = { viewModel.onEvent(WorkoutEvent.UpdateWeight(
-                                    viewModel.state.value.weightBottomBar -
-                                            equipment2increment[currentExercise!!.equipment]!!
-                                )) }
-                            )
-                        }
-                        Row(Modifier.fillMaxWidth()) {
-                            Button(
-                                onClick = {
-                                    viewModel.onEvent(WorkoutEvent.CompleteSet(
-                                        currentExercise!!.extExerciseId,
-                                        pagerState.currentPage
-                                    ))
-                                },
-                                Modifier.fillMaxWidth()
-                            ) {
-                                Text("Complete")
+                } else {
+                    // normal case
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        TextFieldWithButtons(
+                            "Reps",
+                            text = { viewModel.state.value.repsBottomBar.toString() },
+                            onNewText = { new -> viewModel.onEvent(WorkoutEvent.UpdateReps(new.toInt())) },
+                            onIncrement = {
+                                viewModel.onEvent(
+                                    WorkoutEvent.UpdateReps(
+                                        viewModel.state.value.repsBottomBar + 1
+                                    )
+                                )
+                            },
+                            onDecrement = {
+                                viewModel.onEvent(
+                                    WorkoutEvent.UpdateReps(
+                                        viewModel.state.value.repsBottomBar - 1
+                                    )
+                                )
                             }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        TextFieldWithButtons(
+                            "Weight",
+                            text = { viewModel.state.value.weightBottomBar.toString() },
+                            onNewText = { new -> viewModel.onEvent(WorkoutEvent.UpdateWeight(new.toFloat())) },
+                            onIncrement = {
+                                viewModel.onEvent(
+                                    WorkoutEvent.UpdateWeight(
+                                        viewModel.state.value.weightBottomBar +
+                                                equipment2increment[currentExercise!!.equipment]!!
+                                    )
+                                )
+                            },
+                            onDecrement = {
+                                viewModel.onEvent(
+                                    WorkoutEvent.UpdateWeight(
+                                        viewModel.state.value.weightBottomBar -
+                                                equipment2increment[currentExercise!!.equipment]!!
+                                    )
+                                )
+                            }
+                        )
+                    }
+                    Row(Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = {
+                                viewModel.onEvent(
+                                    WorkoutEvent.CompleteSet(
+                                        pagerState.currentPage
+                                    )
+                                )
+                            },
+                            Modifier.fillMaxWidth()
+                        ) {
+                            Text("Complete")
                         }
                     }
                 }
             }
-        )
+        }
     } else {
         // program is empty, prompt to add an exercise
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())

@@ -4,8 +4,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 data class ProgramsState(
     val programs: List<WorkoutProgram> = emptyList(),
-    val exercises: List<List<WorkoutExercise>> = emptyList(),
+    val exercisesAndInfo: Map<Long, List<WorkoutExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialog: Boolean = false,
     val openChangeNameDialog: Boolean = false,
     val programToBeChanged: Long = 0
@@ -31,8 +31,6 @@ sealed class ProgramsEvent{
 
     data class RenameProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
 
-    // TODO: ChangeOrder
-    // TODO: RemovePlan
 }
 
 @HiltViewModel
@@ -41,6 +39,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
     val state: State<ProgramsState> = _state
 
     private var getProgramsJob: Job? = null
+    private var getWorkoutExercisesJob: Job? = null
 
     fun onEvent(event: ProgramsEvent){
         when (event) {
@@ -49,9 +48,16 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                 getProgramsJob = viewModelScope.launch {
                     repository.getPrograms(event.planId).collect {
                         _state.value = state.value.copy(
-                            programs = it.keys.toList(),
-                            exercises = it.values.toList()
+                            programs = it
                         )
+                        getWorkoutExercisesJob?.cancel()
+                        getWorkoutExercisesJob = this.launch {
+                            repository.getWorkoutExercisesAndInfo(it.map { prg -> prg.programId }).collect{ exList ->
+                                _state.value = state.value.copy(
+                                    exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }
+                                )
+                            }
+                        }
                     }
                 }
             }

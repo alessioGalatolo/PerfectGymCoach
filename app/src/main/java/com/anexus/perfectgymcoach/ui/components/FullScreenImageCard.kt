@@ -1,15 +1,10 @@
 package com.anexus.perfectgymcoach.ui.components
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
@@ -17,22 +12,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.toRect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.zIndex
-import com.anexus.perfectgymcoach.ui.ExerciseSettingsMenu
-import com.anexus.perfectgymcoach.ui.TextFieldWithButtons
-import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
+import androidx.core.graphics.ColorUtils
+import androidx.palette.graphics.Palette
+import com.anexus.perfectgymcoach.R
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,32 +32,54 @@ fun FullScreenImageCard(
     topAppBarActions: @Composable RowScope.() -> Unit,
     title: @Composable () -> Unit,
     image: @Composable BoxScope.(Modifier) -> Unit,
+    brightImage: Boolean,
     content: @Composable () -> Unit,
     bottomBar: @Composable (PaddingValues) -> Unit
 ) {
     val deviceCornerRadius = 12.dp // TODO: should be same as device (waiting compose API)
 
-    // make status bar transparent to see image behind
-    val sysUiController = rememberSystemUiController()
-    SideEffect {
-        sysUiController.setSystemBarsColor(
-            color = Color.Transparent,
-            darkIcons = true
-        )
-    }
     val localDensity = LocalDensity.current
     var imageHeight by remember { // store image height to make content start at the right point
         mutableStateOf(0)
     }
-    val imageHeightDp = with(localDensity) { imageHeight.toDp() }
     val statusBarsHeight = WindowInsets.Companion.statusBars.asPaddingValues().calculateTopPadding()
-    val contentBelowImage = max(0.dp, imageHeightDp - statusBarsHeight - 64.dp) // top app bar height FIXME: should not be hardcoded
+    val contentBelowImage by remember {
+        derivedStateOf{
+            max(
+                0.dp,
+                with(localDensity) { imageHeight.toDp() } - statusBarsHeight - 64.dp
+            ) // top app bar height FIXME: should not be hardcoded
+        }
+    }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
         rememberTopAppBarState()
     )
+    val backgroundColors = TopAppBarDefaults.smallTopAppBarColors(
+        containerColor = Color.Transparent,
+        scrolledContainerColor = TopAppBarDefaults.smallTopAppBarColors().containerColor(
+            colorTransitionFraction = 1f
+        ).value)
+    val s = scrollBehavior.state
+    val belowImageFloat by remember { derivedStateOf { with(localDensity) { contentBelowImage.toPx() }}}
+    val transition = 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
+        minimumValue = s.heightOffsetLimit,
+        maximumValue = 0f
+    ) / s.heightOffsetLimit)
+
+    // make status bar transparent to see image behind
+    val sysUiController = rememberSystemUiController()
+    val transitionStarted by remember { derivedStateOf { transition > 0.0 } }
+    LaunchedEffect(transitionStarted, brightImage) {
+        sysUiController.setStatusBarColor(
+            color = Color.Transparent,
+            darkIcons = brightImage || transition > 0.0
+        )
+    }
 
     Box (contentAlignment = TopCenter,
-        modifier = Modifier.background(Color.Transparent).fillMaxSize()){
+        modifier = Modifier
+            .background(Color.Transparent)
+            .fillMaxSize()){
         image(
             Modifier
                 .fillMaxWidth()
@@ -81,17 +94,6 @@ fun FullScreenImageCard(
             containerColor = Color.Transparent,
 //            floatingActionButton = ,
             topBar = {
-                val backgroundColors = TopAppBarDefaults.smallTopAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = TopAppBarDefaults.smallTopAppBarColors().containerColor(
-                        colorTransitionFraction = 1f
-                    ).value)
-                val s = scrollBehavior.state
-                val belowImageFloat = with(localDensity) { contentBelowImage.toPx() }
-                val transition = 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
-                    minimumValue = s.heightOffsetLimit,
-                    maximumValue = 0f
-                ) / s.heightOffsetLimit)
                 val backgroundColor = backgroundColors.containerColor(
                     colorTransitionFraction = transition
                 ).value

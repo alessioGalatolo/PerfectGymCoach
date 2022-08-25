@@ -7,13 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class ExercisesState(
-    val workoutExercises: List<WorkoutExercise> = emptyList(),
+    val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
     val openAddExerciseDialogue: Boolean = false,
     val exerciseToAdd: Exercise? = null
@@ -54,9 +55,9 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             is ExercisesEvent.GetWorkoutExercises -> {
                 getWorkoutExercisesJob?.cancel()
                 getWorkoutExercisesJob = viewModelScope.launch {
-                    repository.getWorkoutExercises(event.programId).collect {
+                    repository.getWorkoutExercisesAndInfo(event.programId).collect {
                         _state.value = state.value.copy(
-                            workoutExercises = it
+                            workoutExercisesAndInfo = it
                         )
                     }
                 }

@@ -15,7 +15,10 @@ interface WorkoutProgramDao {
         "LEFT JOIN workoutexercise ON `program`.programId = workoutexercise.extProgramId " +
         "WHERE `program`.extPlanId LIKE :planId"
     )
-    fun getPrograms(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>>
+    fun getProgramMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>>
+
+    @Query("SELECT * FROM `program` WHERE `program`.extPlanId LIKE :planId")
+    fun getPrograms(planId: Long): Flow<List<WorkoutProgram>>
 
     @Insert
     suspend fun insert(program: WorkoutProgram): Long

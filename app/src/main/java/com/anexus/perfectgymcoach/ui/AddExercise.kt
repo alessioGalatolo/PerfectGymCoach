@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -51,7 +50,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                 )
             }
         }, content = { innerPadding ->
-            if (viewModel.state.value.workoutExercises.isEmpty()) {
+            if (viewModel.state.value.workoutExercisesAndInfo.isEmpty()) {
                 // if you have no exercises
                 Column(
                     modifier = Modifier
@@ -76,7 +75,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = innerPadding
                 ) {
-                    items(items = viewModel.state.value.workoutExercises, key = { it }) { exercise ->
+                    items(items = viewModel.state.value.workoutExercisesAndInfo, key = { it }) { exercise ->
                         Card(
                             onClick = {
 //                                    navController.navigate(
