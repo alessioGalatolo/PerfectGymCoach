@@ -49,6 +49,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import kotlin.math.min
@@ -150,22 +151,19 @@ fun Workout(navController: NavHostController, programId: Long,
             else currentExercise!!.image
         }}
         val context = LocalContext.current
-        var brightImage = true
-//        LaunchedEffect(currentImageId){
-//            val imageBitmap = BitmapFactory.decodeResource(
-//                context.resources,
-//                currentImageId
-//            )
-//            Palette.from(imageBitmap).maximumColorCount(3)
-//                .clearFilters()
-//                .setRegion(0, 0, imageBitmap!!.width,50)
-//                .generate {
-//                    brightImage = ColorUtils.calculateLuminance(
-//                        it?.getDominantColor(Color.Black.toArgb()) ?: Color.Black.toArgb()
-//                    ) > 0.5f
-//                }
-//
-//        }
+        var brightImage = remember { mutableStateOf(false) }
+        LaunchedEffect(currentImageId){
+            val imageBitmap = BitmapFactory.decodeResource(
+                context.resources,
+                currentImageId
+            )
+            Palette.from(imageBitmap).maximumColorCount(3)
+                .clearFilters()
+                .setRegion(0, 0, imageBitmap!!.width,50)
+                .generate {
+                    brightImage.value = (ColorUtils.calculateLuminance(it?.getDominantColor(Color.Black.toArgb()) ?: 0)) > 0.5
+                }
+        }
         FullScreenImageCard(
             topAppBarNavigationIcon = {
                 IconButton(onClick = onClose) {
@@ -202,7 +200,7 @@ fun Workout(navController: NavHostController, programId: Long,
                     )
                 }
             },
-            brightImage = brightImage,
+            brightImage = brightImage.value,
             content = {
                 Column(
                     Modifier

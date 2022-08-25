@@ -72,7 +72,7 @@ fun FullScreenImageCard(
     LaunchedEffect(transitionStarted, brightImage) {
         sysUiController.setStatusBarColor(
             color = Color.Transparent,
-            darkIcons = brightImage || transition > 0.0
+            darkIcons = brightImage || transitionStarted
         )
     }
 
