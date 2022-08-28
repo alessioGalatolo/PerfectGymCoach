@@ -24,6 +24,7 @@ data class WorkoutState(
     val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecord>> = emptyMap(), // old records
     val workoutTime: Long? = null, // in seconds
+    val restTimestamp: Long? = null, // workout time of end of rest
     val workoutId: Long = 0,
     val repsBottomBar: Int = 0, // reps to be displayed in bottom bar
     val weightBottomBar: Float = 0f // weight to be displayed in bottom bar
@@ -39,7 +40,8 @@ sealed class WorkoutEvent{
     object DeleteCurrentRecords: WorkoutEvent()
 
     data class CompleteSet(
-        val exerciseInWorkout: Int
+        val exerciseInWorkout: Int,
+        val exerciseRest: Long
     ): WorkoutEvent()
 
     object ToggleCancelWorkoutDialog : WorkoutEvent()
@@ -114,6 +116,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     ]?.find {
                         it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
                     }  // FIXME: same find is repeated elsewhere
+
+                    _state.value = state.value.copy(restTimestamp = state.value.workoutTime!!+event.exerciseRest)
                     if (record == null) {
                         repository.addExerciseRecord(
                             ExerciseRecord(

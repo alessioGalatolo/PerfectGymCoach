@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -24,6 +25,7 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import kotlin.math.max
 import kotlin.math.min
 
 @OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
@@ -35,7 +37,8 @@ fun ExercisePage(
     title: @Composable () -> Unit,
     addSet: () -> Unit,
     currentExerciseRecords: List<ExerciseRecord>,
-    ongoingRecord: ExerciseRecord?
+    ongoingRecord: ExerciseRecord?,
+    restCounter: Long?
 ) {
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -44,7 +47,9 @@ fun ExercisePage(
         Modifier.padding(top = 8.dp)
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -94,9 +99,11 @@ fun ExercisePage(
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
                     // content
-//                    if (TODO()){  // stopwatch
-//
-//                    }
+                    if (restCounter != null){
+                        Text("Time before next set: ", Modifier.align(CenterHorizontally))
+                        Text("$restCounter", Modifier.align(CenterHorizontally),
+                            style = MaterialTheme.typography.headlineMedium)
+                    }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -108,8 +115,9 @@ fun ExercisePage(
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(
                             Modifier.padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = CenterHorizontally
                         ) {
+                            Text("Rest: ${workoutExercisesAndInfo[page].rest}s", Modifier.align(Alignment.Start))
                             workoutExercisesAndInfo[page].reps.forEachIndexed { setCount, repsCount ->
                                 val toBeDone = setsDone.value <= setCount
                                 Row(
@@ -168,7 +176,8 @@ fun ExercisePage(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    currentExerciseRecords.forEach { record ->
+                    var recordsToShow by remember { mutableStateOf(2) }
+                    currentExerciseRecords.subList(0, min(currentExerciseRecords.size, recordsToShow)).forEach { record ->  // should maybe become lazy
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(8.dp)) {
                                 val dateFormat = SimpleDateFormat("d MMM (yy)")
@@ -203,6 +212,15 @@ fun ExercisePage(
                                     }
                                 }
                             }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    if (recordsToShow < currentExerciseRecords.size) {
+                        TextButton(
+                            onClick = { recordsToShow += 2 },
+                            modifier = Modifier.align(CenterHorizontally)
+                        ) {
+                            Text("Show older records")
                         }
                         Spacer(Modifier.height(8.dp))
                     }

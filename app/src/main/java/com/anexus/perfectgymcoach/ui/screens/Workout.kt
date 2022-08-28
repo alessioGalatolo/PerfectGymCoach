@@ -4,10 +4,8 @@ import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,7 +21,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.core.graphics.ColorUtils
@@ -227,6 +224,12 @@ fun Workout(navController: NavHostController, programId: Long,
             imageHeight = imageHeight,
             brightImage = brightImage.value,
             content = {
+                val restCounter: Long? by remember { derivedStateOf {
+                    if (viewModel.state.value.restTimestamp != null && currentExercise != null)
+                        kotlin.math.max(0L,
+                            viewModel.state.value.restTimestamp!! - viewModel.state.value.workoutTime!!)
+                    else null
+                }}
                 ExercisePage(
                     pagerState = pagerState,
                     setsDone = setsDone,
@@ -234,7 +237,8 @@ fun Workout(navController: NavHostController, programId: Long,
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
                     title = title,
-                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) }
+                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
+                    restCounter = restCounter
                 )
             }
         ) {
@@ -247,7 +251,8 @@ fun Workout(navController: NavHostController, programId: Long,
                 completeSet = {
                     viewModel.onEvent(
                         WorkoutEvent.CompleteSet(
-                            pagerState.currentPage
+                            pagerState.currentPage,
+                            currentExercise!!.rest.toLong()
                         )
                     )
                 }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
