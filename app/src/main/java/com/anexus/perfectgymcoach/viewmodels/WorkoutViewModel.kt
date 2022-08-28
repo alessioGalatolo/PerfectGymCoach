@@ -21,8 +21,7 @@ import javax.inject.Inject
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
     val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
-    val currentExerciseRecords: List<ExerciseRecord> = emptyList(), // old records
-    val currentExerciseCurrentRecord: ExerciseRecord? = null, // records collected in the current workout
+    val allRecords: Map<Long, List<ExerciseRecord>> = emptyMap(), // old records
     val workoutTime: Long? = null, // in seconds
     val workoutId: Long = 0,
     val repsBottomBar: Int = 0, // reps to be displayed in bottom bar
@@ -47,8 +46,6 @@ sealed class WorkoutEvent{
     data class GetWorkoutExercises(val programId: Long): WorkoutEvent()
 
     data class AddSetToExercise(val exerciseInWorkout: Int): WorkoutEvent()
-
-    data class GetExerciseRecords(val exerciseId: Long, val exerciseInWorkout: Int): WorkoutEvent()
 
     data class UpdateReps(val newValue: Int): WorkoutEvent()
 
@@ -78,6 +75,15 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         _state.value = state.value.copy(
                             workoutExercisesAndInfo = repository.getWorkoutExercisesAndInfo(event.programId).first()
                         ) // TODO: sort
+                        repository.getExerciseRecords(
+                            state.value.workoutExercisesAndInfo.map { it.extExerciseId }
+                        ).collect { records ->
+                            val allRecords = records.groupBy { it.extExerciseId }
+                            // TODO: sort by date before putting in
+                            _state.value = state.value.copy(
+                                allRecords = allRecords
+                            )
+                        }
                     }
                 }
             }
@@ -100,27 +106,13 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 }.onEach {_state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)}
                 .launchIn(viewModelScope)
             }
-            is WorkoutEvent.GetExerciseRecords -> {
-                getExerciseRecordsJob?.cancel() // TODO: could check if it has changed before cancelling
-                getExerciseRecordsJob = viewModelScope.launch {
-                    repository.getExerciseRecords(event.exerciseId).collect { records ->
-                        // TODO: sort by date before putting in
-                        // TODO: implement some sort of caching
-                        val currentRecord: ExerciseRecord? = records.find {
-                            it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
-                        }
-                        val oldRecords = if (currentRecord != null) records.minus(currentRecord) else records
-                        records.sortedByDescending { it.date }
-                        _state.value = state.value.copy(
-                            currentExerciseRecords = oldRecords,
-                            currentExerciseCurrentRecord = currentRecord
-                        )
-                    }
-                }
-            }
             is WorkoutEvent.CompleteSet -> {
                 viewModelScope.launch {
-                    val record = state.value.currentExerciseCurrentRecord
+                    val record = state.value.allRecords[
+                            state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId
+                    ]?.find {
+                        it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
+                    }  // FIXME: same find is repeated elsewhere
                     if (record == null) {
                         repository.addExerciseRecord(
                             ExerciseRecord(

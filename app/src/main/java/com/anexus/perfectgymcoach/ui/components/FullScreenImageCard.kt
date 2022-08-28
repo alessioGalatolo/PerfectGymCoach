@@ -28,10 +28,11 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullScreenImageCard(
-    topAppBarNavigationIcon: @Composable () -> Unit,
-    topAppBarActions: @Composable RowScope.() -> Unit,
+    topAppBarNavigationIcon: @Composable (Boolean) -> Unit,
+    topAppBarActions: @Composable RowScope.(Boolean) -> Unit,
     title: @Composable () -> Unit,
-    image: @Composable BoxScope.(Modifier) -> Unit,
+    image: @Composable BoxScope.() -> Unit,
+    imageHeight: Dp,
     brightImage: Boolean,
     content: @Composable () -> Unit,
     bottomBar: @Composable (PaddingValues) -> Unit
@@ -39,15 +40,12 @@ fun FullScreenImageCard(
     val deviceCornerRadius = 12.dp // TODO: should be same as device (waiting compose API)
 
     val localDensity = LocalDensity.current
-    var imageHeight by remember { // store image height to make content start at the right point
-        mutableStateOf(0)
-    }
     val statusBarsHeight = WindowInsets.Companion.statusBars.asPaddingValues().calculateTopPadding()
     val contentBelowImage by remember {
         derivedStateOf{
             max(
                 0.dp,
-                with(localDensity) { imageHeight.toDp() } - statusBarsHeight - 64.dp
+                /*with(localDensity) { imageHeight.toDp() }*/ imageHeight - statusBarsHeight - 64.dp
             ) // top app bar height FIXME: should not be hardcoded
         }
     }
@@ -68,7 +66,7 @@ fun FullScreenImageCard(
 
     // make status bar transparent to see image behind
     val sysUiController = rememberSystemUiController()
-    val transitionStarted by remember { derivedStateOf { transition > 0.0 } }
+    val transitionStarted = transition > 0.0
     LaunchedEffect(transitionStarted, brightImage) {
         sysUiController.setStatusBarColor(
             color = Color.Transparent,
@@ -80,14 +78,7 @@ fun FullScreenImageCard(
         modifier = Modifier
             .background(Color.Transparent)
             .fillMaxSize()){
-        image(
-            Modifier
-                .fillMaxWidth()
-//                .clip(AbsoluteRoundedCornerShape(deviceCornerRadius))
-                .onGloballyPositioned { coordinates ->
-                    imageHeight = coordinates.size.height
-                }
-        )
+        image()
 
         Scaffold (
             Modifier.fillMaxSize(),
@@ -113,8 +104,8 @@ fun FullScreenImageCard(
                             containerColor = Color.Transparent,
                             scrolledContainerColor = Color.Transparent
                         ),
-                        navigationIcon = topAppBarNavigationIcon,
-                        actions = topAppBarActions,
+                        navigationIcon = { topAppBarNavigationIcon(transitionStarted) },
+                        actions = { topAppBarActions(transitionStarted) },
                         modifier = Modifier.statusBarsPadding()
                     )
                 }

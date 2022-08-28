@@ -21,18 +21,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.MainScreen
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.HorizontalPagerIndicator
+import com.google.accompanist.pager.rememberPagerState
+import com.google.accompanist.placeholder.material.placeholder
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalPagerApi::class)
 @Composable
 fun WorkoutCard(program: WorkoutProgram,
                 exercises: List<WorkoutExerciseAndInfo>,
@@ -53,15 +60,31 @@ fun WorkoutCard(program: WorkoutProgram,
                 }))
     {
         Column {
-            Image(
-                painter = painterResource(R.drawable.sample_image),
-                contentDescription = "Image of the exercise",
-                alignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.CenterHorizontally)
-                    .clip(AbsoluteRoundedCornerShape(12.dp))
-            )
+            val pagerState = rememberPagerState()
+            if (exercises.isNotEmpty()) {
+                Box(
+                    Modifier.wrapContentHeight(Alignment.Top),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    HorizontalPager(count = exercises.size, state = pagerState) { page ->
+                        AsyncImage(
+                            model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .clip(AbsoluteRoundedCornerShape(12.dp))
+                        )
+                    }
+                    HorizontalPagerIndicator(
+                        pagerState = pagerState,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp),
+                    )
+                }
+            }
+
 
             Text(text = program.name,
                 style = MaterialTheme.typography.headlineMedium,

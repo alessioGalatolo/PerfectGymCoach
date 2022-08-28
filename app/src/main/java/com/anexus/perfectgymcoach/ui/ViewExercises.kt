@@ -5,10 +5,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +40,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
@@ -160,42 +167,44 @@ fun ViewExercises(navController: NavHostController, programName: String,
                  Text(Exercise.Muscle.values()[muscleOrdinal].muscleName)
              }
         }, content = { innerPadding ->
-            LazyColumn(
-                contentPadding = innerPadding
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = innerPadding,
+                modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                items(items = viewModel.state.value.exercises, key = { it }) { exercise ->
-                    Card(
+                items(viewModel.state.value.exercises, key = { it.exerciseId }) { exercise ->
+                    ElevatedCard(
                         onClick = {
                             viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue(exercise))
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
+//                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Row {
-                            Image(
-                                painter = painterResource(R.drawable.full_body),
-                                contentDescription = "Contact profile picture",
-                                modifier = Modifier
-                                    // Set image size to 40 dp
-                                    .size(40.dp)
-                                    .padding(all = 4.dp)
-                                    .align(Alignment.Companion.CenterVertically)
-                                    // Clip image to be shaped as a circle
-                                    .clip(CircleShape)
-                            )
-                            Column {
-                                Text(text = exercise.name, style = MaterialTheme.typography.titleLarge)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "Primary muscle: ${exercise.primaryMuscle.muscleName}")
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "Secondary muscles: ${
-                                    exercise.secondaryMuscles.joinToString(
-                                        ", "
-                                    ) { it.muscleName }
-                                }") // TODO
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(exercise.image)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Contact profile picture",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.CenterHorizontally)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                        Column (Modifier.padding(8.dp)){
+                            Text(text = exercise.name, style = MaterialTheme.typography.titleLarge)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = "Primary muscle: ${exercise.primaryMuscle.muscleName}")
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = "Secondary muscles: ${
+                                exercise.secondaryMuscles.joinToString(
+                                    ", "
+                                ) { it.muscleName }
+                            }") // TODO
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
@@ -226,6 +235,7 @@ fun AddExerciseDialogue(
                 toggleDialogue()
             },
             properties = DialogProperties(
+                decorFitsSystemWindows = true,
                 usePlatformDefaultWidth = false // experimental
             )
         ) {
@@ -284,7 +294,7 @@ fun AddExerciseDialogue(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                                 .clip(AbsoluteRoundedCornerShape(12.dp))
-                        ) // TODO: image of exercise
+                        )
                         Row (modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),

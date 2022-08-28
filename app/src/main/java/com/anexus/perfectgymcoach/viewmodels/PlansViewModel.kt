@@ -6,13 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class PlansState(
-    val workoutPlans: List<WorkoutPlan> = emptyList(),
+    val workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = emptyList(),
     val openAddPlanDialogue: Boolean = false,
     val currentPlanId: Long? = null
 )
@@ -33,32 +33,31 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
     private val _state = mutableStateOf(PlansState())
     val state: State<PlansState> = _state
 
+    private fun updatePlans(
+        currentPlanId: Long? = state.value.currentPlanId,
+        workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = state.value.workoutPlanMapPrograms
+    ){
+        var plans = workoutPlanMapPrograms
+        if(currentPlanId != null){
+            plans = workoutPlanMapPrograms.sortedByDescending {plan ->
+                if (plan.first.planId == currentPlanId) 1 else 0
+            }
+        }
+        _state.value = state.value.copy(
+            workoutPlanMapPrograms = plans,
+            currentPlanId = currentPlanId
+        )
+    }
+
     init {
         viewModelScope.launch {
-            repository.getPlans().collect{
-                var ordered = it
-                if (state.value.currentPlanId != null){
-                    ordered = it.sortedByDescending { plan ->
-                        if (plan.planId == state.value.currentPlanId) 1 else 0
-                    }
-                }
-                _state.value = state.value.copy(
-                    workoutPlans = ordered
-                )
+            repository.getPlanMapPrograms().collect{
+                updatePlans(workoutPlanMapPrograms = it.toList())
             }
         }
         viewModelScope.launch {
             repository.getCurrentPlan().collect {
-                var ordered = state.value.workoutPlans
-                if (it != null){
-                    ordered = ordered.sortedByDescending { plan ->
-                        if (plan.planId == it) 1 else 0
-                    }
-                }
-                _state.value = state.value.copy(
-                    workoutPlans = ordered,
-                    currentPlanId = it
-                )
+                updatePlans(currentPlanId = it)
             }
         }
     }

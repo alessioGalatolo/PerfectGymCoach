@@ -67,7 +67,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 getExercisesJob = viewModelScope.launch {
                     repository.getExercises(event.muscle).collect {
                         _state.value = state.value.copy(
-                            exercises = it
+                            exercises = it.sortedBy { ex -> ex.name }
                         )
                     }
                 }

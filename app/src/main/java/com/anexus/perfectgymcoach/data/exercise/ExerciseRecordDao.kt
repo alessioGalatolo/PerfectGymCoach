@@ -14,6 +14,11 @@ interface ExerciseRecordDao {
         "WHERE extExerciseId LIKE :exerciseId")
     fun getRecords(exerciseId: Long): Flow<List<ExerciseRecord>>
 
+    @Query(
+        "SELECT * FROM exerciserecord " +
+        "WHERE extExerciseId IN (:exerciseIds)")
+    fun getRecords(exerciseIds: List<Long>): Flow<List<ExerciseRecord>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: ExerciseRecord): Long
 

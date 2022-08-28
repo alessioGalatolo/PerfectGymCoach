@@ -56,9 +56,11 @@ android {
 
 dependencies {
     implementation "androidx.palette:palette-ktx:1.0.0"
+    implementation "io.coil-kt:coil-compose:2.2.0"
     implementation "com.google.accompanist:accompanist-pager:$accompanist_version"
     implementation "com.google.accompanist:accompanist-pager-indicators:$accompanist_version"
     implementation "com.google.accompanist:accompanist-systemuicontroller:$accompanist_version"
+    implementation "com.google.accompanist:accompanist-placeholder-material:$accompanist_version"
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation "androidx.datastore:datastore-preferences:1.0.0"
     implementation "androidx.room:room-runtime:$room_version"

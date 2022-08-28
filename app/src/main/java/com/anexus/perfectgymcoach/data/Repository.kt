@@ -30,11 +30,25 @@ class Repository @Inject constructor(
     private val currentProgram = longPreferencesKey("Current program")
     private val currentWorkout = longPreferencesKey("Current workout") // TODO
 
+
     fun getPlans() = db.workoutPlanDao.getPlans()
 
-    fun getProgramMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> = db.workoutProgramDao.getProgramMapExercises(planId)
+    fun getPlanMapPrograms(): Flow<Map<WorkoutPlan, List<WorkoutProgram>>> =
+        db.workoutPlanDao.getPlanMapPrograms()
+
+    suspend fun addPlan(plan: WorkoutPlan) = db.workoutPlanDao.insert(plan)
+
+
+    fun getProgramMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> =
+        db.workoutProgramDao.getProgramMapExercises(planId)
 
     fun getPrograms(planId: Long) = db.workoutProgramDao.getPrograms(planId)
+
+    suspend fun addProgram(program: WorkoutProgram) = db.workoutProgramDao.insert(program)
+
+    fun renameProgram(program: WorkoutProgram) = db.workoutProgramDao.update(program)
+
+
 
     fun getWorkoutExercisesAndInfo(programId: Long): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programId)
 
@@ -42,9 +56,22 @@ class Repository @Inject constructor(
 
     fun getWorkoutExercises(programId: Long) = db.workoutExerciseDao.getExercises(programId)
 
+    suspend fun addWorkoutExercise(exercise: WorkoutExercise) = db.workoutExerciseDao.insert(exercise)
+
+
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
 
+    fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
+
+    suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
+
+
     fun getWorkoutHistory() = db.workoutRecordDao.getRecords()
+
+    suspend fun addWorkoutRecord(workoutRecord: WorkoutRecord) = db.workoutRecordDao.insert(workoutRecord)
+
+    suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
+
 
     fun getExercises(muscle: Exercise.Muscle): Flow<List<Exercise>> {
         return if (muscle == Exercise.Muscle.EVERYTHING) {
@@ -53,6 +80,7 @@ class Repository @Inject constructor(
             db.exerciseDao.getExercises(muscle)
         }
     }
+
 
     fun getCurrentPlan(): Flow<Long?> = context.dataStore.data.map{ it[currentPlan] }
 
@@ -66,6 +94,7 @@ class Repository @Inject constructor(
 
     }
 
+
     fun getCurrentProgram(): Flow<Long?> = context.dataStore.data.map{ it[currentProgram] }
 
     suspend fun setCurrentProgram(programId: Long, overrideValue: Boolean){
@@ -76,19 +105,6 @@ class Repository @Inject constructor(
         }
     }
 
-    suspend fun addPlan(plan: WorkoutPlan) = db.workoutPlanDao.insert(plan)
-
-    suspend fun addProgram(program: WorkoutProgram) = db.workoutProgramDao.insert(program)
-
-    suspend fun addWorkoutExercise(exercise: WorkoutExercise) = db.workoutExerciseDao.insert(exercise)
-
-    suspend fun addWorkoutRecord(workoutRecord: WorkoutRecord) = db.workoutRecordDao.insert(workoutRecord)
-
-    suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
-
-    suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
-
-    fun renameProgram(program: WorkoutProgram) = db.workoutProgramDao.update(program)
 
     companion object {
 

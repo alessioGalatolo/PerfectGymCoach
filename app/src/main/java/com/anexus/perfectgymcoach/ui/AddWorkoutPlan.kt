@@ -2,27 +2,17 @@ package com.anexus.perfectgymcoach.ui
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,6 +20,7 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
 import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.PlansEvent
@@ -37,7 +28,7 @@ import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 import kotlinx.coroutines.launch
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWorkoutPlan(navController: NavHostController,
                    openDialogNow: Boolean,
@@ -77,7 +68,7 @@ fun AddWorkoutPlan(navController: NavHostController,
                 )
             }
         }) { innerPadding ->
-        if (viewModel.state.value.workoutPlans.isEmpty()) {
+        if (viewModel.state.value.workoutPlanMapPrograms.isEmpty()) {
             // if you have no plans
             Column(
                 modifier = Modifier
@@ -102,7 +93,7 @@ fun AddWorkoutPlan(navController: NavHostController,
                 contentPadding = innerPadding,
                 modifier = Modifier.padding(16.dp)
             ) {
-                itemsIndexed(items = viewModel.state.value.workoutPlans, key = { _, it -> it.planId })
+                itemsIndexed(items = viewModel.state.value.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
                 { index, plan ->
                     if (index == 0){
                         Text("Current plan", fontWeight = FontWeight.Bold)
@@ -110,8 +101,9 @@ fun AddWorkoutPlan(navController: NavHostController,
                         Text("Other plans", fontWeight = FontWeight.Bold)
                     }
                     PlanCard(
-                        navController = navController, plan = plan,
-                        viewModel.state.value.currentPlanId
+                        navController = navController, plan = plan.first,
+                        programs = plan.second,
+                        currentPlanId = viewModel.state.value.currentPlanId
                     ) {
                         viewModel.onEvent(PlansEvent.SetCurrentPlan(it))
                         scope.launch {
@@ -127,10 +119,12 @@ fun AddWorkoutPlan(navController: NavHostController,
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LazyItemScope.PlanCard(navController: NavHostController,
-             plan: WorkoutPlan,
-             currentPlanId: Long?,
-             setAsCurrent: (Long) -> Unit
+fun LazyItemScope.PlanCard(
+    navController: NavHostController,
+    plan: WorkoutPlan,
+    programs: List<WorkoutProgram>,
+    currentPlanId: Long?,
+    setAsCurrent: (Long) -> Unit
 ){
     Card (
         Modifier
@@ -143,28 +137,18 @@ fun LazyItemScope.PlanCard(navController: NavHostController,
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(all = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(R.drawable.full_body),
-                contentDescription = "Contact profile picture",
-                modifier = Modifier
-                    // Set image size to 40 dp
-                    .size(40.dp)
-                    .padding(all = 4.dp)
-                    // Clip image to be shaped as a circle
-                    .clip(CircleShape)
-            )
-
-            // Add a horizontal space between the image and the column
-//                Spacer(modifier = Modifier.width(8.dp))
+//          // TODO: maybe add back image as random icon
 
             Column {
-                Text(text = plan.name)
+                Text(text = plan.name, style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Some program names...") // TODO
+                programs.forEach {
+                    Text(it.name)
+                }
             }
 
             IconToggleButton(
@@ -197,7 +181,7 @@ fun LazyItemScope.PlanCard(navController: NavHostController,
                         }
                     },
                     label = "Size"
-                ) { 24.dp }
+                ) { default_icon_size }
 
                 Icon(
                     imageVector = if (plan.planId == currentPlanId) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
