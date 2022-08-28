@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.screens
 
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.Image
@@ -29,11 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -45,6 +51,7 @@ import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
@@ -53,7 +60,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExercisesByMuscle(navController: NavHostController, programName: String,
-                      programId: Long/*, viewModel: ExercisesViewModel = hiltViewModel()*/
+                      programId: Long
 ) {
     // scroll behaviour for top bar
     val decayAnimationSpec = rememberSplineBasedDecay<Float>()
@@ -167,10 +174,8 @@ fun ViewExercises(navController: NavHostController, programName: String,
                  Text(Exercise.Muscle.values()[muscleOrdinal].muscleName)
              }
         }, content = { innerPadding ->
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = innerPadding,
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
@@ -181,29 +186,37 @@ fun ViewExercises(navController: NavHostController, programName: String,
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-//                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(exercise.image)
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = "Contact profile picture",
+                            contentScale = ContentScale.Crop,
+                            contentDescription = null,
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(LocalConfiguration.current.screenWidthDp.dp/3)
                                 .align(Alignment.CenterHorizontally)
                                 .clip(RoundedCornerShape(12.dp))
                         )
                         Column (Modifier.padding(8.dp)){
                             Text(text = exercise.name, style = MaterialTheme.typography.titleLarge)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "Primary muscle: ${exercise.primaryMuscle.muscleName}")
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "Secondary muscles: ${
-                                exercise.secondaryMuscles.joinToString(
-                                    ", "
-                                ) { it.muscleName }
-                            }") // TODO
+                            Text(text = buildAnnotatedString {
+                                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                    append("Primary muscle: ")
+                                }
+                                append(exercise.primaryMuscle.muscleName)
+                            })
+                            if (exercise.secondaryMuscles.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = "Secondary muscles: ${
+                                    exercise.secondaryMuscles.joinToString(
+                                        ", "
+                                    ) { it.muscleName }
+                                }") // TODO
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }

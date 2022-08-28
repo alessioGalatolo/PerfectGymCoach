@@ -1,8 +1,8 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.screens
 
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.*
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -34,18 +34,15 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.data.exercise.Exercise.Companion.equipment2increment
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
-import com.anexus.perfectgymcoach.ui.components.CancelWorkoutDialog
-import com.anexus.perfectgymcoach.ui.components.FullScreenImageCard
-import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
+import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.components.*
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
-import kotlin.math.min
 
 
 @OptIn(
@@ -132,7 +129,7 @@ fun Workout(navController: NavHostController, programId: Long,
     }
 
     LaunchedEffect(viewModel.state.value.allRecords, pagerState.currentPage, setsDone){
-        val currentRecord = recordsToDisplay.firstOrNull()  // FixME: sometimes not latest
+        val currentRecord = recordsToDisplay.firstOrNull()  // FixME: sometimes not latest (was it fixed?)
 
         if (currentRecord != null) {
             if (setsDone.value > 0)
@@ -152,7 +149,7 @@ fun Workout(navController: NavHostController, programId: Long,
     }
 
     val completeWorkout: () -> Unit = {    // TODO: should go to recap screen, change upcoming program
-        viewModel.onEvent(WorkoutEvent.FinishWorkout)
+        viewModel.onEvent(WorkoutEvent.FinishWorkout(programId))
         navController.popBackStack()
     }
 
@@ -168,24 +165,24 @@ fun Workout(navController: NavHostController, programId: Long,
         val imageWidth = LocalConfiguration.current.screenWidthDp.dp
         val imageHeight = imageWidth/3*2
         FullScreenImageCard(
-            topAppBarNavigationIcon = {
+            topAppBarNavigationIcon = { appBarShown ->
+                val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !isSystemInDarkTheme())
                 IconButton(onClick = onClose) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Go back" // TODO: cancel workout?
+                        contentDescription = "Go back", // TODO: cancel workout?
+                        tint = if (needsDarkColor) Color.Gray else Color.White
                     )
                 }
             },
-            topAppBarActions = { appBarShown ->  // FIXME: value not changing when needed
+            topAppBarActions = { appBarShown ->
                 Row(verticalAlignment = CenterVertically) {
+                    val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !isSystemInDarkTheme())
                     Text(timer(), style = MaterialTheme.typography.titleLarge,
-                        color = if (brightImage.value || appBarShown) MaterialTheme.typography.titleLarge.color else Color.White)
+                        color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
                     if (viewModel.state.value.workoutTime != null) {
                         TextButton(onClick = completeWorkout ) {
-                            Text("Finish",
-                                color = if (brightImage.value || appBarShown) ButtonDefaults.textButtonColors().contentColor(
-                                    enabled = true
-                                ).value else Color.LightGray)
+                            Text("Finish", color = if (needsDarkColor) Color.Gray else Color.White)
                         }
                     }
                 }
@@ -241,109 +238,26 @@ fun Workout(navController: NavHostController, programId: Long,
                 )
             }
         ) {
-            Column(
-                Modifier
-                    .padding(it)
-                    .padding(horizontal = 16.dp)
-            ) {
-                if (viewModel.state.value.workoutTime == null) {
-                    // workout has not started
-                    Button(
-                        onClick = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
-                        Modifier.fillMaxWidth()
-                    ) {
-                        Text("Start workout")
-                    }
-                } else if (currentExercise == null) {
-                    // workout has started and it is on the end page
-                    Button(
-                        onClick = completeWorkout,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Complete workout")
-                    }
-                } else if (setsDone.value >= currentExercise!!.reps.size
-                ) {
-                    // workout started and the user has done all the sets in the page
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage))
-                        },
-                        Modifier.fillMaxWidth()
-                    ) {
-                        Text("Add set")
-                    }
-                    Button(
-                        onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
-                        Modifier.fillMaxWidth()
-                    ) {
-                        Text("Next exercise")
-                    }
-
-                } else {
-                    // normal case
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        TextFieldWithButtons(
-                            "Reps",
-                            text = { viewModel.state.value.repsBottomBar.toString() },
-                            onNewText = { new -> viewModel.onEvent(WorkoutEvent.UpdateReps(new.toInt())) },
-                            onIncrement = {
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateReps(
-                                        viewModel.state.value.repsBottomBar + 1
-                                    )
-                                )
-                            },
-                            onDecrement = {
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateReps(
-                                        viewModel.state.value.repsBottomBar - 1
-                                    )
-                                )
-                            }
+            WorkoutBottomBar(
+                contentPadding = it,
+                workoutStarted = viewModel.state.value.workoutTime == null,
+                startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
+                currentExercise = currentExercise,
+                completeWorkout = completeWorkout,
+                completeSet = {
+                    viewModel.onEvent(
+                        WorkoutEvent.CompleteSet(
+                            pagerState.currentPage
                         )
-                        Spacer(Modifier.width(8.dp))
-                        TextFieldWithButtons(
-                            "Weight",
-                            text = { viewModel.state.value.weightBottomBar.toString() },
-                            onNewText = { new -> viewModel.onEvent(WorkoutEvent.UpdateWeight(new.toFloat())) },
-                            onIncrement = {
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateWeight(
-                                        viewModel.state.value.weightBottomBar +
-                                                equipment2increment[currentExercise!!.equipment]!!
-                                    )
-                                )
-                            },
-                            onDecrement = {
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateWeight(
-                                        viewModel.state.value.weightBottomBar -
-                                                equipment2increment[currentExercise!!.equipment]!!
-                                    )
-                                )
-                            }
-                        )
-                    }
-                    Row(Modifier.fillMaxWidth()) {
-                        Button(
-                            onClick = {
-                                viewModel.onEvent(
-                                    WorkoutEvent.CompleteSet(
-                                        pagerState.currentPage
-                                    )
-                                )
-                            },
-                            Modifier.fillMaxWidth()
-                        ) {
-                            Text("Complete")
-                        }
-                    }
-                }
-            }
+                    )
+                }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
+                addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
+                goToNextExercise = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
+                repsToDisplay = viewModel.state.value.repsBottomBar,
+                updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
+                weightToDisplay = viewModel.state.value.weightBottomBar,
+                updateWeight = { value -> viewModel.onEvent(WorkoutEvent.UpdateWeight(value)) }
+            )
         }
     } else {
         // program is empty, prompt to add an exercise
@@ -382,87 +296,6 @@ fun Workout(navController: NavHostController, programId: Long,
                     modifier = Modifier.padding(16.dp)
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun ExerciseSettingsMenu() {
-    Box(
-        modifier = Modifier.wrapContentSize()
-    ) {
-        var expanded by remember { mutableStateOf(false) }
-        IconButton(onClick = { expanded = true }) {
-            Icon(
-                Icons.Default.MoreVert,
-                contentDescription = "Localized description"
-            )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Change exercise") },
-                onClick = { /* Handle edit! */ },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Edit,
-                        contentDescription = null
-                    )
-                })
-            DropdownMenuItem(
-                text = { Text("Send Feedback") },
-                onClick = { /* Handle send feedback! */ },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Email,
-                        contentDescription = null
-                    )
-                })
-            DropdownMenuItem(
-                text = { Text("Cancel workout") },
-                onClick = { /* Handle cancel! */ },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Close,
-                        contentDescription = null
-                    )
-                })
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RowScope.TextFieldWithButtons(
-    prompt: String,
-    text: () -> String,
-    onNewText: (String) -> Unit,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit
-) {
-    Row(verticalAlignment = CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f, true)
-    ) {
-        IconButton(onClick = onDecrement, modifier = Modifier.weight(0.3f)) {
-            Icon(Icons.Filled.Remove, null)
-        }
-        OutlinedTextField(
-            value = text(),
-            onValueChange = onNewText,
-            singleLine = true,
-            label = { Text(prompt) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .widthIn(1.dp, Dp.Infinity)
-                .heightIn(1.dp, Dp.Infinity)
-                .weight(0.5f)
-        )
-        IconButton(onClick = onIncrement, modifier = Modifier.weight(0.3f)) {
-            Icon(Icons.Filled.Add, null)
         }
     }
 }

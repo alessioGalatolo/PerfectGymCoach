@@ -56,11 +56,7 @@ fun PerfectGymCoachTheme(
     }
     val sysUiController = rememberSystemUiController()
     SideEffect {
-        sysUiController.setNavigationBarColor(
-            color = Color.Transparent,
-            darkIcons = !darkTheme
-        )
-        sysUiController.setStatusBarColor(
+        sysUiController.setSystemBarsColor(
             color = Color.Transparent,
             darkIcons = !darkTheme
         )

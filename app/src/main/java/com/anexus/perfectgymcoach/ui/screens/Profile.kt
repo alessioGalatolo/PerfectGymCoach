@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth

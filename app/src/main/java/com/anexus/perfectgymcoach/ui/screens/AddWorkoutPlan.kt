@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.screens
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -21,6 +21,7 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
 import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.PlansEvent
@@ -137,7 +138,7 @@ fun LazyItemScope.PlanCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(all = 16.dp),
+                .padding(all = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

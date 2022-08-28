@@ -1,4 +1,4 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.screens
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.*

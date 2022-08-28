@@ -11,7 +11,10 @@ import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
+import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
 import kotlinx.coroutines.flow.Flow
@@ -27,16 +30,20 @@ class Repository @Inject constructor(
     private val context: Context
 ) {
     private val currentPlan = longPreferencesKey("Current plan")
-    private val currentProgram = longPreferencesKey("Current program")
     private val currentWorkout = longPreferencesKey("Current workout") // TODO
 
 
     fun getPlans() = db.workoutPlanDao.getPlans()
 
+    fun getPlan(planId: Long) = db.workoutPlanDao.getPlan(planId)
+
     fun getPlanMapPrograms(): Flow<Map<WorkoutPlan, List<WorkoutProgram>>> =
         db.workoutPlanDao.getPlanMapPrograms()
 
     suspend fun addPlan(plan: WorkoutPlan) = db.workoutPlanDao.insert(plan)
+
+    suspend fun updateCurrentPlan(workoutPlanUpdateProgram: WorkoutPlanUpdateProgram) =
+        db.workoutPlanDao.updateCurrentProgram(workoutPlanUpdateProgram)
 
 
     fun getProgramMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> =
@@ -46,8 +53,9 @@ class Repository @Inject constructor(
 
     suspend fun addProgram(program: WorkoutProgram) = db.workoutProgramDao.insert(program)
 
-    fun renameProgram(program: WorkoutProgram) = db.workoutProgramDao.update(program)
+    suspend fun renameProgram(workoutProgramRename: WorkoutProgramRename) = db.workoutProgramDao.updateName(workoutProgramRename)
 
+    suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) = db.workoutProgramDao.updateOrder(workoutProgramReorder)
 
 
     fun getWorkoutExercisesAndInfo(programId: Long): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programId)
@@ -88,21 +96,9 @@ class Repository @Inject constructor(
         context.dataStore.edit {
             if (it[currentPlan] == null || overrideValue){
                 it[currentPlan] = planId
-                it.remove(currentProgram)  // reset current program as a result
             }
         }
 
-    }
-
-
-    fun getCurrentProgram(): Flow<Long?> = context.dataStore.data.map{ it[currentProgram] }
-
-    suspend fun setCurrentProgram(programId: Long, overrideValue: Boolean){
-        context.dataStore.edit {
-            if (it[currentProgram] == null || overrideValue){
-                it[currentProgram] = programId
-            }
-        }
     }
 
 

@@ -1,11 +1,15 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.screens
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -13,20 +17,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
+import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
 import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddProgram(navController: NavHostController, name: String, planId: Long,
                openDialogNow: Boolean,
@@ -39,7 +49,8 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
         insertName = { programName ->
             viewModel.onEvent(ProgramsEvent.AddProgram(WorkoutProgram(
                 extPlanId = planId,
-                name = programName
+                name = programName,
+                orderInWorkoutPlan = viewModel.state.value.programs.size
             ))) }
     )
     InsertNameDialog(
@@ -47,9 +58,8 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
         dialogueIsOpen = viewModel.state.value.openChangeNameDialog,
         toggleDialogue = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
         insertName = { viewModel.onEvent(ProgramsEvent.RenameProgram(
-            WorkoutProgram(
+            WorkoutProgramRename(
                 programId = viewModel.state.value.programToBeChanged,
-                extPlanId = planId,
                 name = it
             )
         )) }
@@ -103,24 +113,55 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                 // if you have some programs
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .fillMaxWidth(),
                     contentPadding = innerPadding
                 ) {
-                    items(items = viewModel.state.value.programs, key = { it.programId }) { programEntry ->
-                        WorkoutCard(
-                            programEntry,
-                            viewModel.state.value.exercisesAndInfo[programEntry.programId] ?: emptyList(),
-                            onCardClick = {
-                                navController.navigate(
-                                    "${MainScreen.AddExercise.route}/" +
-                                            "${programEntry.name}/" +
-                                            "${programEntry.programId}"
-                                )
-                            }, onCardLongPress = {
-                                viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog(programEntry.programId))
-                            }, navController = navController
-                        )
+                    itemsIndexed(items = viewModel.state.value.programs, key = { _, it -> it.programId }) { index, programEntry ->
+                        Row(
+                            Modifier.fillMaxWidth().animateItemPlacement(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column (horizontalAlignment = Alignment.CenterHorizontally){
+                                IconButton(onClick = {
+                                    viewModel.onEvent(ProgramsEvent.ReorderProgram(listOf(
+                                        WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan-1),
+                                        WorkoutProgramReorder(viewModel.state.value.programs[index-1].programId, programEntry.orderInWorkoutPlan)
+                                    )))
+                                }, enabled = index > 0) {
+                                    Icon(Icons.Default.ArrowUpward, null)
+                                }
+                                Text("Day", fontWeight = FontWeight.SemiBold, fontStyle = FontStyle.Italic)
+                                Text("${programEntry.orderInWorkoutPlan+1}",
+                                    fontWeight = FontWeight.SemiBold, fontStyle = FontStyle.Italic)
+                                IconButton(onClick = {
+                                    viewModel.onEvent(ProgramsEvent.ReorderProgram(listOf(
+                                        WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan+1),
+                                        WorkoutProgramReorder(viewModel.state.value.programs[index+1].programId, programEntry.orderInWorkoutPlan)
+                                    ))) }, enabled = index+1 < viewModel.state.value.programs.size) {
+                                    Icon(Icons.Default.ArrowDownward, null)
+                                }
+                            }
+                            WorkoutCard(
+                                programEntry,
+                                viewModel.state.value.exercisesAndInfo[programEntry.programId]
+                                    ?: emptyList(),
+                                onCardClick = {
+                                    navController.navigate(
+                                        "${MainScreen.AddExercise.route}/" +
+                                                "${programEntry.name}/" +
+                                                "${programEntry.programId}"
+                                    )
+                                }, onCardLongPress = {
+                                    viewModel.onEvent(
+                                        ProgramsEvent.ToggleChangeNameDialog(
+                                            programEntry.programId
+                                        )
+                                    )
+                                }, navController = navController,
+                                modifier = Modifier.padding(end = 16.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     item{

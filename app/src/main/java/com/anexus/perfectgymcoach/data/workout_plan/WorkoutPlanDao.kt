@@ -1,9 +1,6 @@
 package com.anexus.perfectgymcoach.data.workout_plan
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +11,9 @@ interface WorkoutPlanDao {
     @Query("SELECT * FROM `plan`")
     fun getPlans(): Flow<List<WorkoutPlan>>
 
+    @Query("SELECT * FROM `plan` WHERE `plan`.planId LIKE :planId")
+    fun getPlan(planId: Long): Flow<WorkoutPlan>
+
     @Query(
         "SELECT * FROM `plan` " +
         "LEFT JOIN `program` ON `plan`.planId = `program`.extPlanId "
@@ -22,6 +22,9 @@ interface WorkoutPlanDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: WorkoutPlan): Long
+
+    @Update(entity = WorkoutPlan::class)
+    suspend fun updateCurrentProgram(workoutPlanUpdateProgram: WorkoutPlanUpdateProgram)
 
     // TODO: delete plan
 }

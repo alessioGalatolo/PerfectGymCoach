@@ -21,5 +21,18 @@ import kotlinx.parcelize.Parcelize
 data class WorkoutProgram(
     @PrimaryKey(autoGenerate = true) val programId: Long = 0L,
     val extPlanId: Long,
+    val orderInWorkoutPlan: Int,
     val name: String
 ) : Parcelable
+
+@Parcelize
+data class WorkoutProgramRename(
+    val programId: Long,
+    val name: String
+): Parcelable
+
+@Parcelize
+data class WorkoutProgramReorder(
+    val programId: Long,
+    val orderInWorkoutPlan: Int
+): Parcelable

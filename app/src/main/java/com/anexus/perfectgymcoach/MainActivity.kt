@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.filled.Settings
@@ -25,6 +26,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.anexus.perfectgymcoach.ui.*
+import com.anexus.perfectgymcoach.ui.screens.*
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -41,6 +44,11 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ComposeView(this).consumeWindowInsets = true
         setContent {
+            val sysUiController = rememberSystemUiController()
+            sysUiController.setStatusBarColor(
+                color = Color.Transparent,
+                darkIcons = !isSystemInDarkTheme()
+            )
             // navigation controller for everything (main screen)
             val navControllerMain = rememberNavController()
             val fragments = listOf( // FIXME: should probably be moved inside class

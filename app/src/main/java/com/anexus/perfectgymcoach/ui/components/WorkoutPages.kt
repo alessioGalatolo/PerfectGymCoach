@@ -1,11 +1,11 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,12 +41,10 @@ fun ExercisePage(
     val haptic = LocalHapticFeedback.current
 
     Column(
-        Modifier
-            .padding(horizontal = 16.dp)
-            .padding(top = 8.dp)
+        Modifier.padding(top = 8.dp)
     ) {
         Row(
-            Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -94,7 +92,7 @@ fun ExercisePage(
                 // page for finishing the workout
                 WorkoutFinishPage()
             } else {
-                Column {
+                Column (Modifier.padding(horizontal = 16.dp)){
                     // content
 //                    if (TODO()){  // stopwatch
 //
@@ -177,7 +175,7 @@ fun ExercisePage(
                                 Text(
                                     dateFormat.format(record.date.time),
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontStyle = FontStyle.Italic
+                                    fontStyle = FontStyle.Italic // TODO: add how many days ago
                                 ) // FIXME
                                 Text("Tare: ${record.tare}") // FIXME
                                 record.reps.forEachIndexed { index, rep ->
@@ -217,4 +215,51 @@ fun ExercisePage(
 @Composable
 fun WorkoutFinishPage() {
     Text("Workout completed")  // TODO
+}
+
+@Composable
+fun ExerciseSettingsMenu() {
+    Box(
+        modifier = Modifier.wrapContentSize()
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Default.MoreVert,
+                contentDescription = "Localized description"
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Change exercise") },
+                onClick = { /* Handle edit! */ },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Edit,
+                        contentDescription = null
+                    )
+                })
+            DropdownMenuItem(
+                text = { Text("Send Feedback") },
+                onClick = { /* Handle send feedback! */ },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Email,
+                        contentDescription = null
+                    )
+                })
+            DropdownMenuItem(
+                text = { Text("Cancel workout") },
+                onClick = { /* Handle cancel! */ },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Close,
+                        contentDescription = null
+                    )
+                })
+        }
+    }
 }

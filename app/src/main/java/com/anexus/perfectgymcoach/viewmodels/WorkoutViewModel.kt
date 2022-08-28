@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,7 +32,7 @@ data class WorkoutState(
 sealed class WorkoutEvent{
     data class StartWorkout(val programId: Long): WorkoutEvent()
 
-    object FinishWorkout: WorkoutEvent()
+    data class FinishWorkout(val programId: Long): WorkoutEvent()
 
     object CancelWorkout: WorkoutEvent()
 
@@ -140,6 +141,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             state.value.workoutTime!!
                         )
                     )
+                    val planPrograms = repository.getPlanMapPrograms().first().entries.find {
+                        it.value.find { it1 -> it1.programId == event.programId } != null
+                    }!!
+
+                    repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
+                        planId = planPrograms.key.planId,
+                        currentProgram = (planPrograms.key.currentProgram+1) % planPrograms.value.size
+                    ))
                 }
             }
             is WorkoutEvent.CancelWorkout -> { /*TODO()*/ }

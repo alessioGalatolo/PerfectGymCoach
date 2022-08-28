@@ -67,10 +67,11 @@ fun FullScreenImageCard(
     // make status bar transparent to see image behind
     val sysUiController = rememberSystemUiController()
     val transitionStarted = transition > 0.0
-    LaunchedEffect(transitionStarted, brightImage) {
+    val darkTheme = isSystemInDarkTheme()
+    LaunchedEffect(transitionStarted, brightImage, darkTheme) {
         sysUiController.setStatusBarColor(
             color = Color.Transparent,
-            darkIcons = brightImage || transitionStarted
+            darkIcons = (brightImage && !transitionStarted) || (transitionStarted && !darkTheme)
         )
     }
 

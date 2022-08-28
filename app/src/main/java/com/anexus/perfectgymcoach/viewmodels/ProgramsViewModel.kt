@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -29,7 +31,9 @@ sealed class ProgramsEvent{
 
     data class AddProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
 
-    data class RenameProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
+    data class RenameProgram(val workoutProgramRename: WorkoutProgramRename): ProgramsEvent()
+
+    data class ReorderProgram(val workoutProgramReorders: List<WorkoutProgramReorder>): ProgramsEvent()
 
 }
 
@@ -48,7 +52,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                 getProgramsJob = viewModelScope.launch {
                     repository.getPrograms(event.planId).collect {
                         _state.value = state.value.copy(
-                            programs = it
+                            programs = it.sortedBy { prog -> prog.orderInWorkoutPlan }
                         )
                         getWorkoutExercisesJob?.cancel()
                         getWorkoutExercisesJob = this.launch {
@@ -63,7 +67,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
             }
             is ProgramsEvent.AddProgram -> {
                 viewModelScope.launch {
-                    repository.setCurrentProgram(repository.addProgram(event.workoutProgram), false)
+                    repository.addProgram(event.workoutProgram)
                 }
             }
             is ProgramsEvent.ToggleAddProgramDialog -> {
@@ -79,7 +83,14 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
 
             }
             is ProgramsEvent.RenameProgram -> {
-                repository.renameProgram(event.workoutProgram)
+                viewModelScope.launch {
+                    repository.renameProgram(event.workoutProgramRename)
+                }
+            }
+            is ProgramsEvent.ReorderProgram -> {
+                viewModelScope.launch {
+                    repository.reorderPrograms(event.workoutProgramReorders)
+                }
             }
         }
     }

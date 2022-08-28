@@ -25,6 +25,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -41,14 +45,17 @@ import com.google.accompanist.placeholder.material.placeholder
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalPagerApi::class)
 @Composable
-fun WorkoutCard(program: WorkoutProgram,
-                exercises: List<WorkoutExerciseAndInfo>,
-                onCardClick: () -> Unit,
-                onCardLongPress: () -> Unit,
-                navController: NavHostController){
+fun WorkoutCard(
+    program: WorkoutProgram,
+    exercises: List<WorkoutExerciseAndInfo>,
+    onCardClick: () -> Unit,
+    onCardLongPress: () -> Unit,
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+){
     val haptic = LocalHapticFeedback.current
     ElevatedCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -93,9 +100,22 @@ fun WorkoutCard(program: WorkoutProgram,
             exercises.forEach {
                 Text(text = it.name,
                     modifier = Modifier.padding(horizontal = 8.dp))
-                Text(text = "Sets: ${it.reps.size} • Reps: ${it.reps.joinToString(", ")} • Rest: ${it.rest}s",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 8.dp))
+                Text(text = buildAnnotatedString {
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        append("Sets: ")
+                    }
+                    append(it.reps.size.toString())
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        append(" • Reps: ")
+                    }
+                    append(it.reps.joinToString(", "))
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        append(" • Rest: ")
+                    }
+                    append("${it.rest}s")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 8.dp))
             }// TODO: maybe improve
             Spacer(modifier = Modifier.height(8.dp))
             Row (verticalAlignment = Alignment.CenterVertically,
@@ -105,8 +125,7 @@ fun WorkoutCard(program: WorkoutProgram,
                 Button(contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                     onClick = { navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}") },
                     modifier = Modifier
-                        .padding(8.dp)
-                    /*.align(Alignment.End)*/) {
+                        .padding(8.dp)) {
                     Icon(Icons.Default.RocketLaunch, null)
                     Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                     Text("Quick start")

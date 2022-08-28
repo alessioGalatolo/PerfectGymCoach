@@ -1,10 +1,12 @@
-package com.anexus.perfectgymcoach.ui
+package com.anexus.perfectgymcoach.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -14,12 +16,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
@@ -76,7 +86,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                     contentPadding = innerPadding
                 ) {
                     items(items = viewModel.state.value.workoutExercisesAndInfo, key = { it }) { exercise ->
-                        Card(
+                        ElevatedCard(
                             onClick = {
 //                                    navController.navigate(
 //                                        "${MainScreen.AddExercise.route}/${program.name}/${program.id}"
@@ -84,30 +94,35 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
                         ) {
-                            Row {
-                                Image(
-                                    painter = painterResource(R.drawable.full_body),
-                                    contentDescription = "Contact profile picture",
-                                    modifier = Modifier
-                                        // Set image size to 40 dp
-                                        .size(40.dp)
-                                        .padding(all = 4.dp)
-                                        // Clip image to be shaped as a circle
-                                        .clip(CircleShape)
-                                )
-
-                                // Add a horizontal space between the image and the column
-//                Spacer(modifier = Modifier.width(8.dp))
-
-                                Column {
-                                    Text(text = exercise.name)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = "Sets: ${exercise.reps.size} " +
-                                            "Reps: ${exercise.reps.joinToString(", ")} " +
-                                            "Rest: ${exercise.rest}") // TODO
-                                }
+                            AsyncImage(
+                                model = exercise.image,
+                                contentScale = ContentScale.Crop,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(LocalConfiguration.current.screenWidthDp.dp/3)
+                                    .align(Alignment.CenterHorizontally)
+                                    .clip(RoundedCornerShape(12.dp))
+                            )
+                            Column (Modifier.padding(8.dp)){
+                                Text(text = exercise.name, style = MaterialTheme.typography.titleLarge)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = buildAnnotatedString {
+                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                        append("Sets: ")
+                                    }
+                                    append(exercise.reps.size.toString())
+                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                        append(" • Reps: ")
+                                    }
+                                    append(exercise.reps.joinToString(", "))
+                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                        append(" • Rest: ")
+                                    }
+                                    append("${exercise.rest}s")
+                                })
                             }
                         }
                     }
