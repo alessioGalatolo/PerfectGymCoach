@@ -277,9 +277,18 @@ fun Workout(navController: NavHostController, programId: Long,
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
-//                    Text(programName)
-                }
+                SmallTopAppBar(
+                    title = {},
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.Filled.ArrowBack,
+                                contentDescription = "Go back"
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior
+                )
             },
             floatingActionButton = {
             LargeFloatingActionButton(onClick = { navController.navigate(

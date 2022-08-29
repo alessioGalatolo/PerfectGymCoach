@@ -82,7 +82,10 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 searchJob?.cancel()
                 searchJob = viewModelScope.launch {  // TODO: improve search
                     _state.value = state.value.copy(exercisesToDisplay = state.value.exercises.filter {
-                        it.name.contains(event.query)
+                        it.name.contains(event.query, ignoreCase = true)
+                                || it.primaryMuscle.muscleName.contains(event.query, ignoreCase = true)
+                                || it.equipment.equipmentName.contains(event.query, ignoreCase = true)
+                                || it.secondaryMuscles.any { it1 -> it1.muscleName.contains(event.query, ignoreCase = true) }
                     })
                 }
             }

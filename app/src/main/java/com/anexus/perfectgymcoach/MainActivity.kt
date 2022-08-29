@@ -61,7 +61,6 @@ class MainActivity : ComponentActivity() {
             // scroll behaviour for top bar
             val decayAnimationSpec = rememberSplineBasedDecay<Float>()
             val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                decayAnimationSpec,
                 rememberTopAppBarState()
             )
 
@@ -152,28 +151,16 @@ class MainActivity : ComponentActivity() {
                                 Scaffold(modifier = Modifier
                                     .nestedScroll(scrollBehavior.nestedScrollConnection),
                                     topBar = {
-                                        val backgroundColors = TopAppBarDefaults.largeTopAppBarColors()
-                                        val backgroundColor = backgroundColors.containerColor(
-                                            colorTransitionFraction = scrollBehavior.state.collapsedFraction
-                                        ).value
-                                        val foregroundColors = TopAppBarDefaults.largeTopAppBarColors(
-                                            containerColor = Color.Transparent,
-                                            scrolledContainerColor = Color.Transparent
-                                        )
-                                        Box (modifier = Modifier.background(backgroundColor)){
-                                            LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
-                                                scrollBehavior = scrollBehavior,
-                                                actions = {
-                                                    IconButton(onClick = { /* doSomething() */ }) { // TODO
-                                                        Icon(
-                                                            imageVector = Icons.Filled.Settings,
-                                                            contentDescription = "App settings"
-                                                        )
-                                                    }
-                                                },
-                                                colors = foregroundColors,
-                                                modifier = Modifier.statusBarsPadding())
-                                        }
+                                        LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
+                                            scrollBehavior = scrollBehavior,
+                                            actions = {
+                                                IconButton(onClick = { /* doSomething() */ }) { // TODO
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Settings,
+                                                        contentDescription = "App settings"
+                                                    )
+                                                }
+                                            })
                                     }, content = { innerPadding ->
                                         Column(modifier = Modifier.padding(innerPadding)) {
                                             when (screen.route) {

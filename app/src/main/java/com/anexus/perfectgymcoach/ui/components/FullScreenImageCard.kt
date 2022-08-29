@@ -1,6 +1,7 @@
 package com.anexus.perfectgymcoach.ui.components
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -52,11 +53,6 @@ fun FullScreenImageCard(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
         rememberTopAppBarState()
     )
-    val backgroundColors = TopAppBarDefaults.smallTopAppBarColors(
-        containerColor = Color.Transparent,
-        scrolledContainerColor = TopAppBarDefaults.smallTopAppBarColors().containerColor(
-            colorTransitionFraction = 1f
-        ).value)
     val s = scrollBehavior.state
     val belowImageFloat by remember { derivedStateOf { with(localDensity) { contentBelowImage.toPx() }}}
     val transition = 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
@@ -86,47 +82,49 @@ fun FullScreenImageCard(
             containerColor = Color.Transparent,
 //            floatingActionButton = ,
             topBar = {
-                val backgroundColor = backgroundColors.containerColor(
-                    colorTransitionFraction = transition
-                ).value
-                Box(Modifier.background(backgroundColor)) {
-                    SmallTopAppBar(
-                        title = {
-                            // animate text alpha with scrolling
-                            ProvideTextStyle(value = MaterialTheme.typography.titleLarge) {
-                                CompositionLocalProvider(
-                                    LocalContentColor provides AlertDialogDefaults.titleContentColor.copy(alpha = transition),
-                                    content = title
-                                )
-                            }
-                        },
-                        scrollBehavior = scrollBehavior,
-                        colors = TopAppBarDefaults.smallTopAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent
+
+                // FIXME: low level transition needed because compose likes to hide its functions
+                val backgroundColor = lerp(
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0f),
+                        MaterialTheme.colorScheme.surfaceColorAtElevation(
+                            BottomAppBarDefaults.ContainerElevation
                         ),
-                        navigationIcon = { topAppBarNavigationIcon(transitionStarted) },
-                        actions = { topAppBarActions(transitionStarted) },
-                        modifier = Modifier.statusBarsPadding()
+                        FastOutLinearInEasing.transform(transition)
                     )
-                }
+                SmallTopAppBar(
+                    title = {
+                        // animate text alpha with scrolling
+                        ProvideTextStyle(value = MaterialTheme.typography.titleLarge) {
+                            CompositionLocalProvider(
+                                LocalContentColor provides AlertDialogDefaults.titleContentColor.copy(alpha = transition),
+                                content = title
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.smallTopAppBarColors(
+                        containerColor = backgroundColor,
+                        scrolledContainerColor = backgroundColor
+                    ),
+                    navigationIcon = { topAppBarNavigationIcon(transitionStarted) },
+                    actions = { topAppBarActions(transitionStarted) },
+//                    modifier = Modifier.statusBarsPadding()
+                )
+
             }, content = {
                 Box(
                     Modifier
                         .padding(it)
                         .fillMaxSize()) {
-                    var bottomBarHeight by remember { mutableStateOf(0) }
 
                     // puts background in the whole screen
                     Surface(Modifier
                         .fillMaxSize()
-                        .padding(top = contentBelowImage,
-                            bottom = with(localDensity) { bottomBarHeight.toDp() })) {}
+                        .padding(top = contentBelowImage)) {}
                     Column(
                         Modifier
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = with(localDensity) { bottomBarHeight.toDp() })
                             .fillMaxSize()
                     ) {
                         // space the same as the image height
@@ -142,15 +140,16 @@ fun FullScreenImageCard(
                     }
 
                     // bottom bar
-                    Surface (tonalElevation = NavigationBarDefaults.Elevation,
-                        modifier = Modifier
-                            .background(NavigationBarDefaults.containerColor)
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .wrapContentHeight(Alignment.CenterVertically)
-                            .onGloballyPositioned { coord -> bottomBarHeight = coord.size.height }){
-                        bottomBar(WindowInsets.ime.add(WindowInsets.navigationBars).asPaddingValues())
-                    }
+
+                }
+            }, bottomBar = {
+                Surface (tonalElevation = NavigationBarDefaults.Elevation,
+                    modifier = Modifier
+                        .background(NavigationBarDefaults.containerColor)
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .wrapContentHeight(Alignment.CenterVertically)){
+                    bottomBar(WindowInsets.ime.add(WindowInsets.navigationBars).asPaddingValues())
                 }
             })
     }

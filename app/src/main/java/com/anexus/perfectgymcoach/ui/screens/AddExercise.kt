@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -30,7 +31,6 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.ui.MainScreen
-import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 
@@ -43,9 +43,18 @@ fun AddExercise(navController: NavHostController, programName: String, programId
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
-                Text(programName)
-            }
+            SmallTopAppBar(
+                title = { Text(programName) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Go back"
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 modifier = Modifier.navigationBarsPadding(),

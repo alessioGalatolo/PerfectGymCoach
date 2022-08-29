@@ -58,7 +58,6 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.ui.MainScreen
-import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 import kotlinx.coroutines.android.awaitFrame
@@ -70,79 +69,71 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                       programId: Long
 ) {
     // scroll behaviour for top bar
-    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        decayAnimationSpec,
         rememberTopAppBarState()
     )
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            val backgroundColors = TopAppBarDefaults.centerAlignedTopAppBarColors()
-            val backgroundColor = backgroundColors.containerColor(
-                colorTransitionFraction = scrollBehavior.state.collapsedFraction
-            ).value
-            val foregroundColors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent
-            )
-            Box (modifier = Modifier.background(backgroundColor)) {
-                LargeTopAppBar(title = { Text("Add exercise to $programName") },
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.Filled.ArrowBack,
-                                contentDescription = "Go back"
-                            )
-                        }
-                    }, modifier = Modifier.statusBarsPadding(),
-                    colors = foregroundColors
-                )
-            }
-        }, content = { innerPadding ->
-            Column(modifier = Modifier
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())){
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = CardDefaults.elevatedCardElevation().tonalElevation(
-                        enabled = true,
-                        interactionSource = null
-                    ).value,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                ){
-                    Row(
-                        verticalAlignment = CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                            .combinedClickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = rememberRipple(),
-                                onClick = { navController.navigate(
-                                    "${MainScreen.ViewExercises.route}/${programName}/${programId}/" +
-                                            "${Exercise.Muscle.EVERYTHING.ordinal}/${true}"
-                                )}
-                            ),
-                    ) {
+            LargeTopAppBar(title = { Text("Add exercise to $programName") },
+                scrollBehavior = scrollBehavior,
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                        Text(
-                            text = "Search exercise",
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(16.dp),
-//                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Go back"
                         )
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                Exercise.Muscle.values().forEach {
+            )
+        }, content = { innerPadding ->
+            LazyColumn(
+                contentPadding = innerPadding,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(horizontal = 16.dp)) {
+                item {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = NavigationBarDefaults.Elevation,  // should use card elevation but it is private
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = rememberRipple(),
+                                    onClick = {
+                                        navController.navigate(
+                                            "${MainScreen.ViewExercises.route}/${programName}/${programId}/" +
+                                                    "${Exercise.Muscle.EVERYTHING.ordinal}/${true}"
+                                        )
+                                    }
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    top = 8.dp,
+                                    bottom = 8.dp
+                                ),
+                                tint = MaterialTheme.colorScheme.outline
+                            )
+                            Text(
+                                text = "Search exercise",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(16.dp),
+//                            style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+                }
+                items(items = Exercise.Muscle.values(), key = { it.ordinal }) {
                     Card(
                         onClick = {
                             navController.navigate(
@@ -150,9 +141,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                                         "${it.ordinal}/${false}"
                             )
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Row {
                             Image(
@@ -175,7 +164,9 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                         }
                     }
                 }
-                Spacer(Modifier.navigationBarsPadding())
+                item {
+                    Spacer(Modifier.navigationBarsPadding())
+                }
             }
         }
     )
@@ -224,9 +215,18 @@ fun ViewExercises(navController: NavHostController, programName: String,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-             PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
-                 Text(Exercise.Muscle.values()[muscleOrdinal].muscleName)
-             }
+            SmallTopAppBar(
+                title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Go back"
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
         }, content = { innerPadding ->
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -237,10 +237,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = CardDefaults.elevatedCardElevation().tonalElevation(
-                            enabled = true,
-                            interactionSource = null
-                        ).value,
+                        tonalElevation = NavigationBarDefaults.Elevation,  // should use card elevation but it is private
                         modifier = Modifier.padding(vertical = 8.dp)
                     ){
                         Row(verticalAlignment = CenterVertically,
@@ -298,7 +295,9 @@ fun ViewExercises(navController: NavHostController, programName: String,
                         onClick = {
                             viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue(exercise))
                         },
-                        modifier = Modifier.fillMaxWidth().animateItemPlacement()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItemPlacement()
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)

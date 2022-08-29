@@ -7,10 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -31,7 +28,6 @@ import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
-import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
@@ -75,7 +71,18 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            PGCSmallTopBar(scrollBehavior, navController) { Text(name) }
+            SmallTopAppBar(
+                title = { Text(name) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Go back"
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 modifier = Modifier.navigationBarsPadding(),

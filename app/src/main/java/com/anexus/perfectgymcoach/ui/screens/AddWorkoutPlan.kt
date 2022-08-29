@@ -23,7 +23,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
-import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.PlansEvent
 import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 import kotlinx.coroutines.launch
@@ -52,9 +51,18 @@ fun AddWorkoutPlan(navController: NavHostController,
         snackbarHost = { SnackbarHost(snackbarHostState) }, // FIXME: should be padded (navbar)
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            PGCSmallTopBar(scrollBehavior = scrollBehavior, navController = navController) {
-                Text(stringResource(R.string.manage_workout_plans))
-            }
+            SmallTopAppBar(
+                title = { Text(stringResource(R.string.manage_workout_plans)) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Go back"
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
         }, floatingActionButton = {
             LargeFloatingActionButton (
                 modifier = Modifier.navigationBarsPadding(),

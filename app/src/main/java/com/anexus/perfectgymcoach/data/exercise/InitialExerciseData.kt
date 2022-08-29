@@ -352,12 +352,6 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList()
     ),
     Exercise(
-        name = "Crunch",
-        equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.ABS,
-        secondaryMuscles = emptyList()
-    ),
-    Exercise(
         name = "Side plank",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.ABS,
@@ -371,12 +365,6 @@ val INITIAL_EXERCISE_DATA = listOf(
     ),
     Exercise(
         name = "Side crunch",
-        equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.ABS,
-        secondaryMuscles = emptyList()
-    ),
-    Exercise(
-        name = "Crunch",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.ABS,
         secondaryMuscles = emptyList()
