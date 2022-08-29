@@ -77,7 +77,9 @@ fun Home(navController: NavHostController,
             Spacer(modifier = Modifier.height(8.dp))
 
         }
-    } else if (viewModel.state.value.programs?.isNotEmpty() == true) {
+    } else if (viewModel.state.value.programs?.isNotEmpty() == true
+        && viewModel.state.value.currentProgram != null
+    ) {
         LazyColumn(Modifier.padding(horizontal = 16.dp)){
             val currentProgram = viewModel.state.value.programs!![viewModel.state.value.currentProgram!!]
             val currentExercises =

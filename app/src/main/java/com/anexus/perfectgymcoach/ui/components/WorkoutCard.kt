@@ -37,6 +37,7 @@ import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.NavigationScreen
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
@@ -118,12 +119,16 @@ fun WorkoutCard(
                 modifier = Modifier.padding(horizontal = 8.dp))
             }// TODO: maybe improve
             Spacer(modifier = Modifier.height(8.dp))
-            Row (verticalAlignment = Alignment.CenterVertically,
+            Row (
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Button(contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-                    onClick = { navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}") },
+                    onClick = {
+//                        navController.popBackStack(NavigationScreen.Home.route, false)
+                        navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}")
+                    },
                     modifier = Modifier
                         .padding(8.dp)) {
                     Icon(Icons.Default.RocketLaunch, null)

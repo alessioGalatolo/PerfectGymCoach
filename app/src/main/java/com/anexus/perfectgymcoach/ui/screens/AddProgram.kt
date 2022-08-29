@@ -112,8 +112,8 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
             } else {
                 // if you have some programs
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     contentPadding = innerPadding
                 ) {
                     itemsIndexed(items = viewModel.state.value.programs, key = { _, it -> it.programId }) { index, programEntry ->
@@ -162,7 +162,6 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                                 modifier = Modifier.padding(end = 16.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                     item{
                         var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode

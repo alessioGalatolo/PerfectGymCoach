@@ -119,16 +119,18 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(
-                        "${MainScreen.ViewExercises.route}/{name}/{programId}/{muscle}",
+                        "${MainScreen.ViewExercises.route}/{name}/{programId}/{muscle}/{focusSearch}",
                         arguments = listOf(
                             navArgument("programId") { type = NavType.LongType },
-                            navArgument("muscle") { type = NavType.IntType })
+                            navArgument("muscle") { type = NavType.IntType },
+                            navArgument("focusSearch") { type = NavType.BoolType })
                     ) {
                         ViewExercises(
                             navControllerMain,
                             it.arguments?.getString("name") ?: "",
                             it.arguments?.getLong("programId") ?: 0L,
-                            it.arguments?.getInt("muscle") ?: -1
+                            it.arguments?.getInt("muscle") ?: -1,
+                            it.arguments?.getBoolean("focusSearch") ?: false
                         )
                     }
                     composable("${MainScreen.ChangePlan.route}/{openDialogNow}",

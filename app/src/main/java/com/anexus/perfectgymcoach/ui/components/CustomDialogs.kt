@@ -26,6 +26,7 @@ fun InsertNameDialog(
 
     var text by rememberSaveable { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     if (dialogueIsOpen) {
         AlertDialog(
             onDismissRequest = {
@@ -38,7 +39,6 @@ fun InsertNameDialog(
                 Text(text = "Enter ${prompt.lowercase()}")
             },
             text = {
-                val keyboardController = LocalSoftwareKeyboardController.current
 
                 TextField(value = text,
                     onValueChange = { text = it },

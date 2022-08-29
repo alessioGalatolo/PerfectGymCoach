@@ -39,6 +39,7 @@ import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
 
@@ -52,10 +53,17 @@ fun Workout(navController: NavHostController, programId: Long,
 ) {
     viewModel.onEvent(WorkoutEvent.GetWorkoutExercises(programId))
 
+    val scope = rememberCoroutineScope()
+
     val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
+
     if (startWorkout.value){
-        viewModel.onEvent(WorkoutEvent.StartWorkout(programId))
-        startWorkout.value = false
+        scope.launch {
+            awaitFrame()  // FIXME: not the proper way of doing this (needs to wait for first collection)
+            awaitFrame()
+            viewModel.onEvent(WorkoutEvent.StartWorkout(programId))
+            startWorkout.value = false
+        }
     }
 
     CancelWorkoutDialog(
@@ -79,7 +87,6 @@ fun Workout(navController: NavHostController, programId: Long,
         " " + (viewModel.state.value.workoutTime?.let { DateUtils.formatElapsedTime(it) } ?: "")
     }
 
-    val scope = rememberCoroutineScope()
 
     val title = @Composable { Text(
         currentExercise?.name ?: "End",
@@ -186,7 +193,7 @@ fun Workout(navController: NavHostController, programId: Long,
             },
             title = title,
             image = {
-                Box(Modifier.wrapContentHeight(Top), contentAlignment = TopCenter) {
+                Box(Modifier.wrapContentHeight(Top), contentAlignment = TopCenter) { // TODO: add swipe
                     AsyncImage(
                         ImageRequest.Builder(context)
 //                            .size(imageWidth, imageHeight)

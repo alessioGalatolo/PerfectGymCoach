@@ -15,6 +15,7 @@ data class Exercise(
     val primaryMuscle: Muscle,
     val secondaryMuscles: List<Muscle>,
     val image: Int = R.drawable.sample_image
+    // TODO: add exercise difficulty
 
 ) : Parcelable {
     enum class Muscle (val muscleName: String){

@@ -1,24 +1,24 @@
 package com.anexus.perfectgymcoach.ui.screens
 
 import androidx.compose.animation.rememberSplineBasedDecay
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,7 +27,11 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -38,12 +42,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.graphics.ColorUtils
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -55,9 +61,10 @@ import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.PGCSmallTopBar
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ExercisesByMuscle(navController: NavHostController, programName: String,
                       programId: Long
@@ -95,17 +102,57 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
         }, content = { innerPadding ->
             Column(modifier = Modifier
                 .padding(innerPadding)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())){
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = CardDefaults.elevatedCardElevation().tonalElevation(
+                        enabled = true,
+                        interactionSource = null
+                    ).value,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ){
+                    Row(
+                        verticalAlignment = CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                            .combinedClickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = rememberRipple(),
+                                onClick = { navController.navigate(
+                                    "${MainScreen.ViewExercises.route}/${programName}/${programId}/" +
+                                            "${Exercise.Muscle.EVERYTHING.ordinal}/${true}"
+                                )}
+                            ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Text(
+                            text = "Search exercise",
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(16.dp),
+//                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 Exercise.Muscle.values().forEach {
                     Card(
                         onClick = {
                             navController.navigate(
-                                "${MainScreen.ViewExercises.route}/${programName}/${programId}/${it.ordinal}"
+                                "${MainScreen.ViewExercises.route}/${programName}/${programId}/" +
+                                        "${it.ordinal}/${false}"
                             )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .padding(vertical = 4.dp)
                     ) {
                         Row {
                             Image(
@@ -119,8 +166,6 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                                     .clip(CircleShape)
                             )
 
-                            // Add a horizontal space between the image and the column
-//                Spacer(modifier = Modifier.width(8.dp))
 
                             Column(modifier = Modifier.align(CenterVertically)) {
                                 Text(text = it.muscleName, fontWeight = FontWeight.Bold)
@@ -136,13 +181,22 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalComposeUiApi::class
+)
 @Composable
 fun ViewExercises(navController: NavHostController, programName: String,
-                  programId: Long, muscleOrdinal: Int, viewModel: ExercisesViewModel = hiltViewModel()
+                  programId: Long, muscleOrdinal: Int, focusSearch: Boolean,
+                  viewModel: ExercisesViewModel = hiltViewModel()
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val toFocus = rememberSaveable { mutableStateOf(focusSearch) }
+
     viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.values()[muscleOrdinal]))
     AddExerciseDialogue(
         viewModel.state.value.exerciseToAdd,
@@ -179,13 +233,72 @@ fun ViewExercises(navController: NavHostController, programName: String,
                 contentPadding = innerPadding,
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                items(viewModel.state.value.exercises, key = { it.exerciseId }) { exercise ->
+                item{
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = CardDefaults.elevatedCardElevation().tonalElevation(
+                            enabled = true,
+                            interactionSource = null
+                        ).value,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ){
+                        Row(verticalAlignment = CenterVertically,
+                            modifier = Modifier.fillMaxWidth()) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                            )
+                            var searchText by remember { mutableStateOf("") }
+                            TextField(
+                                value = searchText,
+                                onValueChange = {
+                                    searchText = it
+                                    viewModel.onEvent(ExercisesEvent.FilterExercise(searchText))
+                                },
+                                placeholder = { Text("Search exercise") },
+                                singleLine = true,
+                                colors = TextFieldDefaults.textFieldColors(
+                                    containerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    imeAction = ImeAction.Search
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onSearch = {
+                                        viewModel.onEvent(ExercisesEvent.FilterExercise(searchText))
+                                    }
+                                ), modifier = Modifier
+                                    .focusRequester(focusRequester)
+                                    .onFocusChanged {
+                                        if (it.isFocused) {
+                                            keyboardController?.show()
+                                        }
+                                    }
+                            )
+                        }
+                        if (toFocus.value){
+                            LaunchedEffect(focusRequester) {
+                                awaitFrame()
+                                awaitFrame()
+                                awaitFrame()
+                                awaitFrame()
+                                focusRequester.requestFocus()
+                                toFocus.value = false
+                            }
+                        }
+                    }
+                }
+                items(viewModel.state.value.exercisesToDisplay ?: emptyList(), key = { it.exerciseId }) { exercise ->
                     ElevatedCard(
                         onClick = {
                             viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue(exercise))
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().animateItemPlacement()
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
@@ -196,7 +309,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(LocalConfiguration.current.screenWidthDp.dp/3)
+                                .height(LocalConfiguration.current.screenWidthDp.dp / 4)
                                 .align(Alignment.CenterHorizontally)
                                 .clip(RoundedCornerShape(12.dp))
                         )
@@ -253,7 +366,9 @@ fun AddExerciseDialogue(
             )
         ) {
             Scaffold(
-                modifier = Modifier.navigationBarsPadding().imePadding(),
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .imePadding(),
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
                     SmallTopAppBar(title = { Text(exercise!!.name) },
