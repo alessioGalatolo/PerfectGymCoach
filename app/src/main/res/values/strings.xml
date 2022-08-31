@@ -22,4 +22,7 @@
     <string name="empty_home_program">The workout plan you has selected as current has no programs (single day schedule) inside. Use the button below to select a different plan or to add a program</string>
     <string name="change_workout_plan">Change workout plan</string>
     <string name="workout_empty_exercises">You have no exercises added to this program, use the button below to add some!</string>
+    <string name="workout_recap">Workout recap</string>
+    <string name="volume_info">The term \'volume\' in this context is used to indicate the total amount of weight lifted: Exercises x Sets x Reps x Weight. Many studies have shown the direct correlation between total volume lifted and growth in muscle. This means that in order to build bigger muscles the volume must increase either by increasing the weights, the number of reps, etc. </string>
+    <string name="calories_info">The calorie consumption is calculated based on the workout time, its intensity, your body weight and some research-backed values for weight training energy consumption. NB: this calorie consumption is only approximated and may not reflect the actual consumption.</string>
 </resources>

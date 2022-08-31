@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.anexus.perfectgymcoach.data.exercise.Exercise
@@ -30,7 +31,8 @@ class Repository @Inject constructor(
     private val context: Context
 ) {
     private val currentPlan = longPreferencesKey("Current plan")
-    private val currentWorkout = longPreferencesKey("Current workout") // TODO
+    private val currentWorkout = longPreferencesKey("Current workout") // TODO ?
+    private val userWeight = floatPreferencesKey("User weight")
 
 
     fun getPlans() = db.workoutPlanDao.getPlans()
@@ -69,12 +71,20 @@ class Repository @Inject constructor(
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
 
+    fun getWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.getRecordsByWorkout(workoutId)
+
+    fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) = db.exerciseRecordDao.getRecordsAndInfoByWorkout(workoutId)
+
     fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
 
     suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
 
 
+    fun getWorkoutRecord(workoutId: Long) = db.workoutRecordDao.getRecord(workoutId)
+
     fun getWorkoutHistory() = db.workoutRecordDao.getRecords()
+
+    fun getWorkoutHistoryAndName() = db.workoutRecordDao.getRecordsAndName()
 
     suspend fun addWorkoutRecord(workoutRecord: WorkoutRecord) = db.workoutRecordDao.insert(workoutRecord)
 
@@ -100,6 +110,12 @@ class Repository @Inject constructor(
         }
 
     }
+
+
+    // TODO: move default value outside (60 kg)
+    fun getUserWeight(): Flow<Float> = context.dataStore.data.map{ it[userWeight] ?: 60f }
+
+    suspend fun setUserWeight(newWeight: Float) = context.dataStore.edit { it[userWeight] = newWeight }
 
 
     companion object {

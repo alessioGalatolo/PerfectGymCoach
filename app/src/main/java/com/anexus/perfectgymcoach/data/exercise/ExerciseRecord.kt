@@ -35,3 +35,18 @@ data class ExerciseRecord(
     val weights: List<Float>,
     val tare: Float = 0f // e.g. barbell weight or bodyweight
 ) : Parcelable
+
+@Parcelize
+data class ExerciseRecordAndInfo(
+    val recordId: Long = 0L,
+    val extExerciseId: Long,
+    val extWorkoutId: Long,
+    val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
+    val date: Calendar, // redundant but simplifies
+    val reps: List<Int>,
+    val weights: List<Float>,
+    val name: String,
+    val rest: Int,
+    val image: Int,
+    val tare: Float = 0f // e.g. barbell weight or bodyweight
+) : Parcelable

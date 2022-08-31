@@ -15,6 +15,19 @@ interface WorkoutRecordDao {
     )
     fun getRecords(): Flow<List<WorkoutRecord>>
 
+    @Query(
+        "SELECT * FROM workoutrecord WHERE workoutrecord.workoutId LIKE :workoutId"
+    )
+    fun getRecord(workoutId: Long): Flow<WorkoutRecord>
+
+
+    @Query(
+        "SELECT workoutrecord.*, `program`.name " +
+        "FROM workoutrecord " +
+        "LEFT JOIN `program` ON workoutrecord.extProgramId = `program`.programId "
+    )
+    fun getRecordsAndName(): Flow<List<WorkoutRecordAndName>>
+
     @Insert
     suspend fun insert(workoutRecord: WorkoutRecord): Long
 

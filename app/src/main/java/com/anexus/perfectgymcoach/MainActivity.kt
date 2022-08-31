@@ -36,11 +36,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        window.setFlags(
-//            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-//            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-////            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-//        )
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ComposeView(this).consumeWindowInsets = true
         setContent {
@@ -59,7 +55,6 @@ class MainActivity : ComponentActivity() {
             )
 
             // scroll behaviour for top bar
-            val decayAnimationSpec = rememberSplineBasedDecay<Float>()
             val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
                 rememberTopAppBarState()
             )
@@ -141,6 +136,10 @@ class MainActivity : ComponentActivity() {
                             navControllerMain,
                             it.arguments?.getBoolean("openDialogNow") ?: false
                         )
+                    }
+                    composable("${MainScreen.WorkoutRecap.route}/{workoutId}",
+                    arguments = listOf(navArgument("workoutId") { type = NavType.LongType })) {
+                        WorkoutRecap(navController = navControllerMain, it.arguments?.getLong("workoutId") ?: 0L)
                     }
                     navigation(
                         startDestination = NavigationScreen.Home.route,

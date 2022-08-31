@@ -2,6 +2,8 @@ package com.anexus.perfectgymcoach.ui.components
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -124,6 +126,31 @@ fun CancelWorkoutDialog(
                     }
                 ) {
                     Text("Cancel workout")
+                }
+            }
+        )
+    }
+}
+
+
+@Composable
+fun InfoDialog(dialogueIsOpen: Boolean, toggleDialogue: () -> Unit, infoText: @Composable () -> Unit) {
+    if (dialogueIsOpen) {
+        AlertDialog(
+            onDismissRequest = {
+                toggleDialogue()
+            },
+            icon = { Icon(Icons.Outlined.Info, null)},
+            text = {
+                infoText()
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        toggleDialogue()
+                    }
+                ) {
+                    Text("Ok")
                 }
             }
         )

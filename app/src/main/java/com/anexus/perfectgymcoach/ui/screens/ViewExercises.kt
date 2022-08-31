@@ -268,6 +268,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                                 keyboardActions = KeyboardActions(
                                     onSearch = {
                                         viewModel.onEvent(ExercisesEvent.FilterExercise(searchText))
+                                        keyboardController?.hide()
                                     }
                                 ), modifier = Modifier
                                     .focusRequester(focusRequester)

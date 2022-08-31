@@ -41,6 +41,7 @@ data class Exercise(
 
     companion object{
         // TODO: assumes international system (kg), add support for americans
+        // TODO: move to be a property of the enum class
         val equipment2increment: Map<Equipment, Float> = mapOf(
             Pair(Equipment.EVERYTHING, 1f),
             Pair(Equipment.BARBELL, 2.5f),

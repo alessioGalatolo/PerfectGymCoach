@@ -32,6 +32,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.*
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
@@ -89,7 +90,7 @@ fun Workout(navController: NavHostController, programId: Long,
 
 
     val title = @Composable { Text(
-        currentExercise?.name ?: "End",
+        currentExercise?.name ?: "End of workout",
         overflow = TextOverflow.Ellipsis,
 //        maxLines = 1
     ) }
@@ -152,9 +153,12 @@ fun Workout(navController: NavHostController, programId: Long,
         Unit
     }
 
+    val workoutIntensity = rememberSaveable { mutableStateOf(WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY) }
+
     val completeWorkout: () -> Unit = {    // TODO: should go to recap screen, change upcoming program
-        viewModel.onEvent(WorkoutEvent.FinishWorkout(programId))
+        viewModel.onEvent(WorkoutEvent.FinishWorkout(programId, workoutIntensity.value))
         navController.popBackStack()
+        navController.navigate("${MainScreen.WorkoutRecap.route}/${viewModel.state.value.workoutId}")
     }
 
     if (viewModel.state.value.workoutExercisesAndInfo.isNotEmpty()) {
@@ -185,7 +189,12 @@ fun Workout(navController: NavHostController, programId: Long,
                     Text(timer(), style = MaterialTheme.typography.titleLarge,
                         color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
                     if (viewModel.state.value.workoutTime != null) {
-                        TextButton(onClick = completeWorkout ) {
+                        TextButton(onClick = {
+                        if (pagerState.currentPage == pagerState.pageCount-1)
+                            completeWorkout()
+                        else
+                            scope.launch{ pagerState.animateScrollToPage(pagerState.pageCount-1) }
+                        }) {
                             Text("Finish", color = if (needsDarkColor) Color.Gray else Color.White)
                         }
                     }
@@ -204,7 +213,7 @@ fun Workout(navController: NavHostController, programId: Long,
                                 val image = result.drawable.toBitmap()
                                 Palette.from(image).maximumColorCount(3)
                                     .clearFilters()
-//                                    .setRegion(0, 0, image.width,50)
+                                    .setRegion(0, 0, image.width,50)
                                     .generate {
                                         brightImage.value = (ColorUtils.calculateLuminance(it?.getDominantColor(Color.Black.toArgb()) ?: 0)) > 0.5
                                     }
@@ -239,13 +248,15 @@ fun Workout(navController: NavHostController, programId: Long,
                 }}
                 ExercisePage(
                     pagerState = pagerState,
+                    workoutTime = viewModel.state.value.workoutTime,
                     setsDone = setsDone,
                     workoutExercisesAndInfo = viewModel.state.value.workoutExercisesAndInfo,
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
-                    restCounter = restCounter
+                    restCounter = restCounter,
+                    workoutIntensity = workoutIntensity
                 )
             }
         ) {

@@ -55,10 +55,10 @@ fun FullScreenImageCard(
     )
     val s = scrollBehavior.state
     val belowImageFloat by remember { derivedStateOf { with(localDensity) { contentBelowImage.toPx() }}}
-    val transition = 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
+    val transition by remember { derivedStateOf { 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
         minimumValue = s.heightOffsetLimit,
         maximumValue = 0f
-    ) / s.heightOffsetLimit)
+    ) / s.heightOffsetLimit) }}
 
     // make status bar transparent to see image behind
     val sysUiController = rememberSystemUiController()
@@ -84,13 +84,15 @@ fun FullScreenImageCard(
             topBar = {
 
                 // FIXME: low level transition needed because compose likes to hide its functions
-                val backgroundColor = lerp(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0f),
-                        MaterialTheme.colorScheme.surfaceColorAtElevation(
-                            BottomAppBarDefaults.ContainerElevation
-                        ),
+                val transparentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0f)
+                val tonedColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
+                    BottomAppBarDefaults.ContainerElevation
+                )
+                val backgroundColor by remember { derivedStateOf { lerp(
+                        transparentColor,
+                        tonedColor,
                         FastOutLinearInEasing.transform(transition)
-                    )
+                    )}}
                 SmallTopAppBar(
                     title = {
                         // animate text alpha with scrolling

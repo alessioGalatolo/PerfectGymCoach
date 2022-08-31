@@ -33,7 +33,7 @@ data class WorkoutState(
 sealed class WorkoutEvent{
     data class StartWorkout(val programId: Long): WorkoutEvent()
 
-    data class FinishWorkout(val programId: Long): WorkoutEvent()
+    data class FinishWorkout(val programId: Long, val workoutIntensity: WorkoutRecord.WorkoutIntensity): WorkoutEvent()
 
     object CancelWorkout: WorkoutEvent()
 
@@ -142,7 +142,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     repository.completeWorkoutRecord(
                         WorkoutRecordFinish(
                             state.value.workoutId,
-                            state.value.workoutTime!!
+                            state.value.workoutTime!!,
+                            event.workoutIntensity
                         )
                     )
                     val planPrograms = repository.getPlanMapPrograms().first().entries.find {

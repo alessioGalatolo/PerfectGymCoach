@@ -1,44 +1,48 @@
 package com.anexus.perfectgymcoach.ui.components
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
-import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
+import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import kotlin.math.max
 import kotlin.math.min
 
 @OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ExercisePage(
     pagerState: PagerState,
+    workoutTime: Long?,
     workoutExercisesAndInfo: List<WorkoutExerciseAndInfo>,
     setsDone: State<Int>,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
     currentExerciseRecords: List<ExerciseRecord>,
     ongoingRecord: ExerciseRecord?,
-    restCounter: Long?
+    restCounter: Long?,
+    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>
 ) {
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -88,14 +92,14 @@ fun ExercisePage(
             }
         }
         HorizontalPager(
-            count = workoutExercisesAndInfo.size+1,
+            count = if (workoutTime != null) workoutExercisesAndInfo.size+1 else workoutExercisesAndInfo.size,
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top
         ) { page ->
             if (page == workoutExercisesAndInfo.size) {
                 // page for finishing the workout
-                WorkoutFinishPage()
+                WorkoutFinishPage(workoutTime!!, workoutIntensity)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
                     // content
@@ -230,9 +234,75 @@ fun ExercisePage(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun WorkoutFinishPage() {
-    Text("Workout completed")  // TODO
+fun WorkoutFinishPage(
+    workoutTime: Long,
+    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>
+) {
+    Column(
+        Modifier
+            .padding(horizontal = 8.dp)
+            .padding(top = 8.dp)){
+        Text("Total workout time: ${DateUtils.formatElapsedTime(workoutTime)}", style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(8.dp))
+        Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically){
+            Text("How intense was this workout?"/*, Modifier.weight(1f)*/)
+            var expanded by remember { mutableStateOf(false) }
+            Spacer(Modifier.width(16.dp))
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier/*.weight(1f)*/
+                    .widthIn(1.dp, Dp.Infinity)
+                    .heightIn(1.dp, Dp.Infinity)
+            ) {
+                OutlinedTextField(
+                    readOnly = true,
+                    value = ""/*selectedOptionText.description.substringBefore("(")*/,
+                    onValueChange = {},
+                    leadingIcon = {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(8.dp)){
+                            repeat(WorkoutRecord.WorkoutIntensity.values().size){
+                                Icon(Icons.Default.FitnessCenter, null,
+                                    tint = if (it < workoutIntensity.value.ordinal+1) LocalContentColor.current else Color.Transparent)
+                            }
+                        }
+                    },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    colors = ExposedDropdownMenuDefaults.textFieldColors(containerColor = Color.Transparent),
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                ) {
+                    WorkoutRecord.WorkoutIntensity.values().forEachIndexed { index, selectionOption ->
+                        DropdownMenuItem(
+                            text = {},
+                            leadingIcon = {
+                                Row(){
+                                    repeat(index+1){
+                                        Icon(Icons.Default.FitnessCenter, null)
+                                    }
+                                }
+                            },
+                            onClick = {
+                                workoutIntensity.value = selectionOption
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        TextButton(onClick = { /*TODO*/ }, modifier = Modifier.align(CenterHorizontally)) {
+            Text("Add exercise to workout")
+        }
+
+    }
 }
 
 @Composable
