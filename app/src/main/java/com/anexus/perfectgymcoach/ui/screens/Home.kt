@@ -29,6 +29,7 @@ import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun Home(navController: NavHostController,
+         contentPadding: PaddingValues,
          viewModel: HomeViewModel = hiltViewModel()
          ) {
     val haptic = LocalHapticFeedback.current
@@ -46,7 +47,7 @@ fun Home(navController: NavHostController,
                     )
                 }
             }) {
-            Column(modifier = Modifier.padding(it)) {
+            Column(modifier = Modifier.padding(it).padding(contentPadding)) {
                 Text(
                     stringResource(id = R.string.empty_home),
                     modifier = Modifier.padding(16.dp)
@@ -54,7 +55,8 @@ fun Home(navController: NavHostController,
             }
         }
     } else if (viewModel.state.value.programs?.isEmpty() == true) {
-        Column (horizontalAlignment = Alignment.CenterHorizontally) {
+        Column (horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(contentPadding)) {
             Icon(
                 imageVector = Icons.Filled.Description,
                 contentDescription = "",
@@ -80,7 +82,7 @@ fun Home(navController: NavHostController,
     } else if (viewModel.state.value.programs?.isNotEmpty() == true
         && viewModel.state.value.currentProgram != null
     ) {
-        LazyColumn(Modifier.padding(horizontal = 16.dp)){
+        LazyColumn(Modifier.padding(horizontal = 16.dp), contentPadding = contentPadding){
             val currentProgram = viewModel.state.value.programs!![viewModel.state.value.currentProgram!!]
             val currentExercises =
                 viewModel.state.value.exercisesAndInfo[currentProgram.programId]?.sortedBy {

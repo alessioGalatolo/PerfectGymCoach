@@ -20,10 +20,14 @@ import java.text.SimpleDateFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun History(navController: NavHostController, viewModel: HistoryViewModel = hiltViewModel()) {
+fun History(navController: NavHostController,
+            contentPadding: PaddingValues,
+            viewModel: HistoryViewModel = hiltViewModel()
+) {
     LazyColumn(modifier = Modifier
         .fillMaxSize()
-        .padding(horizontal = 16.dp)
+        .padding(horizontal = 16.dp),
+        contentPadding = contentPadding
     ) {
         items(items = viewModel.state.value.workoutRecords.filter { it.duration > 0 }, key = { it }){
             Card(modifier = Modifier.fillMaxWidth(), onClick = {

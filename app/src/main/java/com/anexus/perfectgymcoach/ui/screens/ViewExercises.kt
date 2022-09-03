@@ -91,6 +91,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(horizontal = 16.dp)) {
                 item {
+                    // search bar
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface,

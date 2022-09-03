@@ -2,10 +2,7 @@ package com.anexus.perfectgymcoach.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
@@ -33,6 +30,10 @@ class Repository @Inject constructor(
     private val currentPlan = longPreferencesKey("Current plan")
     private val currentWorkout = longPreferencesKey("Current workout") // TODO ?
     private val userWeight = floatPreferencesKey("User weight")
+    private val userHeight = floatPreferencesKey("User height")
+    private val userSex = stringPreferencesKey("User sex")
+    private val userName = stringPreferencesKey("User name")
+    private val userAgeYear = intPreferencesKey("User age year")
 
 
     fun getPlans() = db.workoutPlanDao.getPlans()
@@ -116,6 +117,30 @@ class Repository @Inject constructor(
     fun getUserWeight(): Flow<Float> = context.dataStore.data.map{ it[userWeight] ?: 60f }
 
     suspend fun setUserWeight(newWeight: Float) = context.dataStore.edit { it[userWeight] = newWeight }
+
+
+    // TODO: move default value outside
+    fun getUserHeight(): Flow<Float> = context.dataStore.data.map{ it[userHeight] ?: 170f }
+
+    suspend fun setUserHeight(newHeight: Float) = context.dataStore.edit { it[userHeight] = newHeight }
+
+
+    // TODO: move default value outside
+    fun getUserYear(): Flow<Int> = context.dataStore.data.map{ it[userAgeYear] ?: 2000 }
+
+    suspend fun setUserYear(newYear: Int) = context.dataStore.edit { it[userAgeYear] = newYear }
+
+
+    // TODO: move default value outside
+    fun getUserSex(): Flow<String> = context.dataStore.data.map{ it[userSex] ?: "Male" }
+
+    suspend fun setUserSex(newSex: String) = context.dataStore.edit { it[userSex] = newSex }
+
+
+    // TODO: move default value outside
+    fun getUserName(): Flow<String> = context.dataStore.data.map{ it[userName] ?: "what's your name?" }
+
+    suspend fun setUserName(newName: String) = context.dataStore.edit { it[userName] = newName }
 
 
     companion object {

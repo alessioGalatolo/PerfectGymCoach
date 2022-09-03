@@ -153,7 +153,7 @@ class MainActivity : ComponentActivity() {
                                         LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
                                             scrollBehavior = scrollBehavior,
                                             actions = {
-                                                IconButton(onClick = { /* doSomething() */ }) { // TODO
+                                                IconButton(onClick = { /* TODO */ }) {
                                                     Icon(
                                                         imageVector = Icons.Filled.Settings,
                                                         contentDescription = "App settings"
@@ -161,56 +161,48 @@ class MainActivity : ComponentActivity() {
                                                 }
                                             })
                                     }, content = { innerPadding ->
-                                        Column(modifier = Modifier.padding(innerPadding)) {
-                                            when (screen.route) {
-                                                "home" -> Home(navControllerMain)
-                                                "history" -> History(navControllerMain)
-                                                "statistics" -> Statistics(navControllerMain)
-                                                "profile" -> Profile(navControllerMain)
-                                            }
+                                        when (screen.route) {
+                                            "home" -> Home(navControllerMain, innerPadding)
+                                            "history" -> History(navControllerMain, innerPadding)
+                                            "statistics" -> Statistics(navControllerMain, innerPadding)
+                                            "profile" -> Profile(navControllerMain, innerPadding)
                                         }
                                     }, bottomBar = {
-                                        val backgroundColor = NavigationBarDefaults.containerColor
-                                        Surface (modifier = Modifier.background(backgroundColor),
-
-                                            tonalElevation = NavigationBarDefaults.Elevation) {
-                                            NavigationBar(Modifier.navigationBarsPadding(),
-                                                containerColor = Color.Transparent
-                                            ) {
-                                                val navBackStackEntry by navControllerMain.currentBackStackEntryAsState()
-                                                val currentDestination =
-                                                    navBackStackEntry?.destination
-                                                fragments.forEach { screen ->
-                                                    val selected =
-                                                        currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                                                    NavigationBarItem(
-                                                        icon = {
-                                                            Icon(
-                                                                if (selected) screen.iconSelected else screen.icon,
-                                                                contentDescription = null
-                                                            )
-                                                        },
-                                                        label = { Text(stringResource(screen.resourceId)) },
-                                                        selected = selected,
-                                                        onClick = {
-                                                            navControllerMain.navigate(screen.route) {
-                                                                // Pop up to the start destination of the graph to
-                                                                // avoid building up a large stack of destinations
-                                                                // on the back stack as users select items
-                                                                popUpTo(navControllerMain.graph.findStartDestination().id) {
-                                                                    saveState = true
-                                                                }
-                                                                // Avoid multiple copies of the same destination when
-                                                                // reselecting the same item
-                                                                launchSingleTop = true
-                                                                // Restore state when reselecting a previously selected item
-                                                                restoreState = true
+                                        NavigationBar (windowInsets = WindowInsets.navigationBars) {
+                                            val navBackStackEntry by navControllerMain.currentBackStackEntryAsState()
+                                            val currentDestination =
+                                                navBackStackEntry?.destination
+                                            fragments.forEach { screen ->
+                                                val selected =
+                                                    currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                                                NavigationBarItem(
+                                                    icon = {
+                                                        Icon(
+                                                            if (selected) screen.iconSelected else screen.icon,
+                                                            contentDescription = null
+                                                        )
+                                                    },
+                                                    label = { Text(stringResource(screen.resourceId)) },
+                                                    selected = selected,
+                                                    onClick = {
+                                                        navControllerMain.navigate(screen.route) {
+                                                            // Pop up to the start destination of the graph to
+                                                            // avoid building up a large stack of destinations
+                                                            // on the back stack as users select items
+                                                            popUpTo(navControllerMain.graph.findStartDestination().id) {
+                                                                saveState = true
                                                             }
+                                                            // Avoid multiple copies of the same destination when
+                                                            // reselecting the same item
+                                                            launchSingleTop = true
+                                                            // Restore state when reselecting a previously selected item
+                                                            restoreState = true
                                                         }
-                                                    )
-                                                }
+                                                    }
+                                                )
                                             }
                                         }
+
                                     }
                                 )
                             }

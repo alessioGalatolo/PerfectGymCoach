@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -167,11 +168,10 @@ fun WorkoutRecap(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                // FIXME: should be Weight but for some reason it is not available
                                 Row(verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)) {
                                     Icon(
-                                        Icons.Outlined.MonitorWeight, null,
+                                        painterResource(R.drawable.weight_icon), null,
                                         Modifier.size(50.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))
