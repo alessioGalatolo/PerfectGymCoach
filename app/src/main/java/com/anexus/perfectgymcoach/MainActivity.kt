@@ -163,9 +163,18 @@ class MainActivity : ComponentActivity() {
                                     }, content = { innerPadding ->
                                         when (screen.route) {
                                             "home" -> Home(navControllerMain, innerPadding)
-                                            "history" -> History(navControllerMain, innerPadding)
-                                            "statistics" -> Statistics(navControllerMain, innerPadding)
-                                            "profile" -> Profile(navControllerMain, innerPadding)
+                                            "history" -> History(
+                                                navControllerMain,
+                                                innerPadding
+                                            )
+                                            "statistics" -> Statistics(
+                                                navControllerMain,
+                                                innerPadding
+                                            )
+                                            "profile" -> Profile(
+                                                navControllerMain,
+                                                innerPadding
+                                            )
                                         }
                                     }, bottomBar = {
                                         NavigationBar (windowInsets = WindowInsets.navigationBars) {

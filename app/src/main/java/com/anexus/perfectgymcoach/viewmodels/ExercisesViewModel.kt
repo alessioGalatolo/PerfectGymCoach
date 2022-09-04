@@ -17,6 +17,7 @@ import javax.inject.Inject
 data class ExercisesState(
     val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
+    val exercisesFilterEquip: List<Exercise>? = null,
     val exercisesToDisplay: List<Exercise>? = null,
     val openAddExerciseDialogue: Boolean = false,
     val exerciseToAdd: Exercise? = null
@@ -33,6 +34,8 @@ sealed class ExercisesEvent{
 
     data class FilterExercise(val query: String): ExercisesEvent()
 
+    data class FilterExerciseEquipment(val query: Exercise.Equipment): ExercisesEvent()
+
 }
 
 @HiltViewModel
@@ -43,6 +46,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
     private var getExercisesJob: Job? = null
     private var getWorkoutExercisesJob: Job? = null
     private var searchJob: Job? = null
+    private var filterJob: Job? = null
 
     fun onEvent(event: ExercisesEvent){
         when (event) {
@@ -71,9 +75,11 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 getExercisesJob?.cancel()
                 getExercisesJob = viewModelScope.launch {
                     repository.getExercises(event.muscle).collect {
+                        val sorted = it.sortedBy { ex -> ex.name }
                         _state.value = state.value.copy(
-                            exercises = it.sortedBy { ex -> ex.name },
-                            exercisesToDisplay = state.value.exercisesToDisplay ?: it.sortedBy { ex -> ex.name }
+                            exercises = sorted,
+                            exercisesFilterEquip = state.value.exercisesFilterEquip ?: sorted,
+                            exercisesToDisplay = state.value.exercisesToDisplay ?: sorted
                         )
                     }
                 }
@@ -81,13 +87,20 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             is ExercisesEvent.FilterExercise -> {
                 searchJob?.cancel()
                 searchJob = viewModelScope.launch {  // TODO: improve search
-                    _state.value = state.value.copy(exercisesToDisplay = state.value.exercises.filter {
+                    _state.value = state.value.copy(exercisesToDisplay = state.value.exercisesFilterEquip!!.filter {
                         it.name.contains(event.query, ignoreCase = true)
                                 || it.primaryMuscle.muscleName.contains(event.query, ignoreCase = true)
                                 || it.equipment.equipmentName.contains(event.query, ignoreCase = true)
                                 || it.secondaryMuscles.any { it1 -> it1.muscleName.contains(event.query, ignoreCase = true) }
                     })
                 }
+            }
+            is ExercisesEvent.FilterExerciseEquipment -> {
+                val filtered = state.value.exercises.filter {
+                    event.query == Exercise.Equipment.EVERYTHING || it.equipment == event.query
+                }
+                _state.value = state.value.copy(exercisesFilterEquip = filtered,
+                    exercisesToDisplay = filtered)
             }
         }
     }

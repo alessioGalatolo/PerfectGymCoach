@@ -14,7 +14,7 @@ data class Exercise(
     val equipment: Equipment,
     val primaryMuscle: Muscle,
     val secondaryMuscles: List<Muscle>,
-    val image: Int = R.drawable.sample_image
+    val image: Int = R.drawable.finish_workout
     // TODO: add exercise difficulty
 
 ) : Parcelable {
@@ -34,8 +34,8 @@ data class Exercise(
         EVERYTHING("See all"), // Used when filtering by muscle to get everything
         BARBELL("Barbell"),
         BODY_WEIGHT("Body weight"),
-        DUMBBELL("Dumbbell"),
         CABLES("Cables"),
+        DUMBBELL("Dumbbell"),
         MACHINE("Machine")
     }
 

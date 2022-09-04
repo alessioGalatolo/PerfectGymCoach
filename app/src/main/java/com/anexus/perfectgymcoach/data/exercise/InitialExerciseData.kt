@@ -3,7 +3,10 @@ package com.anexus.perfectgymcoach.data.exercise
 import com.anexus.perfectgymcoach.R
 
 val INITIAL_EXERCISE_DATA = listOf(
-    // TODO: should have some kind of variation system
+    /*
+    TODO: should have some kind of variation system, let the user choose in the addExercise
+      dialog, in the view exercise show "exercise name (5+ variations)"
+    */
 
     /*
         CHEST EXERCISES
@@ -21,7 +24,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
-        image = R.drawable.bench_press  // FIXME
+        image = R.drawable.incline_bench_press  // FIXME
     ),
     Exercise(
         name = "Declined bench press",
@@ -152,37 +155,43 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Deadlift",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS)
+        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        image = R.drawable.deadlift
     ),
     Exercise(
         name = "Sumo deadlift",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS)
+        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        image = R.drawable.sumo_deadlift
     ),
     Exercise(
         name = "Barbell shrug",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = emptyList()
+        secondaryMuscles = emptyList(),
+        image = R.drawable.generic_barbell
     ),
     Exercise(
         name = "Barbell row",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.generic_barbell
     ),
     Exercise(
         name = "Barbell t-bar row",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS)
+        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        image = R.drawable.generic_barbell
     ),
     Exercise(
         name = "Barbell upright row",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.generic_barbell
     ),
 
     // Cables back
@@ -190,7 +199,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Cable row",
         equipment = Exercise.Equipment.CABLES,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.cable_row
     ),
     Exercise(
         name = "Cable pullover",
@@ -210,43 +220,50 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Pull up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.pull_up
     ),
     Exercise(
         name = "Wide grip pull up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.wide_pull_up
     ),
     Exercise(
         name = "Chin up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.chin_up
     ),
     Exercise(
         name = "Close grip chin up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.chin_up
     ),
     Exercise(
         name = "Single arm pull up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.pull_up
     ),
     Exercise(
         name = "Muscle up",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.CHEST, Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.CHEST, Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.muscle_up
     ),
     Exercise(
         name = "Rope climbing",
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.rope_climb
     ),
 
     // Machine back
@@ -254,31 +271,36 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Machine row",
         equipment = Exercise.Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.cable_row
     ),
     Exercise(
         name = "Hyperextensions",
         equipment = Exercise.Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = emptyList()
+        secondaryMuscles = emptyList(),
+        image = R.drawable.hyperextensions
     ),
     Exercise(
         name = "Lat pulldown", // also called lat machine
         equipment = Exercise.Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.lat_pulldown
     ),
     Exercise(
         name = "V-bar lat pulldown",
         equipment = Exercise.Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.lat_pulldown
     ),
     Exercise(
         name = "Vertical traction",
         equipment = Exercise.Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.lat_pulldown
     ),
 
     // Dumbbell back
@@ -286,25 +308,29 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Dumbbell row",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        image = R.drawable.dumbbell_row
     ),
     Exercise(
         name = "Dumbbell deadlift",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS)
+        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        image = R.drawable.dumbbell_generic
     ),
     Exercise(
         name = "Dumbbell shrug",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = emptyList()
+        secondaryMuscles = emptyList(),
+        image = R.drawable.dumbbell_shrug
     ),
     Exercise(
         name = "Upright dumbbell row",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.SHOULDERS)
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.SHOULDERS),
+        image = R.drawable.dumbbell_generic
     ),
 
     /*
@@ -521,6 +547,343 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Skull crusher",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = emptyList()
+    ),
+    // Cables
+    Exercise(
+        name = "Cable skull crusher",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Cable pushdown",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Overhead cable triceps extension",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = emptyList()
+    ),
+    // Bodyweight
+    Exercise(
+        name = "Triceps dip",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.CHEST, Exercise.Muscle.SHOULDERS)
+    ),
+    Exercise(
+        name = "Bench dip",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.SHOULDERS)
+    ),
+    Exercise(
+        name = "Diamond push up",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.CHEST, Exercise.Muscle.SHOULDERS)
+    ),
+    Exercise(
+        name = "Parallel arms push up", // TODO: right name?
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.CHEST, Exercise.Muscle.SHOULDERS)
+    ),
+    // Machine
+    Exercise(
+        name = "Machine Triceps extension",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = emptyList()
+    ),
+    // Dumbbell
+    Exercise(
+        name = "Dumbbell triceps extensions",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Close grip dumbbell bench press",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.CHEST, Exercise.Muscle.SHOULDERS)
+    ),
+    Exercise(
+        name = "Dumbbell skull crusher",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.TRICEPS,
+        secondaryMuscles = emptyList()
+    ),
+
+    /*
+        Legs
+     */
+    // Barbell
+    Exercise(
+        name = "Barbell clean",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = listOf(Exercise.Muscle.ABS, Exercise.Muscle.BACK)
+    ),
+    Exercise(
+        name = "Squat",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Front squat",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Hack squat",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Barbell lunge",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = listOf(Exercise.Muscle.ABS, Exercise.Muscle.CALVES)
+    ),
+    Exercise(
+        name = "Romanian deadlift",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    // Cables
+    Exercise(
+        name = "Cable leg curl",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    // Bodyweight
+    Exercise(
+        name = "Single leg Squat",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Bodyweight squat",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Bodyweight step ups",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Bodyweight lunge",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    // Machine
+    Exercise(
+        name = "Machine leg curl",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Machine leg extension",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Machine hack squat",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Leg press",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Abduction machine",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Adduction machine",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    // Dumbbell
+    Exercise(
+        name = "Bulgarian split squat",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Dumbbell lunges",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Goblet squat",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Dumbbell step ups",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.LEGS,
+        secondaryMuscles = emptyList()
+    ),
+
+    /*
+        Calves
+     */
+    // Barbell
+    Exercise(
+        name = "Barbell Calf raises",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.CALVES,
+        secondaryMuscles = emptyList()
+    ),
+    // Cables
+    // Bodyweight
+    Exercise(
+        name = "Calf raises",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.CALVES,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Single leg calf raises",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.CALVES,
+        secondaryMuscles = emptyList()
+    ),
+    // Machine
+    Exercise(
+        name = "Machine calf raises",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.CALVES,
+        secondaryMuscles = emptyList()
+    ),
+    // Dumbbell
+    Exercise(
+        name = "Dumbbell calf raises",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.CALVES,
+        secondaryMuscles = emptyList()
+    ),
+
+    /*
+        Shoulders
+     */
+    // Barbell
+    Exercise(
+        name = "Push and press",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
+    ),
+    Exercise(
+        name = "Shoulder press",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
+    ),
+    Exercise(
+        name = "Clean and press",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.BACK, Exercise.Muscle.LEGS, Exercise.Muscle.ABS, Exercise.Muscle.TRICEPS)
+    ),
+    // Cables
+    Exercise(
+        name = "Cable side raise",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Cable rear delt fly",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Cable face pull",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Cable shoulder press",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
+    ),
+    // Bodyweight
+    Exercise(
+        name = "Handstand push ups",
+        equipment = Exercise.Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
+    ),
+    // Machine
+    Exercise(
+        name = "Machine shoulder press",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
+    ),
+    // Dumbbell
+    Exercise(
+        name = "Front raise",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Side raise",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = emptyList()
+    ),
+    Exercise(
+        name = "Arnold press",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
+    ),
+    Exercise(
+        name = "Shoulder press",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
+    ),
+    Exercise(
+        name = "Dumbbell rear delt row",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
         secondaryMuscles = emptyList()
     ),
 )

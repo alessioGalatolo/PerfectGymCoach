@@ -5,10 +5,12 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
@@ -51,6 +54,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.ColorUtils
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -231,15 +235,14 @@ fun ViewExercises(navController: NavHostController, programName: String,
         }, content = { innerPadding ->
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = innerPadding,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                contentPadding = innerPadding
             ) {
                 item{
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface,
                         tonalElevation = NavigationBarDefaults.Elevation,  // should use card elevation but it is private
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = 8.dp).padding(horizontal = 16.dp)
                     ){
                         Row(verticalAlignment = CenterVertically,
                             modifier = Modifier.fillMaxWidth()) {
@@ -292,12 +295,50 @@ fun ViewExercises(navController: NavHostController, programName: String,
                         }
                     }
                 }
+                item {
+                    var selectedFilter by remember { mutableStateOf(-1) }
+                    LazyRow (horizontalArrangement = Arrangement.spacedBy(8.dp)){
+                        item{
+                            Spacer(Modifier.width(8.dp))
+                        }
+                        itemsIndexed(items = Exercise.Equipment.values().drop(1), { _, it -> it.ordinal }){ index, equipment ->
+                            FilterChip(
+                                selected = selectedFilter == index,
+                                onClick = {
+                                    if (selectedFilter != index) {
+                                        selectedFilter = index
+                                        viewModel.onEvent(ExercisesEvent.FilterExerciseEquipment(equipment))
+                                    } else {
+                                        selectedFilter = -1
+                                        viewModel.onEvent(ExercisesEvent.FilterExerciseEquipment(Exercise.Equipment.EVERYTHING))
+                                    }
+                                },
+                                label = { Text(equipment.equipmentName) },
+                                leadingIcon = if (selectedFilter == index) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Done,
+                                            contentDescription = "Localized Description",
+                                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                        )
+                                    }
+                                } else {
+                                    null
+                                }
+                            )
+                        }
+                        item{
+                            Spacer(Modifier.width(8.dp))
+                        }
+                    }
+                }
                 items(viewModel.state.value.exercisesToDisplay ?: emptyList(), key = { it.exerciseId }) { exercise ->
                     ElevatedCard(
                         onClick = {
                             viewModel.onEvent(ExercisesEvent.ToggleExerciseDialogue(exercise))
                         },
                         modifier = Modifier
+                            .padding(horizontal = 16.dp)
                             .fillMaxWidth()
                             .animateItemPlacement()
                     ) {

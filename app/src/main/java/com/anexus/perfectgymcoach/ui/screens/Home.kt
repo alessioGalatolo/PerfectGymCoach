@@ -36,6 +36,7 @@ fun Home(navController: NavHostController,
 
     if (viewModel.state.value.currentPlan == null) {
         Scaffold(
+            modifier = Modifier.padding(contentPadding),
             floatingActionButton = {
                 LargeFloatingActionButton(
                     onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${true}") }
@@ -47,7 +48,7 @@ fun Home(navController: NavHostController,
                     )
                 }
             }) {
-            Column(modifier = Modifier.padding(it).padding(contentPadding)) {
+            Column(modifier = Modifier.padding(it)) {
                 Text(
                     stringResource(id = R.string.empty_home),
                     modifier = Modifier.padding(16.dp)
