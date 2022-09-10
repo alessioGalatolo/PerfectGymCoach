@@ -157,7 +157,6 @@ class MainActivity : ComponentActivity() {
                             composable(screen.route) {
                                 Scaffold(modifier = Modifier
                                     .nestedScroll(scrollBehavior.nestedScrollConnection),
-                                    contentWindowInsets = WindowInsets.ime,
                                     topBar = {
                                         LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
                                             scrollBehavior = scrollBehavior,

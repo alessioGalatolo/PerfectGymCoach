@@ -68,7 +68,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            SmallTopAppBar(
                 title = { Text(name) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

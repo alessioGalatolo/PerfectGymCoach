@@ -113,7 +113,7 @@ fun WorkoutRecap(
             }
         }
         Scaffold(topBar = {
-            TopAppBar (title = {
+            SmallTopAppBar (title = {
                 Text("Workout recap")
             }, navigationIcon = {
                 IconButton(onClick = {

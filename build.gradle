@@ -1,7 +1,7 @@
 buildscript {
     ext {
         compose_version = '1.3.0-beta02'
-        material3_version = '1.0.0-beta02'
+        material3_version = '1.0.0-beta01'
         room_version = "2.5.0-alpha02" // release 2.4.x has a bug
         accompanist_version = "0.25.1"
     }

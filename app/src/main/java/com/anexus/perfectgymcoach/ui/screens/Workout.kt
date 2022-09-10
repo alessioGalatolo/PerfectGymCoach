@@ -288,7 +288,7 @@ fun Workout(navController: NavHostController, programId: Long,
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                TopAppBar(
+                SmallTopAppBar(
                     title = {},
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {

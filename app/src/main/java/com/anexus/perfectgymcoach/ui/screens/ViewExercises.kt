@@ -91,7 +91,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            TopAppBar(
+            SmallTopAppBar(
                 title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

@@ -57,10 +57,10 @@ fun AddExerciseDialogue(
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
     Scaffold(
 //        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentWindowInsets = WindowInsets.ime,
+//        contentWindowInsets = WindowInsets.ime,
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            TopAppBar(title = { Text(viewModel.state.value.exercise?.name ?: "") },
+            SmallTopAppBar(title = { Text(viewModel.state.value.exercise?.name ?: "") },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = { navHostController.popBackStack() }) {
@@ -108,67 +108,67 @@ fun AddExerciseDialogue(
                 })
         }, content = { innerPadding ->
             if (viewModel.state.value.exercise != null) {
-                LazyColumn(
-                    contentPadding = innerPadding,
+                Column(
                     modifier = Modifier
 //                        .imePadding()
+                        .padding(innerPadding)
                         .fillMaxSize(),
 //                        verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    item{
-                        Spacer(Modifier.height(140.dp))  // FIXME: remove, only debugging
-                        Image(
-                            painterResource(id = viewModel.state.value.exercise!!.image),
-                            null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                                .clip(AbsoluteRoundedCornerShape(12.dp))
-                        )
-                    }
-                    item{
-                        OutlinedTextField(
-                            value = notesText.value,
-                            onValueChange = { notesText.value = it },
-                            label = { Text("Notes (optional)") },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                        )
-                    }
-                    item{
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            MyDropdownMenu( // FIXME: should check is int
-                                prompt = "Sets*",
-                                options = (1..6).map { "$it" },
-                                text = setsText,
-                                keyboardType = KeyboardType.Number
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            MyDropdownMenu( // FIXME: should check is int
-                                prompt = "Reps*",
-                                options = (1..12).map { "$it" },
-                                text = repsText,
-                                keyboardType = KeyboardType.Number
-                            )
-
-                        }
-                    }
-                    item{
-                        MyDropdownMenu(
-                            prompt = "Rest*",
-                            options = (15..120 step 15).map { "$it" },
-                            text = restText,
+                    Spacer(
+                        Modifier
+                            .height(140.dp)
+                            .padding(WindowInsets.ime.asPaddingValues()))  // FIXME: remove, only debugging
+                    Image(
+                        painterResource(id = viewModel.state.value.exercise!!.image),
+                        null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .padding(WindowInsets.ime.asPaddingValues())
+                            .clip(AbsoluteRoundedCornerShape(12.dp))
+                    )
+                    OutlinedTextField(
+                        value = notesText.value,
+                        onValueChange = { notesText.value = it },
+                        label = { Text("Notes (optional)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp).padding(WindowInsets.ime.asPaddingValues())
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp).padding(WindowInsets.ime.asPaddingValues()),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        MyDropdownMenu( // FIXME: should check is int
+                            prompt = "Sets*",
+                            options = (1..6).map { "$it" },
+                            text = setsText,
                             keyboardType = KeyboardType.Number
-                        ) {
-                            Text("sec")
-                        }
-                        Spacer(Modifier.height(16.dp))
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        MyDropdownMenu( // FIXME: should check is int
+                            prompt = "Reps*",
+                            options = (1..12).map { "$it" },
+                            text = repsText,
+                            keyboardType = KeyboardType.Number
+                        )
+
                     }
+//                    MyDropdownMenu(
+//                        prompt = "Rest*",
+//                        options = (15..120 step 15).map { "$it" },
+//                        text = restText,
+//                        keyboardType = KeyboardType.Number
+//                    ) {
+//                        Text("sec")
+//                    }
+                    Spacer(
+                        Modifier
+                            .height(16.dp).padding(WindowInsets.ime.asPaddingValues()))
                 }
             }
         }
