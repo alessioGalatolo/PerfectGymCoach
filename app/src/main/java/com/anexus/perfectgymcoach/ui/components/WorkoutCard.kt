@@ -1,17 +1,13 @@
 package com.anexus.perfectgymcoach.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RocketLaunch
-import androidx.compose.material.icons.filled.Start
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,11 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -32,17 +24,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.MainScreen
-import com.anexus.perfectgymcoach.ui.NavigationScreen
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
-import com.google.accompanist.placeholder.material.placeholder
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalPagerApi::class)
 @Composable
@@ -136,7 +124,7 @@ fun WorkoutCard(
                     Text("Quick start")
                 }
                 IconButton(onClick = { navController.navigate(
-                    "${MainScreen.AddExercise.route}/${program.name}/${program.programId}") }) {
+                    "${MainScreen.AddWorkoutExercise.route}/${program.name}/${program.programId}") }) {
                     Icon(Icons.Filled.Edit, null)
                 }
             }

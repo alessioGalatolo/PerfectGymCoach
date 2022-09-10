@@ -43,7 +43,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            SmallTopAppBar(
+            TopAppBar(
                 title = { Text(programName) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

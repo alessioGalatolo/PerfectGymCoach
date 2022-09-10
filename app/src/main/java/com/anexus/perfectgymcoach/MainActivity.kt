@@ -1,11 +1,8 @@
 package com.anexus.perfectgymcoach
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.rememberSplineBasedDecay
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.*
@@ -19,7 +16,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
-import androidx.navigation.NavArgument
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -93,7 +89,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(
-                        "${MainScreen.AddExercise.route}/{name}/{programId}",
+                        "${MainScreen.AddWorkoutExercise.route}/{name}/{programId}",
                         arguments = listOf(navArgument("programId") { type = NavType.LongType })
                     ) {
                         AddExercise(
@@ -127,6 +123,18 @@ class MainActivity : ComponentActivity() {
                             it.arguments?.getBoolean("focusSearch") ?: false
                         )
                     }
+                    composable(
+                        "${MainScreen.AddExerciseDialog.route}/{exerciseId}/{programId}",
+                        arguments = listOf(
+                            navArgument("exerciseId") { type = NavType.LongType },
+                            navArgument("programId") { type = NavType.LongType })
+                    ) {
+                        AddExerciseDialogue(
+                            navControllerMain,
+                            it.arguments?.getLong("exerciseId") ?: 0L,
+                            it.arguments?.getLong("programId") ?: 0L
+                        )
+                    }
                     composable("${MainScreen.ChangePlan.route}/{openDialogNow}",
                         arguments = listOf(navArgument("openDialogNow") {
                             type = NavType.BoolType
@@ -149,6 +157,7 @@ class MainActivity : ComponentActivity() {
                             composable(screen.route) {
                                 Scaffold(modifier = Modifier
                                     .nestedScroll(scrollBehavior.nestedScrollConnection),
+                                    contentWindowInsets = WindowInsets.ime,
                                     topBar = {
                                         LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
                                             scrollBehavior = scrollBehavior,

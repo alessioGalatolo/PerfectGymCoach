@@ -1,10 +1,8 @@
 package com.anexus.perfectgymcoach.ui.screens
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -71,7 +68,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            SmallTopAppBar(
+            TopAppBar(
                 title = { Text(name) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -155,7 +152,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                                     ?: emptyList(),
                                 onCardClick = {
                                     navController.navigate(
-                                        "${MainScreen.AddExercise.route}/" +
+                                        "${MainScreen.AddWorkoutExercise.route}/" +
                                                 "${programEntry.name}/" +
                                                 "${programEntry.programId}"
                                     )

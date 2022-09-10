@@ -27,4 +27,8 @@
     <string name="calories_info">The calorie consumption is calculated based on the workout time, its intensity, your body weight (don\'t forget to set it up in the Profile tab!) and some research-backed values for weight training energy consumption. NB: this calorie consumption is only approximated and may not reflect the actual consumption.</string>
     <string name="gender_info">While we support all genders and their expression, in the case of fitness activity the one that makes a difference (in performance, percentage of muscle mass, etc.) is the biological sex.</string>
     <string name="bmi_info"><![CDATA[The Body Mass Index (BMI) is a calculation used to assess a person\'s health only basing on weight and height. A value between 18.5 and 25 is considered normal, a value below 18.5 is underweight and a value above 25 until 30 is considered overweight while above 30 a person is considered obese. NB: the assessment of health is only approximated and should not be considered relevant for certain people e.g. young (<18) and elder (>65) people, bodybuilders, athletes, pregnant women, etc. Please seek medical advice if you\'re worried about your health.]]></string>
+    <string name="add_exercise_dialog">Add exercise dialog</string>
+    <string name="save">Save</string>
+    <string name="fill_every_field">Please fill every field in order to save</string>
+    <string name="empty_history">You currently don\'t have any workout records. Complete a workout to see it here!</string>
 </resources>

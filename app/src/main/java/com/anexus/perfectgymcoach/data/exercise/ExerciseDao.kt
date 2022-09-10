@@ -12,8 +12,13 @@ interface ExerciseDao {
 
     @Query(
         "SELECT * FROM exercise " +
-        "WHERE primaryMuscle LIKE :muscle")
+                "WHERE primaryMuscle LIKE :muscle")
     fun getExercises(muscle: Exercise.Muscle): Flow<List<Exercise>>
+
+    @Query(
+        "SELECT * FROM exercise " +
+        "WHERE exerciseId LIKE :exerciseId")
+    fun getExercise(exerciseId: Long): Flow<Exercise>
 
     @Query("SELECT * FROM exercise")
     fun getAllExercises(): Flow<List<Exercise>>
