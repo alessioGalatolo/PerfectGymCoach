@@ -875,12 +875,6 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
     ),
     Exercise(
-        name = "Shoulder press",
-        equipment = Exercise.Equipment.DUMBBELL,
-        primaryMuscle = Exercise.Muscle.SHOULDERS,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS)
-    ),
-    Exercise(
         name = "Dumbbell rear delt row",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.SHOULDERS,

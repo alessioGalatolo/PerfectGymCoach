@@ -29,19 +29,29 @@ data class WorkoutExercise (
     @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
+    val orderInProgram: Int,
     val reps: List<Int>,
     val rest: Int,
+    val note: String,
     val supersetExercise: Int = 0 // TODO: should be foreign key
-    ) : Parcelable
+) : Parcelable
+
+@Parcelize
+data class WorkoutExerciseReorder (
+    val workoutExerciseId: Long,
+    val orderInProgram: Int,
+) : Parcelable
 
 @Parcelize
 data class WorkoutExerciseAndInfo (
     @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
+    val orderInProgram: Int,
     val name: String,
     val reps: List<Int>,
     val rest: Int,
+    val note: String,
     val supersetExercise: Int = 0, // TODO: should be foreign key
     val image: Int,
     val equipment: Exercise.Equipment

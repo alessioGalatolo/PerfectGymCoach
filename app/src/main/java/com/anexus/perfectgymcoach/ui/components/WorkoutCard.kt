@@ -16,7 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -62,12 +65,16 @@ fun WorkoutCard(
                     Modifier.wrapContentHeight(Alignment.Top),
                     contentAlignment = Alignment.TopCenter
                 ) {
+                    val imageWidth = LocalConfiguration.current.screenWidthDp.dp // - 32.dp // 2*padding
+                    val imageHeight = imageWidth/3*2
                     HorizontalPager(count = exercises.size, state = pagerState) { page ->
                         AsyncImage(
                             model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
                             contentDescription = null,
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(imageHeight)
                                 .align(Alignment.TopCenter)
                                 .clip(AbsoluteRoundedCornerShape(12.dp))
                         )

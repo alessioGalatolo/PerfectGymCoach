@@ -77,7 +77,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     viewModelScope.launch {
                         _state.value = state.value.copy(
                             workoutExercisesAndInfo = repository.getWorkoutExercisesAndInfo(event.programId).first()
-                        ) // TODO: sort
+                                .sortedBy { it.orderInProgram }
+                        )
                         repository.getExerciseRecords(
                             state.value.workoutExercisesAndInfo.map { it.extExerciseId }
                         ).collect { records ->

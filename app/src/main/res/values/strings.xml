@@ -29,6 +29,6 @@
     <string name="bmi_info"><![CDATA[The Body Mass Index (BMI) is a calculation used to assess a person\'s health only basing on weight and height. A value between 18.5 and 25 is considered normal, a value below 18.5 is underweight and a value above 25 until 30 is considered overweight while above 30 a person is considered obese. NB: the assessment of health is only approximated and should not be considered relevant for certain people e.g. young (<18) and elder (>65) people, bodybuilders, athletes, pregnant women, etc. Please seek medical advice if you\'re worried about your health.]]></string>
     <string name="add_exercise_dialog">Add exercise dialog</string>
     <string name="save">Save</string>
-    <string name="fill_every_field">Please fill every field in order to save</string>
+    <string name="fill_every_field">Please fill every field correctly in order to save</string>
     <string name="empty_history">You currently don\'t have any workout records. Complete a workout to see it here!</string>
 </resources>

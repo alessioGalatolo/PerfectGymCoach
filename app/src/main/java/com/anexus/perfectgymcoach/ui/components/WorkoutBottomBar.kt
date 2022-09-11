@@ -79,7 +79,7 @@ fun WorkoutBottomBar(
             ) {
                 TextFieldWithButtons(
                     "Reps",
-                    text = { repsToDisplay.toString() },
+                    text = { repsToDisplay.toString() }, // fixme: does not work with manual filling
                     onNewText = { new -> updateReps(new.toInt()) },
                     onIncrement = { updateReps(repsToDisplay + 1) },
                     onDecrement = { updateReps(repsToDisplay - 1) }
@@ -87,7 +87,7 @@ fun WorkoutBottomBar(
                 Spacer(Modifier.width(8.dp))
                 TextFieldWithButtons(
                     "Weight",
-                    text = { weightToDisplay.toString() },
+                    text = { weightToDisplay.toString() }, // fixme: does not work with manual filling
                     onNewText = { new -> updateWeight(new.toFloat()) },
                     onIncrement = { updateWeight(
                                 weightToDisplay + Exercise.equipment2increment[currentExercise.equipment]!!

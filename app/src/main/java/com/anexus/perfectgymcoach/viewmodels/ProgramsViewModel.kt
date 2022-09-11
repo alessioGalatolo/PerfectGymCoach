@@ -58,7 +58,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                         getWorkoutExercisesJob = this.launch {
                             repository.getWorkoutExercisesAndInfo(it.map { prg -> prg.programId }).collect{ exList ->
                                 _state.value = state.value.copy(
-                                    exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }
+                                    exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }  // FIXME: should sort each list
                                 )
                             }
                         }

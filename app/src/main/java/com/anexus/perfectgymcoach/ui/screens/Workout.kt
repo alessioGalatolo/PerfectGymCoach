@@ -171,7 +171,7 @@ fun Workout(navController: NavHostController, programId: Long,
         val context = LocalContext.current
         val brightImage = remember { mutableStateOf(false) }
         val imageWidth = LocalConfiguration.current.screenWidthDp.dp
-        val imageHeight = imageWidth/3*2
+        val imageHeight = imageWidth/4*2
         FullScreenImageCard(
             topAppBarNavigationIcon = { appBarShown ->
                 val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !isSystemInDarkTheme())

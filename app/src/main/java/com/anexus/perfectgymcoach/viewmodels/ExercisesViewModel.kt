@@ -9,6 +9,8 @@ import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseReorder
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -22,6 +24,7 @@ data class ExercisesState(
 )
 
 sealed class ExercisesEvent{
+    data class ReorderExercises(val workoutExerciseReorders: List<WorkoutExerciseReorder>): ExercisesEvent()
 
     data class GetWorkoutExercises(val programId: Long): ExercisesEvent()
 
@@ -57,7 +60,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 getWorkoutExercisesJob = viewModelScope.launch {
                     repository.getWorkoutExercisesAndInfo(event.programId).collect {
                         _state.value = state.value.copy(
-                            workoutExercisesAndInfo = it
+                            workoutExercisesAndInfo = it.sortedBy { it2 -> it2.orderInProgram }
                         )
                     }
                 }
@@ -92,6 +95,11 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 }
                 _state.value = state.value.copy(exercisesFilterEquip = filtered,
                     exercisesToDisplay = filtered)
+            }
+            is ExercisesEvent.ReorderExercises -> {
+                viewModelScope.launch {
+                    repository.reorderWorkoutExercises(event.workoutExerciseReorders)
+                }
             }
         }
     }

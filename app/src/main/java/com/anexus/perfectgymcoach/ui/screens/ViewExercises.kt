@@ -206,7 +206,7 @@ fun ViewExercises(navController: NavHostController, programName: String,
                 items(viewModel.state.value.exercisesToDisplay ?: emptyList(), key = { it.exerciseId }) { exercise ->
                     ElevatedCard(
                         onClick = {
-                            navController.navigate("${MainScreen.AddExerciseDialog.route}/${exercise.exerciseId}/$programId")
+                            navController.navigate("${MainScreen.AddExerciseDialog.route}/$programId/${exercise.exerciseId}/${0L}")
                         },
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
