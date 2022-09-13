@@ -27,5 +27,7 @@ interface WorkoutProgramDao {
 
     @Update(entity = WorkoutProgram::class)
     suspend fun updateOrder(workoutProgramReorders: List<WorkoutProgramReorder>)
-    // TODO: delete program
+
+    @Query("DELETE FROM `program` WHERE programId = :programId")
+    suspend fun delete(programId: Long)
 }

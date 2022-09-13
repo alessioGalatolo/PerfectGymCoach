@@ -156,13 +156,16 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                                                 "${programEntry.name}/" +
                                                 "${programEntry.programId}"
                                     )
-                                }, onCardLongPress = {
+                                }, onRename = {
                                     viewModel.onEvent(
                                         ProgramsEvent.ToggleChangeNameDialog(
                                             programEntry.programId
                                         )
                                     )
-                                }, navController = navController,
+                                }, onDelete = {
+                                    viewModel.onEvent(ProgramsEvent.DeleteProgram(programEntry.programId))
+                                },
+                                navController = navController,
                                 modifier = Modifier.padding(end = 16.dp)
                             )
                         }

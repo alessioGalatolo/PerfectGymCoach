@@ -21,7 +21,7 @@ import kotlinx.parcelize.Parcelize
             entity = Exercise::class,
             parentColumns = ["exerciseId"],
             childColumns = ["extExerciseId"],
-            onDelete = CASCADE  // FIXME? not sure it should cascade
+            onDelete = CASCADE  // FIXME? not sure it should cascade, probably won't be implemented
         )
     ]
 )

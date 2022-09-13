@@ -98,13 +98,7 @@ fun Home(navController: NavHostController,
                     exercises = currentExercises,
                     // TODO: add message when no exercises in the program
                     onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}/${false}") },
-                    onCardLongPress = {
-                        navController.navigate(
-                            "${MainScreen.AddWorkoutExercise.route}/" +
-                                    "${currentProgram.name}/" +
-                                    "${currentProgram.programId}"
-                        )
-                    }, navController = navController
+                    navController = navController
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 if (viewModel.state.value.programs!!.size > 1) {

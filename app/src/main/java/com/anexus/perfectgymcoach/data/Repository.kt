@@ -53,9 +53,13 @@ class Repository @Inject constructor(
 
     suspend fun addProgram(program: WorkoutProgram) = db.workoutProgramDao.insert(program)
 
-    suspend fun renameProgram(workoutProgramRename: WorkoutProgramRename) = db.workoutProgramDao.updateName(workoutProgramRename)
+    suspend fun renameProgram(workoutProgramRename: WorkoutProgramRename) =
+        db.workoutProgramDao.updateName(workoutProgramRename)
 
-    suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) = db.workoutProgramDao.updateOrder(workoutProgramReorder)
+    suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) =
+        db.workoutProgramDao.updateOrder(workoutProgramReorder)
+
+    suspend fun deleteProgram(programId: Long) = db.workoutProgramDao.delete(programId)
 
 
     fun getWorkoutExercisesAndInfo(programId: Long): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programId)
@@ -70,6 +74,8 @@ class Repository @Inject constructor(
 
     suspend fun reorderWorkoutExercises(workoutExerciseReorders: List<WorkoutExerciseReorder>) =
         db.workoutExerciseDao.updateOrder(workoutExerciseReorders)
+
+    suspend fun deleteWorkoutExercise(workoutExerciseId: Long) = db.workoutExerciseDao.delete(workoutExerciseId)
 
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)

@@ -35,6 +35,8 @@ sealed class ProgramsEvent{
 
     data class ReorderProgram(val workoutProgramReorders: List<WorkoutProgramReorder>): ProgramsEvent()
 
+    data class DeleteProgram(val programId: Long): ProgramsEvent()
+
 }
 
 @HiltViewModel
@@ -90,6 +92,11 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
             is ProgramsEvent.ReorderProgram -> {
                 viewModelScope.launch {
                     repository.reorderPrograms(event.workoutProgramReorders)
+                }
+            }
+            is ProgramsEvent.DeleteProgram -> {
+                viewModelScope.launch {
+                    repository.deleteProgram(event.programId)
                 }
             }
         }

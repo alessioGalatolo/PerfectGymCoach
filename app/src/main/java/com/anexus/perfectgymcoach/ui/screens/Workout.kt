@@ -185,7 +185,8 @@ fun Workout(navController: NavHostController, programId: Long,
             },
             topAppBarActions = { appBarShown ->
                 Row(verticalAlignment = CenterVertically) {
-                    val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !isSystemInDarkTheme())
+                    val needsDarkColor = (brightImage.value && !appBarShown) ||
+                            (appBarShown && !isSystemInDarkTheme())
                     Text(timer(), style = MaterialTheme.typography.titleLarge,
                         color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
                     if (viewModel.state.value.workoutTime != null) {

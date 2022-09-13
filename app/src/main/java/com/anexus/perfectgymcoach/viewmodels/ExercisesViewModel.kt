@@ -26,6 +26,8 @@ data class ExercisesState(
 sealed class ExercisesEvent{
     data class ReorderExercises(val workoutExerciseReorders: List<WorkoutExerciseReorder>): ExercisesEvent()
 
+    data class DeleteExercise(val workoutExerciseId: Long): ExercisesEvent()
+
     data class GetWorkoutExercises(val programId: Long): ExercisesEvent()
 
     data class GetExercises(val muscle: Exercise.Muscle): ExercisesEvent()
@@ -99,6 +101,11 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             is ExercisesEvent.ReorderExercises -> {
                 viewModelScope.launch {
                     repository.reorderWorkoutExercises(event.workoutExerciseReorders)
+                }
+            }
+            is ExercisesEvent.DeleteExercise -> {
+                viewModelScope.launch {
+                    repository.deleteWorkoutExercise(event.workoutExerciseId)
                 }
             }
         }

@@ -36,4 +36,7 @@ interface WorkoutExerciseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: WorkoutExercise)
 
+    @Query("DELETE FROM workoutexercise WHERE workoutExerciseId = :workoutExerciseId")
+    suspend fun delete(workoutExerciseId: Long)
+
 }
