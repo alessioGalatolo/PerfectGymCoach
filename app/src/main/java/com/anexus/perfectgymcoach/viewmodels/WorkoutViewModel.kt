@@ -26,8 +26,8 @@ data class WorkoutState(
     val workoutTime: Long? = null, // in seconds
     val restTimestamp: Long? = null, // workout time of end of rest
     val workoutId: Long = 0,
-    val repsBottomBar: Int = 0, // reps to be displayed in bottom bar
-    val weightBottomBar: Float = 0f // weight to be displayed in bottom bar
+    val repsBottomBar: String = "0", // reps to be displayed in bottom bar
+    val weightBottomBar: String = "0.0" // weight to be displayed in bottom bar
 )
 
 sealed class WorkoutEvent{
@@ -39,7 +39,7 @@ sealed class WorkoutEvent{
 
     object DeleteCurrentRecords: WorkoutEvent()
 
-    data class CompleteSet(
+    data class TryCompleteSet(
         val exerciseInWorkout: Int,
         val exerciseRest: Long
     ): WorkoutEvent()
@@ -50,9 +50,9 @@ sealed class WorkoutEvent{
 
     data class AddSetToExercise(val exerciseInWorkout: Int): WorkoutEvent()
 
-    data class UpdateReps(val newValue: Int): WorkoutEvent()
+    data class UpdateReps(val newValue: String): WorkoutEvent()
 
-    data class UpdateWeight(val newValue: Float): WorkoutEvent()
+    data class UpdateWeight(val newValue: String): WorkoutEvent()
 
 }
 
@@ -65,7 +65,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private var getExerciseRecordsJob: Job? = null
     private var timerJob: Job? = null
 
-    fun onEvent(event: WorkoutEvent){
+    fun onEvent(event: WorkoutEvent): Boolean{
         when (event) {
             is WorkoutEvent.ToggleCancelWorkoutDialog -> {
                 _state.value = state.value.copy(
@@ -110,7 +110,10 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 }.onEach {_state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)}
                 .launchIn(viewModelScope)
             }
-            is WorkoutEvent.CompleteSet -> {
+            is WorkoutEvent.TryCompleteSet -> {
+                if (state.value.repsBottomBar.toIntOrNull() == null ||
+                        state.value.weightBottomBar.toFloatOrNull() == null)
+                    return false
                 viewModelScope.launch {
                     val record = state.value.allRecords[
                             state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId
@@ -126,14 +129,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 extExerciseId = state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId,
                                 exerciseInWorkout = event.exerciseInWorkout,
                                 date = Calendar.getInstance(),
-                                reps = listOf(state.value.repsBottomBar),
-                                weights = listOf(state.value.weightBottomBar)
+                                reps = listOf(state.value.repsBottomBar.toInt()),
+                                weights = listOf(state.value.weightBottomBar.toFloat())
                             )
                         )
                     } else {
                         repository.addExerciseRecord(record.copy(
-                            reps = record.reps.plus(state.value.repsBottomBar),
-                            weights = record.weights.plus(state.value.weightBottomBar)
+                            reps = record.reps.plus(state.value.repsBottomBar.toInt()),
+                            weights = record.weights.plus(state.value.weightBottomBar.toFloat())
                         ))
                     }
                 }
@@ -175,6 +178,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(weightBottomBar = event.newValue)
             }
         }
+        return true
     }
 
 }

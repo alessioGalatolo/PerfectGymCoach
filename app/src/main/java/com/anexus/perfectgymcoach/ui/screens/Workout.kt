@@ -127,7 +127,7 @@ fun Workout(navController: NavHostController, programId: Long,
         if (currentExercise != null && setsDone.value < currentExercise!!.reps.size) {
             viewModel.onEvent(
                 WorkoutEvent.UpdateReps(
-                    currentExercise!!.reps[setsDone.value]
+                    currentExercise!!.reps[setsDone.value].toString()
                 )
             )
         }
@@ -138,10 +138,10 @@ fun Workout(navController: NavHostController, programId: Long,
 
         if (currentRecord != null) {
             if (setsDone.value > 0)
-                viewModel.onEvent(WorkoutEvent.UpdateWeight(ongoingRecord!!.weights[setsDone.value-1]))
+                viewModel.onEvent(WorkoutEvent.UpdateWeight(ongoingRecord!!.weights[setsDone.value-1].toString()))
             else
 //            val index = min(setsDone.value, currentRecord.weights.size - 1)
-                viewModel.onEvent(WorkoutEvent.UpdateWeight(currentRecord.weights[0]))
+                viewModel.onEvent(WorkoutEvent.UpdateWeight(currentRecord.weights[0].toString()))
         }
     }
 
@@ -261,27 +261,33 @@ fun Workout(navController: NavHostController, programId: Long,
                 )
             }
         ) {
-            WorkoutBottomBar(
-                contentPadding = it,
-                workoutStarted = viewModel.state.value.workoutTime == null,
-                startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
-                currentExercise = currentExercise,
-                completeWorkout = completeWorkout,
-                completeSet = {
-                    viewModel.onEvent(
-                        WorkoutEvent.CompleteSet(
-                            pagerState.currentPage,
-                            currentExercise!!.rest.toLong()
-                        )
-                    )
-                }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
-                addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
-                goToNextExercise = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
-                repsToDisplay = viewModel.state.value.repsBottomBar,
-                updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
-                weightToDisplay = viewModel.state.value.weightBottomBar,
-                updateWeight = { value -> viewModel.onEvent(WorkoutEvent.UpdateWeight(value)) }
-            )
+            val snackbarState = remember { SnackbarHostState() }
+            Column {
+                SnackbarHost(hostState = snackbarState)
+                WorkoutBottomBar(
+                    contentPadding = it,
+                    workoutStarted = viewModel.state.value.workoutTime == null,
+                    startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
+                    currentExercise = currentExercise,
+                    completeWorkout = completeWorkout,
+                    completeSet = {
+                        if (!viewModel.onEvent(WorkoutEvent.TryCompleteSet(
+                                pagerState.currentPage,
+                                currentExercise!!.rest.toLong()
+                            ))){
+                            scope.launch {
+                                snackbarState.showSnackbar("Please enter valid number for the set")
+                            }
+                        }
+                    }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
+                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
+                    goToNextExercise = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
+                    repsToDisplay = viewModel.state.value.repsBottomBar,
+                    updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
+                    weightToDisplay = viewModel.state.value.weightBottomBar,
+                    updateWeight = { value -> viewModel.onEvent(WorkoutEvent.UpdateWeight(value)) }
+                )
+            }
         }
     } else {
         // program is empty, prompt to add an exercise

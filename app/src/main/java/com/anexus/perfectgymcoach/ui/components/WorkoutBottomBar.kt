@@ -30,10 +30,10 @@ fun WorkoutBottomBar(
     setsFinished: Boolean,
     addSet: () -> Unit,
     goToNextExercise: () -> Unit,
-    repsToDisplay: Int,
-    updateReps: (Int) -> Unit,
-    weightToDisplay: Float,
-    updateWeight: (Float) -> Unit
+    repsToDisplay: String,
+    updateReps: (String) -> Unit,
+    weightToDisplay: String,
+    updateWeight: (String) -> Unit
 ) {
     Column(
         Modifier
@@ -79,21 +79,25 @@ fun WorkoutBottomBar(
             ) {
                 TextFieldWithButtons(
                     "Reps",
-                    text = { repsToDisplay.toString() }, // fixme: does not work with manual filling
-                    onNewText = { new -> updateReps(new.toInt()) },
-                    onIncrement = { updateReps(repsToDisplay + 1) },
-                    onDecrement = { updateReps(repsToDisplay - 1) }
+                    text = { repsToDisplay },
+                    onNewText = { new -> updateReps(new) },
+                    onIncrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) + 1).toString()) },
+                    onDecrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) - 1).toString()) }
                 )
                 Spacer(Modifier.width(8.dp))
                 TextFieldWithButtons(
                     "Weight",
-                    text = { weightToDisplay.toString() }, // fixme: does not work with manual filling
-                    onNewText = { new -> updateWeight(new.toFloat()) },
-                    onIncrement = { updateWeight(
-                                weightToDisplay + Exercise.equipment2increment[currentExercise.equipment]!!
+                    text = { weightToDisplay },
+                    onNewText = { new -> updateWeight(new) },
+                    onIncrement = { updateWeight((
+                                (weightToDisplay.toFloatOrNull() ?: 0f)
+                                        + Exercise.equipment2increment[currentExercise.equipment]!!
+                            ).toString()
                     )},
-                    onDecrement = { updateWeight(
-                        weightToDisplay - Exercise.equipment2increment[currentExercise.equipment]!!
+                    onDecrement = { updateWeight((
+                            (weightToDisplay.toFloatOrNull() ?: 0f)
+                                    - Exercise.equipment2increment[currentExercise.equipment]!!
+                            ).toString()
                     )}
                 )
             }
