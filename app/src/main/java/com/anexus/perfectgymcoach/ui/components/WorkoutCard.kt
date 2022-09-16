@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.ripple.rememberRipple
@@ -40,6 +41,8 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalPagerApi::class)
 @Composable
@@ -53,6 +56,7 @@ fun WorkoutCard(
     modifier: Modifier = Modifier
 ){
     val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     var expanded by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
@@ -96,10 +100,13 @@ fun WorkoutCard(
                             .align(Alignment.BottomCenter)
                             .padding(16.dp),
                     )
-
                 }
             }
-
+            // fixme: gets launched too many times
+//            scope.launch {
+//                delay(2000)
+//                pagerState.animateScrollToPage((pagerState.currentPage+1) % pagerState.pageCount)
+//            }
             Row{
                 Text(
                     text = program.name,
@@ -124,6 +131,12 @@ fun WorkoutCard(
                         append(" • Rest: ")
                     }
                     append("${it.rest}s")
+                    if (it.note.isNotBlank()) {
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                            append(" • Note: ")
+                        }
+                        append(it.note)
+                    }
                 },
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 8.dp))
@@ -144,77 +157,105 @@ fun WorkoutCard(
                     Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                     Text("Quick start")
                 }
-                Box(
-                    modifier = Modifier.wrapContentSize()
-                ) {
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = "Localized description",
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Start workout") },
-                            onClick = {
-                                navController.navigate("${MainScreen.Workout.route}/" +
+                Row (
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    if (onRename == null && onDelete == null){
+                        IconButton(onClick = {
+                            navController.navigate(
+                                "${MainScreen.Workout.route}/" +
                                         "${program.programId}/" +
-                                        "${false}")
-                                expanded = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Outlined.PlayCircle,
-                                    contentDescription = null
-                                )
-                            })
-                        DropdownMenuItem(
-                            text = { Text("Edit") },
-                            onClick = {
-                                navController.navigate(
-                                    "${MainScreen.AddWorkoutExercise.route}/" +
-                                            "${program.name}/" +
-                                            "${program.programId}")
-                                expanded = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Outlined.Edit,
-                                    contentDescription = null
-                                )
-                            })
-                        if (onRename != null) {
-                            DropdownMenuItem(
-                                text = { Text("Rename") },
-                                onClick = {
-                                    onRename()
-                                    expanded = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.DriveFileRenameOutline,
-                                        contentDescription = null
-                                    )
-                                }
+                                        "${false}"
                             )
+                        }) {
+                            Icon(Icons.Default.PlayCircle, null)
                         }
-                        if (onDelete != null) {
-                            DropdownMenuItem(
-                                text = { Text("Delete") },
-                                onClick = {
-                                    onDelete()
-                                    expanded = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.Delete,
-                                        contentDescription = null
+                        IconButton(onClick = {
+                            navController.navigate(
+                                "${MainScreen.AddWorkoutExercise.route}/" +
+                                        "${program.name}/" +
+                                        "${program.programId}"
+                            )
+                        }) {
+                            Icon(Icons.Default.Edit, null)
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier.wrapContentSize()
+                        ) {
+                            IconButton(onClick = { expanded = true }) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = "Localized description",
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Start workout") },
+                                    onClick = {
+                                        navController.navigate(
+                                            "${MainScreen.Workout.route}/" +
+                                                    "${program.programId}/" +
+                                                    "${false}"
+                                        )
+                                        expanded = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Outlined.PlayCircle,
+                                            contentDescription = null
+                                        )
+                                    })
+                                DropdownMenuItem(
+                                    text = { Text("Edit") },
+                                    onClick = {
+                                        navController.navigate(
+                                            "${MainScreen.AddWorkoutExercise.route}/" +
+                                                    "${program.name}/" +
+                                                    "${program.programId}"
+                                        )
+                                        expanded = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Outlined.Edit,
+                                            contentDescription = null
+                                        )
+                                    })
+                                if (onRename != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Rename") },
+                                        onClick = {
+                                            onRename()
+                                            expanded = false
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.DriveFileRenameOutline,
+                                                contentDescription = null
+                                            )
+                                        }
                                     )
                                 }
-                            )
+                                if (onDelete != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Delete") },
+                                        onClick = {
+                                            onDelete()
+                                            expanded = false
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.Delete,
+                                                contentDescription = null
+                                            )
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }

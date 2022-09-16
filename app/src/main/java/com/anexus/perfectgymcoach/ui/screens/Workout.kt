@@ -2,6 +2,7 @@ package com.anexus.perfectgymcoach.ui.screens
 
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -155,7 +156,7 @@ fun Workout(navController: NavHostController, programId: Long,
 
     val workoutIntensity = rememberSaveable { mutableStateOf(WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY) }
 
-    val completeWorkout: () -> Unit = {    // TODO: should go to recap screen, change upcoming program
+    val completeWorkout: () -> Unit = {
         viewModel.onEvent(WorkoutEvent.FinishWorkout(programId, workoutIntensity.value))
         navController.popBackStack()
         navController.navigate("${MainScreen.WorkoutRecap.route}/${viewModel.state.value.workoutId}")
@@ -171,14 +172,14 @@ fun Workout(navController: NavHostController, programId: Long,
         val context = LocalContext.current
         val brightImage = remember { mutableStateOf(false) }
         val imageWidth = LocalConfiguration.current.screenWidthDp.dp
-        val imageHeight = imageWidth/4*2
+        val imageHeight = imageWidth/3*2
         FullScreenImageCard(
             topAppBarNavigationIcon = { appBarShown ->
                 val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !isSystemInDarkTheme())
                 IconButton(onClick = onClose) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Go back", // TODO: cancel workout?
+                        contentDescription = "Close",
                         tint = if (needsDarkColor) Color.Gray else Color.White
                     )
                 }
@@ -257,36 +258,62 @@ fun Workout(navController: NavHostController, programId: Long,
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounter = restCounter,
-                    workoutIntensity = workoutIntensity
+                    workoutIntensity = workoutIntensity,
+                    updateBottomBar = { rep, weight ->
+                        viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
+                        viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
+                    }
                 )
             }
         ) {
-            val snackbarState = remember { SnackbarHostState() }
-            Column {
-                SnackbarHost(hostState = snackbarState)
-                WorkoutBottomBar(
-                    contentPadding = it,
-                    workoutStarted = viewModel.state.value.workoutTime == null,
-                    startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
-                    currentExercise = currentExercise,
-                    completeWorkout = completeWorkout,
-                    completeSet = {
-                        if (!viewModel.onEvent(WorkoutEvent.TryCompleteSet(
-                                pagerState.currentPage,
-                                currentExercise!!.rest.toLong()
-                            ))){
-                            scope.launch {
-                                snackbarState.showSnackbar("Please enter valid number for the set")
+            AnimatedVisibility(
+                visible = !pagerState.isScrollInProgress,
+                enter = slideInVertically(initialOffsetY = { it/2 }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it/2 }) + fadeOut()
+            ) {
+                val snackbarState = remember { SnackbarHostState() }
+                Column {
+                    SnackbarHost(hostState = snackbarState)
+                    WorkoutBottomBar(
+                        contentPadding = it,
+                        workoutStarted = viewModel.state.value.workoutTime == null,
+                        startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
+                        currentExercise = currentExercise,
+                        completeWorkout = completeWorkout,
+                        completeSet = {
+                            if (!viewModel.onEvent(WorkoutEvent.TryCompleteSet(
+                                    pagerState.currentPage,
+                                    currentExercise!!.rest.toLong()
+                                ))){
+                                scope.launch {
+                                    snackbarState.showSnackbar("Please enter valid numbers")
+                                }
+                            } else if ((currentExercise?.supersetExercise ?: 0L) != 0L){
+                                val superExercise = viewModel.state.value.workoutExercisesAndInfo.find{
+                                    it.workoutExerciseId == currentExercise!!.supersetExercise
+                                }
+                                if (superExercise != null){
+                                    if (viewModel.state.value.workoutExercisesAndInfo.indexOf(superExercise) >
+                                        viewModel.state.value.workoutExercisesAndInfo.indexOf(currentExercise)){
+                                        scope.launch{
+                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                        }
+                                    } else {
+                                        scope.launch{
+                                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
-                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
-                    goToNextExercise = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
-                    repsToDisplay = viewModel.state.value.repsBottomBar,
-                    updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
-                    weightToDisplay = viewModel.state.value.weightBottomBar,
-                    updateWeight = { value -> viewModel.onEvent(WorkoutEvent.UpdateWeight(value)) }
-                )
+                        }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
+                        addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
+                        goToNextExercise = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
+                        repsToDisplay = viewModel.state.value.repsBottomBar,
+                        updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
+                        weightToDisplay = viewModel.state.value.weightBottomBar,
+                        updateWeight = { value -> viewModel.onEvent(WorkoutEvent.UpdateWeight(value)) }
+                    )
+                }
             }
         }
     } else {

@@ -4,13 +4,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.Repository
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseReorder
-import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
+import com.anexus.perfectgymcoach.data.exercise.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -37,6 +32,8 @@ sealed class ExercisesEvent{
     data class FilterExercise(val query: String): ExercisesEvent()
 
     data class FilterExerciseEquipment(val query: Exercise.Equipment): ExercisesEvent()
+
+    data class UpdateSuperset(val index1: Int, val index2: Int): ExercisesEvent()
 
 }
 
@@ -99,6 +96,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                     exercisesToDisplay = filtered)
             }
             is ExercisesEvent.ReorderExercises -> {
+                // TODO: check that doesn't break supersets
                 viewModelScope.launch {
                     repository.reorderWorkoutExercises(event.workoutExerciseReorders)
                 }
@@ -106,6 +104,52 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             is ExercisesEvent.DeleteExercise -> {
                 viewModelScope.launch {
                     repository.deleteWorkoutExercise(event.workoutExerciseId)
+                }
+            }
+            is ExercisesEvent.UpdateSuperset -> {
+                val exercise1 = state.value.workoutExercisesAndInfo[event.index1]
+                val exercise2 = state.value.workoutExercisesAndInfo[event.index2]
+                val exercisesToUpdate = mutableListOf<UpdateExerciseSuperset>()
+                if (exercise1.supersetExercise != 0L){
+                    val otherExercise = state.value.workoutExercisesAndInfo.find {
+                        it.workoutExerciseId == exercise1.supersetExercise
+                    }
+                    if (otherExercise != null)
+                        exercisesToUpdate.add(
+                            UpdateExerciseSuperset(
+                                otherExercise.workoutExerciseId,
+                                0L
+                            )
+                        )
+                }
+                if (exercise2.supersetExercise != 0L){
+                    val otherExercise = state.value.workoutExercisesAndInfo.find {
+                        it.workoutExerciseId == exercise2.supersetExercise
+                    }
+                    if (otherExercise != null)
+                        exercisesToUpdate.add(
+                            UpdateExerciseSuperset(
+                                otherExercise.workoutExerciseId,
+                                0L
+                            )
+                        )
+                }
+                exercisesToUpdate.add(
+                    UpdateExerciseSuperset(
+                        exercise1.workoutExerciseId,
+                        if (exercise1.supersetExercise != exercise2.workoutExerciseId) exercise2.workoutExerciseId else 0L
+                    )
+                )
+                exercisesToUpdate.add(
+                    UpdateExerciseSuperset(
+                        exercise2.workoutExerciseId,
+                        if (exercise2.supersetExercise != exercise1.workoutExerciseId) exercise1.workoutExerciseId else 0L
+                    )
+                )
+                viewModelScope.launch {
+                    repository.updateExerciseSuperset(
+                        exercisesToUpdate
+                    )
                 }
             }
         }

@@ -77,6 +77,9 @@ class Repository @Inject constructor(
 
     suspend fun deleteWorkoutExercise(workoutExerciseId: Long) = db.workoutExerciseDao.delete(workoutExerciseId)
 
+    suspend fun updateExerciseSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>) =
+        db.workoutExerciseDao.updateSuperset(updateExerciseSupersets)
+
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
 

@@ -1,22 +1,15 @@
 package com.anexus.perfectgymcoach.ui.screens
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,8 +17,8 @@ import androidx.compose.ui.AbsoluteAlignment.TopRight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -34,7 +27,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -49,8 +41,6 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseReorder
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
@@ -121,21 +111,62 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                         key = { _, it -> it.workoutExerciseId }) { index, exercise ->
                         val brightImage = remember { mutableStateOf(false) }
                         var expanded by remember { mutableStateOf(false) }
+                        if (index != 0){
+                            // TODO: add option for superset
+                            Row (
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .clickable {
+                                        viewModel.onEvent(
+                                            ExercisesEvent.UpdateSuperset(
+                                                index,
+                                                index - 1
+                                            )
+                                        )
+                                    }
+                                    .wrapContentHeight()
+                                    .fillMaxWidth()
+                            ){
+                                val linked = exercise.supersetExercise == viewModel.state.value.workoutExercisesAndInfo[index-1].workoutExerciseId
+                                val orientation = remember { Animatable(0f) }
+                                val scale = remember { Animatable(1f) }
+                                LaunchedEffect(linked) {
+                                    orientation.animateTo(if (linked) 90f else 0f)
+                                }
+                                LaunchedEffect(linked){
+                                    scale.animateTo(if (linked) 1.1f else 1f)
+                                }
+                                Icon(if (linked)
+                                    Icons.Default.Link
+                                else
+                                    Icons.Default.LinkOff,
+                                    null,
+                                    Modifier.scale(scale.value)
+                                        .rotate(orientation.value)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Superset",
+                                    fontStyle = FontStyle.Italic,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .animateItemPlacement()
-                                .combinedClickable (
+                                .combinedClickable(
                                     onLongClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         expanded = true
                                     },
                                     onClick = {
                                         navController.navigate(
-                                        "${MainScreen.AddExerciseDialog.route}/" +
-                                                "${exercise.extProgramId}/" +
-                                                "${exercise.extExerciseId}/" +
-                                                "${exercise.workoutExerciseId}"
+                                            "${MainScreen.AddExerciseDialog.route}/" +
+                                                    "${exercise.extProgramId}/" +
+                                                    "${exercise.extExerciseId}/" +
+                                                    "${exercise.workoutExerciseId}"
                                         )
                                     }
                                 )
@@ -167,7 +198,9 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                     contentScale = ContentScale.Crop
                                 )
                                 Box(
-                                    modifier = Modifier.wrapContentSize().align(TopRight)
+                                    modifier = Modifier
+                                        .wrapContentSize()
+                                        .align(TopRight)
                                 ) {
 
                                     IconButton(onClick = { expanded = true }) {

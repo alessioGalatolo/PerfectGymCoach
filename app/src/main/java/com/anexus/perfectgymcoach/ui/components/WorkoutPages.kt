@@ -39,6 +39,7 @@ fun ExercisePage(
     setsDone: State<Int>,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
+    updateBottomBar: (Int, Float) -> Unit,
     currentExerciseRecords: List<ExerciseRecord>,
     ongoingRecord: ExerciseRecord?,
     restCounter: Long?,
@@ -111,7 +112,9 @@ fun ExercisePage(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Current", Modifier.padding(vertical = 8.dp),
+                            "Current" +
+                            if (workoutExercisesAndInfo[page].supersetExercise != 0L) " - Part of superset" else "",
+                            Modifier.padding(vertical = 8.dp),
                             fontWeight = FontWeight.Bold
                         )
                         ExerciseSettingsMenu()
@@ -124,6 +127,21 @@ fun ExercisePage(
                             Text("Rest: ${workoutExercisesAndInfo[page].rest}s", Modifier.align(Alignment.Start))
                             workoutExercisesAndInfo[page].reps.forEachIndexed { setCount, repsCount ->
                                 val toBeDone = setsDone.value <= setCount
+                                val repsInRow: String
+                                val weightInRow: String
+                                if (toBeDone || setCount >= ongoingRecord!!.reps.size) {
+                                    repsInRow = repsCount.toString()
+                                    val currentRecord = currentExerciseRecords.firstOrNull()
+                                    weightInRow = if (currentRecord != null) {
+                                        val index = min(setCount, currentRecord.weights.size-1)
+                                        currentRecord.weights[index].toString()
+                                    } else {
+                                        "..."
+                                    }
+                                } else {
+                                    repsInRow = ongoingRecord.reps[setCount].toString()
+                                    weightInRow = ongoingRecord.weights[setCount].toString()
+                                }
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
@@ -134,11 +152,18 @@ fun ExercisePage(
                                             )
                                             // TODO: open dialogue to modify
                                         }, onClick = {
-                                            if (!toBeDone) {
-                                                // TODO: allow to modify
-                                            } else {
-                                                // TODO: copy reps/weight values
-                                            }
+                                            haptic.performHapticFeedback(
+                                                HapticFeedbackType.TextHandleMove // FIXME: not right haptic
+                                            )
+                                            updateBottomBar(
+                                                repsInRow.toInt(),
+                                                weightInRow.toFloatOrNull() ?: 0f
+                                            )
+//                                            if (!toBeDone) {
+//                                                // TODO: allow to modify
+//                                            } else {
+//                                                // TODO: change bottom bar
+//                                            }
                                         })
                                 ) {
                                     FilledIconToggleButton(
@@ -150,21 +175,9 @@ fun ExercisePage(
                                         Text((setCount + 1).toString())
                                     }
                                     Spacer(Modifier.width(8.dp))
-                                    if (toBeDone) {
-                                        val currentRecord = currentExerciseRecords.firstOrNull()
-                                        if (currentRecord != null) {
-                                            val index = min(setCount, currentRecord.weights.size-1)
-                                            Text("Reps: $repsCount Weight: ${ currentRecord.weights[index] } kg")
-                                        } else {
-                                            Text("Reps: $repsCount Weight: ... kg")
-                                        }
-                                    } else {
-                                        Text(
-                                            "Reps: ${ongoingRecord!!.reps[setCount]} " +
-                                                    "Weight: ${ongoingRecord.weights[setCount]} kg",
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
-                                    }
+                                    Text("Reps: $repsInRow Weight: $weightInRow kg",
+                                        color = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
+                                    )
                                 }
                             }
                             TextButton(onClick = addSet) {
@@ -202,7 +215,7 @@ fun ExercisePage(
                                                 )
                                                 // TODO: maybe nothing
                                             }, onClick = {
-                                                // TODO: copy values to bottom bar
+                                                updateBottomBar(rep, record.weights[index])
                                             })
                                     ) {
                                         FilledIconToggleButton(checked = false, // FIXME: can use different component?

@@ -4,15 +4,18 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -20,19 +23,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
 import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalPagerApi::class
+)
 @Composable
 fun Home(navController: NavHostController,
          contentPadding: PaddingValues,
          viewModel: HomeViewModel = hiltViewModel()
          ) {
     val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
 
     if (viewModel.state.value.currentPlan == null) {
         Scaffold(
@@ -127,21 +139,38 @@ fun Home(navController: NavHostController,
                             navController.navigate("${MainScreen.Workout.route}/${it.programId}/${false}")
                         }
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.full_body),
-                        contentDescription = "Contact profile picture",
-                        modifier = Modifier
-                            // Set image size to 40 d
-                            .size(60.dp)
-                            .padding(all = 4.dp)
-                            // Clip image to be shaped as a circle
-                            .clip(CircleShape)
-                    )
-
-                    Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+                    val pagerState = rememberPagerState()
+                    val exs =
+                        viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
+                            it.workoutExerciseId
+                        } ?: emptyList()
+                    if (exs.isNotEmpty()) {
+                        HorizontalPager(count = exs.size, state = pagerState, modifier = Modifier.width(100.dp).height(100.dp)) { page ->
+                            Box (Modifier.wrapContentSize()) {
+                                AsyncImage(
+                                    model = exs[page].image,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .height(100.dp)
+                                        .width(100.dp)
+                                        .clip(AbsoluteRoundedCornerShape(12.dp))
+                                )
+                            }
+                        }
+                        // fixme: gets launched too many times
+//                        scope.launch {
+//                            delay(2000)
+//                            pagerState.animateScrollToPage((pagerState.currentPage + 1) % pagerState.pageCount)
+//                        }
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Column(modifier = Modifier.align(Alignment.CenterVertically).weight(0.6f)) {
                         Text(text = it.name)
                     }
-                    IconButton(onClick = {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(modifier = Modifier.weight(0.2f),
+                        onClick = {
                         navController.navigate("${MainScreen.Workout.route}/${it.programId}/${true}")
                     }) {
                         Icon(Icons.Default.RocketLaunch, null)

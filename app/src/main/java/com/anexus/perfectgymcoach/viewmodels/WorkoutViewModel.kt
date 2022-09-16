@@ -111,6 +111,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 .launchIn(viewModelScope)
             }
             is WorkoutEvent.TryCompleteSet -> {
+                // TODO: check if superset and if
                 if (state.value.repsBottomBar.toIntOrNull() == null ||
                         state.value.weightBottomBar.toFloatOrNull() == null)
                     return false

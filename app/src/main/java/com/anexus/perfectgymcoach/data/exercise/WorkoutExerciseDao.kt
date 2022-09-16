@@ -33,6 +33,9 @@ interface WorkoutExerciseDao {
     @Update(entity = WorkoutExercise::class)
     suspend fun updateOrder(workoutExerciseReorders: List<WorkoutExerciseReorder>)
 
+    @Update(entity = WorkoutExercise::class)
+    suspend fun updateSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: WorkoutExercise)
 
