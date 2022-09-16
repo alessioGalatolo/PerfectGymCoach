@@ -21,7 +21,7 @@ import kotlinx.coroutines.android.awaitFrame
 fun InsertNameDialog(
     prompt: String,
     dialogueIsOpen: Boolean,
-    toggleDialogue: () -> Unit,
+    toggleDialog: () -> Unit,
     insertName: (String) -> Unit
 ) {
     // alert dialogue to enter the workout plan/program name
@@ -35,7 +35,7 @@ fun InsertNameDialog(
                 // Dismiss the dialog when the user clicks outside the dialog or on the back
                 // button. If you want to disable that functionality, simply use an empty
                 // onDismissRequest.
-                toggleDialogue()
+                toggleDialog()
             },
             title = {
                 Text(text = "Enter ${prompt.lowercase()}")
@@ -69,7 +69,7 @@ fun InsertNameDialog(
                 TextButton(
                     onClick = {
                         insertName(text.trim())
-                        toggleDialogue()
+                        toggleDialog()
                         text = ""
                     }
                 ) {
@@ -79,10 +79,44 @@ fun InsertNameDialog(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        toggleDialogue()
+                        toggleDialog()
                     }
                 ) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun ResumeWorkout(
+    dialogueIsOpen: Boolean,
+    discardWorkout: () -> Unit,
+    resumeWorkout: () -> Unit
+) {
+    if (dialogueIsOpen) {
+        AlertDialog(
+            onDismissRequest = {
+            },
+            title = {
+                Text(text = "Resume unfinished workout?")
+            },
+            text = {
+               Text("We noticed you did not finish the last workout you started, do you want to finish it now?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = resumeWorkout
+                ) {
+                    Text("Resume")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = discardWorkout
+                ) {
+                    Text("Discard workout")
                 }
             }
         )

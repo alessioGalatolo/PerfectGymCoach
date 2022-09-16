@@ -121,9 +121,9 @@ fun ViewExercises(navController: NavHostController, programName: String,
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
                                 modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
-                            tint = MaterialTheme.colorScheme.outline
+                                tint = MaterialTheme.colorScheme.outline
                             )
-                            var searchText by remember { mutableStateOf("") }
+                            var searchText by rememberSaveable { mutableStateOf("") }
                             TextField(
                                 value = searchText,
                                 onValueChange = {
@@ -151,8 +151,17 @@ fun ViewExercises(navController: NavHostController, programName: String,
                                         if (it.isFocused) {
                                             keyboardController?.show()
                                         }
-                                    }
+                                    }.weight(0.8f)
                             )
+                            IconButton(onClick = {
+                                searchText = ""
+                                viewModel.onEvent(ExercisesEvent.FilterExercise(searchText))
+                            }){
+                                Icon(Icons.Default.Close, null,
+                                    tint = if (searchText.isBlank()) Color.Transparent else LocalContentColor.current,
+                                    modifier = Modifier.padding(end = 16.dp, top = 8.dp, bottom = 8.dp).weight(0.1f)
+                                )
+                            }
                         }
                         if (toFocus.value){
                             LaunchedEffect(focusRequester) {

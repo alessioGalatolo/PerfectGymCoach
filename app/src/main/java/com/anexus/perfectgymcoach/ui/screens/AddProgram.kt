@@ -38,7 +38,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
     InsertNameDialog(
         prompt = "Name of the new program",
         dialogueIsOpen = viewModel.state.value.openAddProgramDialog,
-        toggleDialogue = { viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog) },
+        toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog) },
         insertName = { programName ->
             viewModel.onEvent(ProgramsEvent.AddProgram(WorkoutProgram(
                 extPlanId = planId,
@@ -49,7 +49,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
     InsertNameDialog(
         prompt = "New name of the program",
         dialogueIsOpen = viewModel.state.value.openChangeNameDialog,
-        toggleDialogue = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
+        toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
         insertName = { viewModel.onEvent(ProgramsEvent.RenameProgram(
             WorkoutProgramRename(
                 programId = viewModel.state.value.programToBeChanged,

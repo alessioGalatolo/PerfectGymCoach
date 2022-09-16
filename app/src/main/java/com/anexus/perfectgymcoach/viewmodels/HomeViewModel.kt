@@ -9,6 +9,7 @@ import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import javax.inject.Inject
 
 data class HomeState(
@@ -16,11 +17,12 @@ data class HomeState(
     val currentProgram: Int? = null,
     val programs: List<WorkoutProgram>? = null,
     val exercisesAndInfo: Map<Long, List<WorkoutExerciseAndInfo>> = emptyMap(),
-    val openAddProgramDialogue: Boolean = false
+    val openAddProgramDialogue: Boolean = false,
+    val currentWorkout: Long? = null
 )
 
 sealed class HomeEvent{
-
+    object ResetCurrentWorkout: HomeEvent()
 }
 
 @HiltViewModel
@@ -64,10 +66,23 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
 
             }
         }
+        viewModelScope.launch {
+            repository.getCurrentWorkout().collect{
+                _state.value = state.value.copy(
+                    currentWorkout = it
+                )
+            }
+        }
     }
 
     fun onEvent(event: HomeEvent){
-
+        when(event){
+            is HomeEvent.ResetCurrentWorkout -> {
+                viewModelScope.launch {
+                    repository.setCurrentWorkout(null)
+                }
+            }
+        }
     }
 
 }

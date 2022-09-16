@@ -64,16 +64,18 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     // FIXME: should maybe be moved to a single navigation
-                    composable("${MainScreen.Workout.route}/{programId}/{quickStart}",
+                    composable("${MainScreen.Workout.route}/{programId}/{quickStart}/{resumeWorkout}",
                         arguments = listOf(
                             navArgument("programId") { type = NavType.LongType },
-                            navArgument("quickStart") { type = NavType.BoolType }
+                            navArgument("quickStart") { type = NavType.BoolType },
+                            navArgument("resumeWorkout") { type = NavType.BoolType }
                         )
                     )
                     { Workout(
                         navControllerMain,
                         it.arguments?.getLong("programId") ?: 0L,
-                        it.arguments?.getBoolean("quickStart") ?: false
+                        it.arguments?.getBoolean("quickStart") ?: false,
+                        it.arguments?.getBoolean("resumeWorkout") ?: false
                     )}
                     composable("${MainScreen.AddProgram.route}/{name}/{planId}/{openDialogNow}",
                         arguments = listOf(

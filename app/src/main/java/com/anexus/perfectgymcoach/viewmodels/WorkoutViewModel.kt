@@ -35,6 +35,8 @@ sealed class WorkoutEvent{
 
     data class FinishWorkout(val programId: Long, val workoutIntensity: WorkoutRecord.WorkoutIntensity): WorkoutEvent()
 
+    object ResumeWorkout: WorkoutEvent()
+
     object CancelWorkout: WorkoutEvent()
 
     object DeleteCurrentRecords: WorkoutEvent()
@@ -99,16 +101,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         startDate = Calendar.getInstance()
                     ))
                     _state.value = state.value.copy(workoutId = workoutId)
+                    repository.setCurrentWorkout(workoutId)
                 }
-                timerJob?.cancel(CancellationException("Duplicate call"))
-                timerJob = flow {
-                    var counter = 0
-                    while (true) {
-                        emit(counter++)
-                        delay(1000)
-                    }
-                }.onEach {_state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)}
-                .launchIn(viewModelScope)
+                startTimer()
             }
             is WorkoutEvent.TryCompleteSet -> {
                 // TODO: check if superset and if
@@ -159,9 +154,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         planId = planPrograms.key.planId,
                         currentProgram = (planPrograms.key.currentProgram+1) % planPrograms.value.size
                     ))
+                    repository.setCurrentWorkout(null)
                 }
             }
-            is WorkoutEvent.CancelWorkout -> { /*TODO()*/ }
+            is WorkoutEvent.CancelWorkout -> {
+                viewModelScope.launch {
+                    repository.setCurrentWorkout(null)
+                }
+            }
             is WorkoutEvent.DeleteCurrentRecords -> { /*TODO()*/ }
             is WorkoutEvent.AddSetToExercise -> {
                 val newExs = state.value.workoutExercisesAndInfo
@@ -178,8 +178,36 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.UpdateWeight -> {
                 _state.value = state.value.copy(weightBottomBar = event.newValue)
             }
+            is WorkoutEvent.ResumeWorkout -> {
+                viewModelScope.launch{
+                    val workoutId = repository.getCurrentWorkout().first()
+                    if (workoutId != null) {
+                        _state.value = state.value.copy(
+                            workoutId = workoutId
+                        )
+                        val workout = repository.getWorkoutRecord(state.value.workoutId).first()
+                        onEvent(WorkoutEvent.GetWorkoutExercises(workout.extProgramId))  // FIXME: should store workoutExercises
+                        _state.value = state.value.copy(
+                            workoutTime = (Calendar.getInstance().timeInMillis - workout.startDate.timeInMillis) / 1000
+                        )
+                        startTimer()
+                    }
+                }
+
+            }
         }
         return true
     }
 
+    private fun startTimer(){
+        timerJob?.cancel(CancellationException("Duplicate call"))
+        timerJob = flow {
+            var counter = 0
+            while (true) {
+                emit(counter++)
+                delay(1000)
+            }
+        }.onEach {_state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)}
+            .launchIn(viewModelScope)
+    }
 }

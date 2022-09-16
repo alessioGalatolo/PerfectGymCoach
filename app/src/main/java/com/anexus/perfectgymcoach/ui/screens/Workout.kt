@@ -51,9 +51,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun Workout(navController: NavHostController, programId: Long,
             quickStart: Boolean,
+            resumeWorkout: Boolean = false,
             viewModel: WorkoutViewModel = hiltViewModel()
 ) {
-    viewModel.onEvent(WorkoutEvent.GetWorkoutExercises(programId))
+    if (resumeWorkout)
+        viewModel.onEvent(WorkoutEvent.ResumeWorkout)
+    else
+        viewModel.onEvent(WorkoutEvent.GetWorkoutExercises(programId))
 
     val scope = rememberCoroutineScope()
 

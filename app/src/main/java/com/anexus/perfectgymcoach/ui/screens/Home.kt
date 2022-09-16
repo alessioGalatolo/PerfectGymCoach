@@ -9,8 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,7 +26,9 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.components.ResumeWorkout
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
+import com.anexus.perfectgymcoach.viewmodels.HomeEvent
 import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -45,6 +47,25 @@ fun Home(navController: NavHostController,
          ) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+
+    var resumeWorkoutDialogOpen by remember {
+        mutableStateOf(false)
+    }
+    ResumeWorkout(dialogueIsOpen = resumeWorkoutDialogOpen,
+        discardWorkout = {
+            viewModel.onEvent(HomeEvent.ResetCurrentWorkout)
+            resumeWorkoutDialogOpen = false
+        }) {
+        resumeWorkoutDialogOpen = false
+        navController.navigate("${MainScreen.Workout.route}/${0L}/${false}/${true}")
+    }
+
+    LaunchedEffect(viewModel.state.value.currentWorkout){
+        delay(1000)  // FIXME: done in order to avoid double dialog showing
+        resumeWorkoutDialogOpen = viewModel.state.value.currentWorkout != null
+
+    }
+
 
     if (viewModel.state.value.currentPlan == null) {
         Scaffold(
@@ -109,7 +130,7 @@ fun Home(navController: NavHostController,
                     program = currentProgram,
                     exercises = currentExercises,
                     // TODO: add message when no exercises in the program
-                    onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}/${false}") },
+                    onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}/${false}/${false}") },
                     navController = navController
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -136,7 +157,7 @@ fun Home(navController: NavHostController,
                                         "${it.programId}"
                             )
                         }) {
-                            navController.navigate("${MainScreen.Workout.route}/${it.programId}/${false}")
+                            navController.navigate("${MainScreen.Workout.route}/${it.programId}/${false}/${false}")
                         }
                 ) {
                     val pagerState = rememberPagerState()
@@ -145,7 +166,9 @@ fun Home(navController: NavHostController,
                             it.workoutExerciseId
                         } ?: emptyList()
                     if (exs.isNotEmpty()) {
-                        HorizontalPager(count = exs.size, state = pagerState, modifier = Modifier.width(100.dp).height(100.dp)) { page ->
+                        HorizontalPager(count = exs.size, state = pagerState, modifier = Modifier
+                            .width(100.dp)
+                            .height(100.dp)) { page ->
                             Box (Modifier.wrapContentSize()) {
                                 AsyncImage(
                                     model = exs[page].image,
@@ -165,13 +188,15 @@ fun Home(navController: NavHostController,
 //                        }
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Column(modifier = Modifier.align(Alignment.CenterVertically).weight(0.6f)) {
+                    Column(modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .weight(0.6f)) {
                         Text(text = it.name)
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     IconButton(modifier = Modifier.weight(0.2f),
                         onClick = {
-                        navController.navigate("${MainScreen.Workout.route}/${it.programId}/${true}")
+                        navController.navigate("${MainScreen.Workout.route}/${it.programId}/${true}/${false}")
                     }) {
                         Icon(Icons.Default.RocketLaunch, null)
                     }

@@ -36,7 +36,7 @@ fun AddWorkoutPlan(navController: NavHostController,
     InsertNameDialog(
         prompt = "Name of the new plan",
         dialogueIsOpen = viewModel.state.value.openAddPlanDialogue,
-        toggleDialogue = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
+        toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
         insertName = { planName -> viewModel.onEvent(PlansEvent.AddPlan(WorkoutPlan(name = planName))) }
     )
     val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }

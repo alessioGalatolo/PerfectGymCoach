@@ -25,7 +25,7 @@ class Repository @Inject constructor(
     private val context: Context
 ) {
     private val currentPlan = longPreferencesKey("Current plan")
-    private val currentWorkout = longPreferencesKey("Current workout") // TODO ?
+    private val currentWorkout = longPreferencesKey("Current workout")
     private val userWeight = floatPreferencesKey("User weight")
     private val userHeight = floatPreferencesKey("User height")
     private val userSex = stringPreferencesKey("User sex")
@@ -154,6 +154,16 @@ class Repository @Inject constructor(
     fun getUserName(): Flow<String> = context.dataStore.data.map{ it[userName] ?: "what's your name?" }
 
     suspend fun setUserName(newName: String) = context.dataStore.edit { it[userName] = newName }
+
+
+    fun getCurrentWorkout(): Flow<Long?> = context.dataStore.data.map{ it[currentWorkout] }
+
+    suspend fun setCurrentWorkout(newValue: Long?) = context.dataStore.edit {
+        if (newValue == null)
+            it.remove(currentWorkout)
+        else
+            it[currentWorkout] = newValue
+    }
 
 
     companion object {

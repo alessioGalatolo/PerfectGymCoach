@@ -149,7 +149,7 @@ fun WorkoutCard(
             ) {
                 Button(contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                     onClick = {
-                        navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}")
+                        navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}/${false}")
                     },
                     modifier = Modifier
                         .padding(8.dp)) {
@@ -165,7 +165,7 @@ fun WorkoutCard(
                             navController.navigate(
                                 "${MainScreen.Workout.route}/" +
                                         "${program.programId}/" +
-                                        "${false}"
+                                        "${false}/${false}"
                             )
                         }) {
                             Icon(Icons.Default.PlayCircle, null)
@@ -199,7 +199,7 @@ fun WorkoutCard(
                                         navController.navigate(
                                             "${MainScreen.Workout.route}/" +
                                                     "${program.programId}/" +
-                                                    "${false}"
+                                                    "${false}/${false}"
                                         )
                                         expanded = false
                                     },
