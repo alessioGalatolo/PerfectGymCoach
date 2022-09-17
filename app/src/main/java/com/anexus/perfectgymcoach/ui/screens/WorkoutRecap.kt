@@ -12,13 +12,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +29,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,6 +41,12 @@ import com.anexus.perfectgymcoach.ui.NavigationScreen
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
 import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
+import com.jaikeerthick.composable_graphs.color.*
+import com.jaikeerthick.composable_graphs.composables.LineGraph
+import com.jaikeerthick.composable_graphs.data.GraphData
+import com.jaikeerthick.composable_graphs.style.LineGraphStyle
+import com.jaikeerthick.composable_graphs.style.LinearGraphVisibility
+import java.text.SimpleDateFormat
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,21 +103,9 @@ fun WorkoutRecap(
     }
     if (
         viewModel.state.value.workoutId != 0L &&
-        viewModel.state.value.userWeight != null &&
         viewModel.state.value.exerciseRecords.isNotEmpty() &&
         viewModel.state.value.workoutRecord != null
     ){
-        val calories = remember {
-            viewModel.state.value.workoutRecord!!.intensity.metValue *
-                    viewModel.state.value.userWeight!! *
-                    viewModel.state.value.workoutRecord!!.duration / 3600
-        }
-        val volume = remember {
-            viewModel.state.value.exerciseRecords.sumOf {
-                (it.tare * it.reps.size +
-                        it.weights.mapIndexed { index, i -> i * it.reps[index] }.sum()).toDouble()
-            }
-        }
         Scaffold(topBar = {
             SmallTopAppBar (title = {
                 Text("Workout recap")
@@ -132,14 +126,69 @@ fun WorkoutRecap(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ){
-                item{
+                item {
                     Text("Great job!",
                         style = MaterialTheme.typography.headlineMedium,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
                     )
                 }
                 item{
+                    val records = viewModel.state.value.olderRecords
+                    if (records.size > 0) {
+                        ElevatedCard {
+                            val clickedValue: MutableState<Pair<Any, Any>> = remember {
+                                mutableStateOf(
+                                    Pair(
+                                        SimpleDateFormat("d MMM").format(
+                                            viewModel.state.value.workoutRecord!!.startDate.time
+                                        ),
+                                        viewModel.state.value.workoutRecord!!.volume
+                                    )
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .padding(all = 25.dp)
+                            ) {
+                                Text(text = "Progression (volume): ")
+                                Text(
+                                    text = "${clickedValue.value.first}, ${clickedValue.value.second}",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            LineGraph(
+                                xAxisData = records.map {
+                                    GraphData.String(SimpleDateFormat("d MMM").format(it.startDate.time))
+                                }, // xAxisData : List<GraphData>, and GraphData accepts both Number and String types
+                                yAxisData = records.map { it.volume },
+                                onPointClicked = { x ->
+                                    clickedValue.value = x
+                                },
+                                style = LineGraphStyle(
+                                    visibility = LinearGraphVisibility(
+                                        isHeaderVisible = true,
+                                        isYAxisLabelVisible = true,
+                                        isXAxisLabelVisible = false,
+                                        isCrossHairVisible = true
+                                    ),
+                                    colors = LinearGraphColors(
+                                        lineColor = MaterialTheme.colorScheme.primary,
+                                        pointColor = MaterialTheme.colorScheme.primary,
+                                        clickHighlightColor = PointHighlight2,
+                                        fillGradient = Brush.verticalGradient(
+                                            listOf(MaterialTheme.colorScheme.secondary, Gradient2)
+                                        )
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+                item {
                     ElevatedCard {
                         Column(Modifier.padding(8.dp)) {
                             Row(
@@ -154,7 +203,8 @@ fun WorkoutRecap(
                                         Modifier.size(50.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Calorie consumption: ${calories.toInt()} kcal")
+                                    Text("Calorie consumption: " +
+                                            "${viewModel.state.value.workoutRecord!!.calories.toInt()} kcal")
                                     Spacer(Modifier.width(8.dp))
                                 }
                                 IconButton(onClick = { calorieDialogIsOpen.value = true },
@@ -175,7 +225,8 @@ fun WorkoutRecap(
                                         Modifier.size(50.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Total volume: $volume kg")
+                                    Text("Total volume: " +
+                                            "${viewModel.state.value.workoutRecord!!.volume} kg")
                                     Spacer(Modifier.width(8.dp))
                                 }
                                 IconButton(onClick = { volumeDialogIsOpen.value = true },
@@ -196,7 +247,9 @@ fun WorkoutRecap(
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     "Total time: " +
-                                            DateUtils.formatElapsedTime(viewModel.state.value.workoutRecord!!.duration)
+                                            DateUtils.formatElapsedTime(
+                                                viewModel.state.value.workoutRecord!!.duration
+                                            )
                                 )
                             }
                             Divider()
@@ -212,8 +265,7 @@ fun WorkoutRecap(
                                 Spacer(Modifier.width(8.dp))
                                 Text("Active time: " +
                                         DateUtils.formatElapsedTime(
-                                            viewModel.state.value.workoutRecord!!.duration -
-                                                    viewModel.state.value.exerciseRecords.sumOf { it.rest * it.reps.size }
+                                            viewModel.state.value.workoutRecord!!.activeTime
                                         )
                                 )
                             }

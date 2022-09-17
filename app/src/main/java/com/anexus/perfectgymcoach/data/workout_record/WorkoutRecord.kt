@@ -22,8 +22,10 @@ data class WorkoutRecord(
     val extProgramId: Long,
     val startDate: Calendar,
     val intensity: WorkoutIntensity = WorkoutIntensity.NORMAL_INTENSITY,
-    val duration: Long = 0L// seconds
-//    val calories: Long // MET value * weight_kg / 60 * n_minutes // MET value 3-6 based on intensity
+    val duration: Long = 0L, // seconds
+    val volume: Double = 0.0,
+    val activeTime: Long = 0L,
+    val calories: Float = 0f // MET value * weight_kg / 60 * n_minutes // MET value 3-6 based on intensity
 ) : Parcelable {
     enum class WorkoutIntensity(val description: String, val metValue: Float) {
         HIGH_INTENSITY("High intensity (...)", 6f),
@@ -35,8 +37,11 @@ data class WorkoutRecord(
 @Parcelize
 data class WorkoutRecordFinish(
     val workoutId: Long,
+    val intensity: WorkoutRecord.WorkoutIntensity,
     val duration: Long,
-    val intensity: WorkoutRecord.WorkoutIntensity
+    val volume: Double,
+    val activeTime: Long,
+    val calories: Float
 ): Parcelable
 
 @Parcelize
@@ -45,7 +50,9 @@ data class WorkoutRecordAndName(
     val extProgramId: Long,
     val startDate: Calendar,
     val intensity: WorkoutRecord.WorkoutIntensity,
-    val name: String,
-    val duration: Long = 0L// seconds
-//    val calories: Long
+    val duration: Long = 0L, // seconds
+    val volume: Float = 0f,
+    val activeTime: Long = 0L,
+    val calories: Float = 0f,
+    val name: String
 ) : Parcelable

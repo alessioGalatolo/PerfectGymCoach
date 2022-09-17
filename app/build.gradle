@@ -56,6 +56,7 @@ android {
 }
 
 dependencies {
+    implementation 'com.github.jaikeerthick:Composable-Graphs:v1.0'
     implementation "androidx.palette:palette-ktx:1.0.0"
     implementation "io.coil-kt:coil-compose:2.2.0"
     implementation "com.google.accompanist:accompanist-pager:$accompanist_version"

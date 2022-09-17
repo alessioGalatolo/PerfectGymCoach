@@ -17,8 +17,8 @@ import javax.inject.Inject
 
 data class RecapState(
     val workoutId: Long = 0L,
-    val userWeight: Float? = null,
     val workoutRecord: WorkoutRecord? = null,
+    val olderRecords: List<WorkoutRecord> = emptyList(),
     val exerciseRecords: List<ExerciseRecordAndInfo> = emptyList()
 )
 
@@ -33,15 +33,6 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
 
     private var retrieveRecordJob: Job? = null
 
-    init {
-        viewModelScope.launch {
-            repository.getUserWeight().collect {
-                _state.value = state.value.copy(
-                    userWeight = it
-                )
-            }
-        }
-    }
 
     fun onEvent(event: RecapEvent){
         when (event) {
@@ -54,9 +45,15 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
                             workoutId = event.workoutId,
                             workoutRecord = repository.getWorkoutRecord(event.workoutId).first(),
                             exerciseRecords = repository.getWorkoutExerciseRecordsAndInfo(event.workoutId)
-                                .first().sortedBy { it.exerciseInWorkout }
+                                .first().distinct().sortedBy { it.exerciseInWorkout }
                         )
-
+                        this.launch {
+                            repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{
+                                _state.value = state.value.copy(
+                                    olderRecords = it.filter { it1 -> it1.duration > 0 }
+                                )
+                            }
+                        }
                     }
                 }
             }

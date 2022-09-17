@@ -1,5 +1,6 @@
 package com.anexus.perfectgymcoach.viewmodels
 
+import android.text.format.DateUtils
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -139,11 +140,21 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.FinishWorkout -> {
                 viewModelScope.launch {
+                    val exercises = repository.getWorkoutExerciseRecordsAndInfo(state.value.workoutId).first().distinct()
                     repository.completeWorkoutRecord(
                         WorkoutRecordFinish(
                             state.value.workoutId,
+                            event.workoutIntensity,
                             state.value.workoutTime!!,
-                            event.workoutIntensity
+                            volume = exercises.sumOf {
+                                (it.tare * it.reps.size +
+                                        it.weights.mapIndexed { index, i -> i * it.reps[index] }.sum()).toDouble()
+                            },
+                            activeTime = state.value.workoutTime!! -
+                                    exercises.sumOf { it.rest * it.reps.size },
+                            calories = event.workoutIntensity.metValue *
+                                    repository.getUserWeight().first() *
+                                    state.value.workoutTime!! / 3600
                         )
                     )
                     val planPrograms = repository.getPlanMapPrograms().first().entries.find {
