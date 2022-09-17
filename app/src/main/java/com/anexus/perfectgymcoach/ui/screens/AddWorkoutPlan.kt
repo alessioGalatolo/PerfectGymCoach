@@ -141,7 +141,7 @@ fun LazyItemScope.PlanCard(
     currentPlanId: Long?,
     setAsCurrent: (Long) -> Unit
 ){
-    Card (
+    ElevatedCard (
         Modifier
             .animateItemPlacement()
             .clickable {

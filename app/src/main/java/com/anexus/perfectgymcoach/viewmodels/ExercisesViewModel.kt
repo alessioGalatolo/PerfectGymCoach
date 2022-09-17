@@ -110,7 +110,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 val exercise1 = state.value.workoutExercisesAndInfo[event.index1]
                 val exercise2 = state.value.workoutExercisesAndInfo[event.index2]
                 val exercisesToUpdate = mutableListOf<UpdateExerciseSuperset>()
-                if (exercise1.supersetExercise != 0L){
+                if (exercise1.supersetExercise != null){
                     val otherExercise = state.value.workoutExercisesAndInfo.find {
                         it.workoutExerciseId == exercise1.supersetExercise
                     }
@@ -118,11 +118,11 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                         exercisesToUpdate.add(
                             UpdateExerciseSuperset(
                                 otherExercise.workoutExerciseId,
-                                0L
+                                null
                             )
                         )
                 }
-                if (exercise2.supersetExercise != 0L){
+                if (exercise2.supersetExercise != null){
                     val otherExercise = state.value.workoutExercisesAndInfo.find {
                         it.workoutExerciseId == exercise2.supersetExercise
                     }
@@ -130,20 +130,20 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                         exercisesToUpdate.add(
                             UpdateExerciseSuperset(
                                 otherExercise.workoutExerciseId,
-                                0L
+                                null
                             )
                         )
                 }
                 exercisesToUpdate.add(
                     UpdateExerciseSuperset(
                         exercise1.workoutExerciseId,
-                        if (exercise1.supersetExercise != exercise2.workoutExerciseId) exercise2.workoutExerciseId else 0L
+                        if (exercise1.supersetExercise != exercise2.workoutExerciseId) exercise2.workoutExerciseId else null
                     )
                 )
                 exercisesToUpdate.add(
                     UpdateExerciseSuperset(
                         exercise2.workoutExerciseId,
-                        if (exercise2.supersetExercise != exercise1.workoutExerciseId) exercise1.workoutExerciseId else 0L
+                        if (exercise2.supersetExercise != exercise1.workoutExerciseId) exercise1.workoutExerciseId else null
                     )
                 )
                 viewModelScope.launch {

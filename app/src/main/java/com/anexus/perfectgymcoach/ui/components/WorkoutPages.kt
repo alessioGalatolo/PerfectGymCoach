@@ -113,7 +113,7 @@ fun ExercisePage(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "Current" +
-                            if (workoutExercisesAndInfo[page].supersetExercise != 0L) " - Part of superset" else "",
+                            if (workoutExercisesAndInfo[page].supersetExercise != null) " - Part of superset" else "",
                             Modifier.padding(vertical = 8.dp),
                             fontWeight = FontWeight.Bold
                         )

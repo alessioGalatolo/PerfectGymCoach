@@ -10,6 +10,10 @@ import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
 data class HomeState(
@@ -18,7 +22,8 @@ data class HomeState(
     val programs: List<WorkoutProgram>? = null,
     val exercisesAndInfo: Map<Long, List<WorkoutExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialogue: Boolean = false,
-    val currentWorkout: Long? = null
+    val currentWorkout: Long? = null,
+    val animationTick: Int = 0
 )
 
 sealed class HomeEvent{
@@ -33,6 +38,7 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
     private var collectProgramsJob: Job? = null
     private var collectCurrentProgram: Job? = null
     private var getWorkoutExercisesJob: Job? = null
+    private var animateJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -73,6 +79,15 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
                 )
             }
         }
+        animateJob?.cancel(CancellationException("Duplicate call"))
+        animateJob = flow {
+            var counter = 0
+            while (true) {
+                emit(counter++)
+                delay(1000)
+            }
+        }.onEach {_state.value = state.value.copy(animationTick = state.value.animationTick+1)}
+            .launchIn(viewModelScope)
     }
 
     fun onEvent(event: HomeEvent){

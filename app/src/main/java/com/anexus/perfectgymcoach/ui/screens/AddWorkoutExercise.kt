@@ -73,7 +73,8 @@ fun AddExercise(navController: NavHostController, programName: String, programId
             LargeFloatingActionButton (
                 modifier = Modifier.navigationBarsPadding(),
                 onClick = {
-                    navController.navigate("${MainScreen.ExercisesByMuscle.route}/$programName/$programId")
+                    navController.navigate("${MainScreen.ExercisesByMuscle.route}/" +
+                            "$programName/$programId/${false}")
                 },
             ) {
                 Icon(

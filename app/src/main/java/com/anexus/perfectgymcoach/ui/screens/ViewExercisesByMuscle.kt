@@ -14,7 +14,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,17 +29,32 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ExercisesByMuscle(navController: NavHostController, programName: String,
-                      programId: Long
+                      programId: Long, successfulAddExercise: Boolean
 ) {
     // scroll behaviour for top bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         rememberTopAppBarState()
     )
-    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val showSnackbar = rememberSaveable { mutableStateOf(successfulAddExercise) }
+    LaunchedEffect(showSnackbar){
+        if (showSnackbar.value){
+            snackbarHostState.showSnackbar("Exercise added successfully, you can continue adding")
+            showSnackbar.value = false
+        }
+    }
+
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
             LargeTopAppBar(title = { Text("Add exercise to $programName") },
                 scrollBehavior = scrollBehavior,
@@ -71,8 +89,8 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                                     indication = rememberRipple(),
                                     onClick = {
                                         navController.navigate(
-                                            "${MainScreen.ViewExercises.route}/${programName}/${programId}/" +
-                                                    "${Exercise.Muscle.EVERYTHING.ordinal}/${true}"
+                                            "${MainScreen.ViewExercises.route}/${programId}/" +
+                                                    "${Exercise.Muscle.EVERYTHING.ordinal}/${true}/"
                                         )
                                     }
                                 ),
@@ -102,7 +120,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                     Card(
                         onClick = {
                             navController.navigate(
-                                "${MainScreen.ViewExercises.route}/${programName}/${programId}/" +
+                                "${MainScreen.ViewExercises.route}/${programId}/" +
                                         "${it.ordinal}/${false}"
                             )
                         },

@@ -143,9 +143,7 @@ fun Home(navController: NavHostController,
                 }
             }
             items(items = viewModel.state.value.programs!!.minus(currentProgram), key = { it }){
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -159,46 +157,53 @@ fun Home(navController: NavHostController,
                         }) {
                             navController.navigate("${MainScreen.Workout.route}/${it.programId}/${false}/${false}")
                         }
-                ) {
-                    val pagerState = rememberPagerState()
-                    val exs =
-                        viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
-                            it.workoutExerciseId
-                        } ?: emptyList()
-                    if (exs.isNotEmpty()) {
-                        HorizontalPager(count = exs.size, state = pagerState, modifier = Modifier
-                            .width(100.dp)
-                            .height(100.dp)) { page ->
-                            Box (Modifier.wrapContentSize()) {
-                                AsyncImage(
-                                    model = exs[page].image,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .height(100.dp)
-                                        .width(100.dp)
-                                        .clip(AbsoluteRoundedCornerShape(12.dp))
+                ){
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        val pagerState = rememberPagerState()
+                        val exs =
+                            viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
+                                it.workoutExerciseId
+                            } ?: emptyList()
+                        if (exs.isNotEmpty()) {
+                            HorizontalPager(count = exs.size, state = pagerState, modifier = Modifier
+                                .width(100.dp)
+                                .height(100.dp)) { page ->
+                                Box (Modifier.wrapContentSize()) {
+                                    AsyncImage(
+                                        model = exs[page].image,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .height(100.dp)
+                                            .width(100.dp)
+                                            .clip(AbsoluteRoundedCornerShape(12.dp))
+                                    )
+                                }
+                            }
+
+                            scope.launch {
+                                pagerState.animateScrollToPage(
+                                    (pagerState.currentPage + viewModel.state.value.animationTick) %
+                                            pagerState.pageCount
                                 )
                             }
                         }
-                        // fixme: gets launched too many times
-//                        scope.launch {
-//                            delay(2000)
-//                            pagerState.animateScrollToPage((pagerState.currentPage + 1) % pagerState.pageCount)
-//                        }
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Column(modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        .weight(0.6f)) {
-                        Text(text = it.name)
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    IconButton(modifier = Modifier.weight(0.2f),
-                        onClick = {
-                        navController.navigate("${MainScreen.Workout.route}/${it.programId}/${true}/${false}")
-                    }) {
-                        Icon(Icons.Default.RocketLaunch, null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .weight(0.6f)) {
+                            Text(text = it.name)
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(modifier = Modifier.weight(0.2f),
+                            onClick = {
+                                navController.navigate("${MainScreen.Workout.route}/${it.programId}/${true}/${false}")
+                            }) {
+                            Icon(Icons.Default.RocketLaunch, null)
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -212,9 +217,9 @@ fun Home(navController: NavHostController,
                     ) { Text(stringResource(R.string.change_workout_plan)) }
                     TextButton(onClick = {
                         navController.navigate( // FIXME: empty plan name
-                            "${MainScreen.AddProgram.route}/ /${viewModel.state.value.currentPlan!!}/${true}")
+                            "${MainScreen.AddProgram.route}/ /${viewModel.state.value.currentPlan!!}/${false}")
                     }) {
-                        Text(stringResource(id = R.string.add_program))
+                        Text("Change programs")
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }

@@ -15,6 +15,12 @@ interface WorkoutRecordDao {
     )
     fun getRecords(): Flow<List<WorkoutRecord>>
 
+
+    @Query(
+        "SELECT * FROM workoutrecord WHERE workoutrecord.extProgramId LIKE :programId"
+    )
+    fun getRecordsByProgram(programId: Long): Flow<List<WorkoutRecord>>
+
     @Query(
         "SELECT * FROM workoutrecord WHERE workoutrecord.workoutId LIKE :workoutId"
     )

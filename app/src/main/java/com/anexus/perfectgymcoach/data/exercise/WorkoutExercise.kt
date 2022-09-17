@@ -21,7 +21,7 @@ import kotlinx.parcelize.Parcelize
             entity = Exercise::class,
             parentColumns = ["exerciseId"],
             childColumns = ["extExerciseId"],
-            onDelete = CASCADE  // FIXME? not sure it should cascade, probably won't be implemented
+            onDelete = CASCADE
         ),
         ForeignKey(
             entity = WorkoutExercise::class,
@@ -39,7 +39,7 @@ data class WorkoutExercise (
     val reps: List<Int>,
     val rest: Int,
     val note: String,
-    val supersetExercise: Long = 0L
+    val supersetExercise: Long? = null
 ) : Parcelable
 
 @Parcelize
@@ -49,9 +49,9 @@ data class WorkoutExerciseReorder (
 ) : Parcelable
 
 @Parcelize
-data class UpdateExerciseSuperset (
+data class UpdateExerciseSuperset(
     val workoutExerciseId: Long,
-    val supersetExercise: Long,
+    val supersetExercise: Long?,
 ) : Parcelable
 
 @Parcelize
@@ -64,7 +64,7 @@ data class WorkoutExerciseAndInfo (
     val reps: List<Int>,
     val rest: Int,
     val note: String,
-    val supersetExercise: Long = 0L,
+    val supersetExercise: Long? = null,
     val image: Int,
     val equipment: Exercise.Equipment
 ) : Parcelable

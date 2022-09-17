@@ -72,13 +72,13 @@ import kotlinx.coroutines.launch
     ExperimentalComposeUiApi::class
 )
 @Composable
-fun ViewExercises(navController: NavHostController, programName: String,
-                  programId: Long, muscleOrdinal: Int, focusSearch: Boolean,
-                  viewModel: ExercisesViewModel = hiltViewModel()
+fun ViewExercises(
+    navController: NavHostController,
+    programId: Long,
+    muscleOrdinal: Int,
+    focusSearch: Boolean,
+    viewModel: ExercisesViewModel = hiltViewModel()
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -89,7 +89,6 @@ fun ViewExercises(navController: NavHostController, programName: String,
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
             SmallTopAppBar(
                 title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
@@ -113,7 +112,9 @@ fun ViewExercises(navController: NavHostController, programName: String,
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface,
                         tonalElevation = NavigationBarDefaults.Elevation,  // should use card elevation but it is private
-                        modifier = Modifier.padding(vertical = 8.dp).padding(horizontal = 16.dp)
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .padding(horizontal = 16.dp)
                     ){
                         Row(verticalAlignment = CenterVertically,
                             modifier = Modifier.fillMaxWidth()) {
@@ -151,7 +152,8 @@ fun ViewExercises(navController: NavHostController, programName: String,
                                         if (it.isFocused) {
                                             keyboardController?.show()
                                         }
-                                    }.weight(0.8f)
+                                    }
+                                    .weight(0.8f)
                             )
                             IconButton(onClick = {
                                 searchText = ""
@@ -159,7 +161,9 @@ fun ViewExercises(navController: NavHostController, programName: String,
                             }){
                                 Icon(Icons.Default.Close, null,
                                     tint = if (searchText.isBlank()) Color.Transparent else LocalContentColor.current,
-                                    modifier = Modifier.padding(end = 16.dp, top = 8.dp, bottom = 8.dp).weight(0.1f)
+                                    modifier = Modifier
+                                        .padding(end = 16.dp, top = 8.dp, bottom = 8.dp)
+                                        .weight(0.1f)
                                 )
                             }
                         }

@@ -102,11 +102,6 @@ fun WorkoutCard(
                     )
                 }
             }
-            // fixme: gets launched too many times
-//            scope.launch {
-//                delay(2000)
-//                pagerState.animateScrollToPage((pagerState.currentPage+1) % pagerState.pageCount)
-//            }
             Row{
                 Text(
                     text = program.name,
@@ -140,7 +135,7 @@ fun WorkoutCard(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 8.dp))
-            }// TODO: maybe improve
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row (
                 verticalAlignment = Alignment.CenterVertically,

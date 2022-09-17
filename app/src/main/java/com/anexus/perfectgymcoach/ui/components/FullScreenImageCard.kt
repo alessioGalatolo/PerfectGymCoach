@@ -36,7 +36,7 @@ fun FullScreenImageCard(
     imageHeight: Dp,
     brightImage: Boolean,
     content: @Composable () -> Unit,
-    bottomBar: @Composable (PaddingValues) -> Unit
+    bottomBar: @Composable (PaddingValues, @Composable (@Composable () -> Unit) -> Unit) -> Unit
 ) {
     val deviceCornerRadius = 12.dp // TODO: should be same as device (waiting compose API)
 
@@ -80,9 +80,7 @@ fun FullScreenImageCard(
         Scaffold (
             Modifier.fillMaxSize(),
             containerColor = Color.Transparent,
-//            floatingActionButton = ,
             topBar = {
-
                 // FIXME: low level transition needed because compose likes to hide its functions
                 val transparentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0f)
                 val tonedColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
@@ -144,16 +142,22 @@ fun FullScreenImageCard(
                     // bottom bar
 
                 }
-            }, bottomBar = {
-                Surface (tonalElevation = NavigationBarDefaults.Elevation,
+            }, bottomBar = { bottomBar(
+                WindowInsets.ime.add(WindowInsets.navigationBars).asPaddingValues()
+            ) { bottomBarContent ->
+                Surface(
+                    tonalElevation = NavigationBarDefaults.Elevation,
                     modifier = Modifier
                         .background(NavigationBarDefaults.containerColor)
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
-                        .wrapContentHeight(Alignment.CenterVertically)){
-                    bottomBar(WindowInsets.ime.add(WindowInsets.navigationBars).asPaddingValues())
+                        .wrapContentHeight(Alignment.CenterVertically)
+                ) {
+                    bottomBarContent()
                 }
-            })
+            }
+            }
+        )
     }
 }
 

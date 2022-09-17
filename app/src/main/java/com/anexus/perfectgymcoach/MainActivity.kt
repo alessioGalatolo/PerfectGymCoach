@@ -101,17 +101,21 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(
-                        "${MainScreen.ExercisesByMuscle.route}/{name}/{programId}",
-                        arguments = listOf(navArgument("programId") { type = NavType.LongType })
+                        "${MainScreen.ExercisesByMuscle.route}/{name}/{programId}/{successfulAddExercise}",
+                        arguments = listOf(
+                            navArgument("programId") { type = NavType.LongType },
+                            navArgument("successfulAddExercise") { type = NavType.BoolType }
+                        )
                     ) {
                         ExercisesByMuscle(
                             navControllerMain,
                             it.arguments?.getString("name") ?: "",
-                            it.arguments?.getLong("programId") ?: 0L
+                            it.arguments?.getLong("programId") ?: 0L,
+                            it.arguments?.getBoolean("successfulAddExercise") ?: false
                         )
                     }
                     composable(
-                        "${MainScreen.ViewExercises.route}/{name}/{programId}/{muscle}/{focusSearch}",
+                        "${MainScreen.ViewExercises.route}/{programId}/{muscle}/{focusSearch}",
                         arguments = listOf(
                             navArgument("programId") { type = NavType.LongType },
                             navArgument("muscle") { type = NavType.IntType },
@@ -119,7 +123,6 @@ class MainActivity : ComponentActivity() {
                     ) {
                         ViewExercises(
                             navControllerMain,
-                            it.arguments?.getString("name") ?: "",
                             it.arguments?.getLong("programId") ?: 0L,
                             it.arguments?.getInt("muscle") ?: -1,
                             it.arguments?.getBoolean("focusSearch") ?: false

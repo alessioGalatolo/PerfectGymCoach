@@ -39,6 +39,8 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.NavigationScreen
 import com.anexus.perfectgymcoach.ui.components.TextFieldWithButtons
 import com.anexus.perfectgymcoach.viewmodels.AddExerciseEvent
 import com.anexus.perfectgymcoach.viewmodels.AddExerciseViewModel
@@ -46,9 +48,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.exp
 
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
-    ExperimentalLayoutApi::class
-)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddExerciseDialogue(
     navHostController: NavHostController,
@@ -61,9 +61,9 @@ fun AddExerciseDialogue(
 
     val snackbarHostState = remember { SnackbarHostState() }
     if (exerciseId != 0L)
-        viewModel.onEvent(AddExerciseEvent.GetExercise(exerciseId))
+        viewModel.onEvent(AddExerciseEvent.GetProgramAndExercise(programId, exerciseId))
     if (workoutExerciseId != 0L)
-        viewModel.onEvent(AddExerciseEvent.GetWorkoutExercise(workoutExerciseId))
+        viewModel.onEvent(AddExerciseEvent.GetProgramAndWorkoutExercise(programId, workoutExerciseId))
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // make topappbar opaque
@@ -84,14 +84,19 @@ fun AddExerciseDialogue(
                     val keyboardController = LocalSoftwareKeyboardController.current
                     val fillString = stringResource(R.string.fill_every_field)
                     TextButton(onClick = {
-                        if (!viewModel.onEvent(AddExerciseEvent.TryAddExercise(programId)))
+                        if (!viewModel.onEvent(AddExerciseEvent.TryAddExercise))
                             scope.launch {
                                 keyboardController?.hide()
                                 snackbarHostState.showSnackbar(fillString)
                             }
                         else {
-                            // todo: display snackbar in previous screen
                             navHostController.popBackStack()
+                            navHostController.popBackStack()
+                            navHostController.popBackStack()
+                            navHostController.navigate(
+                                "${MainScreen.ExercisesByMuscle.route}/" +
+                                        viewModel.state.value.program!!.name +
+                                        "/${programId}/${true}")
                         }
                     }, modifier = Modifier.align(CenterVertically)) {
                         Text(text = stringResource(R.string.save))
