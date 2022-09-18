@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -41,15 +42,20 @@ import com.anexus.perfectgymcoach.ui.NavigationScreen
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
 import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.HorizontalPagerIndicator
+import com.google.accompanist.pager.rememberPagerState
 import com.jaikeerthick.composable_graphs.color.*
 import com.jaikeerthick.composable_graphs.composables.LineGraph
 import com.jaikeerthick.composable_graphs.data.GraphData
 import com.jaikeerthick.composable_graphs.style.LineGraphStyle
 import com.jaikeerthick.composable_graphs.style.LinearGraphVisibility
 import java.text.SimpleDateFormat
+import kotlin.math.ceil
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPagerApi::class)
 @Composable
 fun WorkoutRecap(
     navController: NavHostController,
@@ -121,9 +127,7 @@ fun WorkoutRecap(
         }) { innerPadding ->
             LazyColumn(
                 contentPadding = innerPadding,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ){
                 item {
@@ -133,141 +137,199 @@ fun WorkoutRecap(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp)
+                            .padding(horizontal = 16.dp)
                     )
                 }
+                val records = viewModel.state.value.olderRecords
+                val graphsYaxis = listOf (
+                    Pair(Pair("Volume", "kg"), records.map { it.volume }),
+                    Pair(Pair("Calories", "kcal"), records.map { it.calories }),
+                    Pair(Pair("Workout time", "s"), records.map { it.duration }),
+                    Pair(Pair("Workout active time", "s"), records.map { it.activeTime })
+                )
                 item{
-                    val records = viewModel.state.value.olderRecords
-                    if (records.size > 0) {
-                        ElevatedCard {
-                            val clickedValue: MutableState<Pair<Any, Any>> = remember {
-                                mutableStateOf(
-                                    Pair(
-                                        SimpleDateFormat("d MMM").format(
-                                            viewModel.state.value.workoutRecord!!.startDate.time
-                                        ),
-                                        viewModel.state.value.workoutRecord!!.volume
-                                    )
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .padding(all = 25.dp)
-                            ) {
-                                Text(text = "Progression (volume): ")
-                                Text(
-                                    text = "${clickedValue.value.first}, ${clickedValue.value.second}",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            LineGraph(
-                                xAxisData = records.map {
-                                    GraphData.String(SimpleDateFormat("d MMM").format(it.startDate.time))
-                                }, // xAxisData : List<GraphData>, and GraphData accepts both Number and String types
-                                yAxisData = records.map { it.volume },
-                                onPointClicked = { x ->
-                                    clickedValue.value = x
-                                },
-                                style = LineGraphStyle(
-                                    visibility = LinearGraphVisibility(
-                                        isHeaderVisible = true,
-                                        isYAxisLabelVisible = true,
-                                        isXAxisLabelVisible = false,
-                                        isCrossHairVisible = true
-                                    ),
-                                    colors = LinearGraphColors(
-                                        lineColor = MaterialTheme.colorScheme.primary,
-                                        pointColor = MaterialTheme.colorScheme.primary,
-                                        clickHighlightColor = PointHighlight2,
-                                        fillGradient = Brush.verticalGradient(
-                                            listOf(MaterialTheme.colorScheme.secondary, Gradient2)
+                    val pagerState = rememberPagerState()
+                    ElevatedCard (Modifier.padding(horizontal = 16.dp)) {
+                        if (records.size > 1){
+                            HorizontalPager(count = graphsYaxis.size, state = pagerState) { page ->
+                                Column(Modifier.padding(8.dp)) {
+                                    val clickedValue: MutableState<Pair<Any, Any>> = remember {
+                                        mutableStateOf(
+                                            Pair(
+                                                SimpleDateFormat("d MMM").format(
+                                                    viewModel.state.value.workoutRecord!!.startDate.time
+                                                ),
+                                                graphsYaxis[page].second.last()
+    //                                            viewModel.state.value.workoutRecord!!.volume
+                                            )
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .padding(all = 25.dp)
+                                    ) {
+                                        Text(
+                                            text = "${graphsYaxis[page].first.first}: ",
+                                            fontStyle = Italic
+                                        )
+                                        Text(
+                                            text = "${
+                                                if (clickedValue.value.first.toString()
+                                                        .isBlank()
+                                                ) "-"
+                                                else clickedValue.value.first
+                                            }" +
+                                                    ", ${clickedValue.value.second} " +
+                                                    graphsYaxis[page].first.second,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    val maxDatesInXAxis = 6
+                                    LineGraph(
+                                        xAxisData = List(records.size) { index ->
+                                            GraphData.String(
+                                                if (index % ceil(records.size.toDouble() / maxDatesInXAxis).toInt() == 0)
+                                                    SimpleDateFormat("d MMM").format(records[index].startDate.time)
+                                                else
+                                                    ""
+                                            )
+                                        },
+                                        yAxisData = graphsYaxis[page].second,
+                                        onPointClicked = { x ->
+                                            clickedValue.value = x
+                                        },
+                                        style = LineGraphStyle(
+                                            visibility = LinearGraphVisibility(
+                                                isHeaderVisible = true,
+                                                isYAxisLabelVisible = true,
+                                                isXAxisLabelVisible = true,
+                                                isCrossHairVisible = true,
+                                                isGridVisible = true
+                                            ),
+                                            colors = LinearGraphColors(
+                                                lineColor = MaterialTheme.colorScheme.primary,
+                                                pointColor = MaterialTheme.colorScheme.primary,
+                                                clickHighlightColor = PointHighlight2,
+                                                fillGradient = Brush.verticalGradient(
+                                                    listOf(
+                                                        MaterialTheme.colorScheme.secondary,
+                                                        Gradient2
+                                                    )
+                                                )
+                                            )
                                         )
                                     )
-                                )
+                                }
+                            }
+                            HorizontalPagerIndicator(
+                                pagerState = pagerState,
+                                modifier = Modifier.align(Alignment.CenterHorizontally).padding(8.dp)
+                            )
+                        } else {
+                            Text(
+                                stringResource(R.string.no_analytics),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 128.dp),
+                                color = MaterialTheme.colorScheme.outline
                             )
                         }
                     }
                 }
                 item {
-                    ElevatedCard {
-                        Column(Modifier.padding(8.dp)) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)) {
-                                    Icon(
-                                        Icons.Outlined.LocalFireDepartment, null,
-                                        Modifier.size(50.dp)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Calorie consumption: " +
-                                            "${viewModel.state.value.workoutRecord!!.calories.toInt()} kcal")
-                                    Spacer(Modifier.width(8.dp))
-                                }
-                                IconButton(onClick = { calorieDialogIsOpen.value = true },
-                                    modifier = Modifier.weight(0.1f)) {
-                                    Icon(Icons.Default.HelpOutline, null)
-                                }
-                            }
-                            Divider()
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)) {
-                                    Icon(
-                                        painterResource(R.drawable.weight_icon), null,
-                                        Modifier.size(50.dp)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Total volume: " +
-                                            "${viewModel.state.value.workoutRecord!!.volume} kg")
-                                    Spacer(Modifier.width(8.dp))
-                                }
-                                IconButton(onClick = { volumeDialogIsOpen.value = true },
-                                modifier = Modifier.weight(0.1f)) {
-                                    Icon(Icons.Default.HelpOutline, null)
-                                }
-                            }
-                            Divider()
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Schedule, null,
-                                    Modifier.size(50.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "Total time: " +
-                                            DateUtils.formatElapsedTime(
-                                                viewModel.state.value.workoutRecord!!.duration
-                                            )
-                                )
-                            }
-                            Divider()
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start
-                            ) {
-                                Icon(
-                                    Icons.Outlined.PendingActions, null,
-                                    Modifier.size(50.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text("Active time: " +
-                                        DateUtils.formatElapsedTime(
-                                            viewModel.state.value.workoutRecord!!.activeTime
+                    if (viewModel.state.value.workoutRecord != null) {
+                        ElevatedCard(Modifier.padding(horizontal = 16.dp)) {
+                            Column(Modifier.padding(8.dp)) {
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.LocalFireDepartment, null,
+                                            Modifier.size(50.dp)
                                         )
-                                )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "Calorie consumption: " +
+                                                    "${viewModel.state.value.workoutRecord!!.calories.toInt()} kcal"
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                    }
+                                    IconButton(
+                                        onClick = { calorieDialogIsOpen.value = true },
+                                        modifier = Modifier.weight(0.1f)
+                                    ) {
+                                        Icon(Icons.Default.HelpOutline, null)
+                                    }
+                                }
+                                Divider()
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            painterResource(R.drawable.weight_icon), null,
+                                            Modifier.size(50.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "Total volume: " +
+                                                    "${viewModel.state.value.workoutRecord!!.volume} kg"
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                    }
+                                    IconButton(
+                                        onClick = { volumeDialogIsOpen.value = true },
+                                        modifier = Modifier.weight(0.1f)
+                                    ) {
+                                        Icon(Icons.Default.HelpOutline, null)
+                                    }
+                                }
+                                Divider()
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Start
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Schedule, null,
+                                        Modifier.size(50.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Total time: " +
+                                                DateUtils.formatElapsedTime(
+                                                    viewModel.state.value.workoutRecord!!.duration
+                                                )
+                                    )
+                                }
+                                Divider()
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Start
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.PendingActions, null,
+                                        Modifier.size(50.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Active time: " +
+                                                DateUtils.formatElapsedTime(
+                                                    viewModel.state.value.workoutRecord!!.activeTime
+                                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -275,10 +337,10 @@ fun WorkoutRecap(
                 item {
                     Text("Workout history",
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp))
+                        modifier = Modifier.padding(vertical = 8.dp).padding(horizontal = 16.dp))
                 }
                 items (items = viewModel.state.value.exerciseRecords, key = { it.recordId }) { exercise ->
-                    Card (Modifier.fillMaxWidth()){
+                    Card (Modifier.fillMaxWidth().padding(horizontal = 16.dp)){
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(exercise.image)

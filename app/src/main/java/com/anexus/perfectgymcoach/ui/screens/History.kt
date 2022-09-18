@@ -70,11 +70,11 @@ fun History(navController: NavHostController,
                             Text("Started at: $date")
                             Text("Duration: ${DateUtils.formatElapsedTime(it.duration)}")
                         }
-                        IconButton(onClick = {
-                            navController.navigate("${MainScreen.WorkoutRecap.route}/${it.workoutId}")
-                        }) {
-                            Icon(Icons.Default.Info, null)
-                        }
+//                        IconButton(onClick = {
+//                            navController.navigate("${MainScreen.WorkoutRecap.route}/${it.workoutId}")
+//                        }) {
+//                            Icon(Icons.Default.Info, null)
+//                        }
                     }
                 }
                 Spacer(Modifier.height(8.dp))

@@ -84,7 +84,7 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
             var counter = 0
             while (true) {
                 emit(counter++)
-                delay(1000)
+                delay(2000)
             }
         }.onEach {_state.value = state.value.copy(animationTick = state.value.animationTick+1)}
             .launchIn(viewModelScope)

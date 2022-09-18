@@ -11,6 +11,7 @@ import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordAndName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -42,15 +43,27 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
                     retrieveRecordJob?.cancel()
                     retrieveRecordJob = viewModelScope.launch {
                         _state.value = state.value.copy(
-                            workoutId = event.workoutId,
-                            workoutRecord = repository.getWorkoutRecord(event.workoutId).first(),
-                            exerciseRecords = repository.getWorkoutExerciseRecordsAndInfo(event.workoutId)
-                                .first().distinct().sortedBy { it.exerciseInWorkout }
+                            workoutRecord = repository.getWorkoutRecord(event.workoutId).first()
                         )
                         this.launch {
                             repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{
                                 _state.value = state.value.copy(
                                     olderRecords = it.filter { it1 -> it1.duration > 0 }
+                                        .sortedBy { it1 -> it1.startDate }
+                                )
+                            }
+                        }
+                        this.launch {
+                            repository.getWorkoutRecord(event.workoutId).collect {
+                                _state.value = state.value.copy(
+                                    workoutRecord = it
+                                )
+                            }
+                        }
+                        this.launch {
+                            repository.getWorkoutExerciseRecordsAndInfo(event.workoutId).collect{
+                                _state.value = state.value.copy(
+                                    exerciseRecords = it.distinct().sortedBy { it1 -> it1.exerciseInWorkout }
                                 )
                             }
                         }

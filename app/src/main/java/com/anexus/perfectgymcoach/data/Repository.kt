@@ -86,9 +86,11 @@ class Repository @Inject constructor(
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
 
-    fun getWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.getRecordsByWorkout(workoutId)
+    fun getWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.getByWorkout(workoutId)
 
-    fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) = db.exerciseRecordDao.getRecordsAndInfoByWorkout(workoutId)
+    suspend fun deleteWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.deleteByWorkout(workoutId)
+
+    fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) = db.exerciseRecordDao.getByWorkoutWithInfo(workoutId)
 
     fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
 

@@ -16,6 +16,7 @@ data class Exercise(
     val secondaryMuscles: List<Muscle>,
     val image: Int = R.drawable.finish_workout
     // TODO: add exercise difficulty
+    // TODO: variation
 
 ) : Parcelable {
     enum class Muscle (val muscleName: String){
@@ -30,25 +31,14 @@ data class Exercise(
         TRICEPS("Triceps")
     }
 
-    enum class Equipment (val equipmentName: String){
-        EVERYTHING("See all"), // Used when filtering by muscle to get everything
-        BARBELL("Barbell"),
-        BODY_WEIGHT("Body weight"),
-        CABLES("Cables"),
-        DUMBBELL("Dumbbell"),
-        MACHINE("Machine")
+    // TODO: assumes international system (kg), add support for americans
+    enum class Equipment(val equipmentName: String, val increment: Float){
+        EVERYTHING("See all", 1f), // Used when filtering by muscle to get everything
+        BARBELL("Barbell", 2.5f),
+        BODY_WEIGHT("Body weight", 2.5f),
+        CABLES("Cables", 2.5f),
+        DUMBBELL("Dumbbell", 2f),
+        MACHINE("Machine", 5f)
     }
 
-    companion object{
-        // TODO: assumes international system (kg), add support for americans
-        // TODO: move to be a property of the enum class
-        val equipment2increment: Map<Equipment, Float> = mapOf(
-            Pair(Equipment.EVERYTHING, 1f),
-            Pair(Equipment.BARBELL, 2.5f),
-            Pair(Equipment.BODY_WEIGHT, 2.5f),
-            Pair(Equipment.DUMBBELL, 2f),
-            Pair(Equipment.CABLES, 2.5f),
-            Pair(Equipment.MACHINE, 5f),
-        )
-    }
 }

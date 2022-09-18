@@ -20,8 +20,7 @@ import java.util.*
         ForeignKey(
             entity = Exercise::class,
             parentColumns = ["exerciseId"],
-            childColumns = ["extExerciseId"],
-//            onDelete = ForeignKey.CASCADE  // FIXME? not sure it should cascade
+            childColumns = ["extExerciseId"]
         )
     ]
 )

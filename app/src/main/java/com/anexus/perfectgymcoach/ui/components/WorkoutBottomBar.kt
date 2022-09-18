@@ -91,12 +91,12 @@ fun WorkoutBottomBar(
                     onNewText = { new -> updateWeight(new) },
                     onIncrement = { updateWeight((
                                 (weightToDisplay.toFloatOrNull() ?: 0f)
-                                        + Exercise.equipment2increment[currentExercise.equipment]!!
+                                        + currentExercise.equipment.increment
                             ).toString()
                     )},
                     onDecrement = { updateWeight((
                             (weightToDisplay.toFloatOrNull() ?: 0f)
-                                    - Exercise.equipment2increment[currentExercise.equipment]!!
+                                    - currentExercise.equipment.increment
                             ).toString()
                     )}
                 )

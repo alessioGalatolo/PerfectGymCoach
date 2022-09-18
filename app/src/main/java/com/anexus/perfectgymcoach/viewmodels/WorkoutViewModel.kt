@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
+import kotlin.math.max
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
@@ -150,8 +151,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 (it.tare * it.reps.size +
                                         it.weights.mapIndexed { index, i -> i * it.reps[index] }.sum()).toDouble()
                             },
-                            activeTime = state.value.workoutTime!! -
-                                    exercises.sumOf { it.rest * it.reps.size },
+                            activeTime = max(0L, state.value.workoutTime!! -
+                                    exercises.sumOf { it.rest * it.reps.size }),
                             calories = event.workoutIntensity.metValue *
                                     repository.getUserWeight().first() *
                                     state.value.workoutTime!! / 3600
@@ -173,7 +174,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     repository.setCurrentWorkout(null)
                 }
             }
-            is WorkoutEvent.DeleteCurrentRecords -> { /*TODO()*/ }
+            is WorkoutEvent.DeleteCurrentRecords -> {
+                viewModelScope.launch {
+                    repository.deleteWorkoutExerciseRecords(state.value.workoutId)
+                }
+            }
             is WorkoutEvent.AddSetToExercise -> {
                 val newExs = state.value.workoutExercisesAndInfo
                 val newEx = newExs[event.exerciseInWorkout].copy(
