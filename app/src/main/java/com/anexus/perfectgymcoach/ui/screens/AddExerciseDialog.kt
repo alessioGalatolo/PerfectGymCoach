@@ -36,6 +36,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
@@ -116,8 +117,8 @@ fun AddExerciseDialogue(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     item {
-                        Image(
-                            painterResource(id = viewModel.state.value.exercise!!.image),
+                        AsyncImage(
+                            viewModel.state.value.exercise!!.image,
                             null,
                             modifier = Modifier
                                 .fillMaxWidth()

@@ -90,7 +90,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                                     onClick = {
                                         navController.navigate(
                                             "${MainScreen.ViewExercises.route}/${programId}/" +
-                                                    "${Exercise.Muscle.EVERYTHING.ordinal}/${true}/"
+                                                    "${Exercise.Muscle.EVERYTHING.ordinal}/${true}"
                                         )
                                     }
                                 ),

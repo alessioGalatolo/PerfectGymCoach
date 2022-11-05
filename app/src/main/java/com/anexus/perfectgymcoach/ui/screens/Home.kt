@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -122,7 +123,7 @@ fun Home(navController: NavHostController,
                 viewModel.state.value.exercisesAndInfo[currentProgram.programId]?.sortedBy {
                     it.workoutExerciseId
                 } ?: emptyList()
-            item{
+            item {
                 // Coming next
                 Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -130,7 +131,8 @@ fun Home(navController: NavHostController,
                     program = currentProgram,
                     exercises = currentExercises,
                     // TODO: add message when no exercises in the program
-                    onCardClick = { navController.navigate("${MainScreen.Workout.route}/${currentProgram.programId}/${false}/${false}") },
+                    onCardClick = { navController.navigate("${MainScreen.Workout.route}/" +
+                            "${currentProgram.programId}/${false}/${false}") },
                     navController = navController
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -146,7 +148,7 @@ fun Home(navController: NavHostController,
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .padding(vertical = 4.dp)
                         .combinedClickable(onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             navController.navigate(
@@ -155,31 +157,39 @@ fun Home(navController: NavHostController,
                                         "${it.programId}"
                             )
                         }) {
-                            navController.navigate("${MainScreen.Workout.route}/${it.programId}/${false}/${false}")
+                            navController.navigate("${MainScreen.Workout.route}/" +
+                                    "${it.programId}/${false}/${false}")
                         }
                 ){
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         val pagerState = rememberPagerState()
                         val exs =
                             viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
                                 it.workoutExerciseId
                             } ?: emptyList()
+                        Text(
+                            text = it.name,
+                            modifier = Modifier.padding(8.dp),
+                            style = MaterialTheme.typography.titleLarge
+                        )
                         if (exs.isNotEmpty()) {
-                            HorizontalPager(count = exs.size, state = pagerState, modifier = Modifier
-                                .width(100.dp)
-                                .height(100.dp)) { page ->
+                            HorizontalPager(count = exs.size, state = pagerState,
+                                modifier = Modifier.width(150.dp)
+                                    .height(150.dp / 3 * 2)
+                                    .padding(8.dp)
+                                    .clip(AbsoluteRoundedCornerShape(12.dp))
+                            ) { page ->
                                 Box (Modifier.wrapContentSize()) {
                                     AsyncImage(
                                         model = exs[page].image,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
-                                            .height(100.dp)
-                                            .width(100.dp)
-                                            .clip(AbsoluteRoundedCornerShape(12.dp))
+                                            .height(150.dp / 3 * 2)
+                                            .width(150.dp)
                                     )
                                 }
                             }
@@ -191,19 +201,14 @@ fun Home(navController: NavHostController,
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column(modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                            .weight(0.6f)) {
-                            Text(text = it.name)
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconButton(modifier = Modifier.weight(0.2f),
-                            onClick = {
-                                navController.navigate("${MainScreen.Workout.route}/${it.programId}/${true}/${false}")
-                            }) {
-                            Icon(Icons.Default.RocketLaunch, null)
-                        }
+                    }
+//                    Spacer(modifier = Modifier.height(4.dp))
+                    IconButton(modifier = Modifier.align(Alignment.End),
+                        onClick = {
+                            navController.navigate("${MainScreen.Workout.route}/" +
+                                    "${it.programId}/${true}/${false}")
+                        }) {
+                        Icon(Icons.Default.RocketLaunch, null)
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -212,12 +217,15 @@ fun Home(navController: NavHostController,
                 Column (horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()){
                     TextButton(
-                        onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${false}") },
+                        onClick = {
+                            navController.navigate("${MainScreen.ChangePlan.route}/${false}")
+                                  },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) { Text(stringResource(R.string.change_workout_plan)) }
                     TextButton(onClick = {
                         navController.navigate( // FIXME: empty plan name
-                            "${MainScreen.AddProgram.route}/ /${viewModel.state.value.currentPlan!!}/${false}")
+                            "${MainScreen.AddProgram.route}/ /" +
+                                    "${viewModel.state.value.currentPlan!!}/${false}")
                     }) {
                         Text("Change programs")
                     }

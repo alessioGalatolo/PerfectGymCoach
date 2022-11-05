@@ -56,7 +56,6 @@ fun WorkoutCard(
     modifier: Modifier = Modifier
 ){
     val haptic = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
     var expanded by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
@@ -80,7 +79,9 @@ fun WorkoutCard(
                     val imageWidth = LocalConfiguration.current.screenWidthDp.dp // - 32.dp // 2*padding
                     val imageHeight = imageWidth/3*2
 
-                    HorizontalPager(count = exercises.size, state = pagerState) { page ->
+                    HorizontalPager(count = exercises.size, state = pagerState,
+                        modifier = Modifier
+                        .clip(AbsoluteRoundedCornerShape(12.dp))) { page ->
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
                                 model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
@@ -90,7 +91,6 @@ fun WorkoutCard(
                                     .fillMaxWidth()
                                     .height(imageHeight)
                                     .align(Alignment.TopCenter)
-                                    .clip(AbsoluteRoundedCornerShape(12.dp))
                             )
                         }
                     }
@@ -163,7 +163,7 @@ fun WorkoutCard(
                                         "${false}/${false}"
                             )
                         }) {
-                            Icon(Icons.Default.PlayCircle, null)
+                            Icon(Icons.Outlined.PlayCircle, null)
                         }
                         IconButton(onClick = {
                             navController.navigate(
@@ -172,7 +172,7 @@ fun WorkoutCard(
                                         "${program.programId}"
                             )
                         }) {
-                            Icon(Icons.Default.Edit, null)
+                            Icon(Icons.Outlined.Edit, null)
                         }
                     } else {
                         Box(
