@@ -50,7 +50,7 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     context,
                     WorkoutDatabase::class.java,
                     "workout-database"
-                ).addCallback(object : RoomDatabase.Callback() {
+                ).addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
                         //pre-populate data

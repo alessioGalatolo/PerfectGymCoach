@@ -283,7 +283,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                             }
                             Column(Modifier.padding(8.dp)) {
                                 Text(
-                                    text = exercise.name,
+                                    text = exercise.name + exercise.variation,
                                     style = MaterialTheme.typography.titleLarge
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))

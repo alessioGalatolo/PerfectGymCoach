@@ -95,7 +95,7 @@ fun Workout(navController: NavHostController, programId: Long,
 
 
     val title = @Composable { Text(
-        currentExercise?.name ?: "End of workout",
+        currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
         overflow = TextOverflow.Ellipsis,
 //        maxLines = 1
     ) }

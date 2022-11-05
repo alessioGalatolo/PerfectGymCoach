@@ -109,11 +109,7 @@ fun AddExerciseDialogue(
                     contentPadding = innerPadding,
                     modifier = Modifier
                         .imePadding()
-//                        .imeNestedScroll()
-//                        .verticalScroll(rememberScrollState())
-//                        .padding(innerPadding)
                         .fillMaxSize(),
-//                        verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     item {
@@ -135,6 +131,65 @@ fun AddExerciseDialogue(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
                         )
+                    }
+                    if (viewModel.state.value.exercise!!.variations.isNotEmpty()) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 8.dp),
+                                verticalAlignment = CenterVertically
+                            ) {
+                                val expanded = rememberSaveable { mutableStateOf(false) }
+                                ExposedDropdownMenuBox(
+                                    expanded = expanded.value,
+                                    onExpandedChange = {
+                                        expanded.value = !expanded.value
+                                    }
+                                ) {
+                                    OutlinedTextField(
+                                        readOnly = true,
+                                        value = viewModel.state.value.variation,
+                                        singleLine = true,
+                                        onValueChange = {
+                                            viewModel.onEvent(
+                                                AddExerciseEvent.UpdateVariation(
+                                                    it
+                                                )
+                                            )
+                                        },
+                                        label = { Text("Variation") },
+                                        trailingIcon = {
+                                            Row (verticalAlignment = CenterVertically){
+                                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
+                                            }
+                                        },
+                                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    ExposedDropdownMenu(
+                                        expanded = expanded.value,
+                                        onDismissRequest = { expanded.value = false },
+                                    ) {
+                                        viewModel.state.value.exercise!!.variations.plus("No variation")
+                                            .forEach { selectionOption ->
+                                                DropdownMenuItem(
+                                                    text = { Text(selectionOption) },
+                                                    onClick = {
+                                                        viewModel.onEvent(
+                                                            AddExerciseEvent.UpdateVariation(
+                                                                selectionOption
+                                                            )
+                                                        )
+                                                        expanded.value = false
+                                                    }
+                                                )
+                                            }
+                                    }
+                                }
+                            }
+                        }
                     }
                     item {
                         Row(
@@ -184,7 +239,6 @@ fun AddExerciseDialogue(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp)
                                     .padding(bottom = 8.dp),
-//                            horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = CenterVertically
                             ) {
                                 Row(
@@ -265,7 +319,12 @@ fun AddExerciseDialogue(
                                         prompt = "Rest" + "*",
                                         options = (15..120 step 15).map { "$it" },
                                         text = viewModel.state.value.restArray[index],
-                                        onTextChange = { viewModel.onEvent(AddExerciseEvent.UpdateRestAtIndex(it, index)) },
+                                        onTextChange = {
+                                            viewModel.onEvent(AddExerciseEvent.UpdateRestAtIndex(
+                                                it,
+                                                index)
+                                            )
+                                        },
                                         keyboardType = KeyboardType.Number
                                     ) {
                                         Text("sec")
@@ -298,6 +357,7 @@ fun MyDropdownMenu(
 
     // the 3 variable below are used to make the keyboard appear after two taps on the textfield
     // meaning that on tap 1 we only show the dropdown menu and only on second tap we show the keyboard
+    // FIXME: does not work anymore
     var hasBeenFocused by rememberSaveable { mutableStateOf(true) }
     var hasBeenFalse by rememberSaveable { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester.Default }
@@ -314,14 +374,13 @@ fun MyDropdownMenu(
         }
     ) {
         OutlinedTextField(
-//            enabled = !expanded.value,
             readOnly = !hasBeenFocused,
             value = text,
             singleLine = true,
             onValueChange = onTextChange,
             label = { Text(prompt) },
             trailingIcon = {
-                Row (verticalAlignment = Alignment.CenterVertically){
+                Row (verticalAlignment = CenterVertically){
                     trailingIcon?.invoke()
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
                 }

@@ -39,6 +39,7 @@ data class WorkoutExercise (
     val reps: List<Int>,
     val rest: Int,
     val note: String,
+    val variation: String,
     val supersetExercise: Long? = null
 ) : Parcelable
 
@@ -64,6 +65,7 @@ data class WorkoutExerciseAndInfo (
     val reps: List<Int>,
     val rest: Int,
     val note: String,
+    val variation: String,
     val supersetExercise: Long? = null,
     val image: Int,
     val equipment: Exercise.Equipment

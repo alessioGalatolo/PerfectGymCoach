@@ -1,5 +1,7 @@
 package com.anexus.perfectgymcoach.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,10 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -52,6 +51,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -83,6 +83,8 @@ fun ViewExercises(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val toFocus = rememberSaveable { mutableStateOf(focusSearch) }
+
+    val context = LocalContext.current
 
     viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.values()[muscleOrdinal]))
 
@@ -216,10 +218,26 @@ fun ViewExercises(
                         }
                     }
                 }
-                items(viewModel.state.value.exercisesToDisplay ?: emptyList(), key = { it.exerciseId }) { exercise ->
+                items(viewModel.state.value.exercisesToDisplay ?: emptyList(),
+                    key = { it.name }
+                ) { exercise ->
                     ElevatedCard(
                         onClick = {
-                            navController.navigate("${MainScreen.AddExerciseDialog.route}/$programId/${exercise.exerciseId}/${0L}")
+                            if (exercise.name == "Can you hear the silence?"){
+                                ContextCompat.startActivity(
+                                    context,
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("https://www.tiktok.com/@cropfb/video/7086384111295761670")  // FIXME
+                                    ),
+                                    null
+                                )
+                            } else {
+                                navController.navigate(
+                                    "${MainScreen.AddExerciseDialog.route}/" +
+                                            "$programId/${exercise.exerciseId}/${0L}"
+                                )
+                            }
                         },
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -250,13 +268,44 @@ fun ViewExercises(
                             })
                             if (exercise.secondaryMuscles.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "Secondary muscles: ${
-                                    exercise.secondaryMuscles.joinToString(
+                                Text(text = buildAnnotatedString {
+                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                        append("Secondary muscles: ")
+                                    }
+                                    append(exercise.secondaryMuscles.joinToString(
                                         ", "
-                                    ) { it.muscleName }
-                                }") // TODO
+                                    ) { it.muscleName })
+                                })
+                            }
+                            // TODO: add option to have variations already expanded
+                            if (exercise.variations.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row (Modifier.fillMaxWidth()){
+                                    Text(text = "${exercise.variations.size}+ variations available",
+                                        fontStyle = FontStyle.Italic
+                                    )
+
+//                                    // TODO: on click show variations with an add button on their right
+//                                    IconButton(onClick = { /*TODO*/ }) {
+//                                        Icon(Icons.Default.ArrowDownward, null)
+//                                    }
+                                }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+                item {
+                    Box(Modifier.fillMaxWidth()) {
+                        Button(
+                            modifier = Modifier.align(Alignment.Center),
+                            onClick = {
+                                TODO()
+                            }
+                        ) {
+                            Icon(Icons.Default.Add, null)
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text("Create exercise")
                         }
                     }
                 }

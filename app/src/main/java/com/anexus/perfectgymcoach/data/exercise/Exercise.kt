@@ -2,6 +2,8 @@ package com.anexus.perfectgymcoach.data.exercise
 
 import android.os.Parcelable
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.PrimaryKey
 import com.anexus.perfectgymcoach.R
 import kotlinx.parcelize.Parcelize
@@ -13,10 +15,10 @@ data class Exercise(
     val name: String,
     val equipment: Equipment,
     val primaryMuscle: Muscle,
-    val secondaryMuscles: List<Muscle>,
-    val image: Int = R.drawable.finish_workout
-    // TODO: add exercise difficulty
-    // TODO: variation
+    val secondaryMuscles: List<Muscle> = emptyList(),
+    val image: Int = R.drawable.finish_workout,
+    val difficulty: ExerciseDifficulty = ExerciseDifficulty.MEDIUM,  // TODO: not actually used in the app yet
+    val variations: List<String> = emptyList()
 
 ) : Parcelable {
     enum class Muscle (val muscleName: String){
@@ -41,4 +43,9 @@ data class Exercise(
         MACHINE("Machine", 5f)
     }
 
+    enum class ExerciseDifficulty(val difficulty: String){
+        BEGINNER("Beginner"),
+        MEDIUM("Medium"),
+        ADVANCED("Advanced")
+    }
 }

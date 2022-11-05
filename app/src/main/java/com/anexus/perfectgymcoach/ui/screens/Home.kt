@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -93,7 +94,7 @@ fun Home(navController: NavHostController,
         Column (horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(contentPadding)) {
             Icon(
-                imageVector = Icons.Filled.Description,
+                imageVector = Icons.Outlined.Description,
                 contentDescription = "",
                 modifier = Modifier.size(160.dp)
             )

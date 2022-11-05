@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
 data class ExercisesState(
     val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
@@ -89,6 +90,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 }
             }
             is ExercisesEvent.FilterExerciseEquipment -> {
+                // FIXME: if search, than change equipment, initial search is lost
                 val filtered = state.value.exercises.filter {
                     event.query == Exercise.Equipment.EVERYTHING || it.equipment == event.query
                 }
@@ -96,7 +98,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                     exercisesToDisplay = filtered)
             }
             is ExercisesEvent.ReorderExercises -> {
-                // TODO: check that doesn't break supersets
+                // TODO: check that doesn't break supersets (probably does)
                 viewModelScope.launch {
                     repository.reorderWorkoutExercises(event.workoutExerciseReorders)
                 }
@@ -154,5 +156,4 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             }
         }
     }
-
 }

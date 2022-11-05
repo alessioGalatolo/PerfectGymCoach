@@ -24,7 +24,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
-        image = R.drawable.incline_bench_press  // FIXME
+        image = R.drawable.incline_bench_press
     ),
     Exercise(
         name = "Declined bench press",
@@ -39,7 +39,6 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Cable crossover",
         equipment = Exercise.Equipment.CABLES,
         primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = emptyList(),
         image = R.drawable.cable_crossover
     ),
 
@@ -56,35 +55,13 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Exercise.Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
-        image = R.drawable.push_up
-    ),
-    Exercise(
-        name = "Inclined push up",
-        equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
-        image = R.drawable.push_up // FIXME
-    ),
-    Exercise(
-        name = "Declined push up",
-        equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
-        image = R.drawable.push_up // FIXME
-    ),
-    Exercise(
-        name = "Single arm push up",
-        equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
-        image = R.drawable.push_up // FIXME
-    ),
-    Exercise(
-        name = "Wide arms push up",
-        equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.CHEST,
-        secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
-        image = R.drawable.push_up // FIXME
+        image = R.drawable.push_up,
+        variations = listOf(
+            "Wide arms",
+            "Inclined",
+            "Declined",
+            "Single-arm"
+        )
     ),
 
     // Machine chest
@@ -878,6 +855,15 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Dumbbell rear delt row",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = emptyList()
+    ),
+
+    // Other
+    Exercise(
+        name = "Can you hear the silence?",
+        equipment = Exercise.Equipment.EVERYTHING,
+        primaryMuscle = Exercise.Muscle.EVERYTHING,
+        image = R.drawable.gigachad,
         secondaryMuscles = emptyList()
     ),
 )

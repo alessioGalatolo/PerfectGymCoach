@@ -355,7 +355,7 @@ fun WorkoutRecap(
                                 .clip(RoundedCornerShape(12.dp))
                         )
                         Column(Modifier.padding(8.dp)) {
-                            Text(text = exercise.name, style = MaterialTheme.typography.titleLarge)
+                            Text(text = exercise.name + exercise.variation, style = MaterialTheme.typography.titleLarge)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text("Tare: ${exercise.tare}") // FIXME
                             Spacer(modifier = Modifier.height(4.dp))

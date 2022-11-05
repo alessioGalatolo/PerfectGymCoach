@@ -111,7 +111,7 @@ fun WorkoutCard(
             }
             Spacer(modifier = Modifier.height(4.dp))
             exercises.forEach {
-                Text(text = it.name,
+                Text(text = it.name + it.variation,
                     modifier = Modifier.padding(horizontal = 8.dp))
                 Text(text = buildAnnotatedString {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {

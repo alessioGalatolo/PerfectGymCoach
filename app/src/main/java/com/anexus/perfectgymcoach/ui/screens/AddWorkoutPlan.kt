@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -87,7 +88,7 @@ fun AddWorkoutPlan(navController: NavHostController,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
-                    imageVector = Icons.Filled.ContentPaste,
+                    imageVector = Icons.Outlined.ContentPaste,
                     contentDescription = "",
                     modifier = Modifier.size(160.dp)
                 )

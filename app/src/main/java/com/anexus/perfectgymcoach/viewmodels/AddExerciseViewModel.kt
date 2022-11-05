@@ -20,6 +20,7 @@ import javax.inject.Inject
 
 data class AddExerciseState(
     val exercise: Exercise? = null,
+    val variation: String = "No variation",  // FIXME: no hardcode, also used below
     val program: WorkoutProgram? = null,
     val workoutExerciseId: Long = 0,
     val sets: String = "5",
@@ -43,6 +44,8 @@ sealed class AddExerciseEvent{
     object TryAddExercise: AddExerciseEvent()
 
     data class UpdateNotes(val newNote: String): AddExerciseEvent()
+
+    data class UpdateVariation(val newVariation: String): AddExerciseEvent()
 
     data class UpdateSets(val newSets: String): AddExerciseEvent()
 
@@ -84,6 +87,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 state.value.repsArray.map { it.toInt() }
                             else
                                 List(state.value.sets.toInt()) { state.value.reps.toInt() },
+                            variation = if (state.value.variation == "No variation") "" else " (${state.value.variation.lowercase()})",
                             rest = state.value.rest.toInt(), //state.value.restArray.map { it.toInt() }[0], // FIXME: pass whole array
                             note = state.value.note
                         )
@@ -92,6 +96,9 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
             }
             is AddExerciseEvent.UpdateNotes -> {
                 _state.value = state.value.copy(note = event.newNote)
+            }
+            is AddExerciseEvent.UpdateVariation -> {
+                _state.value = state.value.copy(variation = event.newVariation)
             }
             is AddExerciseEvent.UpdateReps -> {
                 var repsArray = emptyList<String>()
