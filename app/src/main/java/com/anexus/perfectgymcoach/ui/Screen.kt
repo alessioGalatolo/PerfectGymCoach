@@ -28,6 +28,7 @@ sealed class MainScreen(override val route: String,
     object ExercisesByMuscle : MainScreen("exercises_by_muscle", R.string.exercises_by_muscle)
     object ViewExercises : MainScreen("view_exercises", R.string.view_exercises)
     object AddExerciseDialog : MainScreen("add_exercise_dialog", R.string.add_exercise_dialog)
+    object CreateExerciseDialog : MainScreen("create_exercise_dialog", R.string.create_exercise_dialog)
     object WorkoutRecap : MainScreen("workout_recap", R.string.workout_recap)
 }
 

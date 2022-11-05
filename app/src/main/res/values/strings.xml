@@ -32,4 +32,5 @@
     <string name="fill_every_field">Please fill every field correctly in order to save</string>
     <string name="empty_history">You currently don\'t have any workout records. Complete a workout to see it here!</string>
     <string name="no_analytics">This is where your analytics will be once you have completed more than one workout from the same program!</string>
+    <string name="create_exercise_dialog">Create exercise</string>
 </resources>

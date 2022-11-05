@@ -120,6 +120,8 @@ class Repository @Inject constructor(
 
     fun getExercise(exerciseId: Long) = db.exerciseDao.getExercise(exerciseId)
 
+    suspend fun addExercise(exercise: Exercise) = db.exerciseDao.insert(exercise)
+
 
     fun getCurrentPlan(): Flow<Long?> = context.dataStore.data.map{ it[currentPlan] }
 

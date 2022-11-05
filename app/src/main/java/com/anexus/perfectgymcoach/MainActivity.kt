@@ -142,6 +142,11 @@ class MainActivity : ComponentActivity() {
                             it.arguments?.getLong("workoutExerciseId") ?: 0L
                         )
                     }
+                    composable(MainScreen.CreateExerciseDialog.route) {
+                        CreateExerciseDialogue(
+                            navControllerMain
+                        )
+                    }
                     composable("${MainScreen.ChangePlan.route}/{openDialogNow}",
                         arguments = listOf(navArgument("openDialogNow") {
                             type = NavType.BoolType

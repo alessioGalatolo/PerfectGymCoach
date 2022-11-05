@@ -172,6 +172,7 @@ fun AddExerciseDialogue(
                                         expanded = expanded.value,
                                         onDismissRequest = { expanded.value = false },
                                     ) {
+                                        // TODO: add "add variation" to create a variation of the exercise
                                         viewModel.state.value.exercise!!.variations.plus("No variation")
                                             .forEach { selectionOption ->
                                                 DropdownMenuItem(

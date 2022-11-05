@@ -300,7 +300,9 @@ fun ViewExercises(
                         Button(
                             modifier = Modifier.align(Alignment.Center),
                             onClick = {
-                                TODO()
+                                navController.navigate(
+                                    "${MainScreen.CreateExerciseDialog.route}"
+                                )
                             }
                         ) {
                             Icon(Icons.Default.Add, null)
