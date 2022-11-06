@@ -91,7 +91,7 @@ fun FullScreenImageCard(
                         tonedColor,
                         FastOutLinearInEasing.transform(transition)
                     )}}
-                SmallTopAppBar(
+                TopAppBar(
                     title = {
                         // animate text alpha with scrolling
                         ProvideTextStyle(value = MaterialTheme.typography.titleLarge) {

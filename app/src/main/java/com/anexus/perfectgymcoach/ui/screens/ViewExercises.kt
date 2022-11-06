@@ -92,7 +92,7 @@ fun ViewExercises(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            SmallTopAppBar(
+            TopAppBar(
                 title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

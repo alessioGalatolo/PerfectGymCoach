@@ -72,7 +72,7 @@ fun AddExerciseDialogue(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            SmallTopAppBar(title = { Text(viewModel.state.value.exercise?.name ?: "") },
+            TopAppBar(title = { Text(viewModel.state.value.exercise?.name ?: "") },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = { navHostController.popBackStack() }) {
@@ -166,7 +166,7 @@ fun AddExerciseDialogue(
                                             }
                                         },
                                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth().menuAnchor()
                                     )
                                     ExposedDropdownMenu(
                                         expanded = expanded.value,
@@ -184,7 +184,8 @@ fun AddExerciseDialogue(
                                                             )
                                                         )
                                                         expanded.value = false
-                                                    }
+                                                    },
+                                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                                                 )
                                             }
                                     }
@@ -333,9 +334,6 @@ fun AddExerciseDialogue(
                                 }
                             }
                         }
-                        item {
-                            Spacer(Modifier.height(160.dp))
-                        }
                     }
                 }
             }
@@ -359,23 +357,23 @@ fun MyDropdownMenu(
     // the 3 variable below are used to make the keyboard appear after two taps on the textfield
     // meaning that on tap 1 we only show the dropdown menu and only on second tap we show the keyboard
     // FIXME: does not work anymore
-    var hasBeenFocused by rememberSaveable { mutableStateOf(true) }
-    var hasBeenFalse by rememberSaveable { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester.Default }
+//    var hasBeenFocused by rememberSaveable { mutableStateOf(true) }
+//    var hasBeenFalse by rememberSaveable { mutableStateOf(false) }
+//    val focusRequester = remember { FocusRequester.Default }
     ExposedDropdownMenuBox(
         expanded = expanded.value,
         onExpandedChange = {
             expanded.value = !expanded.value
-            hasBeenFocused = hasBeenFocused || expanded.value
-            if (!expanded.value) {
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            }
+//            hasBeenFocused = hasBeenFocused || expanded.value
+//            if (!expanded.value) {
+//                focusRequester.requestFocus()
+//                keyboardController?.show()
+//            }
 
         }
     ) {
         OutlinedTextField(
-            readOnly = !hasBeenFocused,
+//            readOnly = !hasBeenFocused,
             value = text,
             singleLine = true,
             onValueChange = onTextChange,
@@ -393,11 +391,12 @@ fun MyDropdownMenu(
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             modifier = Modifier
                 .widthIn(1.dp, Dp.Infinity)
-                .onGloballyPositioned {
-                    hasBeenFocused = false || (hasBeenFalse && hasBeenFocused)
-                    hasBeenFalse = true
-                }
-                .focusRequester(focusRequester)
+//                .onGloballyPositioned {
+//                    hasBeenFocused = false || (hasBeenFalse && hasBeenFocused)
+//                    hasBeenFalse = true
+//                }
+//                .focusRequester(focusRequester)
+                .menuAnchor()
         )
         // filter options based on text field value
 //        val filteringOptions = options.filter { it.contains(text, ignoreCase = true) }
@@ -412,7 +411,8 @@ fun MyDropdownMenu(
                         onClick = {
                             onTextChange(selectionOption)
                             expanded.value = false
-                        }
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                     )
                 }
             }

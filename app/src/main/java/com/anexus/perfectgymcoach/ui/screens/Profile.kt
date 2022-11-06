@@ -290,7 +290,8 @@ fun Profile(onNavigate: NavHostController,
                         value = viewModel.state.value.sex,
                         onValueChange = {},
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        colors = ExposedDropdownMenuDefaults.textFieldColors(containerColor = Color.Transparent)
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(containerColor = Color.Transparent),
+                        modifier = Modifier.menuAnchor()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -303,7 +304,8 @@ fun Profile(onNavigate: NavHostController,
                                     viewModel.onEvent(ProfileEvent.UpdateSex(selectionOption))
                                     expanded = false
                                     focusManager.clearFocus()
-                                }
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                             )
                         }
                     }

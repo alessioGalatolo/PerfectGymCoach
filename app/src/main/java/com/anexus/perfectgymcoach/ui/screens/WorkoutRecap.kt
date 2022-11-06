@@ -113,7 +113,7 @@ fun WorkoutRecap(
         viewModel.state.value.workoutRecord != null
     ){
         Scaffold(topBar = {
-            SmallTopAppBar (title = {
+            TopAppBar (title = {
                 Text("Workout recap")
             }, navigationIcon = {
                 IconButton(onClick = {

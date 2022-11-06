@@ -49,8 +49,8 @@ fun CreateExerciseDialogue(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            SmallTopAppBar(title = { Text("Create a new Exercise") },
-                scrollBehavior = scrollBehavior,
+            // FIXME: goes back a second time cause the list of exercises isn't updated
+            TopAppBar(title = { Text("Create a new Exercise") },
                 navigationIcon = {
                     IconButton(onClick = { navHostController.popBackStack() }) {
                         Icon(
@@ -75,7 +75,8 @@ fun CreateExerciseDialogue(
                     }, modifier = Modifier.align(CenterVertically)) {
                         Text(text = stringResource(R.string.save))
                     }
-                })
+                }, scrollBehavior = scrollBehavior
+            )
         }, content = { innerPadding ->
             LazyColumn(contentPadding = innerPadding,
                 modifier = Modifier
@@ -227,81 +228,4 @@ fun CreateExerciseDialogue(
             }
         }
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
-@Composable
-fun MyDropdownMenus(
-    prompt: String,
-    options: List<String>,
-    text: String,
-    onTextChange: (String) -> Unit,
-    expanded: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) },
-    keyboardType: KeyboardType = KeyboardType.Text,
-    trailingIcon: (@Composable () -> Unit)? = null
-){
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    // the 3 variable below are used to make the keyboard appear after two taps on the textfield
-    // meaning that on tap 1 we only show the dropdown menu and only on second tap we show the keyboard
-    var hasBeenFocused by rememberSaveable { mutableStateOf(true) }
-    var hasBeenFalse by rememberSaveable { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester.Default }
-    ExposedDropdownMenuBox(
-        expanded = expanded.value,
-        onExpandedChange = {
-            expanded.value = !expanded.value
-            hasBeenFocused = hasBeenFocused || expanded.value
-            if (!expanded.value) {
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            }
-
-        }
-    ) {
-        OutlinedTextField(
-//            enabled = !expanded.value,
-            readOnly = !hasBeenFocused,
-            value = text,
-            singleLine = true,
-            onValueChange = onTextChange,
-            label = { Text(prompt) },
-            trailingIcon = {
-                Row (verticalAlignment = Alignment.CenterVertically){
-                    trailingIcon?.invoke()
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
-                }
-            },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            keyboardActions = KeyboardActions(onDone = {
-                keyboardController?.hide()
-            }),
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            modifier = Modifier
-                .widthIn(1.dp, Dp.Infinity)
-                .onGloballyPositioned {
-                    hasBeenFocused = false || (hasBeenFalse && hasBeenFocused)
-                    hasBeenFalse = true
-                }
-                .focusRequester(focusRequester)
-        )
-        // filter options based on text field value
-//        val filteringOptions = options.filter { it.contains(text, ignoreCase = true) }
-        if (options.isNotEmpty()) {
-            ExposedDropdownMenu(
-                expanded = expanded.value,
-                onDismissRequest = { expanded.value = false },
-            ) {
-                options.forEach { selectionOption ->  // FIXME: not using filteringOptions
-                    DropdownMenuItem(
-                        text = { Text(selectionOption) },
-                        onClick = {
-                            onTextChange(selectionOption)
-                            expanded.value = false
-                        }
-                    )
-                }
-            }
-        }
-    }
 }

@@ -286,6 +286,7 @@ fun WorkoutFinishPage(
                     },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     colors = ExposedDropdownMenuDefaults.textFieldColors(containerColor = Color.Transparent),
+                    modifier = Modifier.menuAnchor()
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
@@ -304,7 +305,8 @@ fun WorkoutFinishPage(
                             onClick = {
                                 workoutIntensity.value = selectionOption
                                 expanded = false
-                            }
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                         )
                     }
                 }

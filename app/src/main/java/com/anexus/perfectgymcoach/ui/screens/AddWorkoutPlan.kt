@@ -52,7 +52,7 @@ fun AddWorkoutPlan(navController: NavHostController,
         snackbarHost = { SnackbarHost(snackbarHostState) }, // FIXME: should be padded (navbar)
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            SmallTopAppBar(
+            TopAppBar(
                 title = { Text(stringResource(R.string.manage_workout_plans)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

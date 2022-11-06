@@ -49,7 +49,7 @@ fun Home(navController: NavHostController,
          ) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-
+    // FIXME: sometimes when coming back from workout top bar icons wrong color
     var resumeWorkoutDialogOpen by remember {
         mutableStateOf(false)
     }
