@@ -128,7 +128,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                     ) {
                         Row {
                             Image(
-                                painter = painterResource(R.drawable.full_body),
+                                painter = painterResource(it.image),
                                 contentDescription = "Contact profile picture",
                                 modifier = Modifier
                                     // Set image size to 40 dp

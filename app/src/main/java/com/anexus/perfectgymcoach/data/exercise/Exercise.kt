@@ -21,16 +21,16 @@ data class Exercise(
     val variations: List<String> = emptyList()
 
 ) : Parcelable {
-    enum class Muscle (val muscleName: String){
-        EVERYTHING("See all"), // Used when filtering by muscle to get everything
-        ABS("Abs"),
-        BACK("Back"),
-        BICEPS("Biceps"),
-        CALVES("Calves"),
-        CHEST("Chest"),
-        LEGS("Legs"),
-        SHOULDERS("Shoulders"),
-        TRICEPS("Triceps")
+    enum class Muscle (val muscleName: String, val image: Int){
+        EVERYTHING("See all", R.drawable.full_body), // Used when filtering by muscle to get everything
+        ABS("Abs", R.drawable.abs),
+        BACK("Back", R.drawable.back),
+        BICEPS("Biceps", R.drawable.biceps),
+        CALVES("Calves", R.drawable.calves),
+        CHEST("Chest", R.drawable.chest),
+        LEGS("Legs", R.drawable.legs),
+        SHOULDERS("Shoulders", R.drawable.shoulders),
+        TRICEPS("Triceps", R.drawable.triceps)
     }
 
     // TODO: assumes international system (kg), add support for americans
