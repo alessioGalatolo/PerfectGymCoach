@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,12 +17,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -35,6 +41,7 @@ import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -48,8 +55,11 @@ fun Home(navController: NavHostController,
          viewModel: HomeViewModel = hiltViewModel()
          ) {
     val haptic = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    // FIXME: sometimes when coming back from workout top bar icons wrong color
+    val sysUiController = rememberSystemUiController()
+    val darkTheme = isSystemInDarkTheme()
+    LaunchedEffect(darkTheme) {
+        sysUiController.statusBarDarkContentEnabled = !darkTheme
+    }
     var resumeWorkoutDialogOpen by remember {
         mutableStateOf(false)
     }
@@ -170,44 +180,71 @@ fun Home(navController: NavHostController,
                             viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
                                 it.workoutExerciseId
                             } ?: emptyList()
-                        Text(
-                            text = it.name,
-                            modifier = Modifier.padding(8.dp),
-                            style = MaterialTheme.typography.titleLarge
-                        )
+                        Column(Modifier.weight(1.6f).fillMaxHeight()) {
+                            Text(
+                                text = it.name,
+                                modifier = Modifier.padding(8.dp),
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            exs.forEach { // TODO: mark supersets
+                                Text(text = it.name + it.variation,
+                                    modifier = Modifier.padding(horizontal = 8.dp))
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
                         if (exs.isNotEmpty()) {
-                            HorizontalPager(count = exs.size, state = pagerState,
-                                modifier = Modifier.width(150.dp)
-                                    .height(150.dp / 3 * 2)
-                                    .padding(8.dp)
-                                    .clip(AbsoluteRoundedCornerShape(12.dp))
-                            ) { page ->
-                                Box (Modifier.wrapContentSize()) {
-                                    AsyncImage(
-                                        model = exs[page].image,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .height(150.dp / 3 * 2)
-                                            .width(150.dp)
+                            Column (verticalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.weight(1f).fillMaxHeight()
+                            ){
+                                HorizontalPager(count = exs.size, state = pagerState,
+                                    modifier = Modifier.width(150.dp)
+                                        .height(150.dp / 3 * 2)
+                                        .padding(8.dp)
+                                        .clip(AbsoluteRoundedCornerShape(12.dp))
+                                        .align(Alignment.End)
+                                ) { page ->
+                                    Box (Modifier.wrapContentSize()) {
+                                        AsyncImage(
+                                            model = exs[page].image,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .height(150.dp / 3 * 2)
+                                                .width(150.dp)
+                                        )
+                                    }
+                                }
+                                // FIXME: should go to the bottom but does not
+                                Row (horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.Bottom,
+                                    modifier = Modifier.fillMaxWidth()
+                                ){
+                                    IconButton(
+                                        onClick = {
+                                            navController.navigate("${MainScreen.Workout.route}/" +
+                                                    "${it.programId}/${true}/${false}")
+                                        }) {
+                                        Icon(Icons.Default.RocketLaunch, null)
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            navController.navigate(
+                                                "${MainScreen.AddWorkoutExercise.route}/" +
+                                                        "${it.name}/" +
+                                                        "${it.programId}"
+                                            )
+                                        }) {
+                                        Icon(Icons.Outlined.Edit, null)
+                                    }
+                                }
+                                LaunchedEffect(viewModel.state.value.animationTick){
+                                    pagerState.animateScrollToPage(
+                                        (pagerState.currentPage + 1) %
+                                                pagerState.pageCount
                                     )
                                 }
                             }
-                            LaunchedEffect(viewModel.state.value.animationTick){
-                                pagerState.animateScrollToPage(
-                                    (pagerState.currentPage + 1) %
-                                            pagerState.pageCount
-                                )
-                            }
                         }
-                    }
-//                    Spacer(modifier = Modifier.height(4.dp))
-                    IconButton(modifier = Modifier.align(Alignment.End),
-                        onClick = {
-                            navController.navigate("${MainScreen.Workout.route}/" +
-                                    "${it.programId}/${true}/${false}")
-                        }) {
-                        Icon(Icons.Default.RocketLaunch, null)
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
