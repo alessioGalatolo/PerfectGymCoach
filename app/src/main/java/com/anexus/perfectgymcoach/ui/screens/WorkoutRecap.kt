@@ -62,7 +62,7 @@ fun WorkoutRecap(
     workoutId: Long,
     viewModel: RecapViewModel = hiltViewModel()
 ) {
-    viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
+    viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId)) // fixme: is not updated after direct completion (may have been fixed)
     val volumeDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     val calorieDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     InfoDialog(dialogueIsOpen = volumeDialogIsOpen.value,
@@ -254,7 +254,7 @@ fun WorkoutRecap(
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            "Calorie consumption: " +
+                                            "Calorie consumption: " + // split for easier translation
                                                     "${viewModel.state.value.workoutRecord!!.calories.toInt()} kcal"
                                         )
                                         Spacer(Modifier.width(8.dp))
@@ -283,7 +283,7 @@ fun WorkoutRecap(
                                         Spacer(Modifier.width(8.dp))
                                         Text(
                                             "Total volume: " +
-                                                    "${viewModel.state.value.workoutRecord!!.volume} kg"
+                                                    "%.2f kg".format(viewModel.state.value.workoutRecord!!.volume)
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     }

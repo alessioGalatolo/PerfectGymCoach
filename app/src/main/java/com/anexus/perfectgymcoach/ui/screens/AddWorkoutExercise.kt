@@ -162,7 +162,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         expanded = true
                                     },
-                                    onClick = {
+                                    onClick = {  // FIXME: sometimes when changing the exercise the navigation gets stuck
                                         navController.navigate(
                                             "${MainScreen.AddExerciseDialog.route}/" +
                                                     "${exercise.extProgramId}/" +

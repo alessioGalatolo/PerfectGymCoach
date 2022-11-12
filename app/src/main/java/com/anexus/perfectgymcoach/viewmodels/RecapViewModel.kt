@@ -5,13 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
-import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndInfo
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
-import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordAndName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,7 +29,8 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
     private val _state = mutableStateOf(RecapState())
     val state: State<RecapState> = _state
 
-    private var retrieveRecordJob: Job? = null
+    private var retrieveWorkoutRecordJob: Job? = null
+    private var retrieveRecordsJob: MutableList<Job> = mutableListOf()
 
 
     fun onEvent(event: RecapEvent){
@@ -40,33 +38,41 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
             is RecapEvent.SetWorkoutId -> {
                 if (event.workoutId != state.value.workoutId) {
                     _state.value = state.value.copy(workoutId = event.workoutId)
-                    retrieveRecordJob?.cancel()
-                    retrieveRecordJob = viewModelScope.launch {
-                        _state.value = state.value.copy(
-                            workoutRecord = repository.getWorkoutRecord(event.workoutId).first()
-                        )
-                        this.launch {
-                            repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{
-                                _state.value = state.value.copy(
-                                    olderRecords = it.filter { it1 -> it1.duration > 0 }
-                                        .sortedBy { it1 -> it1.startDate }
-                                )
+                    retrieveWorkoutRecordJob?.cancel()
+                    retrieveWorkoutRecordJob = viewModelScope.launch {
+                        repository.getWorkoutRecord(event.workoutId).collect{ workoutRecord ->
+                            _state.value = state.value.copy(
+                                workoutRecord = workoutRecord
+                            )
+                            for (job in retrieveRecordsJob) {
+                                job.cancel()
                             }
+                            retrieveRecordsJob = mutableListOf()
+                            retrieveRecordsJob.add(this.launch {
+                                repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{
+                                    _state.value = state.value.copy(
+                                        olderRecords = it.filter { it1 -> it1.duration > 0 }
+                                            .sortedBy { it1 -> it1.startDate }
+                                    )
+                                }
+                            })
+                            retrieveRecordsJob.add(this.launch {
+                                repository.getWorkoutRecord(event.workoutId).collect {
+                                    _state.value = state.value.copy(
+                                        workoutRecord = it
+                                    )
+                                }
+                            })
+                            retrieveRecordsJob.add(this.launch {
+                                repository.getWorkoutExerciseRecordsAndInfo(event.workoutId).collect{
+                                    _state.value = state.value.copy(
+                                        exerciseRecords = it.distinct().sortedBy { it1 -> it1.exerciseInWorkout }
+                                    )
+                                }
+                            })
                         }
-                        this.launch {
-                            repository.getWorkoutRecord(event.workoutId).collect {
-                                _state.value = state.value.copy(
-                                    workoutRecord = it
-                                )
-                            }
-                        }
-                        this.launch {
-                            repository.getWorkoutExerciseRecordsAndInfo(event.workoutId).collect{
-                                _state.value = state.value.copy(
-                                    exerciseRecords = it.distinct().sortedBy { it1 -> it1.exerciseInWorkout }
-                                )
-                            }
-                        }
+
+
                     }
                 }
             }

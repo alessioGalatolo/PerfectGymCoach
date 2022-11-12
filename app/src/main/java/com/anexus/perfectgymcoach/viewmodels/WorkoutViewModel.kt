@@ -23,19 +23,20 @@ import kotlin.math.max
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
+    val programId: Long = 0L,
     val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecord>> = emptyMap(), // old records
     val workoutTime: Long? = null, // in seconds
     val restTimestamp: Long? = null, // workout time of end of rest
-    val workoutId: Long = 0,
+    val workoutId: Long = 0L,
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
     val weightBottomBar: String = "0.0" // weight to be displayed in bottom bar
 )
 
 sealed class WorkoutEvent{
-    data class StartWorkout(val programId: Long): WorkoutEvent()
+    object StartWorkout: WorkoutEvent()
 
-    data class FinishWorkout(val programId: Long, val workoutIntensity: WorkoutRecord.WorkoutIntensity): WorkoutEvent()
+    data class FinishWorkout(val workoutIntensity: WorkoutRecord.WorkoutIntensity): WorkoutEvent()
 
     object ResumeWorkout: WorkoutEvent()
 
@@ -78,6 +79,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.GetWorkoutExercises -> {
                 if (state.value.workoutExercisesAndInfo.isEmpty()) { // only retrieve once
+                    _state.value = state.value.copy(programId = event.programId)
                     viewModelScope.launch {
                         _state.value = state.value.copy(
                             workoutExercisesAndInfo = repository.getWorkoutExercisesAndInfo(event.programId).first()
@@ -99,7 +101,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(workoutTime = 0)
                 viewModelScope.launch {
                     val workoutId = repository.addWorkoutRecord(WorkoutRecord(
-                        extProgramId = event.programId,
+                        extProgramId = state.value.programId,
                         startDate = Calendar.getInstance()
                     ))
                     _state.value = state.value.copy(workoutId = workoutId)
@@ -159,7 +161,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         )
                     )
                     val planPrograms = repository.getPlanMapPrograms().first().entries.find {
-                        it.value.find { it1 -> it1.programId == event.programId } != null
+                        it.value.find { it1 -> it1.programId == state.value.programId } != null
                     }!!
 
                     repository.updateCurrentPlan(WorkoutPlanUpdateProgram(

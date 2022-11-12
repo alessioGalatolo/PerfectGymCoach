@@ -67,7 +67,7 @@ fun Workout(navController: NavHostController, programId: Long,
         scope.launch {
             awaitFrame()  // FIXME: not the proper way of doing this (needs to wait for first collection)
             awaitFrame()
-            viewModel.onEvent(WorkoutEvent.StartWorkout(programId))
+            viewModel.onEvent(WorkoutEvent.StartWorkout)
             startWorkout.value = false
         }
     }
@@ -161,7 +161,7 @@ fun Workout(navController: NavHostController, programId: Long,
     val workoutIntensity = rememberSaveable { mutableStateOf(WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY) }
 
     val completeWorkout: () -> Unit = {
-        viewModel.onEvent(WorkoutEvent.FinishWorkout(programId, workoutIntensity.value))
+        viewModel.onEvent(WorkoutEvent.FinishWorkout(workoutIntensity.value))
         navController.popBackStack()
         navController.navigate("${MainScreen.WorkoutRecap.route}/${viewModel.state.value.workoutId}")
     }
@@ -282,7 +282,7 @@ fun Workout(navController: NavHostController, programId: Long,
                         WorkoutBottomBar(
                             contentPadding = padding,
                             workoutStarted = viewModel.state.value.workoutTime == null,
-                            startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout(programId)) },
+                            startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
                             currentExercise = currentExercise,
                             completeWorkout = completeWorkout,
                             completeSet = {
@@ -366,7 +366,7 @@ fun Workout(navController: NavHostController, programId: Long,
             LargeFloatingActionButton(onClick = { navController.navigate(
                 "${MainScreen.ExercisesByMuscle.route}/" +
                         "Current workout/" +
-                        "$programId" +
+                        "$programId/" +
                         "${false}"
             ) }, Modifier.navigationBarsPadding()) {
                 Icon(Icons.Default.Add, null,

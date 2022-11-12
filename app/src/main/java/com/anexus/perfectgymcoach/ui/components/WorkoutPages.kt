@@ -15,9 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
@@ -103,11 +106,22 @@ fun ExercisePage(
                 WorkoutFinishPage(workoutTime!!, workoutIntensity)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
+                    if (workoutExercisesAndInfo[page].note.isNotBlank()) {
+                        Text(text = buildAnnotatedString {
+                                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                    append("Note: ")
+                                }
+                                append(workoutExercisesAndInfo[page].note)
+                            }, modifier = Modifier.align(CenterHorizontally))
+                    }
                     // content
                     if (restCounter != null){
                         Text("Time before next set: ", Modifier.align(CenterHorizontally))
                         Text("$restCounter", Modifier.align(CenterHorizontally),
                             style = MaterialTheme.typography.headlineMedium)
+                        if (restCounter == 1L || restCounter == 2L || restCounter == 3L) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {

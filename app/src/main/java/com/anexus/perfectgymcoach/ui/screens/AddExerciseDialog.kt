@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -63,7 +64,7 @@ fun AddExerciseDialogue(
     val snackbarHostState = remember { SnackbarHostState() }
     if (exerciseId != 0L)
         viewModel.onEvent(AddExerciseEvent.GetProgramAndExercise(programId, exerciseId))
-    if (workoutExerciseId != 0L)
+    if (workoutExerciseId != 0L)  // FIXME: sometimes the reps/rest counter doesn't follow the exercise
         viewModel.onEvent(AddExerciseEvent.GetProgramAndWorkoutExercise(programId, workoutExerciseId))
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -127,6 +128,7 @@ fun AddExerciseDialogue(
                             value = viewModel.state.value.note,
                             onValueChange = { viewModel.onEvent(AddExerciseEvent.UpdateNotes(it)) },
                             label = { Text("Notes (optional)") },
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)

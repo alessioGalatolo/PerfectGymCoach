@@ -65,7 +65,6 @@ fun Home(navController: NavHostController,
     LaunchedEffect(viewModel.state.value.currentWorkout){
         delay(1000)  // FIXME: done in order to avoid double dialog showing
         resumeWorkoutDialogOpen = viewModel.state.value.currentWorkout != null
-
     }
 
 
@@ -194,10 +193,9 @@ fun Home(navController: NavHostController,
                                     )
                                 }
                             }
-
-                            scope.launch {
+                            LaunchedEffect(viewModel.state.value.animationTick){
                                 pagerState.animateScrollToPage(
-                                    (pagerState.currentPage + viewModel.state.value.animationTick) %
+                                    (pagerState.currentPage + 1) %
                                             pagerState.pageCount
                                 )
                             }

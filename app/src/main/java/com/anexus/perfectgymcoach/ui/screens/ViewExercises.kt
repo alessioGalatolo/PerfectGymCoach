@@ -301,7 +301,7 @@ fun ViewExercises(
                             modifier = Modifier.align(Alignment.Center),
                             onClick = {
                                 navController.navigate(
-                                    "${MainScreen.CreateExerciseDialog.route}"
+                                    MainScreen.CreateExerciseDialog.route
                                 )
                             }
                         ) {
