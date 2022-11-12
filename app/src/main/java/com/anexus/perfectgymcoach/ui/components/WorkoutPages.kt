@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
+import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
@@ -46,7 +48,8 @@ fun ExercisePage(
     currentExerciseRecords: List<ExerciseRecord>,
     ongoingRecord: ExerciseRecord?,
     restCounter: Long?,
-    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>
+    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
+    updateValues: (Int, Float, Int, Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -156,15 +159,25 @@ fun ExercisePage(
                                     repsInRow = ongoingRecord.reps[setCount].toString()
                                     weightInRow = ongoingRecord.weights[setCount].toString()
                                 }
+                                var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
+                                ChangeRepsWeightDialog(
+                                    dialogIsOpen,
+                                    { dialogIsOpen = !dialogIsOpen },
+                                    repsInRow,
+                                    weightInRow,
+                                    { reps, weight -> updateValues(reps, weight, page, setCount) }
+                                )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .combinedClickable(onLongClick = {
-                                            haptic.performHapticFeedback(
-                                                HapticFeedbackType.LongPress
-                                            )
-                                            // TODO: open dialogue to modify
+                                            if (!toBeDone) {
+                                                haptic.performHapticFeedback(
+                                                    HapticFeedbackType.LongPress
+                                                )
+                                                dialogIsOpen = true
+                                            }
                                         }, onClick = {
                                             haptic.performHapticFeedback(
                                                 HapticFeedbackType.TextHandleMove // FIXME: not right haptic
@@ -173,19 +186,13 @@ fun ExercisePage(
                                                 repsInRow.toInt(),
                                                 weightInRow.toFloatOrNull() ?: 0f
                                             )
-//                                            if (!toBeDone) {
-//                                                // TODO: allow to modify
-//                                            } else {
-//                                                // TODO: change bottom bar
-//                                            }
                                         })
                                 ) {
                                     FilledIconToggleButton(
                                         enabled = toBeDone,
-                                        checked = setsDone.value == setCount, // FIXME: should check other value
-                                        onCheckedChange = {
-//                                                        checkedNumberReps = setCount // FIXME
-                                        }) {
+                                        checked = setsDone.value == setCount,
+                                        onCheckedChange = {}
+                                    ) {
                                         Text((setCount + 1).toString())
                                     }
                                     Spacer(Modifier.width(8.dp))
@@ -224,10 +231,7 @@ fun ExercisePage(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .combinedClickable(onLongClick = {
-                                                haptic.performHapticFeedback(
-                                                    HapticFeedbackType.LongPress
-                                                )
-                                                // TODO: maybe nothing
+
                                             }, onClick = {
                                                 updateBottomBar(rep, record.weights[index])
                                             })

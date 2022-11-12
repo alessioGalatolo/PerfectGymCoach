@@ -59,6 +59,13 @@ sealed class WorkoutEvent{
 
     data class UpdateWeight(val newValue: String): WorkoutEvent()
 
+    data class EditSetRecord(
+        val reps: Int,
+        val weight: Float,
+        val exerciseInWorkout: Int,
+        val set: Int
+    ): WorkoutEvent()
+
 }
 
 @HiltViewModel
@@ -212,6 +219,28 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     }
                 }
 
+            }
+            is WorkoutEvent.EditSetRecord -> {
+                viewModelScope.launch {
+                    val record = state.value.allRecords[
+                            state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId
+                    ]?.find {
+                        it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
+                    }  // FIXME: same find is repeated elsewhere
+
+                    if (record == null) {
+                        // There is a problem
+                    } else {
+                        val reps = record.reps.toMutableList()
+                        val weights = record.weights.toMutableList()
+                        reps[event.set] = event.reps
+                        weights[event.set] = event.weight
+                        repository.addExerciseRecord(record.copy(
+                            reps = reps,
+                            weights = weights
+                        ))
+                    }
+                }
             }
         }
         return true

@@ -1,5 +1,7 @@
 package com.anexus.perfectgymcoach.ui.components
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -14,6 +16,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.android.awaitFrame
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
@@ -185,6 +188,63 @@ fun InfoDialog(dialogueIsOpen: Boolean, toggleDialogue: () -> Unit, infoText: @C
                     }
                 ) {
                     Text("Ok")
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChangeRepsWeightDialog(
+    dialogueIsOpen: Boolean,
+    toggleDialogue: () -> Unit,
+    initialReps: String,
+    initialWeight: String,
+    updateValues: (Int, Float) -> Unit
+) {
+    if (dialogueIsOpen) {
+        var reps by rememberSaveable { mutableStateOf(initialReps) }
+        var weight by rememberSaveable { mutableStateOf(initialWeight) }
+        AlertDialog(
+            onDismissRequest = {
+                toggleDialogue()
+            },
+            title = { Text("Change reps/weight value") },
+            text = {
+                Column(Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = reps,
+                        onValueChange = {reps = it},
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = { Text("New reps value") }
+                    )
+                    OutlinedTextField(
+                        value = weight,
+                        onValueChange = {weight = it},
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = { Text("New weight value") }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { toggleDialogue() }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = reps.toIntOrNull() != null && weight.toIntOrNull() != null,
+                    onClick = {
+                        toggleDialogue()
+                        updateValues(reps.toInt(), weight.toFloat())
+                    }
+                ) {
+                    Text("Update values")
                 }
             }
         )
