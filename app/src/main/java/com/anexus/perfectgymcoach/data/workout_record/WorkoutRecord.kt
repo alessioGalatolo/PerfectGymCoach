@@ -28,7 +28,7 @@ data class WorkoutRecord(
     val calories: Float = 0f // MET value * weight_kg / 60 * n_minutes // MET value 3-6 based on intensity
 ) : Parcelable {
     enum class WorkoutIntensity(val description: String, val metValue: Float) {
-        HIGH_INTENSITY("High intensity (...)", 6f),
+        HIGH_INTENSITY("High intensity (...)", 6f),  // TODO: add description
         NORMAL_INTENSITY("Normal intensity (...)", 4.5f),
         LOW_INTENSITY("Low intensity (...)", 3f)
     }

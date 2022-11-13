@@ -5,18 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
-import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
-import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
-import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
-import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
-import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
 data class ProfileState(

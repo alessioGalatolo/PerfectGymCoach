@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import kotlinx.coroutines.flow.Flow
 
 @Dao

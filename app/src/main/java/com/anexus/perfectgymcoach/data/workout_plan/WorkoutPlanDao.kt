@@ -1,7 +1,6 @@
 package com.anexus.perfectgymcoach.data.workout_plan
 
 import androidx.room.*
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import kotlinx.coroutines.flow.Flow
 

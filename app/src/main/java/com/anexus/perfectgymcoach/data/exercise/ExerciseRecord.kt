@@ -24,7 +24,7 @@ import java.util.*
         )
     ]
 )
-data class ExerciseRecord( // FIXME: blends in different variation of the exercise
+data class ExerciseRecord( // FIXME: blends in different variation of the exercise in the records
     @PrimaryKey(autoGenerate = true) val recordId: Long = 0L,
     val extExerciseId: Long,
     val extWorkoutId: Long,
@@ -44,9 +44,9 @@ data class ExerciseRecordAndInfo(
     val date: Calendar, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
+    val tare: Float = 0f, // e.g. barbell weight or bodyweight
     val name: String,
     val variation: String,
     val rest: Int,
-    val image: Int,
-    val tare: Float = 0f // e.g. barbell weight or bodyweight
+    val image: Int
 ) : Parcelable
