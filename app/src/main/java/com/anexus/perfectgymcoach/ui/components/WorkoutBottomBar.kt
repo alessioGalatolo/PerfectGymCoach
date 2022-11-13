@@ -7,24 +7,19 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
-import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
-import kotlinx.coroutines.launch
+import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 
 @Composable
 fun WorkoutBottomBar(
     contentPadding: PaddingValues,
     workoutStarted: Boolean,
     startWorkout: () -> Unit,
-    currentExercise: WorkoutExerciseAndInfo?,
+    currentExercise: ProgramExerciseAndInfo?,
     completeWorkout: () -> Unit,
     completeSet: () -> Unit,
     setsFinished: Boolean,

@@ -46,10 +46,10 @@ class Repository @Inject constructor(
         db.workoutPlanDao.updateCurrentProgram(workoutPlanUpdateProgram)
 
 
-    fun getProgramsMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> =
+    fun getProgramsMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<ProgramExercise>>> =
         db.workoutProgramDao.getProgramsMapExercises(planId)
 
-    fun getProgramMapExercises(programId: Long): Flow<Map<WorkoutProgram, List<WorkoutExercise>>> =
+    fun getProgramMapExercises(programId: Long): Flow<Map<WorkoutProgram, List<ProgramExercise>>> =
         db.workoutProgramDao.getProgramMapExercises(programId)
 
     fun getPrograms(planId: Long) = db.workoutProgramDao.getPrograms(planId)
@@ -62,37 +62,41 @@ class Repository @Inject constructor(
     suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) =
         db.workoutProgramDao.updateOrder(workoutProgramReorder)
 
+    // FIXME: should check that the 'plan.currentProgram' is updated as well
     suspend fun deleteProgram(programId: Long) = db.workoutProgramDao.delete(programId)
 
 
-    fun getWorkoutExercisesAndInfo(programId: Long): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programId)
+    fun getProgramExercisesAndInfo(programId: Long): Flow<List<ProgramExerciseAndInfo>> =
+        db.programExerciseDao.getExercisesAndInfo(programId)
 
-    fun getWorkoutExercisesAndInfo(programIds: List<Long>): Flow<List<WorkoutExerciseAndInfo>> = db.workoutExerciseDao.getExercisesAndInfo(programIds)
+    fun getProgramExercisesAndInfo(programIds: List<Long>): Flow<List<ProgramExerciseAndInfo>> =
+        db.programExerciseDao.getExercisesAndInfo(programIds)
 
-    fun getWorkoutExercises(programId: Long) = db.workoutExerciseDao.getExercises(programId)
+    fun getProgramExercises(programId: Long) = db.programExerciseDao.getExercises(programId)
 
-    fun getWorkoutExercise(workoutExerciseId: Long) = db.workoutExerciseDao.getWorkoutExercise(workoutExerciseId)
+    fun getProgramExercise(programExerciseId: Long) = db.programExerciseDao.getProgramExercise(programExerciseId)
 
-    suspend fun addWorkoutExercise(exercise: WorkoutExercise) = db.workoutExerciseDao.insert(exercise)
+    suspend fun addProgramExercise(exercise: ProgramExercise) = db.programExerciseDao.insert(exercise)
 
-    suspend fun reorderWorkoutExercises(workoutExerciseReorders: List<WorkoutExerciseReorder>) =
-        db.workoutExerciseDao.updateOrder(workoutExerciseReorders)
+    suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =
+        db.programExerciseDao.updateOrder(programExerciseReorders)
 
-    suspend fun deleteWorkoutExercise(workoutExerciseId: Long) = db.workoutExerciseDao.delete(workoutExerciseId)
+    suspend fun deleteProgramExercise(workoutExerciseId: Long) = db.programExerciseDao.delete(workoutExerciseId)
 
     suspend fun updateExerciseSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>) =
-        db.workoutExerciseDao.updateSuperset(updateExerciseSupersets)
+        db.programExerciseDao.updateSuperset(updateExerciseSupersets)
 
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
+
+    fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
 
     fun getWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.getByWorkout(workoutId)
 
     suspend fun deleteWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.deleteByWorkout(workoutId)
 
+    // FIXME: bad name
     fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) = db.exerciseRecordDao.getByWorkoutWithInfo(workoutId)
-
-    fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
 
     suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
 

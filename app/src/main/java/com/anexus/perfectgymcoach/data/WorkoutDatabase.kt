@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
     [
         WorkoutPlan::class,
         WorkoutProgram::class,
-        WorkoutExercise::class,
+        ProgramExercise::class,
         ExerciseRecord::class,
         WorkoutRecord::class,
         Exercise::class
@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 abstract class WorkoutDatabase: RoomDatabase() {
     abstract val workoutPlanDao: WorkoutPlanDao
     abstract val workoutProgramDao: WorkoutProgramDao
-    abstract val workoutExerciseDao: WorkoutExerciseDao
+    abstract val programExerciseDao: ProgramExerciseDao
     abstract val exerciseRecordDao: ExerciseRecordDao
     abstract val workoutRecordDao: WorkoutRecordDao
     abstract val exerciseDao: ExerciseDao

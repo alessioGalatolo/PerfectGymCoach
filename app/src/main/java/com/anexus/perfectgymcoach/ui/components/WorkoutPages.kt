@@ -25,9 +25,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
-import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
@@ -40,7 +39,7 @@ import kotlin.math.min
 fun ExercisePage(
     pagerState: PagerState,
     workoutTime: Long?,
-    workoutExercisesAndInfo: List<WorkoutExerciseAndInfo>,
+    workoutExercisesAndInfo: List<ProgramExerciseAndInfo>,
     setsDone: State<Int>,
     title: @Composable () -> Unit,
     addSet: () -> Unit,

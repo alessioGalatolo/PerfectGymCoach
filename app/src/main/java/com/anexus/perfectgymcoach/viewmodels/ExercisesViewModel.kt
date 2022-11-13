@@ -13,14 +13,14 @@ import javax.inject.Inject
 
 
 data class ExercisesState(
-    val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
+    val workoutExercisesAndInfo: List<ProgramExerciseAndInfo> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
     val exercisesFilterEquip: List<Exercise>? = null,
     val exercisesToDisplay: List<Exercise>? = null,
 )
 
 sealed class ExercisesEvent{
-    data class ReorderExercises(val workoutExerciseReorders: List<WorkoutExerciseReorder>): ExercisesEvent()
+    data class ReorderExercises(val programExerciseReorders: List<ProgramExerciseReorder>): ExercisesEvent()
 
     data class DeleteExercise(val workoutExerciseId: Long): ExercisesEvent()
 
@@ -28,7 +28,7 @@ sealed class ExercisesEvent{
 
     data class GetExercises(val muscle: Exercise.Muscle): ExercisesEvent()
 
-    data class AddWorkoutExercise(val workoutExercise: WorkoutExercise): ExercisesEvent()
+    data class AddWorkoutExercise(val programExercise: ProgramExercise): ExercisesEvent()
 
     data class FilterExercise(val query: String): ExercisesEvent()
 
@@ -52,13 +52,13 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
         when (event) {
             is ExercisesEvent.AddWorkoutExercise -> {
                 viewModelScope.launch {
-                    repository.addWorkoutExercise(event.workoutExercise)
+                    repository.addProgramExercise(event.programExercise)
                 }
             }
             is ExercisesEvent.GetWorkoutExercises -> {
                 getWorkoutExercisesJob?.cancel()
                 getWorkoutExercisesJob = viewModelScope.launch {
-                    repository.getWorkoutExercisesAndInfo(event.programId).collect {
+                    repository.getProgramExercisesAndInfo(event.programId).collect {
                         _state.value = state.value.copy(
                             workoutExercisesAndInfo = it.sortedBy { it2 -> it2.orderInProgram }
                         )
@@ -100,12 +100,12 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             is ExercisesEvent.ReorderExercises -> {
                 // TODO: check that doesn't break supersets (probably does)
                 viewModelScope.launch {
-                    repository.reorderWorkoutExercises(event.workoutExerciseReorders)
+                    repository.reorderProgramExercises(event.programExerciseReorders)
                 }
             }
             is ExercisesEvent.DeleteExercise -> {
                 viewModelScope.launch {
-                    repository.deleteWorkoutExercise(event.workoutExerciseId)
+                    repository.deleteProgramExercise(event.workoutExerciseId)
                 }
             }
             is ExercisesEvent.UpdateSuperset -> {
@@ -114,38 +114,38 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 val exercisesToUpdate = mutableListOf<UpdateExerciseSuperset>()
                 if (exercise1.supersetExercise != null){
                     val otherExercise = state.value.workoutExercisesAndInfo.find {
-                        it.workoutExerciseId == exercise1.supersetExercise
+                        it.programExerciseId == exercise1.supersetExercise
                     }
                     if (otherExercise != null)
                         exercisesToUpdate.add(
                             UpdateExerciseSuperset(
-                                otherExercise.workoutExerciseId,
+                                otherExercise.programExerciseId,
                                 null
                             )
                         )
                 }
                 if (exercise2.supersetExercise != null){
                     val otherExercise = state.value.workoutExercisesAndInfo.find {
-                        it.workoutExerciseId == exercise2.supersetExercise
+                        it.programExerciseId == exercise2.supersetExercise
                     }
                     if (otherExercise != null)
                         exercisesToUpdate.add(
                             UpdateExerciseSuperset(
-                                otherExercise.workoutExerciseId,
+                                otherExercise.programExerciseId,
                                 null
                             )
                         )
                 }
                 exercisesToUpdate.add(
                     UpdateExerciseSuperset(
-                        exercise1.workoutExerciseId,
-                        if (exercise1.supersetExercise != exercise2.workoutExerciseId) exercise2.workoutExerciseId else null
+                        exercise1.programExerciseId,
+                        if (exercise1.supersetExercise != exercise2.programExerciseId) exercise2.programExerciseId else null
                     )
                 )
                 exercisesToUpdate.add(
                     UpdateExerciseSuperset(
-                        exercise2.workoutExerciseId,
-                        if (exercise2.supersetExercise != exercise1.workoutExerciseId) exercise1.workoutExerciseId else null
+                        exercise2.programExerciseId,
+                        if (exercise2.supersetExercise != exercise1.programExerciseId) exercise1.programExerciseId else null
                     )
                 )
                 viewModelScope.launch {

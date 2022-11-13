@@ -4,14 +4,11 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.data.exercise.ProgramExercise
 import com.anexus.perfectgymcoach.data.Repository
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okhttp3.internal.toImmutableList
@@ -76,9 +73,9 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     return false
 
                 viewModelScope.launch {
-                    repository.addWorkoutExercise(
-                        WorkoutExercise(
-                            workoutExerciseId = state.value.workoutExerciseId,
+                    repository.addProgramExercise(
+                        ProgramExercise(
+                            programExerciseId = state.value.workoutExerciseId,
                             extProgramId = state.value.program!!.programId,
                             extExerciseId = state.value.exercise!!.exerciseId,
                             orderInProgram = state.value.exerciseNumber,
@@ -213,9 +210,9 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         val programMapExercises =
                             repository.getProgramMapExercises(event.programId).first()
 
-                        val ex = repository.getWorkoutExercise(event.workoutExerciseId).first()
+                        val ex = repository.getProgramExercise(event.workoutExerciseId).first()
                         _state.value = state.value.copy(
-                            workoutExerciseId = ex.workoutExerciseId,
+                            workoutExerciseId = ex.programExerciseId,
                             sets = ex.reps.size.toString(),
                             reps = "${ex.reps[0]}",
                             rest = "${ex.rest}", // fixme when rest becomes an array
@@ -225,7 +222,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                             advancedSets = ex.reps.distinct().size > 1,
                             program = programMapExercises.keys.first(),
                             exerciseNumber = programMapExercises.values.first().find {
-                                it.workoutExerciseId == ex.workoutExerciseId
+                                it.programExerciseId == ex.programExerciseId
                             }!!.orderInProgram
                         )
                     }

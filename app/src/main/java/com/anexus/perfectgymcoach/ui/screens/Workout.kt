@@ -32,7 +32,7 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.*
@@ -79,7 +79,7 @@ fun Workout(navController: NavHostController, programId: Long,
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) }
     )
     val pagerState = rememberPagerState()
-    val currentExercise: WorkoutExerciseAndInfo? by remember {
+    val currentExercise: ProgramExerciseAndInfo? by remember {
         derivedStateOf {
             if (pagerState.currentPage < viewModel.state.value.workoutExercisesAndInfo.size) {
                 viewModel.state.value.workoutExercisesAndInfo[pagerState.currentPage]
@@ -300,7 +300,7 @@ fun Workout(navController: NavHostController, programId: Long,
                                 } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
                                     val superExercise =
                                         viewModel.state.value.workoutExercisesAndInfo.find {
-                                            it.workoutExerciseId == currentExercise!!.supersetExercise
+                                            it.programExerciseId == currentExercise!!.supersetExercise
                                         }
                                     if (superExercise != null) {
                                         if (viewModel.state.value.workoutExercisesAndInfo.indexOf(

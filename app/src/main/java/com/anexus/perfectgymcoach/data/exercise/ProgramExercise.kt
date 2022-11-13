@@ -24,15 +24,15 @@ import kotlinx.parcelize.Parcelize
             onDelete = CASCADE
         ),
         ForeignKey(
-            entity = WorkoutExercise::class,
-            parentColumns = ["workoutExerciseId"],
+            entity = ProgramExercise::class,
+            parentColumns = ["programExerciseId"],
             childColumns = ["supersetExercise"],
             onDelete = ForeignKey.SET_DEFAULT
         )
     ]
 )
-data class WorkoutExercise (
-    @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
+data class ProgramExercise (
+    @PrimaryKey(autoGenerate = true) val programExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
     val orderInProgram: Int,
@@ -44,20 +44,20 @@ data class WorkoutExercise (
 ) : Parcelable
 
 @Parcelize
-data class WorkoutExerciseReorder (
-    val workoutExerciseId: Long,
+data class ProgramExerciseReorder (
+    val programExerciseId: Long,
     val orderInProgram: Int,
 ) : Parcelable
 
 @Parcelize
 data class UpdateExerciseSuperset(
-    val workoutExerciseId: Long,
+    val programExerciseId: Long,
     val supersetExercise: Long?,
 ) : Parcelable
 
 @Parcelize
-data class WorkoutExerciseAndInfo (
-    @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
+data class ProgramExerciseAndInfo (
+    @PrimaryKey(autoGenerate = true) val programExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
     val orderInProgram: Int,

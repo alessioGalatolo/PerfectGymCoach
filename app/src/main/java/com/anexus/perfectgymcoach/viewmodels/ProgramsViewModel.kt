@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 data class ProgramsState(
     val programs: List<WorkoutProgram> = emptyList(),
-    val exercisesAndInfo: Map<Long, List<WorkoutExerciseAndInfo>> = emptyMap(),
+    val exercisesAndInfo: Map<Long, List<ProgramExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialog: Boolean = false,
     val openChangeNameDialog: Boolean = false,
     val programToBeChanged: Long = 0
@@ -58,7 +58,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                         )
                         getWorkoutExercisesJob?.cancel()
                         getWorkoutExercisesJob = this.launch {
-                            repository.getWorkoutExercisesAndInfo(it.map { prg -> prg.programId }).collect{ exList ->
+                            repository.getProgramExercisesAndInfo(it.map { prg -> prg.programId }).collect{ exList ->
                                 _state.value = state.value.copy(
                                     exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }  // FIXME: should sort each list
                                 )

@@ -5,29 +5,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -130,7 +121,7 @@ fun Home(navController: NavHostController,
             val currentProgram = viewModel.state.value.programs!![viewModel.state.value.currentProgram!!]
             val currentExercises =
                 viewModel.state.value.exercisesAndInfo[currentProgram.programId]?.sortedBy {
-                    it.workoutExerciseId
+                    it.programExerciseId
                 } ?: emptyList()
             item {
                 // Coming next
@@ -177,7 +168,7 @@ fun Home(navController: NavHostController,
                         val pagerState = rememberPagerState()
                         val exs =
                             viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
-                                it.workoutExerciseId
+                                it.programExerciseId
                             } ?: emptyList()
                         Column(Modifier.weight(1.6f).fillMaxHeight()) {
                             Text(

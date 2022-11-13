@@ -5,11 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -20,7 +19,7 @@ data class HomeState(
     val currentPlan: Long? = 0,
     val currentProgram: Int? = null,
     val programs: List<WorkoutProgram>? = null,
-    val exercisesAndInfo: Map<Long, List<WorkoutExerciseAndInfo>> = emptyMap(),
+    val exercisesAndInfo: Map<Long, List<ProgramExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialogue: Boolean = false,
     val currentWorkout: Long? = null,
     val animationTick: Int = 0
@@ -59,7 +58,7 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
                             )
                             getWorkoutExercisesJob?.cancel()
                             getWorkoutExercisesJob = this.launch {
-                                repository.getWorkoutExercisesAndInfo(it.map { prg -> prg.programId })
+                                repository.getProgramExercisesAndInfo(it.map { prg -> prg.programId })
                                     .collect { exList ->
                                         _state.value = state.value.copy(
                                             exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }

@@ -41,7 +41,7 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseReorder
+import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseReorder
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
@@ -109,7 +109,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                     contentPadding = innerPadding
                 ) {
                     itemsIndexed(items = viewModel.state.value.workoutExercisesAndInfo,
-                        key = { _, it -> it.workoutExerciseId }) { index, exercise ->
+                        key = { _, it -> it.programExerciseId }) { index, exercise ->
                         val brightImage = remember { mutableStateOf(false) }
                         var expanded by remember { mutableStateOf(false) }
                         if (index != 0){
@@ -129,7 +129,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                     .wrapContentHeight()
                                     .fillMaxWidth()
                             ){
-                                val linked = exercise.supersetExercise == viewModel.state.value.workoutExercisesAndInfo[index-1].workoutExerciseId
+                                val linked = exercise.supersetExercise == viewModel.state.value.workoutExercisesAndInfo[index-1].programExerciseId
                                 val orientation = remember { Animatable(0f) }
                                 val scale = remember { Animatable(1f) }
                                 LaunchedEffect(linked) {
@@ -167,7 +167,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                             "${MainScreen.AddExerciseDialog.route}/" +
                                                     "${exercise.extProgramId}/" +
                                                     "${exercise.extExerciseId}/" +
-                                                    "${exercise.workoutExerciseId}"
+                                                    "${exercise.programExerciseId}"
                                         )
                                     }
                                 )
@@ -219,8 +219,8 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                             text = { Text("Move up") },
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
-                                                    WorkoutExerciseReorder(exercise.workoutExerciseId, exercise.orderInProgram-1),
-                                                    WorkoutExerciseReorder(viewModel.state.value.workoutExercisesAndInfo[index-1].workoutExerciseId, exercise.orderInProgram)
+                                                    ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram-1),
+                                                    ProgramExerciseReorder(viewModel.state.value.workoutExercisesAndInfo[index-1].programExerciseId, exercise.orderInProgram)
                                                 )))
                                                 expanded = false
                                             },
@@ -235,8 +235,8 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                             text = { Text("Move down") },
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
-                                                    WorkoutExerciseReorder(exercise.workoutExerciseId, exercise.orderInProgram+1),
-                                                    WorkoutExerciseReorder(viewModel.state.value.workoutExercisesAndInfo[index+1].workoutExerciseId, exercise.orderInProgram)
+                                                    ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram+1),
+                                                    ProgramExerciseReorder(viewModel.state.value.workoutExercisesAndInfo[index+1].programExerciseId, exercise.orderInProgram)
                                                 )))
                                                 expanded = false
                                             },
@@ -254,7 +254,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                                     "${MainScreen.AddExerciseDialog.route}/" +
                                                             "${exercise.extProgramId}/" +
                                                             "${exercise.extExerciseId}/" +
-                                                            "${exercise.workoutExerciseId}"
+                                                            "${exercise.programExerciseId}"
                                                 )
                                                 expanded = false
                                             },
@@ -268,7 +268,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                             text = { Text("Delete") },
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.DeleteExercise(
-                                                    exercise.workoutExerciseId
+                                                    exercise.programExerciseId
                                                 ))
                                                 expanded = false
                                             },

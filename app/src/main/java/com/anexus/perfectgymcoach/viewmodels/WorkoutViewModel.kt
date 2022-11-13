@@ -1,13 +1,12 @@
 package com.anexus.perfectgymcoach.viewmodels
 
-import android.text.format.DateUtils
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
-import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
+import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
@@ -24,7 +23,7 @@ import kotlin.math.max
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
     val programId: Long = 0L,
-    val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
+    val workoutExercisesAndInfo: List<ProgramExerciseAndInfo> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecord>> = emptyMap(), // old records
     val workoutTime: Long? = null, // in seconds
     val restTimestamp: Long? = null, // workout time of end of rest
@@ -89,7 +88,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     _state.value = state.value.copy(programId = event.programId)
                     viewModelScope.launch {
                         _state.value = state.value.copy(
-                            workoutExercisesAndInfo = repository.getWorkoutExercisesAndInfo(event.programId).first()
+                            workoutExercisesAndInfo = repository.getProgramExercisesAndInfo(event.programId).first()
                                 .sortedBy { it.orderInProgram }
                         )
                         repository.getExerciseRecords(
@@ -194,7 +193,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last())
                 )
                 _state.value = state.value.copy(
-                    workoutExercisesAndInfo = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }
+                    workoutExercisesAndInfo = newExs.map { if (it.programExerciseId == newEx.programExerciseId) newEx else it }
                 )
             }
             is WorkoutEvent.UpdateReps -> {

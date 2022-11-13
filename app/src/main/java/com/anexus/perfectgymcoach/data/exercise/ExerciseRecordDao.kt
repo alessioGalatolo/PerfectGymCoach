@@ -15,10 +15,10 @@ interface ExerciseRecordDao {
     fun getByWorkout(workoutId: Long): Flow<List<ExerciseRecord>>
 
     @Query(
-        "SELECT exerciserecord.*, exercise.name, exercise.image, workoutexercise.rest, workoutexercise.variation " +
+        "SELECT exerciserecord.*, exercise.name, exercise.image, programexercise.rest, programexercise.variation " +
         "FROM exerciserecord " +
         "INNER JOIN exercise ON exerciserecord.extExerciseId = exercise.exerciseId " +
-        "INNER JOIN workoutexercise ON exerciserecord.extExerciseId = workoutexercise.extExerciseId " +
+        "INNER JOIN programexercise ON exerciserecord.extExerciseId = programexercise.extExerciseId " +
         "WHERE exerciserecord.extWorkoutId LIKE :workoutId")
     fun getByWorkoutWithInfo(workoutId: Long): Flow<List<ExerciseRecordAndInfo>>
 
