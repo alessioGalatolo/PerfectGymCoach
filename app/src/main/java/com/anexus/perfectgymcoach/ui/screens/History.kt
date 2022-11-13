@@ -65,7 +65,7 @@ fun History(navController: NavHostController,
                     ) {
                         Column {
                             val dateFormat = SimpleDateFormat("d MMM (yyyy) - HH:mm")
-                            val date: String = dateFormat.format(it.startDate.time)
+                            val date: String = dateFormat.format(it.startDate!!.time)
                             Text(it.name, style = MaterialTheme.typography.titleLarge)
                             Text("Started at: $date")
                             Text("Duration: ${DateUtils.formatElapsedTime(it.duration)}")

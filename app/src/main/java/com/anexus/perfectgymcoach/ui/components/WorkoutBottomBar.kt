@@ -13,13 +13,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 
 @Composable
 fun WorkoutBottomBar(
     contentPadding: PaddingValues,
     workoutStarted: Boolean,
     startWorkout: () -> Unit,
-    currentExercise: ProgramExerciseAndInfo?,
+    currentExercise: WorkoutExercise?,
     completeWorkout: () -> Unit,
     completeSet: () -> Unit,
     setsFinished: Boolean,

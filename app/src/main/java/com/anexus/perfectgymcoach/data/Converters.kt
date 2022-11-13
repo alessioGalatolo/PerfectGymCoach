@@ -12,9 +12,10 @@ import java.util.*
  * Type converters to allow Room to reference complex data types.
  */
 class Converters {
-    @TypeConverter fun dateToDatestamp(value: Calendar): Long = value.timeInMillis
+    @TypeConverter fun dateToDatestamp(value: Calendar?): Long = value?.timeInMillis ?: 0L
 
-    @TypeConverter fun datestampToDate(value: Long): Calendar = Calendar.getInstance().apply { timeInMillis = value }
+    @TypeConverter fun datestampToDate(value: Long): Calendar? =
+        if (value == 0L) null else Calendar.getInstance().apply { timeInMillis = value }
 
     @TypeConverter
     fun listIntToString(value: List<Int>): String = if (value.isEmpty()) "" else value.joinToString(",")

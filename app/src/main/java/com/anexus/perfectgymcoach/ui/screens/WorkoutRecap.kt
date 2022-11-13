@@ -157,7 +157,7 @@ fun WorkoutRecap(
                                         mutableStateOf(
                                             Pair(
                                                 SimpleDateFormat("d MMM").format(
-                                                    viewModel.state.value.workoutRecord!!.startDate.time
+                                                    viewModel.state.value.workoutRecord!!.startDate!!.time
                                                 ),
                                                 graphsYaxis[page].second.last()
     //                                            viewModel.state.value.workoutRecord!!.volume
@@ -190,7 +190,7 @@ fun WorkoutRecap(
                                         xAxisData = List(records.size) { index ->
                                             GraphData.String(
                                                 if (index % ceil(records.size.toDouble() / maxDatesInXAxis).toInt() == 0)
-                                                    SimpleDateFormat("d MMM").format(records[index].startDate.time)
+                                                    SimpleDateFormat("d MMM").format(records[index].startDate!!.time)
                                                 else
                                                     ""
                                             )

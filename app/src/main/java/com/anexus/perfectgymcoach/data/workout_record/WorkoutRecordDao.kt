@@ -40,5 +40,8 @@ interface WorkoutRecordDao {
     fun update(workoutRecord: WorkoutRecord)
 
     @Update(entity = WorkoutRecord::class)
+    suspend fun updateStart(workoutRecordStart: WorkoutRecordStart)
+
+    @Update(entity = WorkoutRecord::class)
     suspend fun updateFinish(workoutRecordFinish: WorkoutRecordFinish)
 }

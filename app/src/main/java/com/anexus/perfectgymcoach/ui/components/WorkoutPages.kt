@@ -1,6 +1,7 @@
 package com.anexus.perfectgymcoach.ui.components
 
 import android.text.format.DateUtils
+import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -39,7 +41,7 @@ import kotlin.math.min
 fun ExercisePage(
     pagerState: PagerState,
     workoutTime: Long?,
-    programExercisesAndInfo: List<ProgramExerciseAndInfo>,
+    workoutExercises: List<WorkoutExercise>,
     setsDone: State<Int>,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
@@ -85,7 +87,6 @@ fun ExercisePage(
                         content = title
                     )
                 }
-//                                ExerciseSettingsMenu()
             }
             IconButton(
                 onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage+1) }},
@@ -98,23 +99,23 @@ fun ExercisePage(
             }
         }
         HorizontalPager(
-            count = if (workoutTime != null) programExercisesAndInfo.size+1 else programExercisesAndInfo.size,
+            count = if (workoutTime != null) workoutExercises.size+1 else workoutExercises.size,
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top
         ) { page ->
-            if (page == programExercisesAndInfo.size) {
+            if (page == workoutExercises.size) {
                 // page for finishing the workout
                 WorkoutFinishPage(workoutTime!!, workoutIntensity)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
-                    if (programExercisesAndInfo[page].note.isNotBlank()) {
+                    if (workoutExercises[page].note.isNotBlank()) {
                         Text(text = buildAnnotatedString {
-                                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                    append("Note: ")
-                                }
-                                append(programExercisesAndInfo[page].note)
-                            }, modifier = Modifier.align(CenterHorizontally))
+                            withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                append("Note: ")
+                            }
+                            append(workoutExercises[page].note)
+                        }, modifier = Modifier.align(CenterHorizontally))
                     }
                     // content
                     if (restCounter != null){
@@ -129,19 +130,25 @@ fun ExercisePage(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "Current" +
-                            if (programExercisesAndInfo[page].supersetExercise != null) " - Part of superset" else "",
+                                    if (workoutExercises[page].supersetExercise != null) " - Part of superset" else "",
                             Modifier.padding(vertical = 8.dp),
                             fontWeight = FontWeight.Bold
                         )
-                        ExerciseSettingsMenu()
+                        AnimatedVisibility(
+                            visible = workoutTime != null,
+                            enter = fadeIn(),
+                            exit = fadeOut()
+                        ) {
+                            ExerciseSettingsMenu()
+                        }
                     }
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(
                             Modifier.padding(8.dp),
                             horizontalAlignment = CenterHorizontally
                         ) {
-                            Text("Rest: ${programExercisesAndInfo[page].rest}s", Modifier.align(Alignment.Start))
-                            programExercisesAndInfo[page].reps.forEachIndexed { setCount, repsCount ->
+                            Text("Rest: ${workoutExercises[page].rest}s", Modifier.align(Alignment.Start))
+                            workoutExercises[page].reps.forEachIndexed { setCount, repsCount ->
                                 val toBeDone = setsDone.value <= setCount
                                 val repsInRow: String
                                 val weightInRow: String
@@ -200,8 +207,14 @@ fun ExercisePage(
                                     )
                                 }
                             }
-                            TextButton(onClick = addSet) {
-                                Text("Add set")
+                            AnimatedVisibility(
+                                visible = workoutTime != null,
+                                enter = slideInVertically() + fadeIn(),
+                                exit = slideOutVertically() + fadeOut()
+                            ) {
+                                TextButton(onClick = addSet) {
+                                    Text("Add set")
+                                }
                             }
                         }
                     }
@@ -355,7 +368,7 @@ fun ExerciseSettingsMenu() {
         ) {
             DropdownMenuItem(
                 text = { Text("Change exercise") },
-                onClick = { /* Handle edit! */ },
+                onClick = { /* TODO */ },
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Edit,
@@ -363,17 +376,8 @@ fun ExerciseSettingsMenu() {
                     )
                 })
             DropdownMenuItem(
-                text = { Text("Send Feedback") },
-                onClick = { /* Handle send feedback! */ },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Email,
-                        contentDescription = null
-                    )
-                })
-            DropdownMenuItem(
                 text = { Text("Cancel workout") },
-                onClick = { /* Handle cancel! */ },
+                onClick = { /* TODO */ },
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Close,

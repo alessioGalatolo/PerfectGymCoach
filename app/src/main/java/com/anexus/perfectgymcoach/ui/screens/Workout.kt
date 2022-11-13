@@ -33,6 +33,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.*
@@ -57,7 +58,7 @@ fun Workout(navController: NavHostController, programId: Long,
     if (resumeWorkout)
         viewModel.onEvent(WorkoutEvent.ResumeWorkout)
     else
-        viewModel.onEvent(WorkoutEvent.GetProgramExercises(programId))
+        viewModel.onEvent(WorkoutEvent.InitWorkout(programId))
 
     val scope = rememberCoroutineScope()
 
@@ -79,10 +80,10 @@ fun Workout(navController: NavHostController, programId: Long,
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) }
     )
     val pagerState = rememberPagerState()
-    val currentExercise: ProgramExerciseAndInfo? by remember {
+    val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
-            if (pagerState.currentPage < viewModel.state.value.programExercisesAndInfo.size) {
-                viewModel.state.value.programExercisesAndInfo[pagerState.currentPage]
+            if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {
+                viewModel.state.value.workoutExercises[pagerState.currentPage]
             } else {
                 null
             }
@@ -101,9 +102,9 @@ fun Workout(navController: NavHostController, programId: Long,
     ) }
 
     val currentExerciseRecord by remember { derivedStateOf {
-        if (pagerState.currentPage < viewModel.state.value.programExercisesAndInfo.size)
+        if (pagerState.currentPage < viewModel.state.value.workoutExercises.size)
             viewModel.state.value.allRecords[
-                    viewModel.state.value.programExercisesAndInfo[pagerState.currentPage].extExerciseId
+                    viewModel.state.value.workoutExercises[pagerState.currentPage].extExerciseId
             ] ?: emptyList()
         else
             emptyList()
@@ -166,10 +167,10 @@ fun Workout(navController: NavHostController, programId: Long,
         navController.navigate("${MainScreen.WorkoutRecap.route}/${viewModel.state.value.workoutId}")
     }
 
-    if (viewModel.state.value.programExercisesAndInfo.isNotEmpty()) {
+    if (viewModel.state.value.workoutExercises.isNotEmpty()) {
         BackHandler(onBack = onClose)
         val currentImageId by remember { derivedStateOf {
-            if (pagerState.currentPage == viewModel.state.value.programExercisesAndInfo.size)
+            if (pagerState.currentPage == viewModel.state.value.workoutExercises.size)
                 R.drawable.finish_workout
             else currentExercise!!.image
         }}
@@ -256,7 +257,7 @@ fun Workout(navController: NavHostController, programId: Long,
                     pagerState = pagerState,
                     workoutTime = viewModel.state.value.workoutTime,
                     setsDone = setsDone,
-                    programExercisesAndInfo = viewModel.state.value.programExercisesAndInfo,
+                    workoutExercises = viewModel.state.value.workoutExercises,
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
                     title = title,
@@ -299,14 +300,14 @@ fun Workout(navController: NavHostController, programId: Long,
                                     }
                                 } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
                                     val superExercise =
-                                        viewModel.state.value.programExercisesAndInfo.find {
-                                            it.programExerciseId == currentExercise!!.supersetExercise
+                                        viewModel.state.value.workoutExercises.find {
+                                            it.extProgramExerciseId == currentExercise!!.supersetExercise
                                         }
                                     if (superExercise != null) {
-                                        if (viewModel.state.value.programExercisesAndInfo.indexOf(
+                                        if (viewModel.state.value.workoutExercises.indexOf(
                                                 superExercise
                                             ) >
-                                            viewModel.state.value.programExercisesAndInfo.indexOf(
+                                            viewModel.state.value.workoutExercises.indexOf(
                                                 currentExercise
                                             )
                                         ) {

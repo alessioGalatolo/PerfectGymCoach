@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.anexus.perfectgymcoach.data.exercise.*
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
@@ -12,6 +13,7 @@ import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
+import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -74,17 +76,30 @@ class Repository @Inject constructor(
 
     fun getProgramExercises(programId: Long) = db.programExerciseDao.getExercises(programId)
 
-    fun getProgramExercise(programExerciseId: Long) = db.programExerciseDao.getProgramExercise(programExerciseId)
+    fun getProgramExercise(programExerciseId: Long) =
+        db.programExerciseDao.getProgramExercise(programExerciseId)
 
-    suspend fun addProgramExercise(exercise: ProgramExercise) = db.programExerciseDao.insert(exercise)
+    suspend fun addProgramExercise(exercise: ProgramExercise) =
+        db.programExerciseDao.insert(exercise)
 
     suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =
         db.programExerciseDao.updateOrder(programExerciseReorders)
 
-    suspend fun deleteProgramExercise(programExerciseId: Long) = db.programExerciseDao.delete(programExerciseId)
+    suspend fun deleteProgramExercise(programExerciseId: Long) =
+        db.programExerciseDao.delete(programExerciseId)
 
     suspend fun updateExerciseSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>) =
         db.programExerciseDao.updateSuperset(updateExerciseSupersets)
+
+
+    suspend fun addWorkoutExercise(workoutExercise: WorkoutExercise) =
+        db.workoutExerciseDao.insert(workoutExercise)
+
+    suspend fun addWorkoutExercises(workoutExercises: List<WorkoutExercise>) =
+        db.workoutExerciseDao.insert(workoutExercises)
+
+    suspend fun getWorkoutExercises(workoutId: Long) =
+        db.workoutExerciseDao.getWorkoutExercises(workoutId)
 
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
@@ -110,6 +125,9 @@ class Repository @Inject constructor(
     fun getWorkoutHistoryAndName() = db.workoutRecordDao.getRecordsAndName()
 
     suspend fun addWorkoutRecord(workoutRecord: WorkoutRecord) = db.workoutRecordDao.insert(workoutRecord)
+
+    suspend fun startWorkout(workoutRecordStart: WorkoutRecordStart) =
+        db.workoutRecordDao.updateStart(workoutRecordStart)
 
     suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 

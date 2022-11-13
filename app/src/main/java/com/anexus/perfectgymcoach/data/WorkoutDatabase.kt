@@ -7,6 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.anexus.perfectgymcoach.data.exercise.*
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExerciseDao
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordDao
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
@@ -24,6 +26,7 @@ import kotlinx.coroutines.launch
         ProgramExercise::class,
         ExerciseRecord::class,
         WorkoutRecord::class,
+        WorkoutExercise::class,
         Exercise::class
     ],
     version = 1,
@@ -37,6 +40,7 @@ abstract class WorkoutDatabase: RoomDatabase() {
     abstract val exerciseRecordDao: ExerciseRecordDao
     abstract val workoutRecordDao: WorkoutRecordDao
     abstract val exerciseDao: ExerciseDao
+    abstract val workoutExerciseDao: WorkoutExerciseDao
 
     companion object {
 
