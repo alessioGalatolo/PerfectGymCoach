@@ -57,7 +57,7 @@ fun Workout(navController: NavHostController, programId: Long,
     if (resumeWorkout)
         viewModel.onEvent(WorkoutEvent.ResumeWorkout)
     else
-        viewModel.onEvent(WorkoutEvent.GetWorkoutExercises(programId))
+        viewModel.onEvent(WorkoutEvent.GetProgramExercises(programId))
 
     val scope = rememberCoroutineScope()
 
@@ -81,8 +81,8 @@ fun Workout(navController: NavHostController, programId: Long,
     val pagerState = rememberPagerState()
     val currentExercise: ProgramExerciseAndInfo? by remember {
         derivedStateOf {
-            if (pagerState.currentPage < viewModel.state.value.workoutExercisesAndInfo.size) {
-                viewModel.state.value.workoutExercisesAndInfo[pagerState.currentPage]
+            if (pagerState.currentPage < viewModel.state.value.programExercisesAndInfo.size) {
+                viewModel.state.value.programExercisesAndInfo[pagerState.currentPage]
             } else {
                 null
             }
@@ -101,9 +101,9 @@ fun Workout(navController: NavHostController, programId: Long,
     ) }
 
     val currentExerciseRecord by remember { derivedStateOf {
-        if (pagerState.currentPage < viewModel.state.value.workoutExercisesAndInfo.size)
+        if (pagerState.currentPage < viewModel.state.value.programExercisesAndInfo.size)
             viewModel.state.value.allRecords[
-                    viewModel.state.value.workoutExercisesAndInfo[pagerState.currentPage].extExerciseId
+                    viewModel.state.value.programExercisesAndInfo[pagerState.currentPage].extExerciseId
             ] ?: emptyList()
         else
             emptyList()
@@ -166,10 +166,10 @@ fun Workout(navController: NavHostController, programId: Long,
         navController.navigate("${MainScreen.WorkoutRecap.route}/${viewModel.state.value.workoutId}")
     }
 
-    if (viewModel.state.value.workoutExercisesAndInfo.isNotEmpty()) {
+    if (viewModel.state.value.programExercisesAndInfo.isNotEmpty()) {
         BackHandler(onBack = onClose)
         val currentImageId by remember { derivedStateOf {
-            if (pagerState.currentPage == viewModel.state.value.workoutExercisesAndInfo.size)
+            if (pagerState.currentPage == viewModel.state.value.programExercisesAndInfo.size)
                 R.drawable.finish_workout
             else currentExercise!!.image
         }}
@@ -256,7 +256,7 @@ fun Workout(navController: NavHostController, programId: Long,
                     pagerState = pagerState,
                     workoutTime = viewModel.state.value.workoutTime,
                     setsDone = setsDone,
-                    workoutExercisesAndInfo = viewModel.state.value.workoutExercisesAndInfo,
+                    programExercisesAndInfo = viewModel.state.value.programExercisesAndInfo,
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
                     title = title,
@@ -299,14 +299,14 @@ fun Workout(navController: NavHostController, programId: Long,
                                     }
                                 } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
                                     val superExercise =
-                                        viewModel.state.value.workoutExercisesAndInfo.find {
+                                        viewModel.state.value.programExercisesAndInfo.find {
                                             it.programExerciseId == currentExercise!!.supersetExercise
                                         }
                                     if (superExercise != null) {
-                                        if (viewModel.state.value.workoutExercisesAndInfo.indexOf(
+                                        if (viewModel.state.value.programExercisesAndInfo.indexOf(
                                                 superExercise
                                             ) >
-                                            viewModel.state.value.workoutExercisesAndInfo.indexOf(
+                                            viewModel.state.value.programExercisesAndInfo.indexOf(
                                                 currentExercise
                                             )
                                         ) {

@@ -50,7 +50,7 @@ import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 @Composable
 fun AddExercise(navController: NavHostController, programName: String, programId: Long,
                 viewModel: ExercisesViewModel = hiltViewModel()) {
-    viewModel.onEvent(ExercisesEvent.GetWorkoutExercises(programId))
+    viewModel.onEvent(ExercisesEvent.GetProgramExercises(programId))
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -84,7 +84,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                 )
             }
         }, content = { innerPadding ->
-            if (viewModel.state.value.workoutExercisesAndInfo.isEmpty()) {
+            if (viewModel.state.value.programExercisesAndInfo.isEmpty()) {
                 // if you have no exercises
                 Column(
                     modifier = Modifier
@@ -108,7 +108,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = innerPadding
                 ) {
-                    itemsIndexed(items = viewModel.state.value.workoutExercisesAndInfo,
+                    itemsIndexed(items = viewModel.state.value.programExercisesAndInfo,
                         key = { _, it -> it.programExerciseId }) { index, exercise ->
                         val brightImage = remember { mutableStateOf(false) }
                         var expanded by remember { mutableStateOf(false) }
@@ -129,7 +129,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                     .wrapContentHeight()
                                     .fillMaxWidth()
                             ){
-                                val linked = exercise.supersetExercise == viewModel.state.value.workoutExercisesAndInfo[index-1].programExerciseId
+                                val linked = exercise.supersetExercise == viewModel.state.value.programExercisesAndInfo[index-1].programExerciseId
                                 val orientation = remember { Animatable(0f) }
                                 val scale = remember { Animatable(1f) }
                                 LaunchedEffect(linked) {
@@ -220,7 +220,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
                                                     ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram-1),
-                                                    ProgramExerciseReorder(viewModel.state.value.workoutExercisesAndInfo[index-1].programExerciseId, exercise.orderInProgram)
+                                                    ProgramExerciseReorder(viewModel.state.value.programExercisesAndInfo[index-1].programExerciseId, exercise.orderInProgram)
                                                 )))
                                                 expanded = false
                                             },
@@ -236,11 +236,11 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
                                                     ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram+1),
-                                                    ProgramExerciseReorder(viewModel.state.value.workoutExercisesAndInfo[index+1].programExerciseId, exercise.orderInProgram)
+                                                    ProgramExerciseReorder(viewModel.state.value.programExercisesAndInfo[index+1].programExerciseId, exercise.orderInProgram)
                                                 )))
                                                 expanded = false
                                             },
-                                            enabled = index+1 < viewModel.state.value.workoutExercisesAndInfo.size,
+                                            enabled = index+1 < viewModel.state.value.programExercisesAndInfo.size,
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.ArrowDownward,

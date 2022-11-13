@@ -153,7 +153,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                                     ?: emptyList(),
                                 onCardClick = {
                                     navController.navigate(
-                                        "${MainScreen.AddWorkoutExercise.route}/" +
+                                        "${MainScreen.AddProgramExercise.route}/" +
                                                 "${programEntry.name}/" +
                                                 "${programEntry.programId}"
                                     )

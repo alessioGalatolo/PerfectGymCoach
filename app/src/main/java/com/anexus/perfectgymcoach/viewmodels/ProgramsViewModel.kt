@@ -45,7 +45,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
     val state: State<ProgramsState> = _state
 
     private var getProgramsJob: Job? = null
-    private var getWorkoutExercisesJob: Job? = null
+    private var getProgramExercisesJob: Job? = null
 
     fun onEvent(event: ProgramsEvent){
         when (event) {
@@ -56,8 +56,8 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                         _state.value = state.value.copy(
                             programs = it.sortedBy { prog -> prog.orderInWorkoutPlan }
                         )
-                        getWorkoutExercisesJob?.cancel()
-                        getWorkoutExercisesJob = this.launch {
+                        getProgramExercisesJob?.cancel()
+                        getProgramExercisesJob = this.launch {
                             repository.getProgramExercisesAndInfo(it.map { prg -> prg.programId }).collect{ exList ->
                                 _state.value = state.value.copy(
                                     exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }  // FIXME: should sort each list

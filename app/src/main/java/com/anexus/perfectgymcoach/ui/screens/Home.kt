@@ -152,7 +152,7 @@ fun Home(navController: NavHostController,
                         .combinedClickable(onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             navController.navigate(
-                                "${MainScreen.AddWorkoutExercise.route}/" +
+                                "${MainScreen.AddProgramExercise.route}/" +
                                         "${it.name}/" +
                                         "${it.programId}"
                             )
@@ -219,7 +219,7 @@ fun Home(navController: NavHostController,
                                     IconButton(
                                         onClick = {
                                             navController.navigate(
-                                                "${MainScreen.AddWorkoutExercise.route}/" +
+                                                "${MainScreen.AddProgramExercise.route}/" +
                                                         "${it.name}/" +
                                                         "${it.programId}"
                                             )

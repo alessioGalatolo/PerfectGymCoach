@@ -81,7 +81,7 @@ class Repository @Inject constructor(
     suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =
         db.programExerciseDao.updateOrder(programExerciseReorders)
 
-    suspend fun deleteProgramExercise(workoutExerciseId: Long) = db.programExerciseDao.delete(workoutExerciseId)
+    suspend fun deleteProgramExercise(programExerciseId: Long) = db.programExerciseDao.delete(programExerciseId)
 
     suspend fun updateExerciseSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>) =
         db.programExerciseDao.updateSuperset(updateExerciseSupersets)

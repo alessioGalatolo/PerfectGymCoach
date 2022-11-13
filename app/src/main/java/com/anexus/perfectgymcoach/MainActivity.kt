@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(
-                        "${MainScreen.AddWorkoutExercise.route}/{name}/{programId}",
+                        "${MainScreen.AddProgramExercise.route}/{name}/{programId}",
                         arguments = listOf(navArgument("programId") { type = NavType.LongType })
                     ) {
                         AddExercise(
@@ -129,17 +129,17 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(
-                        "${MainScreen.AddExerciseDialog.route}/{programId}/{exerciseId}/{workoutExerciseId}",
+                        "${MainScreen.AddExerciseDialog.route}/{programId}/{exerciseId}/{programExerciseId}",
                         arguments = listOf(
                             navArgument("programId") { type = NavType.LongType },
                             navArgument("exerciseId") { type = NavType.LongType },
-                            navArgument("workoutExerciseId") { type = NavType.LongType })
+                            navArgument("programExerciseId") { type = NavType.LongType })
                     ) {
                         AddExerciseDialogue(
                             navControllerMain,
                             it.arguments?.getLong("programId") ?: 0L,
                             it.arguments?.getLong("exerciseId") ?: 0L,
-                            it.arguments?.getLong("workoutExerciseId") ?: 0L
+                            it.arguments?.getLong("programExerciseId") ?: 0L
                         )
                     }
                     composable(MainScreen.CreateExerciseDialog.route) {

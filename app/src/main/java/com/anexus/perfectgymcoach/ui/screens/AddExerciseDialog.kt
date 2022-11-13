@@ -39,7 +39,7 @@ fun AddExerciseDialogue(
     navHostController: NavHostController,
     programId: Long,
     exerciseId: Long = 0L,
-    workoutExerciseId: Long = 0L,
+    programExerciseId: Long = 0L,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     val scope = rememberCoroutineScope()
@@ -47,8 +47,8 @@ fun AddExerciseDialogue(
     val snackbarHostState = remember { SnackbarHostState() }
     if (exerciseId != 0L)
         viewModel.onEvent(AddExerciseEvent.GetProgramAndExercise(programId, exerciseId))
-    if (workoutExerciseId != 0L)  // FIXME: sometimes the reps/rest counter doesn't follow the exercise
-        viewModel.onEvent(AddExerciseEvent.GetProgramAndWorkoutExercise(programId, workoutExerciseId))
+    if (programExerciseId != 0L)  // FIXME: sometimes the reps/rest counter doesn't follow the exercise
+        viewModel.onEvent(AddExerciseEvent.GetProgramAndProgramExercise(programId, programExerciseId))
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // make topappbar opaque

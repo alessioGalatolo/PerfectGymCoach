@@ -19,7 +19,7 @@ data class AddExerciseState(
     val exercise: Exercise? = null,
     val variation: String = "No variation",  // FIXME: no hardcode, also used below
     val program: WorkoutProgram? = null,
-    val workoutExerciseId: Long = 0,
+    val programExerciseId: Long = 0,
     val sets: String = "5",
     val reps: String = "8",
     val rest: String = "90",
@@ -34,7 +34,7 @@ sealed class AddExerciseEvent{
 
     data class GetProgramAndExercise(val programId: Long, val exerciseId: Long): AddExerciseEvent()
 
-    data class GetProgramAndWorkoutExercise(val programId: Long, val workoutExerciseId: Long): AddExerciseEvent()
+    data class GetProgramAndProgramExercise(val programId: Long, val programExerciseId: Long): AddExerciseEvent()
 
     object ToggleAdvancedSets: AddExerciseEvent()
 
@@ -75,7 +75,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 viewModelScope.launch {
                     repository.addProgramExercise(
                         ProgramExercise(
-                            programExerciseId = state.value.workoutExerciseId,
+                            programExerciseId = state.value.programExerciseId,
                             extProgramId = state.value.program!!.programId,
                             extExerciseId = state.value.exercise!!.exerciseId,
                             orderInProgram = state.value.exerciseNumber,
@@ -203,16 +203,16 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     }
                 }
             }
-            is AddExerciseEvent.GetProgramAndWorkoutExercise -> {
+            is AddExerciseEvent.GetProgramAndProgramExercise -> {
                 // is updating existing exercise
                 if (state.value.program == null) {
                     viewModelScope.launch {
                         val programMapExercises =
                             repository.getProgramMapExercises(event.programId).first()
 
-                        val ex = repository.getProgramExercise(event.workoutExerciseId).first()
+                        val ex = repository.getProgramExercise(event.programExerciseId).first()
                         _state.value = state.value.copy(
-                            workoutExerciseId = ex.programExerciseId,
+                            programExerciseId = ex.programExerciseId,
                             sets = ex.reps.size.toString(),
                             reps = "${ex.reps[0]}",
                             rest = "${ex.rest}", // fixme when rest becomes an array

@@ -39,7 +39,7 @@ import kotlin.math.min
 fun ExercisePage(
     pagerState: PagerState,
     workoutTime: Long?,
-    workoutExercisesAndInfo: List<ProgramExerciseAndInfo>,
+    programExercisesAndInfo: List<ProgramExerciseAndInfo>,
     setsDone: State<Int>,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
@@ -98,22 +98,22 @@ fun ExercisePage(
             }
         }
         HorizontalPager(
-            count = if (workoutTime != null) workoutExercisesAndInfo.size+1 else workoutExercisesAndInfo.size,
+            count = if (workoutTime != null) programExercisesAndInfo.size+1 else programExercisesAndInfo.size,
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top
         ) { page ->
-            if (page == workoutExercisesAndInfo.size) {
+            if (page == programExercisesAndInfo.size) {
                 // page for finishing the workout
                 WorkoutFinishPage(workoutTime!!, workoutIntensity)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
-                    if (workoutExercisesAndInfo[page].note.isNotBlank()) {
+                    if (programExercisesAndInfo[page].note.isNotBlank()) {
                         Text(text = buildAnnotatedString {
                                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                                     append("Note: ")
                                 }
-                                append(workoutExercisesAndInfo[page].note)
+                                append(programExercisesAndInfo[page].note)
                             }, modifier = Modifier.align(CenterHorizontally))
                     }
                     // content
@@ -129,7 +129,7 @@ fun ExercisePage(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "Current" +
-                            if (workoutExercisesAndInfo[page].supersetExercise != null) " - Part of superset" else "",
+                            if (programExercisesAndInfo[page].supersetExercise != null) " - Part of superset" else "",
                             Modifier.padding(vertical = 8.dp),
                             fontWeight = FontWeight.Bold
                         )
@@ -140,8 +140,8 @@ fun ExercisePage(
                             Modifier.padding(8.dp),
                             horizontalAlignment = CenterHorizontally
                         ) {
-                            Text("Rest: ${workoutExercisesAndInfo[page].rest}s", Modifier.align(Alignment.Start))
-                            workoutExercisesAndInfo[page].reps.forEachIndexed { setCount, repsCount ->
+                            Text("Rest: ${programExercisesAndInfo[page].rest}s", Modifier.align(Alignment.Start))
+                            programExercisesAndInfo[page].reps.forEachIndexed { setCount, repsCount ->
                                 val toBeDone = setsDone.value <= setCount
                                 val repsInRow: String
                                 val weightInRow: String

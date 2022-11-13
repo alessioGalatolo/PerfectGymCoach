@@ -36,7 +36,7 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
 
     private var collectProgramsJob: Job? = null
     private var collectCurrentProgram: Job? = null
-    private var getWorkoutExercisesJob: Job? = null
+    private var getProgramExercisesJob: Job? = null
     private var animateJob: Job? = null
 
     init {
@@ -56,8 +56,8 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
                             _state.value = state.value.copy(
                                 programs = it.sortedBy { it1 -> it1.orderInWorkoutPlan }
                             )
-                            getWorkoutExercisesJob?.cancel()
-                            getWorkoutExercisesJob = this.launch {
+                            getProgramExercisesJob?.cancel()
+                            getProgramExercisesJob = this.launch {
                                 repository.getProgramExercisesAndInfo(it.map { prg -> prg.programId })
                                     .collect { exList ->
                                         _state.value = state.value.copy(

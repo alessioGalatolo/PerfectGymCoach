@@ -157,7 +157,7 @@ fun WorkoutCard(
                         }
                         IconButton(onClick = {
                             navController.navigate(
-                                "${MainScreen.AddWorkoutExercise.route}/" +
+                                "${MainScreen.AddProgramExercise.route}/" +
                                         "${program.name}/" +
                                         "${program.programId}"
                             )
@@ -198,7 +198,7 @@ fun WorkoutCard(
                                     text = { Text("Edit") },
                                     onClick = {
                                         navController.navigate(
-                                            "${MainScreen.AddWorkoutExercise.route}/" +
+                                            "${MainScreen.AddProgramExercise.route}/" +
                                                     "${program.name}/" +
                                                     "${program.programId}"
                                         )
