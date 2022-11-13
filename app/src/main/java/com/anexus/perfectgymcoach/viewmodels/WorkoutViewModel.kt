@@ -1,21 +1,23 @@
 package com.anexus.perfectgymcoach.viewmodels
 
-import android.text.format.DateUtils
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
+import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndInfo
 import com.anexus.perfectgymcoach.data.exercise.WorkoutExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
+import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordAndName
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import okhttp3.internal.toImmutableList
 import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -25,6 +27,7 @@ data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
     val programId: Long = 0L,
     val workoutExercisesAndInfo: List<WorkoutExerciseAndInfo> = emptyList(),
+    val workoutRecordsAndInfo: List<ExerciseRecordAndInfo> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecord>> = emptyMap(), // old records
     val workoutTime: Long? = null, // in seconds
     val restTimestamp: Long? = null, // workout time of end of rest
@@ -46,7 +49,8 @@ sealed class WorkoutEvent{
 
     data class TryCompleteSet(
         val exerciseInWorkout: Int,
-        val exerciseRest: Long
+        val exerciseRest: Long,
+        val set: Int
     ): WorkoutEvent()
 
     object ToggleCancelWorkoutDialog : WorkoutEvent()
@@ -73,7 +77,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private val _state = mutableStateOf(WorkoutState())
     val state: State<WorkoutState> = _state
 
-    private var getExercisesJob: Job? = null // FIXME: is it needed?
+    private var getExercisesJob: Job? = null
     private var getExerciseRecordsJob: Job? = null
     private var timerJob: Job? = null
 
@@ -87,11 +91,15 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.GetWorkoutExercises -> {
                 if (state.value.workoutExercisesAndInfo.isEmpty()) { // only retrieve once
                     _state.value = state.value.copy(programId = event.programId)
-                    viewModelScope.launch {
+                    getExercisesJob = viewModelScope.launch {
                         _state.value = state.value.copy(
-                            workoutExercisesAndInfo = repository.getWorkoutExercisesAndInfo(event.programId).first()
+                            workoutExercisesAndInfo = repository.getWorkoutExercisesAndInfo(event.programId)
+                                .first()
                                 .sortedBy { it.orderInProgram }
                         )
+                    }
+                    getExerciseRecordsJob = viewModelScope.launch {
+                        getExercisesJob?.join()
                         repository.getExerciseRecords(
                             state.value.workoutExercisesAndInfo.map { it.extExerciseId }
                         ).collect { records ->
@@ -113,6 +121,36 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     ))
                     _state.value = state.value.copy(workoutId = workoutId)
                     repository.setCurrentWorkout(workoutId)
+                    getExercisesJob?.join()
+                    for ((i, exercise) in state.value.workoutExercisesAndInfo.withIndex()) {
+                        repository.addExerciseRecord(
+                            ExerciseRecord(
+                                extWorkoutId = workoutId,
+                                extExerciseId = exercise.extExerciseId,
+                                exerciseInWorkout = i,
+                                date = Calendar.getInstance(),
+                                reps = exercise.reps.toImmutableList(),
+                                weights = List(exercise.reps.size) { null } // use null to indicate not completed
+                            )
+                        )
+                    }
+                    repository.getWorkoutExerciseRecordsAndInfo(workoutId).collect{
+                        _state.value = state.value.copy(
+                            workoutRecordsAndInfo = it
+                        )
+                        getExerciseRecordsJob?.cancel()
+                        getExerciseRecordsJob = this.launch {
+                            repository.getExerciseRecords(
+                                state.value.workoutRecordsAndInfo.map { ex -> ex.extExerciseId }
+                            ).collect { records ->
+                                val allRecords = records.groupBy { ex -> ex.extExerciseId }
+                                // TODO: sort by date before putting in
+                                _state.value = state.value.copy(
+                                    allRecords = allRecords
+                                )
+                            }
+                        }
+                    }
                 }
                 startTimer()
             }
@@ -123,27 +161,22 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     return false
                 viewModelScope.launch {
                     val record = state.value.allRecords[
-                            state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId
+                            state.value.workoutRecordsAndInfo[event.exerciseInWorkout].extExerciseId
                     ]?.find {
                         it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
                     }  // FIXME: same find is repeated elsewhere
 
                     _state.value = state.value.copy(restTimestamp = state.value.workoutTime!!+event.exerciseRest)
                     if (record == null) {
-                        repository.addExerciseRecord(
-                            ExerciseRecord(
-                                extWorkoutId = state.value.workoutId,
-                                extExerciseId = state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId,
-                                exerciseInWorkout = event.exerciseInWorkout,
-                                date = Calendar.getInstance(),
-                                reps = listOf(state.value.repsBottomBar.toInt()),
-                                weights = listOf(state.value.weightBottomBar.toFloat())
-                            )
-                        )
+                        // FIXME
                     } else {
+                        val reps = record.reps.toMutableList()
+                        val weights = record.weights.toMutableList()
+                        reps[event.set] = state.value.repsBottomBar.toInt()
+                        weights[event.set] = state.value.weightBottomBar.toFloat()
                         repository.addExerciseRecord(record.copy(
-                            reps = record.reps.plus(state.value.repsBottomBar.toInt()),
-                            weights = record.weights.plus(state.value.weightBottomBar.toFloat())
+                            reps = reps,
+                            weights = weights
                         ))
                     }
                 }
@@ -157,11 +190,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             event.workoutIntensity,
                             state.value.workoutTime!!,
                             volume = exercises.sumOf {
-                                (it.tare * it.reps.size +
-                                        it.weights.mapIndexed { index, i -> i * it.reps[index] }.sum()).toDouble()
+                                (it.tare * it.weights.count { f -> f != null } +
+                                        it.weights.mapIndexed { index, i -> i?.times(it.reps[index]) ?: 0f }.sum()).toDouble()
                             },
                             activeTime = max(0L, state.value.workoutTime!! -
-                                    exercises.sumOf { it.rest * it.reps.size }),
+                                    exercises.sumOf { it.rest * it.weights.count { f -> f != null } }),
                             calories = event.workoutIntensity.metValue *
                                     repository.getUserWeight().first() *
                                     state.value.workoutTime!! / 3600
@@ -189,12 +222,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 }
             }
             is WorkoutEvent.AddSetToExercise -> {
-                val newExs = state.value.workoutExercisesAndInfo
+                // FIXME: there must be a more clever way
+                val newExs = state.value.workoutRecordsAndInfo
                 val newEx = newExs[event.exerciseInWorkout].copy(
-                    reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last())
+                    reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last()),
+                    weights = newExs[event.exerciseInWorkout].weights.plus(null)
                 )
                 _state.value = state.value.copy(
-                    workoutExercisesAndInfo = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }
+                    workoutRecordsAndInfo = newExs.map { if (it.recordId == newEx.recordId) newEx else it }
                 )
             }
             is WorkoutEvent.UpdateReps -> {
@@ -211,11 +246,28 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             workoutId = workoutId
                         )
                         val workout = repository.getWorkoutRecord(state.value.workoutId).first()
-                        onEvent(WorkoutEvent.GetWorkoutExercises(workout.extProgramId))  // FIXME: should store workoutExercises
                         _state.value = state.value.copy(
                             workoutTime = (Calendar.getInstance().timeInMillis - workout.startDate.timeInMillis) / 1000
                         )
                         startTimer()
+                        // FIXME: is same code as used above
+                        repository.getWorkoutExerciseRecordsAndInfo(workoutId).collect{
+                            _state.value = state.value.copy(
+                                workoutRecordsAndInfo = it
+                            )
+                            getExerciseRecordsJob?.cancel()
+                            getExerciseRecordsJob = this.launch {
+                                repository.getExerciseRecords(
+                                    state.value.workoutRecordsAndInfo.map { ex -> ex.extExerciseId }
+                                ).collect { records ->
+                                    val allRecords = records.groupBy { ex -> ex.extExerciseId }
+                                    // TODO: sort by date before putting in
+                                    _state.value = state.value.copy(
+                                        allRecords = allRecords
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -223,7 +275,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.EditSetRecord -> {
                 viewModelScope.launch {
                     val record = state.value.allRecords[
-                            state.value.workoutExercisesAndInfo[event.exerciseInWorkout].extExerciseId
+                            state.value.workoutRecordsAndInfo[event.exerciseInWorkout].extExerciseId
                     ]?.find {
                         it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
                     }  // FIXME: same find is repeated elsewhere

@@ -1,6 +1,7 @@
 package com.anexus.perfectgymcoach.ui.components
 
 import android.text.format.DateUtils
+import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -86,7 +87,6 @@ fun ExercisePage(
                         content = title
                     )
                 }
-//                                ExerciseSettingsMenu()
             }
             IconButton(
                 onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage+1) }},
@@ -134,7 +134,13 @@ fun ExercisePage(
                             Modifier.padding(vertical = 8.dp),
                             fontWeight = FontWeight.Bold
                         )
-                        ExerciseSettingsMenu()
+                        AnimatedVisibility(
+                            visible = workoutTime != null,
+                            enter = fadeIn(),
+                            exit = fadeOut()
+                        ) {
+                            ExerciseSettingsMenu()
+                        }
                     }
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(
@@ -201,8 +207,14 @@ fun ExercisePage(
                                     )
                                 }
                             }
-                            TextButton(onClick = addSet) {
-                                Text("Add set")
+                            AnimatedVisibility(
+                                visible = workoutTime != null,
+                                enter = slideInVertically() + fadeIn(),
+                                exit = slideOutVertically() + fadeOut()
+                            ) {
+                                TextButton(onClick = addSet) {
+                                    Text("Add set")
+                                }
                             }
                         }
                     }
@@ -216,39 +228,41 @@ fun ExercisePage(
                     }
                     var recordsToShow by remember { mutableStateOf(2) }
                     currentExerciseRecords.subList(0, min(currentExerciseRecords.size, recordsToShow)).forEach { record ->  // should maybe become lazy
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(8.dp)) {
-                                val dateFormat = SimpleDateFormat("d MMM (yy)")
-                                Text(
-                                    dateFormat.format(record.date.time),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontStyle = FontStyle.Italic // TODO: add how many days ago
-                                ) // FIXME
-                                Text("Tare: ${record.tare}") // FIXME
-                                record.reps.forEachIndexed { index, rep ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .combinedClickable(onLongClick = {
+                        if (record.weights.count { it != null} > 0) {
+                            Card(Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(8.dp)) {
+                                    val dateFormat = SimpleDateFormat("d MMM (yy)")
+                                    Text(
+                                        dateFormat.format(record.date.time),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontStyle = FontStyle.Italic // TODO: add how many days ago
+                                    ) // FIXME
+                                    Text("Tare: ${record.tare}") // FIXME
+                                    record.weights.filterNotNull().forEachIndexed { index, weight ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .combinedClickable(onLongClick = {
 
-                                            }, onClick = {
-                                                updateBottomBar(rep, record.weights[index])
-                                            })
-                                    ) {
-                                        FilledIconToggleButton(checked = false, // FIXME: can use different component?
-                                            onCheckedChange = { }) {
-                                            Text((index + 1).toString())
+                                                }, onClick = {
+                                                    updateBottomBar(record.reps[index], weight)
+                                                })
+                                        ) {
+                                            FilledIconToggleButton(checked = false, // FIXME: can use different component?
+                                                onCheckedChange = { }) {
+                                                Text((index + 1).toString())
+                                            }
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Reps: $weight Weight: ${record.reps[index]} kg"
+                                            )
                                         }
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            "Reps: $rep Weight: ${record.weights[index]} kg"
-                                        )
                                     }
                                 }
                             }
+                            Spacer(Modifier.height(8.dp))
                         }
-                        Spacer(Modifier.height(8.dp))
                     }
                     if (recordsToShow < currentExerciseRecords.size) {
                         TextButton(
@@ -356,7 +370,7 @@ fun ExerciseSettingsMenu() {
         ) {
             DropdownMenuItem(
                 text = { Text("Change exercise") },
-                onClick = { /* Handle edit! */ },
+                onClick = { /* TODO: Handle edit! */ },
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Edit,
@@ -364,17 +378,8 @@ fun ExerciseSettingsMenu() {
                     )
                 })
             DropdownMenuItem(
-                text = { Text("Send Feedback") },
-                onClick = { /* Handle send feedback! */ },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Email,
-                        contentDescription = null
-                    )
-                })
-            DropdownMenuItem(
                 text = { Text("Cancel workout") },
-                onClick = { /* Handle cancel! */ },
+                onClick = { /* TODO */ },
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Close,

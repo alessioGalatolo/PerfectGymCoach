@@ -290,7 +290,8 @@ fun Workout(navController: NavHostController, programId: Long,
                                 if (!viewModel.onEvent(
                                         WorkoutEvent.TryCompleteSet(
                                             pagerState.currentPage,
-                                            currentExercise!!.rest.toLong()
+                                            currentExercise!!.rest.toLong(),
+                                            setsDone.value // FIXME: may need +1
                                         )
                                     )
                                 ) {

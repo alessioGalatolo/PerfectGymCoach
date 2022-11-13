@@ -23,11 +23,11 @@ class Converters {
     fun stringToListInt(value: String): List<Int> = if (value.isEmpty()) emptyList() else value.split(",").map { it.toInt() }
 
     @TypeConverter
-    fun listFloatToString(value: List<Float>): String = if (value.isEmpty()) "" else value.joinToString(",")
+    fun listFloatNullToString(value: List<Float?>): String = if (value.isEmpty()) "" else value.joinToString(",")
 
     @TypeConverter
-    fun stringToListFloat(value: String): List<Float> {
-        return if (value.isEmpty()) emptyList() else value.split(",").map { it.toFloat() }
+    fun stringToListFloatNull(value: String): List<Float?> {
+        return if (value.isEmpty()) emptyList() else value.split(",").map { it.toFloatOrNull() }
     }
 
     @TypeConverter
