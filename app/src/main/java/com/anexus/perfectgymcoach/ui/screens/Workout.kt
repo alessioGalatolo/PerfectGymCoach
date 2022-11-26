@@ -268,7 +268,8 @@ fun Workout(navController: NavHostController, programId: Long,
                         viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
                         viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
                     },
-                    updateValues = { a, b, c, d -> viewModel.onEvent(WorkoutEvent.EditSetRecord(a, b, c, d)) }
+                    updateValues = { a, b, c, d -> viewModel.onEvent(WorkoutEvent.EditSetRecord(a, b, c, d)) },
+                    updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare))}
                 )
             }
         ) { padding, bottomBarSurface ->

@@ -25,10 +25,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
-import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
+import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
+import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
@@ -36,7 +36,9 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import kotlin.math.min
 
-@OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class,
+    ExperimentalMaterial3Api::class
+)
 @Composable
 fun ExercisePage(
     pagerState: PagerState,
@@ -46,10 +48,11 @@ fun ExercisePage(
     title: @Composable () -> Unit,
     addSet: () -> Unit,
     updateBottomBar: (Int, Float) -> Unit,
-    currentExerciseRecords: List<ExerciseRecord>,
-    ongoingRecord: ExerciseRecord?,
+    currentExerciseRecords: List<ExerciseRecordAndEquipment>,
+    ongoingRecord: ExerciseRecordAndEquipment?,
     restCounter: Long?,
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
+    updateTare: (Float) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -148,6 +151,66 @@ fun ExercisePage(
                             horizontalAlignment = CenterHorizontally
                         ) {
                             Text("Rest: ${workoutExercises[page].rest}s", Modifier.align(Alignment.Start))
+
+                            AnimatedVisibility(
+                                visible = workoutTime != null &&
+                                        workoutExercises[page].equipment == Exercise.Equipment.BARBELL,
+                                enter = slideInVertically() + fadeIn(),
+                                exit = slideOutVertically() + fadeOut()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Barbell: ")
+                                    var barbellName: String by remember {
+                                        mutableStateOf(ExerciseRecord.BarbellType.MEN_OLYMPIC.barbellName)
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        var expanded by remember { mutableStateOf(false) }
+                                        ExposedDropdownMenuBox(
+                                            expanded = expanded,
+                                            onExpandedChange = { expanded = !expanded },
+                                            modifier = Modifier
+                                                .widthIn(1.dp, Dp.Infinity)
+                                                .weight(1f)
+                                        ) {
+                                            OutlinedTextField(
+                                                readOnly = true,
+                                                value = barbellName,
+                                                onValueChange = {},
+                                                trailingIcon = {
+                                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                                        expanded = expanded
+                                                    )
+                                                },
+                                                colors = ExposedDropdownMenuDefaults.textFieldColors(
+                                                    containerColor = Color.Transparent
+                                                ),
+                                                modifier = Modifier.menuAnchor()
+                                            )
+                                            ExposedDropdownMenu(
+                                                expanded = expanded,
+                                                onDismissRequest = { expanded = false },
+                                            ) {
+                                                ExerciseRecord.BarbellType.values().forEach { selectionOption ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(selectionOption.barbellName) },
+                                                        onClick = {
+                                                            barbellName = selectionOption.barbellName
+                                                            expanded = false
+                                                            updateTare(selectionOption.weight)
+                                                        },
+                                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                    }
+                                }
+                            }
                             workoutExercises[page].reps.forEachIndexed { setCount, repsCount ->
                                 val toBeDone = setsDone.value <= setCount
                                 val repsInRow: String
@@ -236,7 +299,16 @@ fun ExercisePage(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontStyle = FontStyle.Italic // TODO: add how many days ago
                                 ) // FIXME
-                                Text("Tare: ${record.tare}") // FIXME
+                                if (record.equipment == Exercise.Equipment.BARBELL) {
+                                    Text("Barbell used: " +
+                                            ExerciseRecord.BarbellType.values().find {
+                                                it.weight == record.tare
+                                            }!!.barbellName
+                                    )
+                                } else if (record.equipment == Exercise.Equipment.BODY_WEIGHT) {
+                                    Text("Bodyweight at the time: ${record.tare}"
+                                    )
+                                }
                                 record.reps.forEachIndexed { index, rep ->
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,

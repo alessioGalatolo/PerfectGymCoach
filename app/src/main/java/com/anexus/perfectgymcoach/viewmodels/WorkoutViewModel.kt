@@ -5,7 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
+import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndEquipment
+import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndInfo
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
@@ -26,10 +29,11 @@ data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
     val programId: Long = 0L,
     val workoutExercises: List<WorkoutExercise> = emptyList(),
-    val allRecords: Map<Long, List<ExerciseRecord>> = emptyMap(), // old records
+    val allRecords: Map<Long, List<ExerciseRecordAndEquipment>> = emptyMap(), // old records
     val workoutTime: Long? = null, // in seconds
     val restTimestamp: Long? = null, // workout time of end of rest
     val workoutId: Long = 0L,
+    val tare: Float = 0f,
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
     val weightBottomBar: String = "0.0" // weight to be displayed in bottom bar
 )
@@ -61,6 +65,8 @@ sealed class WorkoutEvent{
     data class UpdateReps(val newValue: String): WorkoutEvent()
 
     data class UpdateWeight(val newValue: String): WorkoutEvent()
+
+    data class UpdateTare(val newValue: Float): WorkoutEvent()
 
     data class EditSetRecord(
         val reps: Int,
@@ -127,7 +133,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         _state.value = state.value.copy(workoutExercises = exs)
                         retrieveExercisesRecords?.cancel()
                         retrieveExercisesRecords = this.launch {
-                            repository.getExerciseRecords(
+                            repository.getExerciseRecordsAndEquipment(
                                 exs.map { it.extExerciseId }
                             ).collect { records ->
                                 val allRecords = records.groupBy { it.extExerciseId }
@@ -165,6 +171,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
                     _state.value = state.value.copy(restTimestamp = state.value.workoutTime!!+event.exerciseRest)
                     if (record == null) {
+                        if (state.value.workoutExercises[event.exerciseInWorkout].equipment == Exercise.Equipment.BODY_WEIGHT)
+                            _state.value = state.value.copy(tare = repository.getUserWeight().first())
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 extWorkoutId = state.value.workoutId,
@@ -172,14 +180,23 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 exerciseInWorkout = event.exerciseInWorkout,
                                 date = Calendar.getInstance(),
                                 reps = listOf(state.value.repsBottomBar.toInt()),
-                                weights = listOf(state.value.weightBottomBar.toFloat())
+                                weights = listOf(state.value.weightBottomBar.toFloat()),
+                                tare = state.value.tare
                             )
                         )
                     } else {
-                        repository.addExerciseRecord(record.copy(
-                            reps = record.reps.plus(state.value.repsBottomBar.toInt()),
-                            weights = record.weights.plus(state.value.weightBottomBar.toFloat())
-                        ))
+                        repository.addExerciseRecord(
+                            ExerciseRecord(
+                                record.recordId,
+                                record.extExerciseId,
+                                record.extWorkoutId,
+                                record.exerciseInWorkout,
+                                record.date,
+                                record.reps.plus(state.value.repsBottomBar.toInt()),
+                                record.weights.plus(state.value.weightBottomBar.toFloat()),
+                                record.tare
+                            )
+                        )
                     }
                 }
             }
@@ -239,6 +256,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.UpdateWeight -> {
                 _state.value = state.value.copy(weightBottomBar = event.newValue)
             }
+            is WorkoutEvent.UpdateTare -> {
+                _state.value = state.value.copy(tare = event.newValue)
+            }
             is WorkoutEvent.ResumeWorkout -> {
                 viewModelScope.launch{
                     val workoutId = repository.getCurrentWorkout().first()
@@ -271,10 +291,18 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         val weights = record.weights.toMutableList()
                         reps[event.set] = event.reps
                         weights[event.set] = event.weight
-                        repository.addExerciseRecord(record.copy(
-                            reps = reps,
-                            weights = weights
-                        ))
+                        repository.addExerciseRecord(
+                            ExerciseRecord(
+                                record.recordId,
+                                record.extExerciseId,
+                                record.extWorkoutId,
+                                record.exerciseInWorkout,
+                                record.date,
+                                reps,
+                                weights,
+                                record.tare
+                            )
+                        )
                     }
                 }
             }

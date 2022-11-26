@@ -37,6 +37,13 @@ interface ExerciseRecordDao {
         "WHERE extExerciseId IN (:exerciseIds)")
     fun getRecords(exerciseIds: List<Long>): Flow<List<ExerciseRecord>>
 
+    @Query(
+        "SELECT exerciserecord.*, exercise.equipment " +
+        "FROM exerciserecord " +
+        "INNER JOIN exercise ON exerciserecord.extExerciseId = exercise.exerciseId " +
+        "WHERE exerciserecord.extExerciseId IN (:exerciseIds)")
+    fun getRecordsWithEquipment(exerciseIds: List<Long>): Flow<List<ExerciseRecordAndEquipment>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: ExerciseRecord): Long
 
