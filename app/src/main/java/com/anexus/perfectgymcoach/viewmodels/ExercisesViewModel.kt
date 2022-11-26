@@ -84,6 +84,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                     _state.value = state.value.copy(exercisesToDisplay = state.value.exercisesFilterEquip!!.filter {
                         it.name.contains(event.query, ignoreCase = true)
                                 || it.primaryMuscle.muscleName.contains(event.query, ignoreCase = true)
+                                || it.variations.any { it1 -> it1.contains(event.query, ignoreCase = true) }
                                 || it.equipment.equipmentName.contains(event.query, ignoreCase = true)
                                 || it.secondaryMuscles.any { it1 -> it1.muscleName.contains(event.query, ignoreCase = true) }
                     })
