@@ -298,7 +298,7 @@ fun ExercisePage(
                                     dateFormat.format(record.date.time),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontStyle = FontStyle.Italic // TODO: add how many days ago
-                                ) // FIXME
+                                )
                                 if (record.equipment == Exercise.Equipment.BARBELL) {
                                     Text("Barbell used: " +
                                             ExerciseRecord.BarbellType.values().find {
@@ -306,8 +306,7 @@ fun ExercisePage(
                                             }!!.barbellName
                                     )
                                 } else if (record.equipment == Exercise.Equipment.BODY_WEIGHT) {
-                                    Text("Bodyweight at the time: ${record.tare}"
-                                    )
+                                    Text("Bodyweight at the time: ${record.tare}")
                                 }
                                 record.reps.forEachIndexed { index, rep ->
                                     Row(

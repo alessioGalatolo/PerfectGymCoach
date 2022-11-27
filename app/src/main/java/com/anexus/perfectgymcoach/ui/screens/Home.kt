@@ -182,18 +182,19 @@ fun Home(navController: NavHostController,
                             }
                             Spacer(Modifier.height(8.dp))
                         }
-                        if (exs.isNotEmpty()) {
-                            Column (verticalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.weight(1f).fillMaxHeight()
-                            ){
-                                HorizontalPager(count = exs.size, state = pagerState,
+                        Column (verticalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                        ){
+                            if (exs.isNotEmpty()) {
+                                HorizontalPager(
+                                    count = exs.size, state = pagerState,
                                     modifier = Modifier.width(150.dp)
                                         .height(150.dp / 3 * 2)
                                         .padding(8.dp)
                                         .clip(AbsoluteRoundedCornerShape(12.dp))
                                         .align(Alignment.End)
                                 ) { page ->
-                                    Box (Modifier.wrapContentSize()) {
+                                    Box(Modifier.wrapContentSize()) {
                                         AsyncImage(
                                             model = exs[page].image,
                                             contentDescription = null,
@@ -204,34 +205,34 @@ fun Home(navController: NavHostController,
                                         )
                                     }
                                 }
-                                // FIXME: should go to the bottom but does not
-                                Row (horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.Bottom,
-                                    modifier = Modifier.fillMaxWidth()
-                                ){
-                                    IconButton(
-                                        onClick = {
-                                            navController.navigate("${MainScreen.Workout.route}/" +
-                                                    "${it.programId}/${true}/${false}")
-                                        }) {
-                                        Icon(Icons.Default.RocketLaunch, null)
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            navController.navigate(
-                                                "${MainScreen.AddProgramExercise.route}/" +
-                                                        "${it.name}/" +
-                                                        "${it.programId}"
-                                            )
-                                        }) {
-                                        Icon(Icons.Outlined.Edit, null)
-                                    }
-                                }
                                 LaunchedEffect(viewModel.state.value.animationTick){
                                     pagerState.animateScrollToPage(
                                         (pagerState.currentPage + 1) %
                                                 pagerState.pageCount
                                     )
+                                }
+                            }
+                            // FIXME: should go to the bottom but does not
+                            Row (horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.Bottom,
+                                modifier = Modifier.fillMaxWidth()
+                            ){
+                                IconButton(
+                                    onClick = {
+                                        navController.navigate("${MainScreen.Workout.route}/" +
+                                                "${it.programId}/${true}/${false}")
+                                    }) {
+                                    Icon(Icons.Default.RocketLaunch, null)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        navController.navigate(
+                                            "${MainScreen.AddProgramExercise.route}/" +
+                                                    "${it.name}/" +
+                                                    "${it.programId}"
+                                        )
+                                    }) {
+                                    Icon(Icons.Outlined.Edit, null)
                                 }
                             }
                         }

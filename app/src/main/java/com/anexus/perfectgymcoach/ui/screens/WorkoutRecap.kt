@@ -38,6 +38,8 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.data.exercise.Exercise
+import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.ui.NavigationScreen
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
@@ -356,8 +358,17 @@ fun WorkoutRecap(
                         )
                         Column(Modifier.padding(8.dp)) {
                             Text(text = exercise.name + exercise.variation, style = MaterialTheme.typography.titleLarge)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("Tare: ${exercise.tare}") // FIXME
+                            if (exercise.equipment == Exercise.Equipment.BARBELL) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Barbell used: " +
+                                        ExerciseRecord.BarbellType.values().find {
+                                            it.weight == exercise.tare
+                                        }!!.barbellName
+                                )
+                            } else if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Bodyweight at the time: ${exercise.tare}")
+                            }
                             Spacer(modifier = Modifier.height(4.dp))
                             exercise.reps.forEachIndexed { index, rep ->
                                 Row(

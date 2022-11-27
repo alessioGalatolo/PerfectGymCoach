@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "33cbe4db286fd5ab762fd3bcc9fdd69b",
+    "identityHash": "d0d652b38e1e8c3f721fc46498969a55",
     "entities": [
       {
         "tableName": "plan",
@@ -87,12 +87,12 @@
         ]
       },
       {
-        "tableName": "WorkoutExercise",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `extExerciseId` INTEGER NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` INTEGER NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `WorkoutExercise`(`workoutExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
+        "tableName": "ProgramExercise",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`programExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `extExerciseId` INTEGER NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` INTEGER NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
         "fields": [
           {
-            "fieldPath": "workoutExerciseId",
-            "columnName": "workoutExerciseId",
+            "fieldPath": "programExerciseId",
+            "columnName": "programExerciseId",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -148,7 +148,7 @@
         "primaryKey": {
           "autoGenerate": true,
           "columnNames": [
-            "workoutExerciseId"
+            "programExerciseId"
           ]
         },
         "indices": [],
@@ -176,21 +176,21 @@
             ]
           },
           {
-            "table": "WorkoutExercise",
+            "table": "ProgramExercise",
             "onDelete": "SET DEFAULT",
             "onUpdate": "NO ACTION",
             "columns": [
               "supersetExercise"
             ],
             "referencedColumns": [
-              "workoutExerciseId"
+              "programExerciseId"
             ]
           }
         ]
       },
       {
         "tableName": "ExerciseRecord",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recordId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extExerciseId` INTEGER NOT NULL, `extWorkoutId` INTEGER NOT NULL, `exerciseInWorkout` INTEGER NOT NULL, `date` INTEGER NOT NULL, `reps` TEXT NOT NULL, `weights` TEXT NOT NULL, `tare` REAL NOT NULL, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recordId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extExerciseId` INTEGER NOT NULL, `extWorkoutId` INTEGER NOT NULL, `exerciseInWorkout` INTEGER NOT NULL, `date` INTEGER NOT NULL, `reps` TEXT NOT NULL, `weights` TEXT NOT NULL, `variation` TEXT NOT NULL, `rest` INTEGER NOT NULL, `tare` REAL NOT NULL, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "recordId",
@@ -235,6 +235,18 @@
             "notNull": true
           },
           {
+            "fieldPath": "variation",
+            "columnName": "variation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rest",
+            "columnName": "rest",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
             "fieldPath": "tare",
             "columnName": "tare",
             "affinity": "REAL",
@@ -275,7 +287,7 @@
       },
       {
         "tableName": "WorkoutRecord",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `startDate` INTEGER NOT NULL, `intensity` TEXT NOT NULL, `duration` INTEGER NOT NULL, `volume` REAL NOT NULL, `activeTime` INTEGER NOT NULL, `calories` REAL NOT NULL, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `startDate` INTEGER, `intensity` TEXT NOT NULL, `duration` INTEGER NOT NULL, `volume` REAL NOT NULL, `activeTime` INTEGER NOT NULL, `calories` REAL NOT NULL, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "workoutId",
@@ -293,7 +305,7 @@
             "fieldPath": "startDate",
             "columnName": "startDate",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "intensity",
@@ -343,6 +355,143 @@
             ],
             "referencedColumns": [
               "programId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "WorkoutExercise",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extProgramExerciseId` INTEGER NOT NULL, `extExerciseId` INTEGER NOT NULL, `name` TEXT NOT NULL, `image` INTEGER NOT NULL, `equipment` TEXT NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` INTEGER NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT , FOREIGN KEY(`extProgramExerciseId`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
+        "fields": [
+          {
+            "fieldPath": "workoutExerciseId",
+            "columnName": "workoutExerciseId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "extWorkoutId",
+            "columnName": "extWorkoutId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "extProgramExerciseId",
+            "columnName": "extProgramExerciseId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "extExerciseId",
+            "columnName": "extExerciseId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "image",
+            "columnName": "image",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "equipment",
+            "columnName": "equipment",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "orderInProgram",
+            "columnName": "orderInProgram",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reps",
+            "columnName": "reps",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rest",
+            "columnName": "rest",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "variation",
+            "columnName": "variation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "supersetExercise",
+            "columnName": "supersetExercise",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "workoutExerciseId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "WorkoutRecord",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "extWorkoutId"
+            ],
+            "referencedColumns": [
+              "workoutId"
+            ]
+          },
+          {
+            "table": "Exercise",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "extExerciseId"
+            ],
+            "referencedColumns": [
+              "exerciseId"
+            ]
+          },
+          {
+            "table": "ProgramExercise",
+            "onDelete": "SET DEFAULT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "supersetExercise"
+            ],
+            "referencedColumns": [
+              "programExerciseId"
+            ]
+          },
+          {
+            "table": "ProgramExercise",
+            "onDelete": "SET DEFAULT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "extProgramExerciseId"
+            ],
+            "referencedColumns": [
+              "programExerciseId"
             ]
           }
         ]
@@ -413,7 +562,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '33cbe4db286fd5ab762fd3bcc9fdd69b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd0d652b38e1e8c3f721fc46498969a55')"
     ]
   }
 }

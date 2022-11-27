@@ -171,16 +171,19 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
                     _state.value = state.value.copy(restTimestamp = state.value.workoutTime!!+event.exerciseRest)
                     if (record == null) {
-                        if (state.value.workoutExercises[event.exerciseInWorkout].equipment == Exercise.Equipment.BODY_WEIGHT)
+                        val exercise = state.value.workoutExercises[event.exerciseInWorkout]
+                        if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT)
                             _state.value = state.value.copy(tare = repository.getUserWeight().first())
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 extWorkoutId = state.value.workoutId,
-                                extExerciseId = state.value.workoutExercises[event.exerciseInWorkout].extExerciseId,
+                                extExerciseId = exercise.extExerciseId,
                                 exerciseInWorkout = event.exerciseInWorkout,
                                 date = Calendar.getInstance(),
                                 reps = listOf(state.value.repsBottomBar.toInt()),
                                 weights = listOf(state.value.weightBottomBar.toFloat()),
+                                variation = exercise.variation,
+                                rest = exercise.rest,
                                 tare = state.value.tare
                             )
                         )
@@ -194,6 +197,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 record.date,
                                 record.reps.plus(state.value.repsBottomBar.toInt()),
                                 record.weights.plus(state.value.weightBottomBar.toFloat()),
+                                record.variation,
+                                record.rest,
                                 record.tare
                             )
                         )
@@ -300,6 +305,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 record.date,
                                 reps,
                                 weights,
+                                record.variation,
+                                record.rest,
                                 record.tare
                             )
                         )

@@ -113,8 +113,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                         val brightImage = remember { mutableStateOf(false) }
                         var expanded by remember { mutableStateOf(false) }
                         if (index != 0){
-                            // TODO: add option for superset
-                            Row (
+                            Row (  // row with button for superset
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
                                 modifier = Modifier

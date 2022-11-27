@@ -2,6 +2,7 @@ package com.anexus.perfectgymcoach.viewmodels
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.capitalize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.exercise.Exercise
@@ -9,10 +10,12 @@ import com.anexus.perfectgymcoach.data.exercise.ProgramExercise
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okhttp3.internal.toImmutableList
 import java.lang.Integer.min
+import java.util.*
 import javax.inject.Inject
 
 data class AddExerciseState(
@@ -34,7 +37,11 @@ sealed class AddExerciseEvent{
 
     data class GetProgramAndExercise(val programId: Long, val exerciseId: Long): AddExerciseEvent()
 
-    data class GetProgramAndProgramExercise(val programId: Long, val programExerciseId: Long): AddExerciseEvent()
+    data class GetProgramAndProgramExercise(
+        val programId: Long,
+        val programExerciseId: Long,
+        val exerciseId: Long
+    ): AddExerciseEvent()
 
     object ToggleAdvancedSets: AddExerciseEvent()
 
@@ -59,6 +66,9 @@ sealed class AddExerciseEvent{
 class AddExerciseViewModel @Inject constructor(private val repository: Repository): ViewModel() {
     private val _state = mutableStateOf(AddExerciseState())
     val state: State<AddExerciseState> = _state
+
+    var getProgramJob: Job? = null
+
 
     fun onEvent(event: AddExerciseEvent): Boolean{
         when (event) {
@@ -190,8 +200,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
             }
             is AddExerciseEvent.GetProgramAndExercise -> {
                 // is adding an exercise
-                if (state.value.program == null) {
-                    viewModelScope.launch {
+                if (getProgramJob == null) {
+                    getProgramJob = viewModelScope.launch {
                         val programMapExercises =
                             repository.getProgramMapExercises(event.programId).first()
 
@@ -205,8 +215,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
             }
             is AddExerciseEvent.GetProgramAndProgramExercise -> {
                 // is updating existing exercise
-                if (state.value.program == null) {
-                    viewModelScope.launch {
+                if (getProgramJob == null) {
+                    getProgramJob = viewModelScope.launch {
                         val programMapExercises =
                             repository.getProgramMapExercises(event.programId).first()
 
@@ -214,12 +224,18 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         _state.value = state.value.copy(
                             programExerciseId = ex.programExerciseId,
                             sets = ex.reps.size.toString(),
+                            variation = ex.variation.ifBlank { "No variation" }
+                                .replace("(", "")
+                                .replace(")", "")
+                                .trim()
+                                .replaceFirstChar { it.uppercaseChar() },
                             reps = "${ex.reps[0]}",
                             rest = "${ex.rest}", // fixme when rest becomes an array
                             repsArray = List(ex.reps.size) { "${ex.reps[it]}" },
                             restArray = List(ex.reps.size) { "${ex.rest}" }, // fixme when rest becomes an array
                             note = ex.note,
                             advancedSets = ex.reps.distinct().size > 1,
+                            exercise = repository.getExercise(event.exerciseId).first(),
                             program = programMapExercises.keys.first(),
                             exerciseNumber = programMapExercises.values.first().find {
                                 it.programExerciseId == ex.programExerciseId

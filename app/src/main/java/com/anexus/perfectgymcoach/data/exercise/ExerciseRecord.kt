@@ -24,7 +24,7 @@ import java.util.*
         )
     ]
 )
-data class ExerciseRecord( // FIXME: blends in different variation of the exercise in the records
+data class ExerciseRecord(
     @PrimaryKey(autoGenerate = true) val recordId: Long = 0L,
     val extExerciseId: Long,
     val extWorkoutId: Long,
@@ -32,6 +32,8 @@ data class ExerciseRecord( // FIXME: blends in different variation of the exerci
     val date: Calendar, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
+    val variation: String,
+    val rest: Int,
     val tare: Float = 0f // e.g. barbell weight or bodyweight
 ) : Parcelable {
     enum class BarbellType(val barbellName: String, val weight: Float){
@@ -54,6 +56,8 @@ data class ExerciseRecordAndEquipment(
     val reps: List<Int>,
     val weights: List<Float>,
     val tare: Float = 0f,
+    val variation: String,
+    val rest: Int,
     val equipment: Exercise.Equipment
 ) : Parcelable
 
@@ -67,9 +71,10 @@ data class ExerciseRecordAndInfo(
     val date: Calendar, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
-    val tare: Float = 0f, // e.g. barbell weight or bodyweight
-    val name: String,
     val variation: String,
     val rest: Int,
-    val image: Int
+    val tare: Float = 0f, // e.g. barbell weight or bodyweight
+    val name: String,
+    val image: Int,
+    val equipment: Exercise.Equipment
 ) : Parcelable
