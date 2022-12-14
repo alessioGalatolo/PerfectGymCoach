@@ -35,25 +35,30 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
-import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.*
+import com.anexus.perfectgymcoach.ui.screens.destinations.ExercisesByMuscleDestination
+import com.anexus.perfectgymcoach.ui.screens.destinations.WorkoutRecapDestination
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
-
+@Destination
 @OptIn(
     ExperimentalPagerApi::class, ExperimentalMaterial3Api::class
 )
 @Composable
-fun Workout(navController: NavHostController, programId: Long,
-            quickStart: Boolean,
-            resumeWorkout: Boolean = false,
-            viewModel: WorkoutViewModel = hiltViewModel()
+fun Workout(
+    navigator: DestinationsNavigator,
+    programId: Long,
+    quickStart: Boolean = false,
+    resumeWorkout: Boolean = false,
+    viewModel: WorkoutViewModel = hiltViewModel()
 ) {
     if (resumeWorkout)
         viewModel.onEvent(WorkoutEvent.ResumeWorkout)
@@ -76,7 +81,7 @@ fun Workout(navController: NavHostController, programId: Long,
     CancelWorkoutDialog(
         dialogueIsOpen = viewModel.state.value.cancelWorkoutDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog) },
-        cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navController.popBackStack() },
+        cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navigator.navigateUp() },
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) }
     )
     val pagerState = rememberPagerState()
@@ -153,7 +158,7 @@ fun Workout(navController: NavHostController, programId: Long,
 
     val onClose = {
         if (viewModel.state.value.workoutTime == null)
-            navController.popBackStack()
+            navigator.navigateUp()
         else
             viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
         Unit
@@ -163,8 +168,11 @@ fun Workout(navController: NavHostController, programId: Long,
 
     val completeWorkout: () -> Unit = {
         viewModel.onEvent(WorkoutEvent.FinishWorkout(workoutIntensity.value))
-        navController.popBackStack()
-        navController.navigate("${MainScreen.WorkoutRecap.route}/${viewModel.state.value.workoutId}")
+        navigator.navigateUp()
+        navigator.navigate(
+            WorkoutRecapDestination(workoutId = viewModel.state.value.workoutId),
+            onlyIfResumed = true
+        )
     }
 
     if (viewModel.state.value.workoutExercises.isNotEmpty()) {
@@ -355,7 +363,7 @@ fun Workout(navController: NavHostController, programId: Long,
                 TopAppBar(
                     title = {},
                     navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = { navigator.navigateUp() }) {
                             Icon(
                                 imageVector = Icons.Filled.ArrowBack,
                                 contentDescription = "Go back"
@@ -366,11 +374,12 @@ fun Workout(navController: NavHostController, programId: Long,
                 )
             },
             floatingActionButton = {
-            LargeFloatingActionButton(onClick = { navController.navigate(
-                "${MainScreen.ExercisesByMuscle.route}/" +
-                        "Current workout/" +
-                        "$programId/" +
-                        "${false}"
+            LargeFloatingActionButton(onClick = { navigator.navigate(
+                ExercisesByMuscleDestination(
+                    programName = "Current workout",
+                    programId = programId,
+                ),
+                onlyIfResumed = true
             ) }, Modifier.navigationBarsPadding()) {
                 Icon(Icons.Default.Add, null,
                     Modifier.size(FloatingActionButtonDefaults.LargeIconSize))

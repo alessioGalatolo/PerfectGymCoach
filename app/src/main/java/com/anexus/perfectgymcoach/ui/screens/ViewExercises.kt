@@ -54,22 +54,25 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.screens.destinations.AddExerciseDialogDestination
+import com.anexus.perfectgymcoach.ui.screens.destinations.CreateExerciseDialogDestination
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.delay
 
-
+@Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalComposeUiApi::class, ExperimentalAnimationApi::class
 )
 @Composable
 fun ViewExercises(
-    navController: NavHostController,
+    navigator: DestinationsNavigator,
     programId: Long,
     muscleOrdinal: Int,
-    focusSearch: Boolean,
+    focusSearch: Boolean = false,
     viewModel: ExercisesViewModel = hiltViewModel()
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -88,7 +91,7 @@ fun ViewExercises(
             TopAppBar(
                 title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Go back"
@@ -242,9 +245,12 @@ fun ViewExercises(
                                                 null
                                             )
                                         } else {
-                                            navController.navigate(
-                                                "${MainScreen.AddExerciseDialog.route}/" +
-                                                        "$programId/${exercise.exerciseId}/${0L}"
+                                            navigator.navigate(
+                                                AddExerciseDialogDestination(
+                                                    programId = programId,
+                                                    exerciseId = exercise.exerciseId
+                                                ),
+                                                onlyIfResumed = true
                                             )
                                         }
                                     },
@@ -306,10 +312,11 @@ fun ViewExercises(
                     item {
                         Box(Modifier.fillMaxWidth()) {
                             Button(
-                                modifier = Modifier.align(Alignment.Center),
+                                modifier = Modifier.align(Center),
                                 onClick = {
-                                    navController.navigate(
-                                        MainScreen.CreateExerciseDialog.route
+                                    navigator.navigate(
+                                        CreateExerciseDialogDestination(),
+                                        onlyIfResumed = true
                                     )
                                 }
                             ) {

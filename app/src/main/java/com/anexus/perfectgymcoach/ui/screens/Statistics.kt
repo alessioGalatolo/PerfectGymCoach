@@ -11,12 +11,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Destination
 @Composable
-fun Statistics(onNavigate: NavHostController,
-               contentPadding: PaddingValues) {
+fun Statistics(
+    destinationsNavigator: DestinationsNavigator
+) {
     Column(modifier = Modifier/*.verticalScroll(rememberScrollState())*/.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {

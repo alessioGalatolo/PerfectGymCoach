@@ -23,20 +23,21 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.TextFieldWithButtons
+import com.anexus.perfectgymcoach.ui.screens.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.viewmodels.AddExerciseEvent
 import com.anexus.perfectgymcoach.viewmodels.AddExerciseViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-
+@Destination
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun AddExerciseDialogue(
-    navHostController: NavHostController,
+fun AddExerciseDialog(
+    navigator: DestinationsNavigator,
     programId: Long,
     exerciseId: Long = 0L,
     programExerciseId: Long = 0L,
@@ -59,7 +60,7 @@ fun AddExerciseDialogue(
             TopAppBar(title = { Text(viewModel.state.value.exercise?.name ?: "") },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navHostController.popBackStack() }) {
+                    IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Close"
@@ -75,13 +76,18 @@ fun AddExerciseDialogue(
                                 snackbarHostState.showSnackbar(fillString)
                             }
                         else {
-                            navHostController.popBackStack()
-                            navHostController.popBackStack()
-                            navHostController.popBackStack()
-                            navHostController.navigate(
-                                "${MainScreen.ExercisesByMuscle.route}/" +
-                                        viewModel.state.value.program!!.name +
-                                        "/${programId}/${true}")
+                            // FIXME:
+                            navigator.navigateUp()
+                            navigator.navigateUp()
+                            navigator.navigateUp()
+                            navigator.navigate(
+                                ExercisesByMuscleDestination(
+                                    programName = viewModel.state.value.program!!.name,
+                                    programId = programId,
+                                    successfulAddExercise = true
+                                ),
+                                onlyIfResumed = true
+                            )
                         }
                     }, modifier = Modifier.align(CenterVertically)) {
                         Text(text = stringResource(R.string.save))

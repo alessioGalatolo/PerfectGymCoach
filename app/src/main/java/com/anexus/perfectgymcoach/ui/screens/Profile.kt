@@ -35,16 +35,19 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import com.anexus.perfectgymcoach.viewmodels.ProfileViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@Destination
 @Composable
-fun Profile(onNavigate: NavHostController,
-            contentPadding: PaddingValues,
-            viewModel: ProfileViewModel = hiltViewModel()
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+fun Profile(
+    destinationsNavigator: DestinationsNavigator,
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     var editName by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
@@ -74,7 +77,6 @@ fun Profile(onNavigate: NavHostController,
         .verticalScroll(rememberScrollState())
         .padding(horizontal = 16.dp)
         .padding(top = 16.dp)
-        .padding(contentPadding)
         .imePadding()  // FIXME: ime padding not working
         .fillMaxSize()) {
         Row (

@@ -4,40 +4,34 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.viewmodels.CreateExerciseEvent
 import com.anexus.perfectgymcoach.viewmodels.CreateExerciseViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-
+@Destination
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun CreateExerciseDialogue(
-    navHostController: NavHostController,
+fun CreateExerciseDialog(
+    navigator: DestinationsNavigator,
     viewModel: CreateExerciseViewModel = hiltViewModel()
 ) {
     val scope = rememberCoroutineScope()
@@ -52,7 +46,7 @@ fun CreateExerciseDialogue(
             // FIXME: goes back a second time cause the list of exercises isn't updated
             TopAppBar(title = { Text("Create a new Exercise") },
                 navigationIcon = {
-                    IconButton(onClick = { navHostController.popBackStack() }) {
+                    IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Close"
@@ -68,9 +62,9 @@ fun CreateExerciseDialogue(
                                 snackbarHostState.showSnackbar(fillString)
                             }
                         else {
-                            navHostController.popBackStack()
+                            navigator.navigateUp()
                             // FIXME: goes back a second time cause the list of exercises isn't updated
-                            navHostController.popBackStack()
+                            navigator.navigateUp()
                         }
                     }, modifier = Modifier.align(CenterVertically)) {
                         Text(text = stringResource(R.string.save))
@@ -111,7 +105,7 @@ fun CreateExerciseDialogue(
                                         role = Role.RadioButton
                                     )
                                     .padding(horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = CenterVertically
                             ) {
                                 RadioButton(
                                     selected = (text == viewModel.state.value.equipment.equipmentName),

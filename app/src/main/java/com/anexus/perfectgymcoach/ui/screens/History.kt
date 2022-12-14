@@ -19,22 +19,23 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.screens.destinations.WorkoutRecapDestination
 import com.anexus.perfectgymcoach.viewmodels.HistoryViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.text.SimpleDateFormat
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+@Destination
 @Composable
-fun History(navController: NavHostController,
-            contentPadding: PaddingValues,
-            viewModel: HistoryViewModel = hiltViewModel()
+@OptIn(ExperimentalMaterial3Api::class)
+fun History(
+    navigator: DestinationsNavigator,
+    viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val records = viewModel.state.value.workoutRecords.filter { it.duration > 0 }
     if (records.isEmpty())
         Column(
             modifier = Modifier
-                .padding(contentPadding)
                 .fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -52,12 +53,16 @@ fun History(navController: NavHostController,
     else
         LazyColumn(modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-            contentPadding = contentPadding
+            .padding(horizontal = 16.dp)
         ) {
             items(items = records, key = { it }){
                 Card(modifier = Modifier.fillMaxWidth(), onClick = {
-                    navController.navigate("${MainScreen.WorkoutRecap.route}/${it.workoutId}")
+                    navigator.navigate(
+                        WorkoutRecapDestination(
+                            workoutId = it.workoutId
+                        ),
+                        onlyIfResumed = true
+                    )
                 }) {
                     Row(Modifier.padding(8.dp).fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -70,11 +75,6 @@ fun History(navController: NavHostController,
                             Text("Started at: $date")
                             Text("Duration: ${DateUtils.formatElapsedTime(it.duration)}")
                         }
-//                        IconButton(onClick = {
-//                            navController.navigate("${MainScreen.WorkoutRecap.route}/${it.workoutId}")
-//                        }) {
-//                            Icon(Icons.Default.Info, null)
-//                        }
                     }
                 }
                 Spacer(Modifier.height(8.dp))

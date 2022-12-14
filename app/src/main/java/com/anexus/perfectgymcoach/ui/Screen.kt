@@ -12,35 +12,20 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.ui.screens.destinations.HistoryDestination
+import com.anexus.perfectgymcoach.ui.screens.destinations.HomeDestination
+import com.anexus.perfectgymcoach.ui.screens.destinations.ProfileDestination
+import com.anexus.perfectgymcoach.ui.screens.destinations.StatisticsDestination
+import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
-sealed interface Screen{
-    val route: String
-    val resourceId: Int
-}
-
-sealed class MainScreen(override val route: String,
-                        @StringRes override val resourceId: Int) : Screen {
-    object Main : MainScreen("main", R.string.main)
-    object Workout : MainScreen("workout", R.string.workout)
-    object ChangePlan : MainScreen("change_plan", R.string.change_plan)
-    object AddProgram : MainScreen("add_program", R.string.add_program)
-    object AddProgramExercise : MainScreen("add_exercise", R.string.add_exercise)
-    object ExercisesByMuscle : MainScreen("exercises_by_muscle", R.string.exercises_by_muscle)
-    object ViewExercises : MainScreen("view_exercises", R.string.view_exercises)
-    object AddExerciseDialog : MainScreen("add_exercise_dialog", R.string.add_exercise_dialog)
-    object CreateExerciseDialog : MainScreen("create_exercise_dialog", R.string.create_exercise_dialog)
-    object WorkoutRecap : MainScreen("workout_recap", R.string.workout_recap)
-}
-
-sealed class NavigationScreen(
-    override val route: String,
-    @StringRes override val resourceId: Int,
+enum class BottomBarDestination(
+    val direction: DirectionDestinationSpec,
+    @StringRes val label: Int,
     val icon: ImageVector,
-    val iconSelected: ImageVector) : Screen{
-    // TODO: use R8 / ProGuard to remove unused icons from your application.
-
-    object Home : NavigationScreen("home", R.string.home, Icons.Outlined.Home, Icons.Filled.Home)
-    object History : NavigationScreen("history", R.string.history, Icons.Outlined.History, Icons.Filled.History)
-    object Statistics : NavigationScreen("statistics", R.string.statistics, Icons.Outlined.Analytics, Icons.Filled.Analytics)
-    object Profile : NavigationScreen("profile", R.string.profile, Icons.Outlined.Person, Icons.Filled.Person)
+    val iconSelected: ImageVector
+) {
+    Home(HomeDestination, R.string.home, Icons.Outlined.Home, Icons.Filled.Home),
+    History(HistoryDestination, R.string.history, Icons.Outlined.History, Icons.Filled.History),
+    Statistics(StatisticsDestination, R.string.statistics, Icons.Outlined.Analytics, Icons.Filled.Analytics),
+    Profile(ProfileDestination, R.string.profile, Icons.Outlined.Person, Icons.Filled.Person)
 }

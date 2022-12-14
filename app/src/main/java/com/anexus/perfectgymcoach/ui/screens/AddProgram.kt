@@ -19,22 +19,28 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
-import com.anexus.perfectgymcoach.ui.MainScreen
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
+import com.anexus.perfectgymcoach.ui.screens.destinations.AddWorkoutExerciseDestination
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AddProgram(navController: NavHostController, name: String, planId: Long,
-               openDialogNow: Boolean,
-               viewModel: ProgramsViewModel = hiltViewModel()) {
+fun AddProgram(
+    navigator: DestinationsNavigator,
+    planName: String,
+    planId: Long,
+    openDialogNow: Boolean = false,
+    viewModel: ProgramsViewModel = hiltViewModel()
+) {
     viewModel.onEvent(ProgramsEvent.GetPrograms(planId))
     InsertNameDialog(
         prompt = "Name of the new program",
@@ -70,9 +76,9 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(name) },
+                title = { Text(planName) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Go back"
@@ -152,10 +158,12 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                                 viewModel.state.value.exercisesAndInfo[programEntry.programId]
                                     ?: emptyList(),
                                 onCardClick = {
-                                    navController.navigate(
-                                        "${MainScreen.AddProgramExercise.route}/" +
-                                                "${programEntry.name}/" +
-                                                "${programEntry.programId}"
+                                    navigator.navigate(
+                                        AddWorkoutExerciseDestination(
+                                          programName = programEntry.name,
+                                          programId = programEntry.programId
+                                        ),
+                                        onlyIfResumed = true
                                     )
                                 }, onRename = {
                                     viewModel.onEvent(
@@ -166,7 +174,7 @@ fun AddProgram(navController: NavHostController, name: String, planId: Long,
                                 }, onDelete = {
                                     viewModel.onEvent(ProgramsEvent.DeleteProgram(programEntry.programId))
                                 },
-                                navController = navController,
+                                navigator = navigator,
                                 modifier = Modifier.padding(end = 16.dp)
                             )
                         }
