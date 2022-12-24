@@ -25,14 +25,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
 import com.anexus.perfectgymcoach.ui.components.TextFieldWithButtons
-import com.anexus.perfectgymcoach.ui.screens.destinations.ExercisesByMuscleDestination
+import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.viewmodels.AddExerciseEvent
 import com.anexus.perfectgymcoach.viewmodels.AddExerciseViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
+@ChangePlanNavGraph
 @Destination
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable

@@ -23,14 +23,16 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
+import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
-import com.anexus.perfectgymcoach.ui.screens.destinations.AddWorkoutExerciseDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutExerciseDestination
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@ChangePlanNavGraph
 @Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable

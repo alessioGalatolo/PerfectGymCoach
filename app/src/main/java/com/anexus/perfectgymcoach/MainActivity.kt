@@ -19,9 +19,6 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import com.anexus.perfectgymcoach.ui.*
 import com.anexus.perfectgymcoach.ui.screens.*
-import com.anexus.perfectgymcoach.ui.screens.destinations.HistoryDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.HomeDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.ProfileDestination
 import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -54,76 +51,14 @@ class MainActivity : ComponentActivity() {
             val engine = rememberAnimatedNavHostEngine()
             val navController = engine.rememberNavController()
 
-            // scroll behaviour for top bar
-            val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                rememberTopAppBarState()
-            )
-
             PerfectGymCoachTheme {
-                val startRoute = NavGraphs.root.startRoute
-                val currentDestination = navController.appCurrentDestinationAsState().value ?: startRoute.startAppDestination
-                Scaffold(modifier = Modifier
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    topBar = {
-                        LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
-                            scrollBehavior = scrollBehavior,
-                            actions = {
-                                IconButton(onClick = { /* TODO */ }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Settings,
-                                        contentDescription = "App settings"
-                                    )
-                                }
-                            })
-                    }, content = { innerPadding ->
-                        DestinationsNavHost(
-                            navGraph = NavGraphs.root,
-                            engine = engine,
-                            navController = navController,
-                            modifier = Modifier.padding(innerPadding),
-                            startRoute = startRoute
-                        )
-                    }, bottomBar = {
-                        NavigationBar (windowInsets = WindowInsets.navigationBars) {
-                            BottomBarDestination.values().forEach { destination ->
-                                val selected = navController.isRouteOnBackStack(destination.direction)
-                                NavigationBarItem(
-                                    icon = {
-                                        Icon(
-                                            if (selected) destination.iconSelected else destination.icon,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    label = { Text(stringResource(destination.label)) },
-                                    selected = selected,
-                                    onClick = {
-                                        if (selected) {
-                                            // When we click again on a bottom bar item and it was already selected
-                                            // we want to pop the back stack until the initial destination of this bottom bar item
-                                            navController.popBackStack(destination.direction, false)
-                                            return@NavigationBarItem
-                                        }
-                                        navController.navigate(destination.direction.route) {
-                                            // Pop up to the root of the graph to
-                                            // avoid building up a large stack of destinations
-                                            // on the back stack as users select items
-                                            popUpTo(NavGraphs.root) {
-                                                saveState = true
-                                            }
-
-                                            // Avoid multiple copies of the same destination when
-                                            // reselecting the same item
-                                            launchSingleTop = true
-                                            // Restore state when reselecting a previously selected item
-                                            restoreState = true
-                                        }
-                                    }
-                                )
-                            }
-                        }
-
-                    }
+                DestinationsNavHost(
+                    navGraph = NavGraphs.root,
+                    engine = engine,
+                    navController = navController/*,
+                    modifier = Modifier.padding(innerPadding)*/
                 )
+//                RootDestinationGraph()
             }
         }
     }

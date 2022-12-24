@@ -22,14 +22,16 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
-import com.anexus.perfectgymcoach.ui.screens.destinations.AddProgramDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
 import com.anexus.perfectgymcoach.viewmodels.PlansEvent
 import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
+@ChangePlanNavGraph(start = true)
 @Destination
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

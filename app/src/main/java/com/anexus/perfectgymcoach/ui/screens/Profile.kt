@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import com.anexus.perfectgymcoach.viewmodels.ProfileViewModel
@@ -41,7 +42,7 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
 
-
+@BottomNavigationNavGraph
 @Destination
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)

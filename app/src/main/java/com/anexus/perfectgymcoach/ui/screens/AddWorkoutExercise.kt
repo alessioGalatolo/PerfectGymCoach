@@ -41,13 +41,15 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseReorder
-import com.anexus.perfectgymcoach.ui.screens.destinations.AddExerciseDialogDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.ExercisesByMuscleDestination
+import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
+import com.anexus.perfectgymcoach.ui.destinations.AddExerciseDialogDestination
+import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@ChangePlanNavGraph
 @Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable

@@ -35,9 +35,10 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
+import com.anexus.perfectgymcoach.ui.WorkoutNavGraph
 import com.anexus.perfectgymcoach.ui.components.*
-import com.anexus.perfectgymcoach.ui.screens.destinations.ExercisesByMuscleDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.WorkoutRecapDestination
+import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
+import com.anexus.perfectgymcoach.ui.destinations.WorkoutRecapDestination
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -48,6 +49,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
+@WorkoutNavGraph(start = true)
 @Destination
 @OptIn(
     ExperimentalPagerApi::class, ExperimentalMaterial3Api::class
@@ -55,7 +57,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun Workout(
     navigator: DestinationsNavigator,
-    programId: Long,
+    programId: Long = 0,
     quickStart: Boolean = false,
     resumeWorkout: Boolean = false,
     viewModel: WorkoutViewModel = hiltViewModel()

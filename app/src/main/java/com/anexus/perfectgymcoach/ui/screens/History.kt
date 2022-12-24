@@ -19,12 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.ui.screens.destinations.WorkoutRecapDestination
+import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
+import com.anexus.perfectgymcoach.ui.destinations.WorkoutRecapDestination
 import com.anexus.perfectgymcoach.viewmodels.HistoryViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.text.SimpleDateFormat
 
+@BottomNavigationNavGraph
 @Destination
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)

@@ -28,8 +28,8 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
-import com.anexus.perfectgymcoach.ui.screens.destinations.AddWorkoutExerciseDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.WorkoutDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutExerciseDestination
+import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator

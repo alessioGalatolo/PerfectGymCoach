@@ -40,8 +40,9 @@ import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
+import com.anexus.perfectgymcoach.ui.WorkoutNavGraph
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
-import com.anexus.perfectgymcoach.ui.screens.destinations.HistoryDestination
+import com.anexus.perfectgymcoach.ui.destinations.HistoryDestination
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
 import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -59,6 +60,7 @@ import java.text.SimpleDateFormat
 import kotlin.math.ceil
 
 
+@WorkoutNavGraph
 @Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPagerApi::class)
 @Composable

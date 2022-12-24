@@ -24,12 +24,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.components.ResumeWorkout
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
-import com.anexus.perfectgymcoach.ui.screens.destinations.AddProgramDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.AddWorkoutExerciseDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.AddWorkoutPlanDestination
-import com.anexus.perfectgymcoach.ui.screens.destinations.WorkoutDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutExerciseDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutPlanDestination
+import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.anexus.perfectgymcoach.viewmodels.HomeEvent
 import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -38,11 +39,13 @@ import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.NavGraph
+import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 
 
-@Destination(start=true)
+@BottomNavigationNavGraph(start=true)
+@Destination
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalPagerApi::class
