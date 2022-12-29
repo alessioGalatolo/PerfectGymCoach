@@ -29,6 +29,7 @@ import com.anexus.perfectgymcoach.viewmodels.PlansEvent
 import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
 @ChangePlanNavGraph(start = true)
@@ -46,14 +47,18 @@ fun AddWorkoutPlan(
         toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
         insertName = { planName -> viewModel.onEvent(PlansEvent.AddPlan(WorkoutPlan(name = planName))) }
     )
-    val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
-    if (openDialog.value){
-        viewModel.onEvent(PlansEvent.TogglePlanDialogue)
-        openDialog.value = false
-    }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
+    scope.launch {
+        if (openDialog.value) {
+            awaitFrame()
+            awaitFrame()
+            viewModel.onEvent(PlansEvent.TogglePlanDialogue)
+            openDialog.value = false
+        }
+    }
     Scaffold (
         snackbarHost = { SnackbarHost(snackbarHostState) }, // FIXME: should be padded (navbar)
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

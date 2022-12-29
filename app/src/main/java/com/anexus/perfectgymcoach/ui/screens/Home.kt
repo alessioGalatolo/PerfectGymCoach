@@ -193,7 +193,7 @@ fun Home(
                         }) {
                             navigator.navigate(
                                 WorkoutDestination(
-                                    programId = currentProgram.programId
+                                    programId = it.programId
                                 ),
                                 onlyIfResumed = true
                             )

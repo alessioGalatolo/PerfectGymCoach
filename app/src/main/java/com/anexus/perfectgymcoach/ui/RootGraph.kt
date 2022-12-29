@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.ui.destinations.HistoryDestination
 import com.anexus.perfectgymcoach.ui.destinations.HomeDestination
@@ -29,13 +28,10 @@ import com.anexus.perfectgymcoach.ui.destinations.StatisticsDestination
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.NavGraph
 import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.popBackStack
 import com.ramcosta.composedestinations.navigation.popUpTo
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
-import com.ramcosta.composedestinations.utils.isRouteOnBackStack
 
 enum class BottomBarDestination(
     val direction: DirectionDestinationSpec,
@@ -69,7 +65,7 @@ fun RootDestinationGraph(){
         topBar = {
             AnimatedVisibility(
                 enter = fadeIn() + slideInVertically(),
-                exit = fadeOut() + slideOutVertically (),  // FIXME: wrong animation
+                exit = fadeOut() + slideOutVertically (),
                 visible = BottomBarDestination.values().any { currentDestination == it.direction }
             ) {
                 LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
@@ -129,7 +125,7 @@ fun RootDestinationGraph(){
                                     // Pop up to the root of the graph to
                                     // avoid building up a large stack of destinations
                                     // on the back stack as users select items
-                                    popUpTo(NavGraphs.root) {
+                                    popUpTo(NavGraphs.bottomNavigation.startRoute) {
                                         saveState = true
                                     }
 

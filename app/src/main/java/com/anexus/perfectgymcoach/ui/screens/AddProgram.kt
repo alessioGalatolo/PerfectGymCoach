@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +32,8 @@ import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
 
 @ChangePlanNavGraph
 @Destination
@@ -67,9 +70,13 @@ fun AddProgram(
         )) }
     )
     val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
-    if (openDialog.value){
-        viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
-        openDialog.value = false
+    rememberCoroutineScope().launch {
+        if (openDialog.value){
+            awaitFrame()
+            awaitFrame()
+            viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
+            openDialog.value = false
+        }
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
         rememberTopAppBarState()
@@ -131,7 +138,9 @@ fun AddProgram(
                 ) {
                     itemsIndexed(items = viewModel.state.value.programs, key = { _, it -> it.programId }) { index, programEntry ->
                         Row(
-                            Modifier.fillMaxWidth().animateItemPlacement(),
+                            Modifier
+                                .fillMaxWidth()
+                                .animateItemPlacement(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
