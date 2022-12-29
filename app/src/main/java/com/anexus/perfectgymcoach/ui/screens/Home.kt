@@ -24,26 +24,36 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.components.ResumeWorkout
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
+import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutExerciseDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutPlanDestination
+import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.anexus.perfectgymcoach.viewmodels.HomeEvent
 import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.NavGraph
+import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 
 
+@BottomNavigationNavGraph(start=true)
+@Destination
+@Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalPagerApi::class
 )
-@Composable
-fun Home(navController: NavHostController,
-         contentPadding: PaddingValues,
-         viewModel: HomeViewModel = hiltViewModel()
-         ) {
+fun Home(
+    navigator: DestinationsNavigator,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val haptic = LocalHapticFeedback.current
     val sysUiController = rememberSystemUiController()
     val darkTheme = isSystemInDarkTheme()
@@ -59,7 +69,13 @@ fun Home(navController: NavHostController,
             resumeWorkoutDialogOpen = false
         }) {
         resumeWorkoutDialogOpen = false
-        navController.navigate("${MainScreen.Workout.route}/${0L}/${false}/${true}")
+        navigator.navigate(
+            WorkoutDestination(
+                programId = 0L,
+                resumeWorkout = true
+            ),
+            onlyIfResumed = true
+        )
     }
 
     LaunchedEffect(viewModel.state.value.currentWorkout){
@@ -70,10 +86,12 @@ fun Home(navController: NavHostController,
 
     if (viewModel.state.value.currentPlan == null) {
         Scaffold(
-            modifier = Modifier.padding(contentPadding),
             floatingActionButton = {
                 LargeFloatingActionButton(
-                    onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${true}") }
+                    onClick = { navigator.navigate(
+                        AddWorkoutPlanDestination(openDialogNow = true),
+                        onlyIfResumed = true
+                    ) }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
@@ -90,8 +108,7 @@ fun Home(navController: NavHostController,
             }
         }
     } else if (viewModel.state.value.programs?.isEmpty() == true) {
-        Column (horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(contentPadding)) {
+        Column (horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = Icons.Outlined.Description,
                 contentDescription = "",
@@ -102,13 +119,23 @@ fun Home(navController: NavHostController,
                 modifier = Modifier.padding(16.dp)
             )
             Button(onClick = {
-                navController.navigate( // FIXME: empty plan name
-                    "${MainScreen.AddProgram.route}/ /${viewModel.state.value.currentPlan!!}/${true}")
+                navigator.navigate(
+                    AddProgramDestination(
+                        planName = "", // FIXME: empty plan name
+                        planId = viewModel.state.value.currentPlan!!,
+                        openDialogNow = true
+                    ),
+                    onlyIfResumed = true
+                )
             }) {
                 Text(stringResource(id = R.string.add_program))
             }
             TextButton(
-                onClick = { navController.navigate("${MainScreen.ChangePlan.route}/${false}" ) },
+                onClick = {
+                    navigator.navigate(
+                        AddWorkoutPlanDestination(),
+                        onlyIfResumed = true
+                    ) },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) { Text(stringResource(R.string.change_workout_plan)) }
             Spacer(modifier = Modifier.height(8.dp))
@@ -117,7 +144,7 @@ fun Home(navController: NavHostController,
     } else if (viewModel.state.value.programs?.isNotEmpty() == true
         && viewModel.state.value.currentProgram != null
     ) {
-        LazyColumn(Modifier.padding(horizontal = 16.dp), contentPadding = contentPadding){
+        LazyColumn(Modifier.padding(horizontal = 16.dp)){
             val currentProgram = viewModel.state.value.programs!![viewModel.state.value.currentProgram!!]
             val currentExercises =
                 viewModel.state.value.exercisesAndInfo[currentProgram.programId]?.sortedBy {
@@ -131,9 +158,14 @@ fun Home(navController: NavHostController,
                     program = currentProgram,
                     exercises = currentExercises,
                     // TODO: add message when no exercises in the program
-                    onCardClick = { navController.navigate("${MainScreen.Workout.route}/" +
-                            "${currentProgram.programId}/${false}/${false}") },
-                    navController = navController
+                    onCardClick = {
+                        navigator.navigate(
+                            WorkoutDestination(
+                                programId = currentProgram.programId
+                            ),
+                            onlyIfResumed = true
+                        )},
+                    navigator = navigator
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 if (viewModel.state.value.programs!!.size > 1) {
@@ -151,14 +183,20 @@ fun Home(navController: NavHostController,
                         .padding(vertical = 4.dp)
                         .combinedClickable(onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            navController.navigate(
-                                "${MainScreen.AddProgramExercise.route}/" +
-                                        "${it.name}/" +
-                                        "${it.programId}"
+                            navigator.navigate(
+                                AddWorkoutExerciseDestination(
+                                    programName = it.name,
+                                    programId = it.programId
+                                ),
+                                onlyIfResumed = true
                             )
                         }) {
-                            navController.navigate("${MainScreen.Workout.route}/" +
-                                    "${it.programId}/${false}/${false}")
+                            navigator.navigate(
+                                WorkoutDestination(
+                                    programId = it.programId
+                                ),
+                                onlyIfResumed = true
+                            )
                         }
                 ){
                     Row(
@@ -219,17 +257,24 @@ fun Home(navController: NavHostController,
                             ){
                                 IconButton(
                                     onClick = {
-                                        navController.navigate("${MainScreen.Workout.route}/" +
-                                                "${it.programId}/${true}/${false}")
+                                        navigator.navigate(
+                                            WorkoutDestination(
+                                                programId = currentProgram.programId,
+                                                quickStart = true
+                                            ),
+                                            onlyIfResumed = true
+                                        )
                                     }) {
                                     Icon(Icons.Default.RocketLaunch, null)
                                 }
                                 IconButton(
                                     onClick = {
-                                        navController.navigate(
-                                            "${MainScreen.AddProgramExercise.route}/" +
-                                                    "${it.name}/" +
-                                                    "${it.programId}"
+                                        navigator.navigate(
+                                            AddWorkoutExerciseDestination(
+                                                programName = it.name,
+                                                programId = it.programId
+                                            ),
+                                            onlyIfResumed = true
                                         )
                                     }) {
                                     Icon(Icons.Outlined.Edit, null)
@@ -245,14 +290,20 @@ fun Home(navController: NavHostController,
                     modifier = Modifier.fillMaxWidth()){
                     TextButton(
                         onClick = {
-                            navController.navigate("${MainScreen.ChangePlan.route}/${false}")
-                                  },
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                            navigator.navigate(
+                                AddWorkoutPlanDestination(),
+                                onlyIfResumed = true
+                            )
+                        }, modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) { Text(stringResource(R.string.change_workout_plan)) }
                     TextButton(onClick = {
-                        navController.navigate( // FIXME: empty plan name
-                            "${MainScreen.AddProgram.route}/ /" +
-                                    "${viewModel.state.value.currentPlan!!}/${false}")
+                        navigator.navigate(
+                            AddProgramDestination(
+                                planName = "", // FIXME: empty plan name
+                                planId = viewModel.state.value.currentPlan!!
+                            ),
+                            onlyIfResumed = true
+                        )
                     }) {
                         Text("Change programs")
                     }

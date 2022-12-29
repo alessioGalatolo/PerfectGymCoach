@@ -40,8 +40,9 @@ import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
-import com.anexus.perfectgymcoach.ui.NavigationScreen
+import com.anexus.perfectgymcoach.ui.WorkoutNavGraph
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
+import com.anexus.perfectgymcoach.ui.destinations.HistoryDestination
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
 import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -53,18 +54,22 @@ import com.jaikeerthick.composable_graphs.composables.LineGraph
 import com.jaikeerthick.composable_graphs.data.GraphData
 import com.jaikeerthick.composable_graphs.style.LineGraphStyle
 import com.jaikeerthick.composable_graphs.style.LinearGraphVisibility
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.text.SimpleDateFormat
 import kotlin.math.ceil
 
 
+@WorkoutNavGraph
+@Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPagerApi::class)
 @Composable
 fun WorkoutRecap(
-    navController: NavHostController,
+    navigator: DestinationsNavigator,
     workoutId: Long,
     viewModel: RecapViewModel = hiltViewModel()
 ) {
-    viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId)) // fixme: is not updated after direct completion (may have been fixed)
+    viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
     val volumeDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     val calorieDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     InfoDialog(dialogueIsOpen = volumeDialogIsOpen.value,
@@ -119,9 +124,12 @@ fun WorkoutRecap(
                 Text("Workout recap")
             }, navigationIcon = {
                 IconButton(onClick = {
-                    navController.popBackStack()
-                    navController.popBackStack()
-                    navController.navigate(NavigationScreen.History.route)
+                    navigator.navigateUp()
+                    navigator.navigateUp()
+                    navigator.navigate(
+                        HistoryDestination(),
+                        onlyIfResumed = true
+                    )
                 }) {
                     Icon(Icons.Default.Close, null)
                 }

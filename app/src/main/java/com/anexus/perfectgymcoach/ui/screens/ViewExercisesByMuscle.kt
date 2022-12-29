@@ -28,13 +28,21 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
+import com.anexus.perfectgymcoach.ui.destinations.ViewExercisesDestination
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@ChangePlanNavGraph
+@Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ExercisesByMuscle(navController: NavHostController, programName: String,
-                      programId: Long, successfulAddExercise: Boolean
+fun ExercisesByMuscle(
+    navigator: DestinationsNavigator,
+    programName: String,
+    programId: Long,
+    successfulAddExercise: Boolean = false
 ) {
     // scroll behaviour for top bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -59,7 +67,7 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
             LargeTopAppBar(title = { Text("Add exercise to $programName") },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Go back"
@@ -88,9 +96,13 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = rememberRipple(),
                                     onClick = {
-                                        navController.navigate(
-                                            "${MainScreen.ViewExercises.route}/${programId}/" +
-                                                    "${Exercise.Muscle.EVERYTHING.ordinal}/${true}"
+                                        navigator.navigate(
+                                            ViewExercisesDestination(
+                                                programId = programId,
+                                                muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
+                                                focusSearch = true
+                                            ),
+                                            onlyIfResumed = true
                                         )
                                     }
                                 ),
@@ -119,9 +131,12 @@ fun ExercisesByMuscle(navController: NavHostController, programName: String,
                 items(items = Exercise.Muscle.values(), key = { it.ordinal }) {
                     Card(
                         onClick = {
-                            navController.navigate(
-                                "${MainScreen.ViewExercises.route}/${programId}/" +
-                                        "${it.ordinal}/${false}"
+                            navigator.navigate(
+                                ViewExercisesDestination(
+                                    programId = programId,
+                                    muscleOrdinal = it.ordinal
+                                ),
+                                onlyIfResumed = true
                             )
                         },
                         modifier = Modifier.fillMaxWidth()

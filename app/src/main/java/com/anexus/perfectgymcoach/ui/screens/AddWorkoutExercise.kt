@@ -36,20 +36,29 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseReorder
-import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
+import com.anexus.perfectgymcoach.ui.destinations.AddExerciseDialogDestination
+import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@ChangePlanNavGraph
+@Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AddExercise(navController: NavHostController, programName: String, programId: Long,
-                viewModel: ExercisesViewModel = hiltViewModel()) {
+fun AddWorkoutExercise(
+    navigator: DestinationsNavigator,
+    programName: String,
+    programId: Long,
+    viewModel: ExercisesViewModel = hiltViewModel()
+) {
     viewModel.onEvent(ExercisesEvent.GetProgramExercises(programId))
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
@@ -60,7 +69,7 @@ fun AddExercise(navController: NavHostController, programName: String, programId
             TopAppBar(
                 title = { Text(programName) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Go back"
@@ -73,8 +82,13 @@ fun AddExercise(navController: NavHostController, programName: String, programId
             LargeFloatingActionButton (
                 modifier = Modifier.navigationBarsPadding(),
                 onClick = {
-                    navController.navigate("${MainScreen.ExercisesByMuscle.route}/" +
-                            "$programName/$programId/${false}")
+                    navigator.navigate(
+                        ExercisesByMuscleDestination(
+                            programName = programName,
+                            programId = programId
+                        ),
+                        onlyIfResumed = true
+                    )
                 },
             ) {
                 Icon(
@@ -162,11 +176,13 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                         expanded = true
                                     },
                                     onClick = {  // FIXME: sometimes when changing the exercise the navigation gets stuck
-                                        navController.navigate(
-                                            "${MainScreen.AddExerciseDialog.route}/" +
-                                                    "${exercise.extProgramId}/" +
-                                                    "${exercise.extExerciseId}/" +
-                                                    "${exercise.programExerciseId}"
+                                        navigator.navigate(
+                                            AddExerciseDialogDestination(
+                                                programId = exercise.extProgramId,
+                                                exerciseId = exercise.extExerciseId,
+                                                programExerciseId = exercise.programExerciseId
+                                            ),
+                                            onlyIfResumed = true
                                         )
                                     }
                                 )
@@ -249,11 +265,13 @@ fun AddExercise(navController: NavHostController, programName: String, programId
                                         DropdownMenuItem(
                                             text = { Text("Edit") },
                                             onClick = {
-                                                navController.navigate(
-                                                    "${MainScreen.AddExerciseDialog.route}/" +
-                                                            "${exercise.extProgramId}/" +
-                                                            "${exercise.extExerciseId}/" +
-                                                            "${exercise.programExerciseId}"
+                                                navigator.navigate(
+                                                    AddExerciseDialogDestination(
+                                                        programId = exercise.extProgramId,
+                                                        exerciseId = exercise.extExerciseId,
+                                                        programExerciseId = exercise.programExerciseId
+                                                    ),
+                                                    onlyIfResumed = true
                                                 )
                                                 expanded = false
                                             },

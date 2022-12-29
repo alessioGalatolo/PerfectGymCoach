@@ -22,32 +22,43 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
-import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
+import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
 import com.anexus.perfectgymcoach.viewmodels.PlansEvent
 import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
-
+@ChangePlanNavGraph(start = true)
+@Destination
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddWorkoutPlan(navController: NavHostController,
-                   openDialogNow: Boolean,
-                   viewModel: PlansViewModel = hiltViewModel()) {
+fun AddWorkoutPlan(
+    navigator: DestinationsNavigator,
+    openDialogNow: Boolean = false,
+    viewModel: PlansViewModel = hiltViewModel()
+) {
     InsertNameDialog(
         prompt = "Name of the new plan",
         dialogueIsOpen = viewModel.state.value.openAddPlanDialogue,
         toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
         insertName = { planName -> viewModel.onEvent(PlansEvent.AddPlan(WorkoutPlan(name = planName))) }
     )
-    val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
-    if (openDialog.value){
-        viewModel.onEvent(PlansEvent.TogglePlanDialogue)
-        openDialog.value = false
-    }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
+    scope.launch {
+        if (openDialog.value) {
+            awaitFrame()
+            awaitFrame()
+            viewModel.onEvent(PlansEvent.TogglePlanDialogue)
+            openDialog.value = false
+        }
+    }
     Scaffold (
         snackbarHost = { SnackbarHost(snackbarHostState) }, // FIXME: should be padded (navbar)
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -55,7 +66,7 @@ fun AddWorkoutPlan(navController: NavHostController,
             TopAppBar(
                 title = { Text(stringResource(R.string.manage_workout_plans)) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Go back"
@@ -111,7 +122,8 @@ fun AddWorkoutPlan(navController: NavHostController,
                         Text("Other plans", fontWeight = FontWeight.Bold)
                     }
                     PlanCard(
-                        navController = navController, plan = plan.first,
+                        navigator = navigator,
+                        plan = plan.first,
                         programs = plan.second,
                         currentPlanId = viewModel.state.value.currentPlanId
                     ) {
@@ -136,7 +148,7 @@ fun AddWorkoutPlan(navController: NavHostController,
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LazyItemScope.PlanCard(
-    navController: NavHostController,
+    navigator: DestinationsNavigator,
     plan: WorkoutPlan,
     programs: List<WorkoutProgram>,
     currentPlanId: Long?,
@@ -146,8 +158,12 @@ fun LazyItemScope.PlanCard(
         Modifier
             .animateItemPlacement()
             .clickable {
-                navController.navigate(
-                    "${MainScreen.AddProgram.route}/${plan.name}/${plan.planId}/${false}"
+                navigator.navigate(
+                    AddProgramDestination(
+                        planName = plan.name,
+                        planId = plan.planId
+                    ),
+                    onlyIfResumed = true
                 )
             }) {
         Row(
@@ -176,11 +192,6 @@ fun LazyItemScope.PlanCard(
                     label = "Checked indicator"
                 )
 
-//            val tint by transition.animateColor(
-//                label = "Tint"
-//            ) { isChecked ->
-//                if (isChecked) Color.Red else Color.Black
-//            }
                 val default_icon_size = 24.dp
                 val size by transition.animateDp(
                     transitionSpec = {

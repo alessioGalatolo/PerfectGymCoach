@@ -4,6 +4,7 @@ plugins {
     id 'kotlin-parcelize'
     id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
+    id 'com.google.devtools.ksp' version '1.7.10-1.0.6'
 }
 
 android {
@@ -52,10 +53,19 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+    applicationVariants.all { variant ->
+        kotlin.sourceSets {
+            getByName(variant.name) {
+                kotlin.srcDir("build/generated/ksp/${variant.name}/kotlin")
+            }
+        }
+    }
     namespace 'com.anexus.perfectgymcoach'
 }
 
 dependencies {
+    implementation 'io.github.raamcosta.compose-destinations:animations-core:1.7.27-beta'
+    ksp 'io.github.raamcosta.compose-destinations:ksp:1.7.27-beta'
     implementation 'com.github.jaikeerthick:Composable-Graphs:v1.0' // Have to manually check for updates
     implementation "androidx.palette:palette-ktx:1.0.0"
     implementation "io.coil-kt:coil-compose:2.2.0"

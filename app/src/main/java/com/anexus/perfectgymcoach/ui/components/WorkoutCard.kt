@@ -28,11 +28,13 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
-import com.anexus.perfectgymcoach.ui.MainScreen
+import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutExerciseDestination
+import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalPagerApi::class)
 @Composable
@@ -42,7 +44,7 @@ fun WorkoutCard(
     onCardClick: () -> Unit,
     onDelete: (() -> Unit)? = null,
     onRename: (() -> Unit)? = null,
-    navController: NavHostController,
+    navigator: DestinationsNavigator,
     modifier: Modifier = Modifier
 ){
     val haptic = LocalHapticFeedback.current
@@ -134,7 +136,13 @@ fun WorkoutCard(
             ) {
                 Button(contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                     onClick = {
-                        navController.navigate("${MainScreen.Workout.route}/${program.programId}/${true}/${false}")
+                          navigator.navigate(
+                              WorkoutDestination(
+                                  programId = program.programId,
+                                  quickStart = true
+                              ),
+                              onlyIfResumed = true
+                          )
                     },
                     modifier = Modifier
                         .padding(8.dp)) {
@@ -147,19 +155,22 @@ fun WorkoutCard(
                 ){
                     if (onRename == null && onDelete == null){
                         IconButton(onClick = {
-                            navController.navigate(
-                                "${MainScreen.Workout.route}/" +
-                                        "${program.programId}/" +
-                                        "${false}/${false}"
+                            navigator.navigate(
+                                WorkoutDestination(
+                                    programId = program.programId
+                                ),
+                                onlyIfResumed = true
                             )
                         }) {
                             Icon(Icons.Outlined.PlayCircle, null)
                         }
                         IconButton(onClick = {
-                            navController.navigate(
-                                "${MainScreen.AddProgramExercise.route}/" +
-                                        "${program.name}/" +
-                                        "${program.programId}"
+                            navigator.navigate(
+                                AddWorkoutExerciseDestination(
+                                    programName = program.name,
+                                    programId = program.programId
+                                ),
+                                onlyIfResumed = true
                             )
                         }) {
                             Icon(Icons.Outlined.Edit, null)
@@ -181,10 +192,11 @@ fun WorkoutCard(
                                 DropdownMenuItem(
                                     text = { Text("Start workout") },
                                     onClick = {
-                                        navController.navigate(
-                                            "${MainScreen.Workout.route}/" +
-                                                    "${program.programId}/" +
-                                                    "${false}/${false}"
+                                        navigator.navigate(
+                                            WorkoutDestination(
+                                                programId = program.programId
+                                            ),
+                                            onlyIfResumed = true
                                         )
                                         expanded = false
                                     },
@@ -197,10 +209,12 @@ fun WorkoutCard(
                                 DropdownMenuItem(
                                     text = { Text("Edit") },
                                     onClick = {
-                                        navController.navigate(
-                                            "${MainScreen.AddProgramExercise.route}/" +
-                                                    "${program.name}/" +
-                                                    "${program.programId}"
+                                        navigator.navigate(
+                                            AddWorkoutExerciseDestination(
+                                                programName = program.name,
+                                                programId = program.programId
+                                            ),
+                                            onlyIfResumed = true
                                         )
                                         expanded = false
                                     },
