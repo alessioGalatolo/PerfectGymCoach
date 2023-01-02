@@ -242,7 +242,7 @@ fun ViewExercises(
                                                 context,
                                                 Intent(
                                                     Intent.ACTION_VIEW,
-                                                    Uri.parse("https://www.tiktok.com/@cropfb/video/7086384111295761670")  // FIXME
+                                                    Uri.parse("https://www.tiktok.com/@poet_jenix/video/7111621457775561989")  // FIXME
                                                 ),
                                                 null
                                             )

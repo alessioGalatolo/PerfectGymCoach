@@ -857,7 +857,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         image = R.drawable.generic_dumbbell
     ),
     Exercise(
-        name = "Shoulder press",
+        name = "Dumbbell shoulder press",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.SHOULDERS,
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS),
