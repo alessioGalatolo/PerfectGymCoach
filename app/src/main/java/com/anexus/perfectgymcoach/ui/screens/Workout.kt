@@ -265,8 +265,10 @@ fun Workout(
                 ExercisePage(
                     pagerState = pagerState,
                     workoutTime = viewModel.state.value.workoutTime,
-                    setsDone = setsDone,
                     workoutExercises = viewModel.state.value.workoutExercises,
+                    workoutId = viewModel.state.value.workoutId,
+                    navigator = navigator,
+                    setsDone = setsDone,
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
                     title = title,
@@ -278,7 +280,19 @@ fun Workout(
                         viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
                     },
                     updateValues = { a, b, c, d -> viewModel.onEvent(WorkoutEvent.EditSetRecord(a, b, c, d)) },
-                    updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare))}
+                    updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare))},
+                    changeExercise = { exerciseInWorkout, originalSize ->
+                        scope.launch {
+                            awaitFrame()  // wait for exercise to be added
+                            awaitFrame()
+                            viewModel.onEvent(
+                                WorkoutEvent.DeleteChangeExercise(
+                                    exerciseInWorkout,
+                                    originalSize
+                                )
+                            )
+                        }
+                    }
                 )
             }
         ) { padding, bottomBarSurface ->
@@ -355,7 +369,7 @@ fun Workout(
                 }
             }
         }
-    } else {
+    } else if (viewModel.state.value.workoutId != 0L){
         // program is empty, prompt to add an exercise
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
         Scaffold(
@@ -375,16 +389,39 @@ fun Workout(
                 )
             },
             floatingActionButton = {
-            LargeFloatingActionButton(onClick = { navigator.navigate(
-                ExercisesByMuscleDestination(
-                    programName = "Current workout",
-                    programId = programId,
-                ),
-                onlyIfResumed = true
-            ) }, Modifier.navigationBarsPadding()) {
-                Icon(Icons.Default.Add, null,
-                    Modifier.size(FloatingActionButtonDefaults.LargeIconSize))
-            }
+                Column(
+                    Modifier.navigationBarsPadding(),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.End
+                ) {  // FIXME: not really happy about the double FABs
+                    SmallFloatingActionButton(onClick = {
+                        navigator.navigate(
+                            ExercisesByMuscleDestination(
+                                programName = "Current and future workouts",  // FIXME: all workouts?
+                                workoutId = viewModel.state.value.workoutId,
+                                programId = programId
+                            ),
+                            onlyIfResumed = true
+                        )
+                    }, Modifier.padding(bottom = 24.dp),
+                    containerColor = MaterialTheme.colorScheme.secondary) {
+                        Icon(Icons.Default.Edit, null)
+                    }
+                    LargeFloatingActionButton(onClick = {
+                        navigator.navigate(
+                            ExercisesByMuscleDestination(
+                                programName = "Current workout",
+                                workoutId = viewModel.state.value.workoutId,
+                            ),
+                            onlyIfResumed = true
+                        )
+                    }) {
+                        Icon(
+                            Icons.Default.Add, null,
+                            Modifier.size(FloatingActionButtonDefaults.LargeIconSize)
+                        )
+                    }
+                }
         }) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -400,6 +437,10 @@ fun Workout(
                 )
                 Text(
                     stringResource(id = R.string.workout_empty_exercises),
+                    modifier = Modifier.padding(16.dp)
+                )
+                Text(
+                    stringResource(R.string.note_empty_workout),
                     modifier = Modifier.padding(16.dp)
                 )
             }

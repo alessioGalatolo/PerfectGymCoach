@@ -72,7 +72,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun ViewExercises(
     navigator: DestinationsNavigator,
-    programId: Long,
+    programId: Long = 0L,
+    workoutId: Long = 0L,
     muscleOrdinal: Int,
     focusSearch: Boolean = false,
     viewModel: ExercisesViewModel = hiltViewModel()
@@ -250,6 +251,7 @@ fun ViewExercises(
                                             navigator.navigate(
                                                 AddExerciseDialogDestination(
                                                     programId = programId,
+                                                    workoutId = workoutId,
                                                     exerciseId = exercise.exerciseId
                                                 ),
                                                 onlyIfResumed = true

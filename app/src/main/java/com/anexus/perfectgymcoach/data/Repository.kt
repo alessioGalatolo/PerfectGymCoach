@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExerciseReorder
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
@@ -100,6 +101,12 @@ class Repository @Inject constructor(
 
     suspend fun getWorkoutExercises(workoutId: Long) =
         db.workoutExerciseDao.getWorkoutExercises(workoutId)
+
+    suspend fun deleteWorkoutExercise(workoutExerciseId: Long) =
+        db.workoutExerciseDao.delete(workoutExerciseId)
+
+    suspend fun updateWorkoutExerciseNumber(workoutExerciseReorder: WorkoutExerciseReorder) =
+        db.workoutExerciseDao.updateOrder(workoutExerciseReorder)
 
 
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)

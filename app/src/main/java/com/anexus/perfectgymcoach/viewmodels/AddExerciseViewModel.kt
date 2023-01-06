@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ProgramExercise
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -21,8 +22,10 @@ import javax.inject.Inject
 data class AddExerciseState(
     val exercise: Exercise? = null,
     val variation: String = "No variation",  // FIXME: no hardcode, also used below
-    val program: WorkoutProgram? = null,
-    val programExerciseId: Long = 0,
+    val programName: String = "",
+    val programId: Long = 0L,
+    val workoutId: Long = 0L,
+    val programExerciseId: Long = 0L,
     val sets: String = "5",
     val reps: String = "8",
     val rest: String = "90",
@@ -36,6 +39,8 @@ data class AddExerciseState(
 sealed class AddExerciseEvent{
 
     data class GetProgramAndExercise(val programId: Long, val exerciseId: Long): AddExerciseEvent()
+
+    data class GetWorkoutAndExercise(val workoutId: Long, val programId: Long, val exerciseId: Long): AddExerciseEvent()
 
     data class GetProgramAndProgramExercise(
         val programId: Long,
@@ -68,6 +73,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
     val state: State<AddExerciseState> = _state
 
     var getProgramJob: Job? = null
+    var getWorkoutJob: Job? = null
 
 
     fun onEvent(event: AddExerciseEvent): Boolean{
@@ -83,22 +89,44 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     return false
 
                 viewModelScope.launch {
-                    repository.addProgramExercise(
-                        ProgramExercise(
-                            programExerciseId = state.value.programExerciseId,
-                            extProgramId = state.value.program!!.programId,
-                            extExerciseId = state.value.exercise!!.exerciseId,
-                            orderInProgram = state.value.exerciseNumber,
-                            reps =
-                            if (state.value.advancedSets)
-                                state.value.repsArray.map { it.toInt() }
-                            else
-                                List(state.value.sets.toInt()) { state.value.reps.toInt() },
-                            variation = if (state.value.variation == "No variation") "" else " (${state.value.variation.lowercase()})",
-                            rest = state.value.rest.toInt(), //state.value.restArray.map { it.toInt() }[0], // FIXME: pass whole array
-                            note = state.value.note
+                    if (state.value.workoutId != 0L) {
+                        repository.addWorkoutExercise(
+                            WorkoutExercise(
+                                extExerciseId = state.value.exercise!!.exerciseId,
+                                extWorkoutId = state.value.workoutId,
+                                orderInProgram = state.value.exerciseNumber,
+                                name = state.value.exercise!!.name,
+                                image = state.value.exercise!!.image,
+                                equipment = state.value.exercise!!.equipment,
+                                reps =
+                                if (state.value.advancedSets)
+                                    state.value.repsArray.map { it.toInt() }
+                                else
+                                    List(state.value.sets.toInt()) { state.value.reps.toInt() },
+                                variation = if (state.value.variation == "No variation") "" else " (${state.value.variation.lowercase()})",
+                                rest = state.value.rest.toInt(), //state.value.restArray.map { it.toInt() }[0], // FIXME: pass whole array
+                                note = state.value.note
+                            )
                         )
-                    )
+                    }
+                    if (state.value.programId != 0L) {
+                        repository.addProgramExercise(
+                            ProgramExercise(
+                                programExerciseId = state.value.programExerciseId,
+                                extProgramId = state.value.programId,
+                                extExerciseId = state.value.exercise!!.exerciseId,
+                                orderInProgram = state.value.exerciseNumber,
+                                reps =
+                                if (state.value.advancedSets)
+                                    state.value.repsArray.map { it.toInt() }
+                                else
+                                    List(state.value.sets.toInt()) { state.value.reps.toInt() },
+                                variation = if (state.value.variation == "No variation") "" else " (${state.value.variation.lowercase()})",
+                                rest = state.value.rest.toInt(), //state.value.restArray.map { it.toInt() }[0], // FIXME: pass whole array
+                                note = state.value.note
+                            )
+                        )
+                    }
                 }
             }
             is AddExerciseEvent.UpdateNotes -> {
@@ -206,10 +234,25 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                             repository.getProgramMapExercises(event.programId).first()
 
                         _state.value = state.value.copy(
-                            program = programMapExercises.keys.first(),
+                            programId = event.programId,
+                            programName = programMapExercises.keys.first().name,
                             exercise = repository.getExercise(event.exerciseId).first(),
                             exerciseNumber = programMapExercises.values.first().size
                         )
+                    }
+                }
+            }
+            is AddExerciseEvent.GetWorkoutAndExercise -> {
+                if (getWorkoutJob == null) {
+                    getWorkoutJob = viewModelScope.launch {
+                        _state.value = state.value.copy(
+                            workoutId = event.workoutId,
+                            exercise = repository.getExercise(event.exerciseId).first(),
+                            exerciseNumber = repository.getWorkoutExercises(event.workoutId).first().size
+                        )
+                        if (event.programId != 0L) {
+                            onEvent(AddExerciseEvent.GetProgramAndExercise(event.programId, event.exerciseId))
+                        }
                     }
                 }
             }
@@ -221,6 +264,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                             repository.getProgramMapExercises(event.programId).first()
 
                         val ex = repository.getProgramExercise(event.programExerciseId).first()
+
                         _state.value = state.value.copy(
                             programExerciseId = ex.programExerciseId,
                             sets = ex.reps.size.toString(),
@@ -236,7 +280,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                             note = ex.note,
                             advancedSets = ex.reps.distinct().size > 1,
                             exercise = repository.getExercise(event.exerciseId).first(),
-                            program = programMapExercises.keys.first(),
+                            programId = event.programId,
+                            programName = programMapExercises.keys.first().name,
                             exerciseNumber = programMapExercises.values.first().find {
                                 it.programExerciseId == ex.programExerciseId
                             }!!.orderInProgram

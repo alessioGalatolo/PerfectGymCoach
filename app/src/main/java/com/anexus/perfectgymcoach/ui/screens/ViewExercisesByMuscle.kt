@@ -41,7 +41,8 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 fun ExercisesByMuscle(
     navigator: DestinationsNavigator,
     programName: String,
-    programId: Long,
+    programId: Long = 0,
+    workoutId: Long = 0,
     successfulAddExercise: Boolean = false
 ) {
     // scroll behaviour for top bar
@@ -99,6 +100,7 @@ fun ExercisesByMuscle(
                                         navigator.navigate(
                                             ViewExercisesDestination(
                                                 programId = programId,
+                                                workoutId = workoutId,
                                                 muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
                                                 focusSearch = true
                                             ),
@@ -134,6 +136,7 @@ fun ExercisesByMuscle(
                             navigator.navigate(
                                 ViewExercisesDestination(
                                     programId = programId,
+                                    workoutId = workoutId,
                                     muscleOrdinal = it.ordinal
                                 ),
                                 onlyIfResumed = true

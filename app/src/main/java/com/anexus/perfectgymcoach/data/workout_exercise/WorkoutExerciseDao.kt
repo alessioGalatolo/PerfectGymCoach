@@ -4,6 +4,8 @@ import androidx.room.*
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseReorder
 import com.anexus.perfectgymcoach.data.exercise.UpdateExerciseSuperset
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
+import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -21,4 +23,6 @@ interface WorkoutExerciseDao {
     @Query("DELETE FROM workoutexercise WHERE workoutExerciseId = :workoutExerciseId")
     suspend fun delete(workoutExerciseId: Long)
 
+    @Update(entity = WorkoutExercise::class)
+    suspend fun updateOrder(workoutProgramReorders: WorkoutExerciseReorder)
 }

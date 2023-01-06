@@ -40,15 +40,21 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddExerciseDialog(
     navigator: DestinationsNavigator,
-    programId: Long,
+    programId: Long = 0L, // programId and workoutId are mutually exclusive
+    workoutId: Long = 0L, // workoutId can only happen with exercise Id
     exerciseId: Long = 0L,
     programExerciseId: Long = 0L,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
+    assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
+
     val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    if (programExerciseId != 0L)  // FIXME: sometimes the reps/rest counter doesn't follow the exercise
+
+    if (workoutId != 0L) {
+        viewModel.onEvent(AddExerciseEvent.GetWorkoutAndExercise(workoutId, programId, exerciseId))
+    } else if (programExerciseId != 0L)  // FIXME: sometimes the reps/rest counter doesn't follow the exercise
         viewModel.onEvent(AddExerciseEvent.GetProgramAndProgramExercise(programId, programExerciseId, exerciseId))
     else if (exerciseId != 0L)
         viewModel.onEvent(AddExerciseEvent.GetProgramAndExercise(programId, exerciseId))
@@ -84,8 +90,9 @@ fun AddExerciseDialog(
                             navigator.navigateUp()
                             navigator.navigate(
                                 ExercisesByMuscleDestination(
-                                    programName = viewModel.state.value.program!!.name,
+                                    programName = viewModel.state.value.programName,
                                     programId = programId,
+                                    workoutId = workoutId,
                                     successfulAddExercise = true
                                 ),
                                 onlyIfResumed = true

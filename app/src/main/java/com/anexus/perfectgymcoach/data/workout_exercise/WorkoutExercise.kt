@@ -31,13 +31,13 @@ import kotlinx.parcelize.Parcelize
             parentColumns = ["programExerciseId"],
             childColumns = ["supersetExercise"],
             onDelete = ForeignKey.SET_DEFAULT
-        ),
-        ForeignKey(
-            entity = ProgramExercise::class,
-            parentColumns = ["programExerciseId"],
-            childColumns = ["extProgramExerciseId"],
-            onDelete = ForeignKey.SET_DEFAULT
         )
+//        ForeignKey(  // Commented as it gives problems when exercise is in no programs
+//            entity = ProgramExercise::class,
+//            parentColumns = ["programExerciseId"],
+//            childColumns = ["extProgramExerciseId"],
+//            onDelete = ForeignKey.SET_DEFAULT
+//        )
     ]
 )
 data class WorkoutExercise (
@@ -55,3 +55,9 @@ data class WorkoutExercise (
     val variation: String,
     val supersetExercise: Long? = null
 ) : Parcelable
+
+@Parcelize
+data class WorkoutExerciseReorder(
+    val workoutExerciseId: Long,
+    val orderInProgram: Int
+): Parcelable

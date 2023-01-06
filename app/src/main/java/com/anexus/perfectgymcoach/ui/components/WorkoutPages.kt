@@ -28,10 +28,12 @@ import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
+import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import kotlin.math.min
@@ -44,6 +46,8 @@ fun ExercisePage(
     pagerState: PagerState,
     workoutTime: Long?,
     workoutExercises: List<WorkoutExercise>,
+    workoutId: Long,
+    navigator: DestinationsNavigator,
     setsDone: State<Int>,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
@@ -53,7 +57,8 @@ fun ExercisePage(
     restCounter: Long?,
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     updateTare: (Float) -> Unit,
-    updateValues: (Int, Float, Int, Int) -> Unit
+    updateValues: (Int, Float, Int, Int) -> Unit,
+    changeExercise: (Int, Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -109,7 +114,7 @@ fun ExercisePage(
         ) { page ->
             if (page == workoutExercises.size) {
                 // page for finishing the workout
-                WorkoutFinishPage(workoutTime!!, workoutIntensity)
+                WorkoutFinishPage(workoutTime!!, workoutIntensity, workoutId, navigator)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
                     if (workoutExercises[page].note.isNotBlank()) {
@@ -137,13 +142,24 @@ fun ExercisePage(
                             Modifier.padding(vertical = 8.dp),
                             fontWeight = FontWeight.Bold
                         )
-                        AnimatedVisibility(
-                            visible = workoutTime != null,
-                            enter = fadeIn(),
-                            exit = fadeOut()
-                        ) {
-                            ExerciseSettingsMenu()
-                        }
+
+                        // FIXME: currently not working/empty
+//                        AnimatedVisibility(
+//                            visible = workoutTime != null,
+//                            enter = fadeIn(),
+//                            exit = fadeOut()
+//                        ) {
+//                            ExerciseSettingsMenu(navigator) {
+//                                navigator.navigate(
+//                                    ExercisesByMuscleDestination(
+//                                        programName = "Current workout",
+//                                        workoutId = workoutId,
+//                                    ),
+//                                    onlyIfResumed = true
+//                                )
+//                                changeExercise(page, workoutExercises.size)
+//                            }
+//                        }
                     }
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(
@@ -348,11 +364,13 @@ fun ExercisePage(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutFinishPage(
     workoutTime: Long,
-    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>
+    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
+    workoutId: Long,
+    navigator: DestinationsNavigator
 ) {
     Column(
         Modifier
@@ -397,7 +415,7 @@ fun WorkoutFinishPage(
                         DropdownMenuItem(
                             text = {},
                             leadingIcon = {
-                                Row(){
+                                Row {
                                     repeat(index+1){
                                         Icon(Icons.Default.FitnessCenter, null)
                                     }
@@ -414,7 +432,13 @@ fun WorkoutFinishPage(
             }
         }
         Spacer(Modifier.width(16.dp))
-        TextButton(onClick = { /*TODO*/ }, modifier = Modifier.align(CenterHorizontally)) {
+        TextButton(onClick = { navigator.navigate(
+            ExercisesByMuscleDestination(
+                programName = "Current workout",
+                workoutId = workoutId,
+            ),
+            onlyIfResumed = true
+        ) }, modifier = Modifier.align(CenterHorizontally)) {
             Text("Add exercise to workout")
         }
 
@@ -422,7 +446,10 @@ fun WorkoutFinishPage(
 }
 
 @Composable
-fun ExerciseSettingsMenu() {
+fun ExerciseSettingsMenu(
+    navigator: DestinationsNavigator,
+    changeExercise: () -> Unit
+) {
     Box(
         modifier = Modifier.wrapContentSize()
     ) {
@@ -439,10 +466,19 @@ fun ExerciseSettingsMenu() {
         ) {
             DropdownMenuItem(
                 text = { Text("Change exercise") },
-                onClick = { /* TODO */ },
+                onClick = changeExercise,
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Edit,
+                        contentDescription = null
+                    )
+                })
+            DropdownMenuItem(
+                text = { Text("Delete exercise") },
+                onClick = { /* TODO */ },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Delete,
                         contentDescription = null
                     )
                 })

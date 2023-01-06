@@ -10,6 +10,7 @@ import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndEquipment
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndInfo
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
+import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExerciseReorder
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
@@ -59,6 +60,8 @@ sealed class WorkoutEvent{
     object ToggleCancelWorkoutDialog : WorkoutEvent()
 
     data class InitWorkout(val programId: Long): WorkoutEvent()
+
+    data class DeleteChangeExercise(val exerciseInWorkout: Int, val originalSize: Int): WorkoutEvent()
 
     data class AddSetToExercise(val exerciseInWorkout: Int): WorkoutEvent()
 
@@ -322,6 +325,23 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         )
                     }
                 }
+            }
+            is WorkoutEvent.DeleteChangeExercise -> {
+                // FIXME: delete exercise in workout, move last added exercise to here
+//                if (state.value.workoutExercises.size > event.originalSize) {
+//                    viewModelScope.launch {
+//                        val id = state.value.workoutExercises.last().workoutExerciseId
+//                        repository.deleteWorkoutExercise(
+//                            state.value.workoutExercises[event.exerciseInWorkout].workoutExerciseId
+//                        )
+//                        repository.updateWorkoutExerciseNumber(
+//                            WorkoutExerciseReorder(
+//                                id,
+//                                event.exerciseInWorkout
+//                            )
+//                        )
+//                    }
+//                } // does not work because it is called before the exercise is added
             }
         }
         return true
