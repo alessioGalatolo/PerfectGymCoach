@@ -134,24 +134,30 @@ fun WorkoutCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-                    onClick = {
-                          navigator.navigate(
-                              WorkoutDestination(
-                                  programId = program.programId,
-                                  quickStart = true
-                              ),
-                              onlyIfResumed = true
-                          )
-                    },
-                    modifier = Modifier
-                        .padding(8.dp)) {
-                    Icon(Icons.Default.RocketLaunch, null)
-                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                    Text("Quick start")
+                if (exercises.isNotEmpty()) {
+                    Button(
+                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                        onClick = {
+                            navigator.navigate(
+                                WorkoutDestination(
+                                    programId = program.programId,
+                                    quickStart = true
+                                ),
+                                onlyIfResumed = true
+                            )
+                        },
+                        modifier = Modifier
+                            .padding(8.dp)
+                    ) {
+                        Icon(Icons.Default.RocketLaunch, null)
+                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                        Text("Quick start")
+                    }
                 }
                 Row (
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier.fillMaxWidth()
                 ){
                     if (onRename == null && onDelete == null){
                         IconButton(onClick = {

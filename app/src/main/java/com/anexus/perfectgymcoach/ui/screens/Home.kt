@@ -255,17 +255,19 @@ fun Home(
                                 verticalAlignment = Alignment.Bottom,
                                 modifier = Modifier.fillMaxWidth()
                             ){
-                                IconButton(
-                                    onClick = {
-                                        navigator.navigate(
-                                            WorkoutDestination(
-                                                programId = it.programId,
-                                                quickStart = true
-                                            ),
-                                            onlyIfResumed = true
-                                        )
-                                    }) {
-                                    Icon(Icons.Default.RocketLaunch, null)
+                                if (exs.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = {
+                                            navigator.navigate(
+                                                WorkoutDestination(
+                                                    programId = it.programId,
+                                                    quickStart = true
+                                                ),
+                                                onlyIfResumed = true
+                                            )
+                                        }) {
+                                        Icon(Icons.Default.RocketLaunch, null)
+                                    }
                                 }
                                 IconButton(
                                     onClick = {
