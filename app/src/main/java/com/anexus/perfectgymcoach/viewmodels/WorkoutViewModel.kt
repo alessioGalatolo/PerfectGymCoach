@@ -83,6 +83,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     val state: State<WorkoutState> = _state
 
     private var retrieveExercises: Job? = null
+    private var resumeWorkoutJob: Job? = null
     private var retrieveExercisesRecords: Job? = null
     private var timerJob: Job? = null
 
@@ -102,7 +103,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 WorkoutRecord(extProgramId = event.programId)
                             )
                         )
-                        onEvent(WorkoutEvent.StartRetrievingExercises)
+                        viewModelScope.launch {
+                            onEvent(WorkoutEvent.StartRetrievingExercises)
+                        }
                     }
                     viewModelScope.launch {
                         val exercises = repository.getProgramExercisesAndInfo(event.programId)
@@ -147,15 +150,20 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 }
             }
             is WorkoutEvent.StartWorkout -> {
-                _state.value = state.value.copy(workoutTime = 0)
-                viewModelScope.launch {
-                    repository.startWorkout(WorkoutRecordStart(
-                        state.value.workoutId,
-                        startDate = Calendar.getInstance()
-                    ))
-                    repository.setCurrentWorkout(state.value.workoutId)
+                if (state.value.workoutTime == null) {
+                    viewModelScope.launch {
+                        retrieveExercises!!.join()
+                        _state.value = state.value.copy(workoutTime = 0)
+                        repository.startWorkout(
+                            WorkoutRecordStart(
+                                state.value.workoutId,
+                                startDate = Calendar.getInstance()
+                            )
+                        )
+                        repository.setCurrentWorkout(state.value.workoutId)
+                        startTimer()
+                    }
                 }
-                startTimer()
             }
             is WorkoutEvent.TryCompleteSet -> {
                 // TODO: check if superset and if
@@ -265,18 +273,20 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(tare = event.newValue)
             }
             is WorkoutEvent.ResumeWorkout -> {
-                viewModelScope.launch{
-                    val workoutId = repository.getCurrentWorkout().first()
-                    if (workoutId != null) {
-                        _state.value = state.value.copy(
-                            workoutId = workoutId
-                        )
-                        val workout = repository.getWorkoutRecord(state.value.workoutId).first()
-                        onEvent(WorkoutEvent.StartRetrievingExercises)
-                        _state.value = state.value.copy(
-                            workoutTime = (Calendar.getInstance().timeInMillis - workout.startDate!!.timeInMillis) / 1000
-                        )
-                        startTimer()
+                if (resumeWorkoutJob == null) {
+                    resumeWorkoutJob = viewModelScope.launch {
+                        val workoutId = repository.getCurrentWorkout().first()
+                        if (workoutId != null) {
+                            _state.value = state.value.copy(
+                                workoutId = workoutId
+                            )
+                            val workout = repository.getWorkoutRecord(state.value.workoutId).first()
+                            onEvent(WorkoutEvent.StartRetrievingExercises)
+                            _state.value = state.value.copy(
+                                workoutTime = (Calendar.getInstance().timeInMillis - workout.startDate!!.timeInMillis) / 1000
+                            )
+                            startTimer()
+                        }
                     }
                 }
 
@@ -325,7 +335,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 emit(counter++)
                 delay(1000)
             }
-        }.onEach {_state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)}
+        }.onEach {
+            _state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)
+        }
             .launchIn(viewModelScope)
     }
 }

@@ -259,7 +259,7 @@ fun Home(
                                     onClick = {
                                         navigator.navigate(
                                             WorkoutDestination(
-                                                programId = currentProgram.programId,
+                                                programId = it.programId,
                                                 quickStart = true
                                             ),
                                             onlyIfResumed = true

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d0d652b38e1e8c3f721fc46498969a55",
+    "identityHash": "e4cbff47ff039c39e1dd607202aae156",
     "entities": [
       {
         "tableName": "plan",
@@ -361,7 +361,7 @@
       },
       {
         "tableName": "WorkoutExercise",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extProgramExerciseId` INTEGER NOT NULL, `extExerciseId` INTEGER NOT NULL, `name` TEXT NOT NULL, `image` INTEGER NOT NULL, `equipment` TEXT NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` INTEGER NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT , FOREIGN KEY(`extProgramExerciseId`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extProgramExerciseId` INTEGER, `extExerciseId` INTEGER NOT NULL, `name` TEXT NOT NULL, `image` INTEGER NOT NULL, `equipment` TEXT NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` INTEGER NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT , FOREIGN KEY(`extProgramExerciseId`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
         "fields": [
           {
             "fieldPath": "workoutExerciseId",
@@ -379,7 +379,7 @@
             "fieldPath": "extProgramExerciseId",
             "columnName": "extProgramExerciseId",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "extExerciseId",
@@ -562,7 +562,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd0d652b38e1e8c3f721fc46498969a55')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e4cbff47ff039c39e1dd607202aae156')"
     ]
   }
 }

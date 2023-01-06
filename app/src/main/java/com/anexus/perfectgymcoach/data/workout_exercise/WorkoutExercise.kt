@@ -43,7 +43,7 @@ import kotlinx.parcelize.Parcelize
 data class WorkoutExercise (
     @PrimaryKey(autoGenerate = true) val workoutExerciseId: Long = 0L,
     val extWorkoutId: Long,
-    val extProgramExerciseId: Long,
+    val extProgramExerciseId: Long? = null,
     val extExerciseId: Long,
     val name: String,
     val image: Int,

@@ -71,10 +71,9 @@ fun Workout(
 
     val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
 
+
     if (startWorkout.value){
         scope.launch {
-            awaitFrame()  // FIXME: not the proper way of doing this (needs to wait for first collection)
-            awaitFrame()
             viewModel.onEvent(WorkoutEvent.StartWorkout)
             startWorkout.value = false
         }
