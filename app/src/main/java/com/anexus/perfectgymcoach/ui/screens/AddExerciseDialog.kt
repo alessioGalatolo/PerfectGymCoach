@@ -100,8 +100,7 @@ fun AddExerciseDialog(
                                     programId = programId,
                                     workoutId = workoutId,
                                     successfulAddExercise = true
-                                ),
-                                onlyIfResumed = true
+                                )
                             )
                         }
                     }, modifier = Modifier.align(CenterVertically)) {

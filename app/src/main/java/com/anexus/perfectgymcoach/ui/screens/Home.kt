@@ -79,7 +79,7 @@ fun Home(
     }
 
     LaunchedEffect(viewModel.state.value.currentWorkout){
-        delay(1000)  // FIXME: done in order to avoid double dialog showing
+        delay(200)  // FIXME: done in order to avoid double dialog showing
         resumeWorkoutDialogOpen = viewModel.state.value.currentWorkout != null
     }
 
@@ -199,15 +199,15 @@ fun Home(
                             )
                         }
                 ){
+                    val exs =
+                        viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
+                            it.programExerciseId
+                        } ?: emptyList()
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         val pagerState = rememberPagerState()
-                        val exs =
-                            viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
-                                it.programExerciseId
-                            } ?: emptyList()
                         Column(Modifier.weight(1.6f).fillMaxHeight()) {
                             Text(
                                 text = it.name,
@@ -250,38 +250,37 @@ fun Home(
                                     )
                                 }
                             }
-                            // FIXME: should go to the bottom but does not
-                            Row (horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.Bottom,
-                                modifier = Modifier.fillMaxWidth()
-                            ){
-                                if (exs.isNotEmpty()) {
-                                    IconButton(
-                                        onClick = {
-                                            navigator.navigate(
-                                                WorkoutDestination(
-                                                    programId = it.programId,
-                                                    quickStart = true
-                                                ),
-                                                onlyIfResumed = true
-                                            )
-                                        }) {
-                                        Icon(Icons.Default.RocketLaunch, null)
-                                    }
-                                }
-                                IconButton(
-                                    onClick = {
-                                        navigator.navigate(
-                                            AddProgramExerciseDestination(
-                                                programName = it.name,
-                                                programId = it.programId
-                                            ),
-                                            onlyIfResumed = true
-                                        )
-                                    }) {
-                                    Icon(Icons.Outlined.Edit, null)
-                                }
+                        }
+                    }
+                    Row (horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.Bottom,
+                        modifier = Modifier.fillMaxWidth()
+                    ){
+                        if (exs.isNotEmpty()) {
+                            IconButton(
+                                onClick = {
+                                    navigator.navigate(
+                                        WorkoutDestination(
+                                            programId = it.programId,
+                                            quickStart = true
+                                        ),
+                                        onlyIfResumed = true
+                                    )
+                                }) {
+                                Icon(Icons.Default.RocketLaunch, null)
                             }
+                        }
+                        IconButton(
+                            onClick = {
+                                navigator.navigate(
+                                    AddProgramExerciseDestination(
+                                        programName = it.name,
+                                        programId = it.programId
+                                    ),
+                                    onlyIfResumed = true
+                                )
+                            }) {
+                            Icon(Icons.Outlined.Edit, null)
                         }
                     }
                 }

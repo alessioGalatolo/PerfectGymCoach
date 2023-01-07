@@ -171,8 +171,7 @@ fun Workout(
         viewModel.onEvent(WorkoutEvent.FinishWorkout(workoutIntensity.value))
         navigator.navigateUp()
         navigator.navigate(
-            WorkoutRecapDestination(workoutId = viewModel.state.value.workoutId),
-            onlyIfResumed = true
+            WorkoutRecapDestination(workoutId = viewModel.state.value.workoutId)
         )
     }
 

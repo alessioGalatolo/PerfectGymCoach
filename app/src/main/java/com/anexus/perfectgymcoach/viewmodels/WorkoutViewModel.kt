@@ -239,9 +239,20 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         it.value.find { it1 -> it1.programId == state.value.programId } != null
                     }!!
 
+                    val currentProgram = planPrograms.value.find {
+                        it.programId == state.value.programId
+                    }!!
+
+                    /*
+                    scenario: user does not do the upcoming workout, does another one instead
+                        Now, after he finishes, should the next workout be the old upcoming one
+                        or the one following the workout the user actually do?
+
+                        Currently the latter
+                     */
                     repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
                         planId = planPrograms.key.planId,
-                        currentProgram = (planPrograms.key.currentProgram+1) % planPrograms.value.size
+                        currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
                     ))
                     repository.setCurrentWorkout(null)
                 }

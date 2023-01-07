@@ -63,7 +63,7 @@ fun ExercisesByMuscle(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LargeTopAppBar(title = { Text("Add exercise to $programName") },
                 scrollBehavior = scrollBehavior,
