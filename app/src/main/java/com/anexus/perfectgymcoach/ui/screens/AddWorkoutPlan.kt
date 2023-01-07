@@ -60,7 +60,7 @@ fun AddWorkoutPlan(
         }
     }
     Scaffold (
-        snackbarHost = { SnackbarHost(snackbarHostState) }, // FIXME: should be padded (navbar)
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(

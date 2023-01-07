@@ -16,6 +16,11 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -32,6 +37,7 @@ import com.anexus.perfectgymcoach.viewmodels.AddExerciseEvent
 import com.anexus.perfectgymcoach.viewmodels.AddExerciseViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
 @ChangePlanNavGraph
@@ -47,7 +53,7 @@ fun AddExerciseDialog(
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
-
+    // FIXME: VERY BAD bug if textfield under keyboard
     val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -166,7 +172,9 @@ fun AddExerciseDialog(
                                             }
                                         },
                                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .menuAnchor()
                                     )
                                     ExposedDropdownMenu(
                                         expanded = expanded.value,
@@ -353,27 +361,35 @@ fun MyDropdownMenu(
     trailingIcon: (@Composable () -> Unit)? = null
 ){
     val keyboardController = LocalSoftwareKeyboardController.current
+    val scope = rememberCoroutineScope()
 
-    // the 3 variable below are used to make the keyboard appear after two taps on the textfield
+    // the variable below is used to make the keyboard appear after two taps on the textfield
     // meaning that on tap 1 we only show the dropdown menu and only on second tap we show the keyboard
-    // FIXME: does not work anymore
-//    var hasBeenFocused by rememberSaveable { mutableStateOf(true) }
-//    var hasBeenFalse by rememberSaveable { mutableStateOf(false) }
-//    val focusRequester = remember { FocusRequester.Default }
+    // FIXME: not implemented optimally but is the best that can be done atm
+    var keyboardIsShowing by rememberSaveable { mutableStateOf(true) }
+
     ExposedDropdownMenuBox(
         expanded = expanded.value,
         onExpandedChange = {
-            expanded.value = !expanded.value
-//            hasBeenFocused = hasBeenFocused || expanded.value
-//            if (!expanded.value) {
-//                focusRequester.requestFocus()
-//                keyboardController?.show()
-//            }
+            if (!expanded.value) {
+                expanded.value = true
+                scope.launch {
+                    awaitFrame()
+                    awaitFrame()
+                    keyboardController?.hide()
+                    keyboardIsShowing = false
+                }
+            } else {
+                if (keyboardIsShowing) {
+                    expanded.value = false
+                } else {
+                    keyboardIsShowing = true
+                }
+            }
 
         }
     ) {
         OutlinedTextField(
-//            readOnly = !hasBeenFocused,
             value = text,
             singleLine = true,
             onValueChange = onTextChange,
@@ -391,21 +407,15 @@ fun MyDropdownMenu(
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             modifier = Modifier
                 .widthIn(1.dp, Dp.Infinity)
-//                .onGloballyPositioned {
-//                    hasBeenFocused = false || (hasBeenFalse && hasBeenFocused)
-//                    hasBeenFalse = true
-//                }
-//                .focusRequester(focusRequester)
                 .menuAnchor()
         )
-        // filter options based on text field value
-//        val filteringOptions = options.filter { it.contains(text, ignoreCase = true) }
+
         if (options.isNotEmpty()) {
             ExposedDropdownMenu(
                 expanded = expanded.value,
                 onDismissRequest = { expanded.value = false },
             ) {
-                options.forEach { selectionOption ->  // FIXME: not using filteringOptions
+                options.forEach { selectionOption ->
                     DropdownMenuItem(
                         text = { Text(selectionOption) },
                         onClick = {

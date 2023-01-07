@@ -28,7 +28,7 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
-import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutExerciseDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddProgramExerciseDestination
 import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -162,17 +162,7 @@ fun WorkoutCard(
                     if (onRename == null && onDelete == null){
                         IconButton(onClick = {
                             navigator.navigate(
-                                WorkoutDestination(
-                                    programId = program.programId
-                                ),
-                                onlyIfResumed = true
-                            )
-                        }) {
-                            Icon(Icons.Outlined.PlayCircle, null)
-                        }
-                        IconButton(onClick = {
-                            navigator.navigate(
-                                AddWorkoutExerciseDestination(
+                                AddProgramExerciseDestination(
                                     programName = program.name,
                                     programId = program.programId
                                 ),
@@ -182,6 +172,16 @@ fun WorkoutCard(
                             Icon(Icons.Outlined.Edit, null)
                         }
                     } else {
+                        IconButton(onClick = {
+                            navigator.navigate(
+                                WorkoutDestination(
+                                    programId = program.programId
+                                ),
+                                onlyIfResumed = true
+                            )
+                        }) {
+                            Icon(Icons.Outlined.PlayCircle, null)
+                        }
                         Box(
                             modifier = Modifier.wrapContentSize()
                         ) {
@@ -195,28 +195,28 @@ fun WorkoutCard(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text("Start workout") },
-                                    onClick = {
-                                        navigator.navigate(
-                                            WorkoutDestination(
-                                                programId = program.programId
-                                            ),
-                                            onlyIfResumed = true
-                                        )
-                                        expanded = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Outlined.PlayCircle,
-                                            contentDescription = null
-                                        )
-                                    })
+//                                DropdownMenuItem(
+//                                    text = { Text("Start workout") },
+//                                    onClick = {
+//                                        navigator.navigate(
+//                                            WorkoutDestination(
+//                                                programId = program.programId
+//                                            ),
+//                                            onlyIfResumed = true
+//                                        )
+//                                        expanded = false
+//                                    },
+//                                    leadingIcon = {
+//                                        Icon(
+//                                            Icons.Outlined.PlayCircle,
+//                                            contentDescription = null
+//                                        )
+//                                    })
                                 DropdownMenuItem(
                                     text = { Text("Edit") },
                                     onClick = {
                                         navigator.navigate(
-                                            AddWorkoutExerciseDestination(
+                                            AddProgramExerciseDestination(
                                                 programName = program.name,
                                                 programId = program.programId
                                             ),

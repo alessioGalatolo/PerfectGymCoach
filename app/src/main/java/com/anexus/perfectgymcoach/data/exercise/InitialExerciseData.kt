@@ -4,11 +4,6 @@ import com.anexus.perfectgymcoach.R
 
 val INITIAL_EXERCISE_DATA = listOf(
     /*
-    TODO: should have some kind of variation system, let the user choose in the addExercise
-      dialog, in the view exercise show "exercise name (5+ variations)"
-    */
-
-    /*
         CHEST EXERCISES
      */
     // Barbell chest

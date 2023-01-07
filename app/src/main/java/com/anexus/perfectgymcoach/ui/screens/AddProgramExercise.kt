@@ -53,7 +53,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 @Destination
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AddWorkoutExercise(
+fun AddProgramExercise(
     navigator: DestinationsNavigator,
     programName: String,
     programId: Long,
@@ -175,7 +175,7 @@ fun AddWorkoutExercise(
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         expanded = true
                                     },
-                                    onClick = {  // FIXME: sometimes when changing the exercise the navigation gets stuck
+                                    onClick = {
                                         navigator.navigate(
                                             AddExerciseDialogDestination(
                                                 programId = exercise.extProgramId,

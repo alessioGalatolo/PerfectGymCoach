@@ -28,7 +28,7 @@ import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.components.ResumeWorkout
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
 import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
-import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutExerciseDestination
+import com.anexus.perfectgymcoach.ui.destinations.AddProgramExerciseDestination
 import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutPlanDestination
 import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.anexus.perfectgymcoach.viewmodels.HomeEvent
@@ -184,7 +184,7 @@ fun Home(
                         .combinedClickable(onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             navigator.navigate(
-                                AddWorkoutExerciseDestination(
+                                AddProgramExerciseDestination(
                                     programName = it.name,
                                     programId = it.programId
                                 ),
@@ -272,7 +272,7 @@ fun Home(
                                 IconButton(
                                     onClick = {
                                         navigator.navigate(
-                                            AddWorkoutExerciseDestination(
+                                            AddProgramExerciseDestination(
                                                 programName = it.name,
                                                 programId = it.programId
                                             ),
