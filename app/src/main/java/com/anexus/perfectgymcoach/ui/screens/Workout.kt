@@ -85,7 +85,7 @@ fun Workout(
         cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navigator.navigateUp() },
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) }
     )
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState()  // TODO: replace with compose foundation API when available
     val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
             if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {

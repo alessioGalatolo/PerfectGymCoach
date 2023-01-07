@@ -102,7 +102,7 @@ fun FullScreenImageCard(
                         }
                     },
                     scrollBehavior = scrollBehavior,
-                    colors = TopAppBarDefaults.smallTopAppBarColors(
+                    colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = backgroundColor,
                         scrolledContainerColor = backgroundColor
                     ),
@@ -118,9 +118,10 @@ fun FullScreenImageCard(
                         .fillMaxSize()) {
 
                     // puts background in the whole screen
-                    Surface(Modifier
-                        .fillMaxSize()
-                        .padding(top = contentBelowImage)) {}
+                    Surface(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(top = contentBelowImage)) {}
                     Column(
                         Modifier
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
