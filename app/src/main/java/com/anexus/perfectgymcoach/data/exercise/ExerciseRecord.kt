@@ -33,7 +33,7 @@ data class ExerciseRecord(
     val reps: List<Int>,
     val weights: List<Float>,
     val variation: String,
-    val rest: Int,
+    val rest: List<Int>,
     val tare: Float = 0f // e.g. barbell weight or bodyweight
 ) : Parcelable {
     enum class BarbellType(val barbellName: String, val weight: Float){
@@ -57,7 +57,7 @@ data class ExerciseRecordAndEquipment(
     val weights: List<Float>,
     val tare: Float = 0f,
     val variation: String,
-    val rest: Int,
+    val rest: List<Int>,
     val equipment: Exercise.Equipment
 ) : Parcelable
 
@@ -72,7 +72,7 @@ data class ExerciseRecordAndInfo(
     val reps: List<Int>,
     val weights: List<Float>,
     val variation: String,
-    val rest: Int,
+    val rest: List<Int>,
     val tare: Float = 0f, // e.g. barbell weight or bodyweight
     val name: String,
     val image: Int,

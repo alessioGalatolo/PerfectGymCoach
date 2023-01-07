@@ -315,7 +315,7 @@ fun Workout(
                                 if (!viewModel.onEvent(
                                         WorkoutEvent.TryCompleteSet(
                                             pagerState.currentPage,
-                                            currentExercise!!.rest.toLong()
+                                            currentExercise!!.rest[setsDone.value].toLong()
                                         )
                                     )
                                 ) {

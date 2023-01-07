@@ -316,7 +316,7 @@ fun AddProgramExercise(
                                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                                         append(" • Rest: ")
                                     }
-                                    append("${exercise.rest}s")
+                                    append(exercise.rest.joinToString("s, ") + "s")
                                 })
                                 if (exercise.note.isNotBlank())
                                     Text(text = buildAnnotatedString {

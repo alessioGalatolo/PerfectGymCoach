@@ -194,7 +194,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 reps = listOf(state.value.repsBottomBar.toInt()),
                                 weights = listOf(state.value.weightBottomBar.toFloat()),
                                 variation = exercise.variation,
-                                rest = exercise.rest,
+                                rest = listOf(event.exerciseRest.toInt()),
                                 tare = state.value.tare
                             )
                         )
@@ -209,7 +209,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 record.reps.plus(state.value.repsBottomBar.toInt()),
                                 record.weights.plus(state.value.weightBottomBar.toFloat()),
                                 record.variation,
-                                record.rest,
+                                record.rest.plus(event.exerciseRest.toInt()),
                                 record.tare
                             )
                         )
@@ -229,7 +229,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                         it.weights.mapIndexed { index, i -> i * it.reps[index] }.sum()).toDouble()
                             },
                             activeTime = max(0L, state.value.workoutTime!! -
-                                    exercises.sumOf { it.rest * it.reps.size }),
+                                    exercises.sumOf { it.rest.sum() }),
                             calories = event.workoutIntensity.metValue *
                                     repository.getUserWeight().first() *
                                     state.value.workoutTime!! / 3600
@@ -260,7 +260,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 // FIXME: probably there is a better way of doing this
                 val newExs = state.value.workoutExercises
                 val newEx = newExs[event.exerciseInWorkout].copy(
-                    reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last())
+                    reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last()),
+                    rest = newExs[event.exerciseInWorkout].rest.plus(newExs[event.exerciseInWorkout].rest.last())
                 )
                 _state.value = state.value.copy(
                     workoutExercises = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }

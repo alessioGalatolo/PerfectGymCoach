@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "a3d6478f1a8f3ff8f823e3cab6dc52b9",
+    "identityHash": "38c65cb29b832a6fd0cf2123f70c12fd",
     "entities": [
       {
         "tableName": "plan",
@@ -88,7 +88,7 @@
       },
       {
         "tableName": "ProgramExercise",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`programExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `extExerciseId` INTEGER NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` INTEGER NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`programExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `extExerciseId` INTEGER NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` TEXT NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
         "fields": [
           {
             "fieldPath": "programExerciseId",
@@ -123,7 +123,7 @@
           {
             "fieldPath": "rest",
             "columnName": "rest",
-            "affinity": "INTEGER",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -190,7 +190,7 @@
       },
       {
         "tableName": "ExerciseRecord",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recordId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extExerciseId` INTEGER NOT NULL, `extWorkoutId` INTEGER NOT NULL, `exerciseInWorkout` INTEGER NOT NULL, `date` INTEGER NOT NULL, `reps` TEXT NOT NULL, `weights` TEXT NOT NULL, `variation` TEXT NOT NULL, `rest` INTEGER NOT NULL, `tare` REAL NOT NULL, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recordId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extExerciseId` INTEGER NOT NULL, `extWorkoutId` INTEGER NOT NULL, `exerciseInWorkout` INTEGER NOT NULL, `date` INTEGER NOT NULL, `reps` TEXT NOT NULL, `weights` TEXT NOT NULL, `variation` TEXT NOT NULL, `rest` TEXT NOT NULL, `tare` REAL NOT NULL, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "recordId",
@@ -243,7 +243,7 @@
           {
             "fieldPath": "rest",
             "columnName": "rest",
-            "affinity": "INTEGER",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -361,7 +361,7 @@
       },
       {
         "tableName": "WorkoutExercise",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extProgramExerciseId` INTEGER, `extExerciseId` INTEGER NOT NULL, `name` TEXT NOT NULL, `image` INTEGER NOT NULL, `equipment` TEXT NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` INTEGER NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extProgramExerciseId` INTEGER, `extExerciseId` INTEGER NOT NULL, `name` TEXT NOT NULL, `image` INTEGER NOT NULL, `equipment` TEXT NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` TEXT NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
         "fields": [
           {
             "fieldPath": "workoutExerciseId",
@@ -420,7 +420,7 @@
           {
             "fieldPath": "rest",
             "columnName": "rest",
-            "affinity": "INTEGER",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -551,7 +551,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a3d6478f1a8f3ff8f823e3cab6dc52b9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '38c65cb29b832a6fd0cf2123f70c12fd')"
     ]
   }
 }

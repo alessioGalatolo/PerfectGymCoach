@@ -37,6 +37,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import kotlin.math.min
+import kotlin.math.max
 
 @OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3Api::class
@@ -166,7 +167,10 @@ fun ExercisePage(
                             Modifier.padding(8.dp),
                             horizontalAlignment = CenterHorizontally
                         ) {
-                            Text("Rest: ${workoutExercises[page].rest}s", Modifier.align(Alignment.Start))
+                            Text("Rest: " +
+                                    "${workoutExercises[page].rest[
+                                            min(setsDone.value, workoutExercises[page].rest.size-1)
+                                    ]}s", Modifier.align(Alignment.Start))
 
                             AnimatedVisibility(
                                 visible = workoutTime != null &&

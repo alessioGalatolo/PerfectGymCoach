@@ -103,8 +103,14 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                     state.value.repsArray.map { it.toInt() }
                                 else
                                     List(state.value.sets.toInt()) { state.value.reps.toInt() },
-                                variation = if (state.value.variation == "No variation") "" else " (${state.value.variation.lowercase()})",
-                                rest = state.value.rest.toInt(), //state.value.restArray.map { it.toInt() }[0], // FIXME: pass whole array
+                                variation = if (state.value.variation == "No variation") ""
+                                else
+                                    " (${state.value.variation.lowercase()})",
+                                rest =
+                                if (state.value.advancedSets)
+                                    state.value.restArray.map { it.toInt() }
+                                else
+                                    List(state.value.sets.toInt()) { state.value.rest.toInt() },
                                 note = state.value.note
                             )
                         )
@@ -122,7 +128,11 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 else
                                     List(state.value.sets.toInt()) { state.value.reps.toInt() },
                                 variation = if (state.value.variation == "No variation") "" else " (${state.value.variation.lowercase()})",
-                                rest = state.value.rest.toInt(), //state.value.restArray.map { it.toInt() }[0], // FIXME: pass whole array
+                                rest =
+                                if (state.value.advancedSets)
+                                    state.value.restArray.map { it.toInt() }
+                                else
+                                    List(state.value.sets.toInt()) { state.value.rest.toInt() },
                                 note = state.value.note
                             )
                         )
@@ -274,11 +284,11 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 .trim()
                                 .replaceFirstChar { it.uppercaseChar() },
                             reps = "${ex.reps[0]}",
-                            rest = "${ex.rest}", // fixme when rest becomes an array
+                            rest = "${ex.rest[0]}",
                             repsArray = List(ex.reps.size) { "${ex.reps[it]}" },
-                            restArray = List(ex.reps.size) { "${ex.rest}" }, // fixme when rest becomes an array
+                            restArray = List(ex.reps.size) { "${ex.rest[it]}" },
                             note = ex.note,
-                            advancedSets = ex.reps.distinct().size > 1,
+                            advancedSets = ex.reps.distinct().size + ex.rest.distinct().size > 2,
                             exercise = repository.getExercise(event.exerciseId).first(),
                             programId = event.programId,
                             programName = programMapExercises.keys.first().name,

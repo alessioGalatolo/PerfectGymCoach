@@ -37,7 +37,7 @@ data class ProgramExercise (
     val extExerciseId: Long,
     val orderInProgram: Int,
     val reps: List<Int>,
-    val rest: Int,
+    val rest: List<Int>,
     val note: String,
     val variation: String,
     val supersetExercise: Long? = null
@@ -63,7 +63,7 @@ data class ProgramExerciseAndInfo (
     val orderInProgram: Int,
     val name: String,
     val reps: List<Int>,
-    val rest: Int,
+    val rest: List<Int>,
     val note: String,
     val variation: String,
     val supersetExercise: Long? = null,

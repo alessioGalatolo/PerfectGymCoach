@@ -50,7 +50,7 @@ data class WorkoutExercise (
     val equipment: Exercise.Equipment,
     val orderInProgram: Int,
     val reps: List<Int>,
-    val rest: Int,
+    val rest: List<Int>,
     val note: String,
     val variation: String,
     val supersetExercise: Long? = null

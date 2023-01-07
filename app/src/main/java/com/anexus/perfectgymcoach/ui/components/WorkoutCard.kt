@@ -117,7 +117,7 @@ fun WorkoutCard(
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                         append(" • Rest: ")
                     }
-                    append("${it.rest}s")
+                    append(it.rest.joinToString("s, ") + "s")
                     if (it.note.isNotBlank()) {
                         withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                             append(" • Note: ")

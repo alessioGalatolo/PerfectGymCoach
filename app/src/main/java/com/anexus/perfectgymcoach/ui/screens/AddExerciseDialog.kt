@@ -255,7 +255,7 @@ fun AddExerciseDialog(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(0.5f)
                                 ) {
-                                    MyDropdownMenu( // FIXME: should check is int
+                                    MyDropdownMenu(
                                         prompt = "Reps" + "*",
                                         options = (1..12).map { "$it" },
                                         text = viewModel.state.value.reps,
