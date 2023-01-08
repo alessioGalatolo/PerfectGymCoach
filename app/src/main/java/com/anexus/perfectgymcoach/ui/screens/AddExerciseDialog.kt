@@ -53,7 +53,7 @@ fun AddExerciseDialog(
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
-    // FIXME: VERY BAD bug if textfield under keyboard
+
     val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -112,7 +112,6 @@ fun AddExerciseDialog(
                 LazyColumn(
                     contentPadding = innerPadding,
                     modifier = Modifier
-                        .imePadding()
                         .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {

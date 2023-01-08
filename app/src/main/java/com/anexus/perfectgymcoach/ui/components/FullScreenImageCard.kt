@@ -144,7 +144,7 @@ fun FullScreenImageCard(
 
                 }
             }, bottomBar = { bottomBar(
-                WindowInsets.ime.add(WindowInsets.navigationBars).asPaddingValues()
+                WindowInsets.navigationBars.asPaddingValues()
             ) { bottomBarContent ->
                 Surface(
                     tonalElevation = NavigationBarDefaults.Elevation,

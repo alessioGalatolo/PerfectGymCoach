@@ -76,7 +76,6 @@ fun CreateExerciseDialog(
         }, content = { innerPadding ->
             LazyColumn(contentPadding = innerPadding,
                 modifier = Modifier
-                    .imePadding()
                     .padding(16.dp)
                     .fillMaxWidth()){
                 item {

@@ -78,7 +78,6 @@ fun Profile(
         .verticalScroll(rememberScrollState())
         .padding(horizontal = 16.dp)
         .padding(top = 16.dp)
-        .imePadding()  // FIXME: ime padding not working
         .fillMaxSize()) {
         Row (
             verticalAlignment = Alignment.CenterVertically,

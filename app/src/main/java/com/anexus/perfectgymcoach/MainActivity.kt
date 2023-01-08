@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ComposeView(this).consumeWindowInsets = true
+
         setContent {
             val sysUiController = rememberSystemUiController()
             sysUiController.setStatusBarColor(

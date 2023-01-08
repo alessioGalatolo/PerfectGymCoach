@@ -97,6 +97,8 @@ fun WorkoutBottomBar(
                     )}
                 )
             }
+
+            // fixme: becomes hidden when keyboard out for typing in above fields
             Row(Modifier.fillMaxWidth()) {
                 Button(
                     onClick = completeSet,

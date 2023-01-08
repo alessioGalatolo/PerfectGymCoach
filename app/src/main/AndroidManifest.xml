@@ -15,7 +15,6 @@
         tools:targetApi="33">
         <activity
             android:name=".MainActivity"
-            android:windowSoftInputMode="adjustResize"
             android:exported="true"
             android:theme="@style/Theme.PerfectGymCoach">
             <intent-filter>

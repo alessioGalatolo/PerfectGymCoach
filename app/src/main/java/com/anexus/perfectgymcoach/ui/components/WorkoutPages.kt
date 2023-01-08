@@ -320,10 +320,11 @@ fun ExercisePage(
                                     fontStyle = FontStyle.Italic // TODO: add how many days ago
                                 )
                                 if (record.equipment == Exercise.Equipment.BARBELL) {
-                                    Text("Barbell used: " +
-                                            ExerciseRecord.BarbellType.values().find {
-                                                it.weight == record.tare
-                                            }!!.barbellName
+                                    Text(
+                                        "Barbell used: " +
+                                                ExerciseRecord.BarbellType.values().find {
+                                                    it.weight == record.tare
+                                                }?.barbellName
                                     )
                                 } else if (record.equipment == Exercise.Equipment.BODY_WEIGHT) {
                                     Text("Bodyweight at the time: ${record.tare}")
