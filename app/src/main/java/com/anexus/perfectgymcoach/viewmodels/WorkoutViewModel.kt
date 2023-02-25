@@ -8,13 +8,12 @@ import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndEquipment
-import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndInfo
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
-import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExerciseReorder
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordFinish
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordStart
+import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,6 +27,7 @@ import kotlin.math.max
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
+    val otherEquipmentDialogOpen: Boolean = false,
     val programId: Long = 0L,
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecordAndEquipment>> = emptyMap(), // old records
@@ -36,7 +36,8 @@ data class WorkoutState(
     val workoutId: Long = 0L,
     val tare: Float = 0f,
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
-    val weightBottomBar: String = "0.0" // weight to be displayed in bottom bar
+    val weightBottomBar: String = "0.0", // weight to be displayed in bottom bar
+    val imperialSystem: Boolean = false
 )
 
 sealed class WorkoutEvent{
@@ -51,6 +52,8 @@ sealed class WorkoutEvent{
     object CancelWorkout: WorkoutEvent()
 
     object DeleteCurrentRecords: WorkoutEvent()
+
+    object ToggleOtherEquipmentDialog: WorkoutEvent()
 
     data class TryCompleteSet(
         val exerciseInWorkout: Int,
@@ -89,6 +92,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private var resumeWorkoutJob: Job? = null
     private var retrieveExercisesRecords: Job? = null
     private var timerJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            repository.getImperialSystem().collect {
+                _state.value = state.value.copy(imperialSystem = it)
+            }
+        }
+    }
 
     fun onEvent(event: WorkoutEvent): Boolean{
         when (event) {
@@ -192,7 +203,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 exerciseInWorkout = event.exerciseInWorkout,
                                 date = Calendar.getInstance(),
                                 reps = listOf(state.value.repsBottomBar.toInt()),
-                                weights = listOf(state.value.weightBottomBar.toFloat()),
+                                weights = listOf(
+                                    maybeLbToKg(state.value.weightBottomBar.toFloat(), state.value.imperialSystem)
+                                ),
                                 variation = exercise.variation,
                                 rest = listOf(event.exerciseRest.toInt()),
                                 tare = state.value.tare
@@ -207,10 +220,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 record.exerciseInWorkout,
                                 record.date,
                                 record.reps.plus(state.value.repsBottomBar.toInt()),
-                                record.weights.plus(state.value.weightBottomBar.toFloat()),
+                                record.weights.plus(
+                                    maybeLbToKg(state.value.weightBottomBar.toFloat(), state.value.imperialSystem)
+                                ),
                                 record.variation,
                                 record.rest.plus(event.exerciseRest.toInt()),
-                                record.tare
+                                state.value.tare  // allow user to change the initial tare, in case they selected wrong one
                             )
                         )
                     }
@@ -354,6 +369,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 //                        )
 //                    }
 //                } // does not work because it is called before the exercise is added
+            }
+            is WorkoutEvent.ToggleOtherEquipmentDialog -> {
+                _state.value = state.value.copy(
+                    otherEquipmentDialogOpen = !state.value.otherEquipmentDialogOpen
+                )
             }
         }
         return true

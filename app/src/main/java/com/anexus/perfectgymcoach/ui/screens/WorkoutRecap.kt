@@ -41,8 +41,10 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.ui.WorkoutNavGraph
+import com.anexus.perfectgymcoach.ui.barbellFromWeight
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.ui.destinations.HistoryDestination
+import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
 import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -152,7 +154,10 @@ fun WorkoutRecap(
                 }
                 val records = viewModel.state.value.olderRecords
                 val graphsYaxis = listOf (
-                    Pair(Pair("Volume", "kg"), records.map { it.volume }),
+                    Pair(Pair("Volume", if (viewModel.state.value.imperialSystem) "lb" else "kg"),
+                        records.map {
+                            maybeKgToLb(it.volume.toFloat(), viewModel.state.value.imperialSystem)
+                        }),
                     Pair(Pair("Calories", "kcal"), records.map { it.calories }),
                     Pair(Pair("Workout time", "s"), records.map { it.duration }),
                     Pair(Pair("Workout active time", "s"), records.map { it.activeTime })
@@ -293,7 +298,10 @@ fun WorkoutRecap(
                                         Spacer(Modifier.width(8.dp))
                                         Text(
                                             "Total volume: " +
-                                                    "%.2f kg".format(viewModel.state.value.workoutRecord!!.volume)
+                                                    "%.2f ".format(maybeKgToLb(
+                                                        viewModel.state.value.workoutRecord!!.volume.toFloat(),
+                                                        viewModel.state.value.imperialSystem
+                                                    )) + if (viewModel.state.value.imperialSystem) "lb" else "kg"
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     }
@@ -369,13 +377,11 @@ fun WorkoutRecap(
                             if (exercise.equipment == Exercise.Equipment.BARBELL) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text("Barbell used: " +
-                                        ExerciseRecord.BarbellType.values().find {
-                                            it.weight == exercise.tare
-                                        }!!.barbellName
+                                        barbellFromWeight(exercise.tare, viewModel.state.value.imperialSystem, true)
                                 )
                             } else if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Bodyweight at the time: ${exercise.tare}")
+                                Text("Bodyweight at the time: ${maybeKgToLb(exercise.tare, viewModel.state.value.imperialSystem)} " + if (viewModel.state.value.imperialSystem) "lb" else "kg")
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             exercise.reps.forEachIndexed { index, rep ->
@@ -389,7 +395,7 @@ fun WorkoutRecap(
                                     }
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        "Reps: $rep Weight: ${exercise.weights[index]} kg"
+                                        "Reps: $rep Weight: ${maybeKgToLb(exercise.weights[index], viewModel.state.value.imperialSystem)} " + if (viewModel.state.value.imperialSystem) "lb" else "kg"
                                     )
                                 }
                             }

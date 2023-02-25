@@ -34,6 +34,7 @@ class Repository @Inject constructor(
     private val userSex = stringPreferencesKey("User sex")
     private val userName = stringPreferencesKey("User name")
     private val userAgeYear = intPreferencesKey("User age year")
+    private val imperialSystem = booleanPreferencesKey("Imperial system user")
 
 
     fun getPlans() = db.workoutPlanDao.getPlans()
@@ -194,6 +195,12 @@ class Repository @Inject constructor(
     fun getUserName(): Flow<String> = context.dataStore.data.map{ it[userName] ?: "what's your name?" }
 
     suspend fun setUserName(newName: String) = context.dataStore.edit { it[userName] = newName }
+
+
+    // TODO: move default value outside
+    fun getImperialSystem(): Flow<Boolean> = context.dataStore.data.map{ it[imperialSystem] ?: false }
+
+    suspend fun setImperialSystem(newValue: Boolean) = context.dataStore.edit { it[imperialSystem] = newValue }
 
 
     fun getCurrentWorkout(): Flow<Long?> = context.dataStore.data.map{ it[currentWorkout] }

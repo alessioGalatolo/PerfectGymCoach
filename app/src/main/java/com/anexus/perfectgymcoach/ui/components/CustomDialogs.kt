@@ -197,18 +197,18 @@ fun InfoDialog(dialogueIsOpen: Boolean, toggleDialogue: () -> Unit, infoText: @C
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangeRepsWeightDialog(
-    dialogueIsOpen: Boolean,
-    toggleDialogue: () -> Unit,
+    dialogIsOpen: Boolean,
+    toggleDialog: () -> Unit,
     initialReps: String,
     initialWeight: String,
     updateValues: (Int, Float) -> Unit
 ) {
-    if (dialogueIsOpen) {
+    if (dialogIsOpen) {
         var reps by rememberSaveable { mutableStateOf(initialReps) }
         var weight by rememberSaveable { mutableStateOf(initialWeight) }
         AlertDialog(
             onDismissRequest = {
-                toggleDialogue()
+                toggleDialog()
             },
             title = { Text("Change reps/weight value") },
             text = {
@@ -231,20 +231,93 @@ fun ChangeRepsWeightDialog(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { toggleDialogue() }
+                    onClick = { toggleDialog() }
                 ) {
                     Text("Cancel")
                 }
             },
             confirmButton = {
                 TextButton(
-                    enabled = reps.toIntOrNull() != null && weight.toIntOrNull() != null,
+                    enabled = reps.toIntOrNull() != null && weight.toFloatOrNull() != null,
                     onClick = {
-                        toggleDialogue()
+                        toggleDialog()
                         updateValues(reps.toInt(), weight.toFloat())
                     }
                 ) {
                     Text("Update values")
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun InputOtherEquipmentDialog(
+    dialogIsOpen: Boolean,
+    toggleDialog: () -> Unit,
+    weightUnit: String, // kg or lb
+    updateTare: (Float) -> Unit
+) {
+    // alert dialogue to enter the workout plan/program name
+
+    var text by rememberSaveable { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    if (dialogIsOpen) {
+        AlertDialog(
+            onDismissRequest = {
+                toggleDialog()
+            },
+            title = {
+                Text(text = "Enter other barbell weight")
+            },
+            text = {
+
+                TextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier
+                        .focusRequester(focusRequester)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                keyboardController?.show()
+                            }
+                        },
+                    placeholder = { Text("0") },
+                    trailingIcon = { Text(weightUnit) },
+                    keyboardActions = KeyboardActions(onDone = {
+                        keyboardController?.hide()
+                    }),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true
+                )
+                LaunchedEffect(focusRequester) {
+                    awaitFrame()
+                    awaitFrame()
+                    awaitFrame()
+                    awaitFrame()
+                    focusRequester.requestFocus()
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        updateTare(text.trim().toFloatOrNull() ?: 0f)
+                        toggleDialog()
+                        text = ""
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        toggleDialog()
+                    }
+                ) {
+                    Text("Cancel")
                 }
             }
         )

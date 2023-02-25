@@ -33,7 +33,6 @@ data class Exercise(
         TRICEPS("Triceps", R.drawable.triceps)
     }
 
-    // TODO: assumes international system (kg), add support for americans
     enum class Equipment(val equipmentName: String, val increment: Float){
         EVERYTHING("See all", 1f), // Used when filtering by muscle to get everything
         BARBELL("Barbell", 2.5f),

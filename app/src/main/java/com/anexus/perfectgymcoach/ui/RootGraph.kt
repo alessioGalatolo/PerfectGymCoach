@@ -101,7 +101,7 @@ fun RootDestinationGraph(){
                 exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
                 visible = BottomBarDestination.values().any { currentDestination == it.direction }
             ) {
-                NavigationBar(windowInsets = WindowInsets.navigationBars) {
+                NavigationBar() {
                     BottomBarDestination.values().forEach { destination ->
                         val selected = currentDestination == destination.direction
                         //                    navController.isRouteOnBackStack(destination.direction)

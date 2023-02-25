@@ -28,7 +28,10 @@ import androidx.compose.ui.unit.dp
 import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
+import com.anexus.perfectgymcoach.ui.barbellFromWeight
 import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
+import com.anexus.perfectgymcoach.ui.maybeKgToLb
+import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -57,8 +60,11 @@ fun ExercisePage(
     ongoingRecord: ExerciseRecordAndEquipment?,
     restCounter: Long?,
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
+    useImperialSystem: Boolean,
+    tare: Float,
     updateTare: (Float) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit,
+    toggleOtherEquipment: () -> Unit,
     changeExercise: (Int, Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -184,9 +190,9 @@ fun ExercisePage(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text("Barbell: ")
-                                    var barbellName: String by remember {
-                                        mutableStateOf(ExerciseRecord.BarbellType.MEN_OLYMPIC.barbellName)
-                                    }
+                                    val barbellName: String =
+                                            barbellFromWeight(tare, useImperialSystem, false)
+
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         var expanded by remember { mutableStateOf(false) }
                                         ExposedDropdownMenuBox(
@@ -215,12 +221,18 @@ fun ExercisePage(
                                                 onDismissRequest = { expanded = false },
                                             ) {
                                                 ExerciseRecord.BarbellType.values().forEach { selectionOption ->
+                                                    val fullName = if (selectionOption == ExerciseRecord.BarbellType.OTHER)
+                                                        selectionOption.barbellName + " (Custom value)"
+                                                    else
+                                                        selectionOption.barbellName +
+                                                            " (${selectionOption.weight[useImperialSystem]} ${if (useImperialSystem) "lb" else "kg"})"
                                                     DropdownMenuItem(
-                                                        text = { Text(selectionOption.barbellName) },
+                                                        text = { Text(fullName) },
                                                         onClick = {
-                                                            barbellName = selectionOption.barbellName
                                                             expanded = false
-                                                            updateTare(selectionOption.weight)
+                                                            updateTare(maybeLbToKg(selectionOption.weight[useImperialSystem]!!, useImperialSystem))
+                                                            if (selectionOption == ExerciseRecord.BarbellType.OTHER)
+                                                                toggleOtherEquipment()
                                                         },
                                                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                                                     )
@@ -240,13 +252,13 @@ fun ExercisePage(
                                     val currentRecord = currentExerciseRecords.firstOrNull()
                                     weightInRow = if (currentRecord != null) {
                                         val index = min(setCount, currentRecord.weights.size-1)
-                                        currentRecord.weights[index].toString()
+                                        maybeKgToLb(currentRecord.weights[index], useImperialSystem).toString()
                                     } else {
                                         "..."
                                     }
                                 } else {
                                     repsInRow = ongoingRecord.reps[setCount].toString()
-                                    weightInRow = ongoingRecord.weights[setCount].toString()
+                                    weightInRow = maybeKgToLb(ongoingRecord.weights[setCount], useImperialSystem).toString()
                                 }
                                 var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
                                 ChangeRepsWeightDialog(
@@ -254,7 +266,7 @@ fun ExercisePage(
                                     { dialogIsOpen = !dialogIsOpen },
                                     repsInRow,
                                     weightInRow,
-                                    { reps, weight -> updateValues(reps, weight, page, setCount) }
+                                    { reps, weight -> updateValues(reps, maybeLbToKg(weight, useImperialSystem), page, setCount) }
                                 )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -285,7 +297,7 @@ fun ExercisePage(
                                         Text((setCount + 1).toString())
                                     }
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Reps: $repsInRow Weight: $weightInRow kg",
+                                    Text("Reps: $repsInRow Weight: $weightInRow " + if(useImperialSystem) "lb" else "kg",
                                         color = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
                                     )
                                 }
@@ -320,14 +332,10 @@ fun ExercisePage(
                                     fontStyle = FontStyle.Italic // TODO: add how many days ago
                                 )
                                 if (record.equipment == Exercise.Equipment.BARBELL) {
-                                    Text(
-                                        "Barbell used: " +
-                                                ExerciseRecord.BarbellType.values().find {
-                                                    it.weight == record.tare
-                                                }?.barbellName
+                                    Text("Barbell used: " + barbellFromWeight(record.tare, useImperialSystem, true)
                                     )
                                 } else if (record.equipment == Exercise.Equipment.BODY_WEIGHT) {
-                                    Text("Bodyweight at the time: ${record.tare}")
+                                    Text("Bodyweight at the time: ${maybeKgToLb(record.tare, useImperialSystem)} " + if(useImperialSystem) "lb" else "kg")
                                 }
                                 record.reps.forEachIndexed { index, rep ->
                                     Row(
@@ -337,7 +345,7 @@ fun ExercisePage(
                                             .combinedClickable(onLongClick = {
 
                                             }, onClick = {
-                                                updateBottomBar(rep, record.weights[index])
+                                                updateBottomBar(rep, maybeKgToLb(record.weights[index], useImperialSystem))
                                             })
                                     ) {
                                         FilledIconToggleButton(checked = false, // FIXME: can use different component?
@@ -346,7 +354,7 @@ fun ExercisePage(
                                         }
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            "Reps: $rep Weight: ${record.weights[index]} kg"
+                                            "Reps: $rep Weight: ${maybeKgToLb(record.weights[index], useImperialSystem)} " + if(useImperialSystem) "lb" else "kg"
                                         )
                                     }
                                 }

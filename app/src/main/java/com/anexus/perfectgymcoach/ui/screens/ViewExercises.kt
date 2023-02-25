@@ -107,6 +107,8 @@ fun ViewExercises(
             val haptic = LocalHapticFeedback.current
             var isLongPressing by remember { mutableStateOf(false) }
             var longPressImage by remember { mutableStateOf(R.drawable.finish_workout) }
+
+            // fixme: this screen does not go under the navigation bar
             Box (Modifier.padding(innerPadding), contentAlignment = Center) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)

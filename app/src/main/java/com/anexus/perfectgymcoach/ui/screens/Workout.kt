@@ -39,6 +39,8 @@ import com.anexus.perfectgymcoach.ui.WorkoutNavGraph
 import com.anexus.perfectgymcoach.ui.components.*
 import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.ui.destinations.WorkoutRecapDestination
+import com.anexus.perfectgymcoach.ui.maybeKgToLb
+import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -85,6 +87,13 @@ fun Workout(
         cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navigator.navigateUp() },
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) }
     )
+    InputOtherEquipmentDialog(
+        dialogIsOpen = viewModel.state.value.otherEquipmentDialogOpen,
+        toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
+        weightUnit = if (viewModel.state.value.imperialSystem) "lb" else "kg",
+        updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, viewModel.state.value.imperialSystem))) }
+    )
+
     val pagerState = rememberPagerState()  // TODO: replace with compose foundation API when available
     val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
@@ -146,14 +155,41 @@ fun Workout(
     }
 
     LaunchedEffect(viewModel.state.value.allRecords, pagerState.currentPage, setsDone){
-        val currentRecord = recordsToDisplay.firstOrNull()  // FixME: sometimes not latest (was it fixed?)
+        val currentRecord = recordsToDisplay.firstOrNull()
 
         if (currentRecord != null) {
-            if (setsDone.value > 0)
-                viewModel.onEvent(WorkoutEvent.UpdateWeight(ongoingRecord!!.weights[setsDone.value-1].toString()))
-            else
+            if (setsDone.value > 0) {
+                viewModel.onEvent(
+                    WorkoutEvent.UpdateWeight(
+                        maybeKgToLb(
+                            ongoingRecord!!.weights[setsDone.value - 1],
+                            viewModel.state.value.imperialSystem
+                        ).toString()
+                    )
+                )
+                viewModel.onEvent(
+                    WorkoutEvent.UpdateTare(
+                        ongoingRecord!!.tare
+                    )
+                )
+            } else {
 //            val index = min(setsDone.value, currentRecord.weights.size - 1)
-                viewModel.onEvent(WorkoutEvent.UpdateWeight(currentRecord.weights[0].toString()))
+                viewModel.onEvent(
+                    WorkoutEvent.UpdateWeight(
+                        maybeKgToLb(
+                            currentRecord.weights[0],
+                            viewModel.state.value.imperialSystem
+                        ).toString()
+                    )
+                )
+                viewModel.onEvent(WorkoutEvent.UpdateTare(
+                    currentRecord.tare
+                ))
+            }
+        } else {
+            viewModel.onEvent(WorkoutEvent.UpdateTare(
+                0f
+            ))
         }
     }
 
@@ -280,6 +316,9 @@ fun Workout(
                     },
                     updateValues = { a, b, c, d -> viewModel.onEvent(WorkoutEvent.EditSetRecord(a, b, c, d)) },
                     updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare))},
+                    useImperialSystem = viewModel.state.value.imperialSystem,
+                    tare = viewModel.state.value.tare,
+                    toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
                     changeExercise = { exerciseInWorkout, originalSize ->
                         scope.launch {
                             awaitFrame()  // wait for exercise to be added

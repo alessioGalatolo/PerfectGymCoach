@@ -17,7 +17,8 @@ data class RecapState(
     val workoutId: Long = 0L,
     val workoutRecord: WorkoutRecord? = null,
     val olderRecords: List<WorkoutRecord> = emptyList(),
-    val exerciseRecords: List<ExerciseRecordAndInfo> = emptyList()
+    val exerciseRecords: List<ExerciseRecordAndInfo> = emptyList(),
+    val imperialSystem: Boolean = false
 )
 
 sealed class RecapEvent{
@@ -32,6 +33,15 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
     private var retrieveWorkoutRecordJob: Job? = null
     private var retrieveRecordsJob: MutableList<Job> = mutableListOf()
 
+    init {
+        viewModelScope.launch {
+            repository.getImperialSystem().collect{
+                _state.value = state.value.copy(
+                    imperialSystem = it
+                )
+            }
+        }
+    }
 
     fun onEvent(event: RecapEvent){
         when (event) {

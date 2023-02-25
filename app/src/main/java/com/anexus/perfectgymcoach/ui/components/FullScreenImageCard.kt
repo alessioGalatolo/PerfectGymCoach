@@ -58,7 +58,7 @@ fun FullScreenImageCard(
     val transition by remember { derivedStateOf { 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
         minimumValue = s.heightOffsetLimit,
         maximumValue = 0f
-    ) / s.heightOffsetLimit) }}
+    ) / s.heightOffsetLimit) }}  // FIXME: transition is late
 
     // make status bar transparent to see image behind
     val sysUiController = rememberSystemUiController()

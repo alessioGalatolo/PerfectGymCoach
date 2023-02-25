@@ -15,7 +15,8 @@ data class ProfileState(
     val userYear: Int = 0,
     val height: Float = 0f,
     val sex: String = "",
-    val name: String = ""
+    val name: String = "",
+    val imperialSystem: Boolean = false
 )
 
 sealed class ProfileEvent{
@@ -28,6 +29,8 @@ sealed class ProfileEvent{
     data class UpdateName(val newName: String): ProfileEvent()
 
     data class UpdateSex(val newSex: String): ProfileEvent()
+
+    data class SwitchImperialSystem(val newValue: Boolean): ProfileEvent()
 }
 
 @HiltViewModel
@@ -61,6 +64,11 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(userYear = it)
             }
         }
+        viewModelScope.launch {
+            repository.getImperialSystem().collect {
+                _state.value = state.value.copy(imperialSystem = it)
+            }
+        }
     }
 
     fun onEvent(event: ProfileEvent){
@@ -88,6 +96,11 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
             is ProfileEvent.UpdateAgeYear -> {
                 viewModelScope.launch {
                     repository.setUserYear(event.newYear)
+                }
+            }
+            is ProfileEvent.SwitchImperialSystem -> {
+                viewModelScope.launch {
+                    repository.setImperialSystem(event.newValue)
                 }
             }
         }

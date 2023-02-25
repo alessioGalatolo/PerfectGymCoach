@@ -6,10 +6,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,6 +33,8 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
+import com.anexus.perfectgymcoach.ui.maybeKgToLb
+import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import com.anexus.perfectgymcoach.viewmodels.ProfileViewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -181,24 +182,38 @@ fun Profile(
             var showUpdateWeightButton by remember { mutableStateOf(false) }
             var weightValue by remember { mutableStateOf("") }
             val focusRequester = remember { FocusRequester() }
-            LaunchedEffect(viewModel.state.value.weight){
-                weightValue = viewModel.state.value.weight.toString()
+
+            LaunchedEffect(viewModel.state.value.weight, viewModel.state.value.imperialSystem){
+                weightValue = maybeKgToLb(
+                    viewModel.state.value.weight,
+                    viewModel.state.value.imperialSystem
+                ).toString()
+            }
+            val updateWeight: (String) -> Unit = { newWeight ->
+                keyboardController?.hide()
+                viewModel.onEvent(ProfileEvent.UpdateWeight(
+                    maybeLbToKg(newWeight.toFloat(), viewModel.state.value.imperialSystem)
+                ))
+                showUpdateWeightButton = false
+                focusManager.clearFocus()
             }
             Text("Weight: ")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(value = weightValue,
                     onValueChange = { weightValue = it },
-                    trailingIcon = { Text("kg") },
+                    trailingIcon = {
+                        if (viewModel.state.value.imperialSystem)
+                            Text("lb")
+                        else
+                            Text("kg")
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            keyboardController?.hide()
-                            viewModel.onEvent(ProfileEvent.UpdateWeight(weightValue.toFloat()))
-                            showUpdateWeightButton = false
-                            focusManager.clearFocus()
+                            updateWeight(weightValue)
                         }
                     ), modifier = Modifier
                         .widthIn(1.dp, Dp.Infinity)
@@ -211,10 +226,7 @@ fun Profile(
                 )
                 if (showUpdateWeightButton) {
                     IconButton(onClick = {
-                        viewModel.onEvent(ProfileEvent.UpdateWeight(weightValue.toFloat()))
-                        keyboardController?.hide()
-                        showUpdateWeightButton = false
-                        focusManager.clearFocus()
+                        updateWeight(weightValue)
                     }) {
                         Icon(Icons.Default.Done, null)
                     }
@@ -229,25 +241,42 @@ fun Profile(
         ) {
             var showUpdateHeightButton by remember { mutableStateOf(false) }
             var heightValue by remember { mutableStateOf("") }
+
+            LaunchedEffect(viewModel.state.value.height, viewModel.state.value.imperialSystem){
+                heightValue = if (viewModel.state.value.imperialSystem)
+                    "${viewModel.state.value.height / 2.54f}"
+                else
+                    viewModel.state.value.height.toString()
+            }
             val focusRequester = remember { FocusRequester() }
-            LaunchedEffect(viewModel.state.value.height){
-                heightValue = viewModel.state.value.height.toString()
+            val updateHeight: (String) -> Unit = { newHeight ->
+                keyboardController?.hide()
+                viewModel.onEvent(ProfileEvent.UpdateHeight(
+                    if (viewModel.state.value.imperialSystem)
+                        newHeight.toFloat() * 2.54f
+                    else
+                        newHeight.toFloat()
+                ))
+                showUpdateHeightButton = false
+                focusManager.clearFocus()
             }
             Text("Height: ")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(value = heightValue,
                     onValueChange = { heightValue = it },
-                    trailingIcon = { Text("cm") },
+                    trailingIcon = {
+                        if (viewModel.state.value.imperialSystem)
+                            Text("in")
+                        else
+                            Text("cm")
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            keyboardController?.hide()
-                            viewModel.onEvent(ProfileEvent.UpdateHeight(heightValue.toFloat()))
-                            showUpdateHeightButton = false
-                            focusManager.clearFocus()
+                            updateHeight(heightValue)
                         }
                     ), modifier = Modifier
                         .widthIn(1.dp, Dp.Infinity)
@@ -260,10 +289,7 @@ fun Profile(
                 )
                 if (showUpdateHeightButton) {
                     IconButton(onClick = {
-                        viewModel.onEvent(ProfileEvent.UpdateHeight(heightValue.toFloat()))
-                        keyboardController?.hide()
-                        showUpdateHeightButton = false
-                        focusManager.clearFocus()
+                        updateHeight(heightValue)
                     }) {
                         Icon(Icons.Default.Done, null)
                     }
@@ -336,6 +362,20 @@ fun Profile(
             IconButton(onClick = { bmiDialogueShown = true }) {
                 Icon(Icons.Default.HelpOutline, null)
             }
+        }
+        Spacer(Modifier.height(16.dp))
+        Row (
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Use imperial system: ")
+
+            Switch(  // FIXME: should use segmented buttons when available
+                modifier = Modifier.semantics { contentDescription = "Switch to imperial system" },
+                checked = viewModel.state.value.imperialSystem,
+                onCheckedChange = { viewModel.onEvent(ProfileEvent.SwitchImperialSystem(it)) }
+            )
         }
     }
 }
