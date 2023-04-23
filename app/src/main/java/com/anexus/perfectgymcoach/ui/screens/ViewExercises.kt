@@ -108,9 +108,10 @@ fun ViewExercises(
             var isLongPressing by remember { mutableStateOf(false) }
             var longPressImage by remember { mutableStateOf(R.drawable.finish_workout) }
 
-            // fixme: this screen does not go under the navigation bar
-            Box (Modifier.padding(innerPadding), contentAlignment = Center) {
+            // fixme: padding should be of box but items do not go under the navigation bar in that case
+            Box (contentAlignment = Center) {
                 LazyColumn(
+                    contentPadding = innerPadding,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     item{
