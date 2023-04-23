@@ -1,31 +1,141 @@
 package com.anexus.perfectgymcoach.ui.screens
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Rocket
+import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.SentimentNeutral
+import androidx.compose.material.icons.filled.SentimentSatisfied
+import androidx.compose.material.icons.filled.SentimentVerySatisfied
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordAndName
 import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.destinations.WorkoutRecapDestination
 import com.anexus.perfectgymcoach.viewmodels.HistoryViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
+
+
+@Composable
+fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listState: LazyListState) {
+    if (recordsMap.isNotEmpty()) {
+        val currentWeek = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR)
+        val scope = rememberCoroutineScope()
+        Column(Modifier.fillMaxWidth()) {
+            LazyRow(
+                Modifier
+                    .fillMaxWidth(),
+                reverseLayout = true,
+                horizontalArrangement = Arrangement.spacedBy(
+                    dimensionResource(id = R.dimen.card_space_between)
+                )
+            ){
+                item {
+                    Spacer(Modifier.width(8.dp))  // FIXME: centralize the value
+                }
+                for (week in currentWeek downTo 1) {
+                    item {
+                        val weekRecords = recordsMap[week] ?: emptyList()
+                        if (weekRecords.isEmpty()) {
+                            Card(Modifier.padding(dimensionResource(R.dimen.card_space_between) / 2)) {
+                                Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
+                                    Text(
+                                        "Week $week",
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Icon(
+                                        Icons.Filled.SentimentNeutral,
+                                        contentDescription = null,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Icon(
+                                        Icons.Filled.Remove,
+                                        contentDescription = null,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                }
+                            }
+                        } else {
+                            ElevatedCard(
+                                Modifier
+                                    .padding(dimensionResource(R.dimen.card_space_between)/2)
+                                    .clickable {
+                                        scope.launch {
+                                            listState.animateScrollToItem(index =
+                                                recordsMap.toSortedMap().tailMap(week).keys.size // week headers
+                                                // TODO: does this work?
+                                            )
+                                        }
+                                    }
+                            ) {
+                                Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
+                                    Text(
+                                        "Week $week",
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+
+                                    val icon = if (weekRecords.size > 2) listOf(
+                                        Icons.Filled.Rocket,
+                                        Icons.Filled.RocketLaunch,
+                                        Icons.Filled.Whatshot,
+                                        Icons.Filled.SelfImprovement
+                                    ).random() else Icons.Filled.SentimentVerySatisfied
+                                    Icon(
+                                        icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Row (Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly){
+                                        for (i in 1..weekRecords.size) {
+                                            Icon(Icons.Filled.FitnessCenter, contentDescription = null)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Spacer(Modifier.width(8.dp))
+                }
+            }
+        }
+    }
+}
+
 
 @BottomNavigationNavGraph
 @Destination
@@ -35,8 +145,8 @@ fun History(
     navigator: DestinationsNavigator,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
-    val records = viewModel.state.value.workoutRecords.filter { it.duration > 0 }
-    if (records.isEmpty())
+    val recordsMapMap = viewModel.state.value.workoutRecords
+    if (recordsMapMap.isEmpty())
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -53,37 +163,86 @@ fun History(
                 modifier = Modifier.padding(16.dp)
             )
         }
-    else
-        LazyColumn(modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
+    else {
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val listState = rememberLazyListState()
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            items(items = records, key = { it }){
-                Card(modifier = Modifier.fillMaxWidth(), onClick = {
-                    navigator.navigate(
-                        WorkoutRecapDestination(
-                            workoutId = it.workoutId
-                        ),
-                        onlyIfResumed = true
-                    )
-                }) {
-                    Row(
-                        Modifier
-                            .padding(dimensionResource(R.dimen.card_inner_padding))
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            val dateFormat = SimpleDateFormat("d MMM (yyyy) - HH:mm")
-                            val date: String = dateFormat.format(it.startDate!!.time)
-                            Text(it.name, style = MaterialTheme.typography.titleLarge)
-                            Text("Started at: $date")
-                            Text("Duration: ${DateUtils.formatElapsedTime(it.duration)}")
+            item {
+                WorkoutCalendarCards(
+                    recordsMapMap[currentYear] ?: emptyMap(),
+                    listState,
+                )
+            }
+            var yearIteration = currentYear
+            for (recordMap in recordsMapMap.toSortedMap(compareByDescending { it })) {
+                if (recordMap.key != yearIteration) {
+                    item {
+                        Text(
+                            recordMap.key.toString(),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                    yearIteration = recordMap.key
+                }
+                var weekIteration = Calendar.getInstance().get(Calendar.YEAR)
+                item {
+                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                        for (record in recordMap.value.toSortedMap(compareByDescending { it })) {
+                            if (record.key != weekIteration) {
+                                Text(
+                                    "Week ${record.key}",
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                weekIteration = record.key
+                            }
+                            for (workout in record.value) {
+                                ElevatedCard(modifier = Modifier.fillMaxWidth(), onClick = {
+                                    navigator.navigate(
+                                        WorkoutRecapDestination(
+                                            workoutId = workout.workoutId
+                                        ),
+                                        onlyIfResumed = true
+                                    )
+                                }) {
+                                    Row(
+                                        Modifier
+                                            .padding(dimensionResource(R.dimen.card_inner_padding))
+                                            .fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column {
+                                            val dateFormat =
+                                                SimpleDateFormat("d MMM (yyyy) - HH:mm")
+                                            val date: String =
+                                                dateFormat.format(workout.startDate!!.time)
+                                            Text(
+                                                workout.name,
+                                                style = MaterialTheme.typography.titleLarge
+                                            )
+                                            Text("Started at: $date")
+                                            Text(
+                                                "Duration: ${
+                                                    DateUtils.formatElapsedTime(
+                                                        workout.duration
+                                                    )
+                                                }"
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
                         }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
             }
         }
+    }
 }

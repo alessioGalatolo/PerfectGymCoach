@@ -8,10 +8,11 @@ import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordAndName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 data class HistoryState(
-    val workoutRecords: List<WorkoutRecordAndName> = emptyList()
+    val workoutRecords: Map<Int, Map<Int, List<WorkoutRecordAndName>>> = emptyMap()
 )
 
 sealed class HistoryEvent{
@@ -25,9 +26,14 @@ class HistoryViewModel @Inject constructor(private val repository: Repository): 
 
     init {
         viewModelScope.launch {
-            repository.getWorkoutHistoryAndName().collect{
+            repository.getWorkoutHistoryAndName().collect{ records ->
+                val filteredRecords = records.filter { it.duration > 0 }
+                val groupByYear = filteredRecords.groupBy { record -> record.startDate!!.get(Calendar.YEAR) }
+                val yearToWeekToRecord = groupByYear.mapValues {
+                    it.value.groupBy { record -> record.startDate!!.get(Calendar.WEEK_OF_YEAR) }
+                }
                 _state.value = state.value.copy(
-                    workoutRecords = it.sortedByDescending { record -> record.startDate }
+                    workoutRecords = yearToWeekToRecord
                 )
             }
         }
