@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -164,10 +165,10 @@ fun WorkoutRecap(
                 )
                 item{
                     val pagerState = rememberPagerState()
-                    ElevatedCard (Modifier.padding(horizontal = 16.dp)) {
+                    ElevatedCard (Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                         if (records.size > 1){
                             HorizontalPager(count = graphsYaxis.size, state = pagerState) { page ->
-                                Column(Modifier.padding(8.dp)) {
+                                Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                     val clickedValue: MutableState<Pair<Any, Any>> = remember {
                                         mutableStateOf(
                                             Pair(
@@ -252,8 +253,8 @@ fun WorkoutRecap(
                 }
                 item {
                     if (viewModel.state.value.workoutRecord != null) {
-                        ElevatedCard(Modifier.padding(horizontal = 16.dp)) {
-                            Column(Modifier.padding(8.dp)) {
+                        ElevatedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
+                            Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -372,7 +373,7 @@ fun WorkoutRecap(
                                 .align(Alignment.CenterHorizontally)
                                 .clip(RoundedCornerShape(12.dp))
                         )
-                        Column(Modifier.padding(8.dp)) {
+                        Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                             Text(text = exercise.name + exercise.variation, style = MaterialTheme.typography.titleLarge)
                             if (exercise.equipment == Exercise.Equipment.BARBELL) {
                                 Spacer(modifier = Modifier.height(4.dp))

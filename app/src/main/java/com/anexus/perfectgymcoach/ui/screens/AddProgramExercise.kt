@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -186,7 +187,10 @@ fun AddProgramExercise(
                                         )
                                     }
                                 )
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .padding(
+                                    horizontal = dimensionResource(R.dimen.card_outside_padding),
+                                    vertical = dimensionResource(R.dimen.card_space_between)/2
+                                )
                         ) {
                             Box (Modifier.fillMaxWidth()){
                                 AsyncImage(
@@ -298,7 +302,7 @@ fun AddProgramExercise(
                                     }
                                 }
                             }
-                            Column(Modifier.padding(8.dp)) {
+                            Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                 Text(
                                     text = exercise.name + exercise.variation,
                                     style = MaterialTheme.typography.titleLarge

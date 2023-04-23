@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -180,7 +181,7 @@ fun Home(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .padding(vertical = dimensionResource(R.dimen.card_space_between) / 2)
                         .combinedClickable(onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             navigator.navigate(
@@ -205,20 +206,17 @@ fun Home(
                         } ?: emptyList()
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().padding(dimensionResource(R.dimen.card_inner_padding))
                     ) {
                         val pagerState = rememberPagerState()
                         Column(Modifier.weight(1.6f).fillMaxHeight()) {
                             Text(
                                 text = it.name,
-                                modifier = Modifier.padding(8.dp),
                                 style = MaterialTheme.typography.titleLarge
                             )
                             exs.forEach { // TODO: mark supersets
-                                Text(text = it.name + it.variation,
-                                    modifier = Modifier.padding(horizontal = 8.dp))
+                                Text(text = it.name + it.variation)
                             }
-                            Spacer(Modifier.height(8.dp))
                         }
                         Column (verticalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.weight(1f).fillMaxHeight()
@@ -228,7 +226,6 @@ fun Home(
                                     count = exs.size, state = pagerState,
                                     modifier = Modifier.width(150.dp)
                                         .height(150.dp / 3 * 2)
-                                        .padding(8.dp)
                                         .clip(AbsoluteRoundedCornerShape(12.dp))
                                         .align(Alignment.End)
                                 ) { page ->

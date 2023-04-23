@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
@@ -170,7 +172,7 @@ fun ExercisePage(
                     }
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(
-                            Modifier.padding(8.dp),
+                            Modifier.padding(dimensionResource(R.dimen.card_inner_padding)),
                             horizontalAlignment = CenterHorizontally
                         ) {
                             Text("Rest: " +
@@ -324,7 +326,7 @@ fun ExercisePage(
                     var recordsToShow by remember { mutableStateOf(2) }
                     currentExerciseRecords.subList(0, min(currentExerciseRecords.size, recordsToShow)).forEach { record ->  // should maybe become lazy
                         Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(8.dp)) {
+                            Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                 val dateFormat = SimpleDateFormat("d MMM (yy)")
                                 Text(
                                     dateFormat.format(record.date.time),
@@ -360,7 +362,7 @@ fun ExercisePage(
                                 }
                             }
                         }
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
                     }
                     if (recordsToShow < currentExerciseRecords.size) {
                         TextButton(
@@ -369,7 +371,7 @@ fun ExercisePage(
                         ) {
                             Text("Show older records")
                         }
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
                     }
                 }
             }

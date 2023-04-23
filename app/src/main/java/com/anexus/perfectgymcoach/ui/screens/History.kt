@@ -14,6 +14,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -66,7 +67,10 @@ fun History(
                         onlyIfResumed = true
                     )
                 }) {
-                    Row(Modifier.padding(8.dp).fillMaxWidth(),
+                    Row(
+                        Modifier
+                            .padding(dimensionResource(R.dimen.card_inner_padding))
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {

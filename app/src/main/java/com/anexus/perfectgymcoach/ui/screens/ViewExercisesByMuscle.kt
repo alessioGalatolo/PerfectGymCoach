@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -79,7 +80,7 @@ fun ExercisesByMuscle(
         }, content = { innerPadding ->
             LazyColumn(
                 contentPadding = innerPadding,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.card_space_between)),
                 modifier = Modifier.padding(horizontal = 16.dp)) {
                 item {
                     // search bar
@@ -144,14 +145,13 @@ fun ExercisesByMuscle(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row {
+                        Row (Modifier.padding(dimensionResource(R.dimen.card_inner_padding))){
                             Image(
                                 painter = painterResource(it.image),
                                 contentDescription = "Contact profile picture",
                                 modifier = Modifier
                                     // Set image size to 40 dp
                                     .size(80.dp)
-                                    .padding(all = 4.dp)
                                     // Clip image to be shaped as a circle
                                     .clip(CircleShape)
                             )
