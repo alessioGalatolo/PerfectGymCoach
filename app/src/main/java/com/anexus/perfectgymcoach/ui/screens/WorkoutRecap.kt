@@ -3,6 +3,7 @@ package com.anexus.perfectgymcoach.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.text.format.DateUtils
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,10 +49,9 @@ import com.anexus.perfectgymcoach.ui.destinations.HistoryDestination
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
 import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
+import androidx.compose.foundation.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.rememberPagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import com.jaikeerthick.composable_graphs.color.*
 import com.jaikeerthick.composable_graphs.composables.LineGraph
 import com.jaikeerthick.composable_graphs.data.GraphData
@@ -65,7 +65,7 @@ import kotlin.math.ceil
 
 @WorkoutNavGraph
 @Destination
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPagerApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutRecap(
     navigator: DestinationsNavigator,
@@ -167,7 +167,7 @@ fun WorkoutRecap(
                     val pagerState = rememberPagerState()
                     ElevatedCard (Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                         if (records.size > 1){
-                            HorizontalPager(count = graphsYaxis.size, state = pagerState) { page ->
+                            HorizontalPager(pageCount = graphsYaxis.size, state = pagerState) { page ->
                                 Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                     val clickedValue: MutableState<Pair<Any, Any>> = remember {
                                         mutableStateOf(
@@ -240,6 +240,7 @@ fun WorkoutRecap(
                             }
                             HorizontalPagerIndicator(
                                 pagerState = pagerState,
+                                pageCount = graphsYaxis.size,
                                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(8.dp)
                             )
                         } else {

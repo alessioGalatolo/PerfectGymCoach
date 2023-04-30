@@ -318,7 +318,11 @@ fun Profile(
                         value = viewModel.state.value.sex,
                         onValueChange = {},
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        colors = ExposedDropdownMenuDefaults.textFieldColors(containerColor = Color.Transparent),
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            errorContainerColor = Color.Transparent
+                        ),
                         modifier = Modifier.menuAnchor()
                     )
                     ExposedDropdownMenu(

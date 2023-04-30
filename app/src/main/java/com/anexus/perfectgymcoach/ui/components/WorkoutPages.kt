@@ -35,16 +35,16 @@ import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.PagerState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import kotlin.math.min
 import kotlin.math.max
 
-@OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class,
+@OptIn(
+    ExperimentalFoundationApi::class,
     ExperimentalMaterial3Api::class
 )
 @Composable
@@ -107,7 +107,7 @@ fun ExercisePage(
             }
             IconButton(
                 onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage+1) }},
-                enabled = pagerState.currentPage < pagerState.pageCount-1,
+                enabled = pagerState.currentPage < if (workoutTime != null) workoutExercises.size else workoutExercises.size-1,
                 modifier = Modifier
                     .wrapContentSize()
                     .weight(1f, false)
@@ -116,7 +116,7 @@ fun ExercisePage(
             }
         }
         HorizontalPager(
-            count = if (workoutTime != null) workoutExercises.size+1 else workoutExercises.size,
+            pageCount = if (workoutTime != null) workoutExercises.size+1 else workoutExercises.size,
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top
@@ -214,7 +214,9 @@ fun ExercisePage(
                                                     )
                                                 },
                                                 colors = ExposedDropdownMenuDefaults.textFieldColors(
-                                                    containerColor = Color.Transparent
+                                                    focusedContainerColor = Color.Transparent,
+                                                    unfocusedContainerColor = Color.Transparent,
+                                                    errorContainerColor = Color.Transparent
                                                 ),
                                                 modifier = Modifier.menuAnchor()
                                             )
@@ -419,7 +421,11 @@ fun WorkoutFinishPage(
                         }
                     },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    colors = ExposedDropdownMenuDefaults.textFieldColors(containerColor = Color.Transparent),
+                    colors = ExposedDropdownMenuDefaults.textFieldColors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        errorContainerColor = Color.Transparent
+                    ),
                     modifier = Modifier.menuAnchor()
                 )
                 ExposedDropdownMenu(

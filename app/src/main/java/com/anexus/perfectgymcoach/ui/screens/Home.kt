@@ -34,9 +34,8 @@ import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutPlanDestination
 import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.anexus.perfectgymcoach.viewmodels.HomeEvent
 import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.NavGraph
@@ -48,8 +47,7 @@ import kotlinx.coroutines.delay
 @BottomNavigationNavGraph(start=true)
 @Destination
 @Composable
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
-    ExperimentalPagerApi::class
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class
 )
 fun Home(
     navigator: DestinationsNavigator,
@@ -223,7 +221,7 @@ fun Home(
                         ){
                             if (exs.isNotEmpty()) {
                                 HorizontalPager(
-                                    count = exs.size, state = pagerState,
+                                    pageCount = exs.size, state = pagerState,
                                     modifier = Modifier.width(150.dp)
                                         .height(150.dp / 3 * 2)
                                         .clip(AbsoluteRoundedCornerShape(12.dp))
@@ -243,7 +241,7 @@ fun Home(
                                 LaunchedEffect(viewModel.state.value.animationTick){
                                     pagerState.animateScrollToPage(
                                         (pagerState.currentPage + 1) %
-                                                pagerState.pageCount
+                                                exs.size
                                     )
                                 }
                             }

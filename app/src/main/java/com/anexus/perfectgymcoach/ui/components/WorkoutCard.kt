@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -30,13 +31,11 @@ import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.destinations.AddProgramExerciseDestination
 import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.rememberPagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutCard(
     program: WorkoutProgram,
@@ -71,7 +70,7 @@ fun WorkoutCard(
                     val imageWidth = LocalConfiguration.current.screenWidthDp.dp // - 32.dp // 2*padding
                     val imageHeight = imageWidth/3*2
 
-                    HorizontalPager(count = exercises.size, state = pagerState,
+                    HorizontalPager(pageCount = exercises.size, state = pagerState,
                         modifier = Modifier
                         .clip(AbsoluteRoundedCornerShape(12.dp))) { page ->
                         Box (Modifier.fillMaxWidth()) {
@@ -88,6 +87,7 @@ fun WorkoutCard(
                     }
                     HorizontalPagerIndicator(
                         pagerState = pagerState,
+                        pageCount = exercises.size,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp),

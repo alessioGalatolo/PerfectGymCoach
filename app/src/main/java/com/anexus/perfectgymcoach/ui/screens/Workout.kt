@@ -3,6 +3,7 @@ package com.anexus.perfectgymcoach.ui.screens
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -43,9 +44,8 @@ import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
-import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.rememberPagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
@@ -54,7 +54,7 @@ import kotlinx.coroutines.launch
 @WorkoutNavGraph(start = true)
 @Destination
 @OptIn(
-    ExperimentalPagerApi::class, ExperimentalMaterial3Api::class
+    ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class
 )
 @Composable
 fun Workout(
@@ -94,7 +94,7 @@ fun Workout(
         updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, viewModel.state.value.imperialSystem))) }
     )
 
-    val pagerState = rememberPagerState()  // TODO: replace with compose foundation API when available
+    val pagerState = rememberPagerState()
     val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
             if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {
@@ -211,6 +211,13 @@ fun Workout(
         )
     }
 
+    val pagerPageCount by remember { derivedStateOf {
+        if (viewModel.state.value.workoutTime != null)
+            viewModel.state.value.workoutExercises.size+1
+        else
+            viewModel.state.value.workoutExercises.size
+    }}
+
     if (viewModel.state.value.workoutExercises.isNotEmpty()) {
         BackHandler(onBack = onClose)
         val currentImageId by remember { derivedStateOf {
@@ -241,10 +248,10 @@ fun Workout(
                         color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
                     if (viewModel.state.value.workoutTime != null) {
                         TextButton(onClick = {
-                        if (pagerState.currentPage == pagerState.pageCount-1)
+                        if (pagerState.currentPage == pagerPageCount-1)
                             completeWorkout()
                         else
-                            scope.launch{ pagerState.animateScrollToPage(pagerState.pageCount-1) }
+                            scope.launch{ pagerState.animateScrollToPage(pagerPageCount-1) }
                         }) {
                             Text("Finish", color = if (needsDarkColor) Color.Gray else Color.White)
                         }
@@ -282,6 +289,7 @@ fun Workout(
 
                     HorizontalPagerIndicator(
                         pagerState = pagerState,
+                        pageCount = pagerPageCount,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp),
