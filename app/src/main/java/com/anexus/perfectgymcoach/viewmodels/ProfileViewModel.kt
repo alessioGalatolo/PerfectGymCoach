@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.Sex
+import com.anexus.perfectgymcoach.data.Theme
 import com.ramcosta.composedestinations.annotation.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -14,7 +16,8 @@ data class ProfileState(
     val weight: Float = 0f,
     val userYear: Int = 0,
     val height: Float = 0f,
-    val sex: String = "",
+    val sex: Sex = Sex.OTHER,
+    val theme: Theme = Theme.SYSTEM,
     val name: String = "",
     val imperialSystem: Boolean = false
 )
@@ -28,7 +31,9 @@ sealed class ProfileEvent{
 
     data class UpdateName(val newName: String): ProfileEvent()
 
-    data class UpdateSex(val newSex: String): ProfileEvent()
+    data class UpdateSex(val newSex: Sex): ProfileEvent()
+
+    data class UpdateTheme(val newTheme: Theme): ProfileEvent()
 
     data class SwitchImperialSystem(val newValue: Boolean): ProfileEvent()
 }
@@ -69,6 +74,11 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(imperialSystem = it)
             }
         }
+        viewModelScope.launch {
+            repository.getTheme().collect {
+                _state.value = state.value.copy(theme = it)
+            }
+        }
     }
 
     fun onEvent(event: ProfileEvent){
@@ -101,6 +111,11 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
             is ProfileEvent.SwitchImperialSystem -> {
                 viewModelScope.launch {
                     repository.setImperialSystem(event.newValue)
+                }
+            }
+            is ProfileEvent.UpdateTheme -> {
+                viewModelScope.launch {
+                    repository.setTheme(event.newTheme)
                 }
             }
         }

@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.data.Sex
+import com.anexus.perfectgymcoach.data.Theme
 import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
@@ -315,7 +317,7 @@ fun Profile(
                 ) {
                     OutlinedTextField(
                         readOnly = true,
-                        value = viewModel.state.value.sex,
+                        value = viewModel.state.value.sex.sexName,
                         onValueChange = {},
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.textFieldColors(
@@ -329,9 +331,9 @@ fun Profile(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
                     ) {
-                        listOf("Male", "Female", "Other").forEach { selectionOption -> // fixme
+                        Sex.values().forEach { selectionOption -> // fixme
                             DropdownMenuItem(
-                                text = { Text(selectionOption) },
+                                text = { Text(selectionOption.sexName) },
                                 onClick = {
                                     viewModel.onEvent(ProfileEvent.UpdateSex(selectionOption))
                                     expanded = false
@@ -380,6 +382,51 @@ fun Profile(
                 checked = viewModel.state.value.imperialSystem,
                 onCheckedChange = { viewModel.onEvent(ProfileEvent.SwitchImperialSystem(it)) }
             )
+        }
+        Spacer(Modifier.height(16.dp))
+        Row (
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Dark theme: ")
+            var expanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier
+                    .widthIn(1.dp, Dp.Infinity)
+                    .weight(1f)
+            ) {
+                OutlinedTextField(
+                    readOnly = true,
+                    value = viewModel.state.value.theme.themeName,
+                    onValueChange = {},
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    colors = ExposedDropdownMenuDefaults.textFieldColors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        errorContainerColor = Color.Transparent
+                    ),
+                    modifier = Modifier.menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                ) {
+                    Theme.values().forEach { selectionOption -> // fixme
+                        DropdownMenuItem(
+                            text = { Text(selectionOption.themeName) },
+                            onClick = {
+                                viewModel.onEvent(ProfileEvent.UpdateTheme(selectionOption))
+                                expanded = false
+                                focusManager.clearFocus()
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                        )
+                    }
+                }
+            }
         }
     }
 }

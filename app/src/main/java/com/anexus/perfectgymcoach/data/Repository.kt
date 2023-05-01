@@ -33,6 +33,7 @@ class Repository @Inject constructor(
     private val userWeight = floatPreferencesKey("User weight")
     private val userHeight = floatPreferencesKey("User height")
     private val userSex = stringPreferencesKey("User sex")
+    private val theme = stringPreferencesKey("Theme")
     private val userName = stringPreferencesKey("User name")
     private val userAgeYear = intPreferencesKey("User age year")
     private val imperialSystem = booleanPreferencesKey("Imperial system user")
@@ -187,9 +188,14 @@ class Repository @Inject constructor(
 
 
     // TODO: move default value outside
-    fun getUserSex(): Flow<String> = dataStore.data.map{ it[userSex] ?: "Male" }
+    fun getUserSex(): Flow<Sex> = dataStore.data.map{ Sex.fromName(it[userSex]) }
 
-    suspend fun setUserSex(newSex: String) = dataStore.edit { it[userSex] = newSex }
+    suspend fun setUserSex(newSex: Sex) = dataStore.edit { it[userSex] = newSex.sexName }
+
+    // TODO: move default value outside
+    fun getTheme(): Flow<Theme> = dataStore.data.map{ Theme.fromName(it[theme]) }
+
+    suspend fun setTheme(newTheme: Theme) = dataStore.edit { it[theme] = newTheme.themeName }
 
 
     // TODO: move default value outside
