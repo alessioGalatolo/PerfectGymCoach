@@ -22,3 +22,10 @@ annotation class ChangePlanNavGraph(
 annotation class WorkoutNavGraph(
     val start: Boolean = false
 )
+
+@BottomNavigationNavGraph
+@RootNavGraph
+@NavGraph
+annotation class GeneratePlanNavGraph(
+    val start: Boolean = false
+)
