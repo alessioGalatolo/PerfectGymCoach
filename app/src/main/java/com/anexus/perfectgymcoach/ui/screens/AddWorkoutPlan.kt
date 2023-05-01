@@ -26,7 +26,7 @@ import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
 import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
-import com.anexus.perfectgymcoach.ui.destinations.GenerateWorkoutPlanDestination
+import com.anexus.perfectgymcoach.ui.destinations.CustomizePlanGenerationDestination
 import com.anexus.perfectgymcoach.viewmodels.PlansEvent
 import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -230,7 +230,7 @@ fun LazyItemScope.PlanCard(
 
 @Composable
 fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
-    FilledTonalButton(onClick = { navigator.navigate(GenerateWorkoutPlanDestination(), onlyIfResumed = true) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+    FilledTonalButton(onClick = { navigator.navigate(CustomizePlanGenerationDestination(), onlyIfResumed = true) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
         Icon(Icons.Filled.AutoAwesome, null)
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text("Generate a new plan")

@@ -11,13 +11,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class GeneratePlansState(
+data class GeneratePlanState(
     val workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = emptyList(),
     val openAddPlanDialogue: Boolean = false,
     val currentPlanId: Long? = null
 )
 
-sealed class GeneratePlansEvent{
+sealed class GeneratePlanEvent{
 //    object TogglePlanDialogue : PlansEvent()
 //
 //    data class AddPlan(val workoutPlan: WorkoutPlan): PlansEvent()
@@ -29,7 +29,7 @@ sealed class GeneratePlansEvent{
 }
 
 @HiltViewModel
-class GeneratePlansViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class GeneratePlanViewModel @Inject constructor(private val repository: Repository): ViewModel() {
     private val _state = mutableStateOf(PlansState())
     val state: State<PlansState> = _state
 
@@ -62,7 +62,7 @@ class GeneratePlansViewModel @Inject constructor(private val repository: Reposit
         }
     }
 
-    fun onEvent(event: GeneratePlansEvent){
+    fun onEvent(event: GeneratePlanEvent){
         when (event) {
 
             else -> {}
