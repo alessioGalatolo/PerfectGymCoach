@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anexus.perfectgymcoach.data.Repository
+import com.anexus.perfectgymcoach.data.Theme
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecordAndEquipment
@@ -37,7 +38,8 @@ data class WorkoutState(
     val tare: Float = 0f,
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
     val weightBottomBar: String = "0.0", // weight to be displayed in bottom bar
-    val imperialSystem: Boolean = false
+    val imperialSystem: Boolean = false,
+    val userTheme: Theme = Theme.SYSTEM
 )
 
 sealed class WorkoutEvent{
@@ -94,6 +96,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private var timerJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            repository.getTheme().collect {
+                _state.value = state.value.copy(userTheme = it)
+            }
+        }
         viewModelScope.launch {
             repository.getImperialSystem().collect {
                 _state.value = state.value.copy(imperialSystem = it)

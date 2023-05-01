@@ -23,6 +23,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
 import com.anexus.perfectgymcoach.R
+import com.anexus.perfectgymcoach.data.Theme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 
@@ -35,6 +36,7 @@ fun FullScreenImageCard(
     image: @Composable BoxScope.() -> Unit,
     imageHeight: Dp,
     brightImage: Boolean,
+    darkTheme: Boolean,
     content: @Composable () -> Unit,
     bottomBar: @Composable (PaddingValues, @Composable (@Composable () -> Unit) -> Unit) -> Unit
 ) {
@@ -63,7 +65,6 @@ fun FullScreenImageCard(
     // make status bar transparent to see image behind
     val sysUiController = rememberSystemUiController()
     val transitionStarted = transition > 0.0
-    val darkTheme = isSystemInDarkTheme()
     LaunchedEffect(transitionStarted, brightImage, darkTheme) {
         sysUiController.setStatusBarColor(
             color = Color.Transparent,

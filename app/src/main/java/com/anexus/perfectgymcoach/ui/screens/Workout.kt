@@ -46,6 +46,7 @@ import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
+import com.anexus.perfectgymcoach.data.Theme
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
@@ -229,9 +230,17 @@ fun Workout(
         val brightImage = remember { mutableStateOf(false) }
         val imageWidth = LocalConfiguration.current.screenWidthDp.dp
         val imageHeight = imageWidth/3*2
+        val systemTheme = isSystemInDarkTheme()
+        val useDarkTheme by remember { derivedStateOf {
+            when (viewModel.state.value.userTheme) {
+                Theme.SYSTEM -> systemTheme
+                Theme.LIGHT -> false
+                Theme.DARK -> true
+            }
+        }}
         FullScreenImageCard(
             topAppBarNavigationIcon = { appBarShown ->
-                val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !isSystemInDarkTheme())
+                val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
                 IconButton(onClick = onClose) {
                     Icon(
                         imageVector = Icons.Filled.Close,
@@ -243,7 +252,7 @@ fun Workout(
             topAppBarActions = { appBarShown ->
                 Row(verticalAlignment = CenterVertically) {
                     val needsDarkColor = (brightImage.value && !appBarShown) ||
-                            (appBarShown && !isSystemInDarkTheme())
+                            (appBarShown && !useDarkTheme)
                     Text(timer(), style = MaterialTheme.typography.titleLarge,
                         color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
                     if (viewModel.state.value.workoutTime != null) {
@@ -298,6 +307,7 @@ fun Workout(
             },
             imageHeight = imageHeight,
             brightImage = brightImage.value,
+            darkTheme = useDarkTheme,
             content = {
                 val restCounter: Long? by remember { derivedStateOf {
                     if (viewModel.state.value.restTimestamp != null && currentExercise != null)
