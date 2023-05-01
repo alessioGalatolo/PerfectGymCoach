@@ -23,11 +23,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,6 +41,7 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordAndName
 import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.destinations.WorkoutRecapDestination
+import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.viewmodels.HistoryViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -64,7 +71,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                     item {
                         val weekRecords = recordsMap[week] ?: emptyList()
                         if (weekRecords.isEmpty()) {
-                            Card(Modifier.padding(dimensionResource(R.dimen.card_space_between) / 2)) {
+                            OutlinedCard(Modifier.padding(dimensionResource(R.dimen.card_space_between) / 2)) {
                                 Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                     Text(
                                         "Week $week",
@@ -140,7 +147,6 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 @BottomNavigationNavGraph
 @Destination
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun History(
     navigator: DestinationsNavigator,
     viewModel: HistoryViewModel = hiltViewModel()
@@ -196,13 +202,18 @@ fun History(
                             if (record.key != weekIteration) {
                                 Text(
                                     "Week ${record.key}",
-                                    fontWeight = FontWeight.Bold
+                                    style = MaterialTheme.typography.headlineLarge
                                 )
                                 Spacer(Modifier.height(8.dp))
                                 weekIteration = record.key
                             }
+                            var isFirst = true
                             for (workout in record.value) {
-                                ElevatedCard(modifier = Modifier.fillMaxWidth(), onClick = {
+                                if (isFirst)
+                                    isFirst = false
+                                else
+                                    Divider()
+                                Column(modifier = Modifier.fillMaxWidth().clickable{
                                     navigator.navigate(
                                         WorkoutRecapDestination(
                                             workoutId = workout.workoutId
@@ -214,27 +225,63 @@ fun History(
                                         Modifier
                                             .padding(dimensionResource(R.dimen.card_inner_padding))
                                             .fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
+                                        verticalAlignment = CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
+                                        val dateFormat =
+                                            SimpleDateFormat("d MMM (yyyy) - HH:mm")
+                                        val date: String =
+                                            dateFormat.format(workout.startDate!!.time)
                                         Column {
-                                            val dateFormat =
-                                                SimpleDateFormat("d MMM (yyyy) - HH:mm")
-                                            val date: String =
-                                                dateFormat.format(workout.startDate!!.time)
-                                            Text(
-                                                workout.name,
-                                                style = MaterialTheme.typography.titleLarge
-                                            )
-                                            Text("Started at: $date")
-                                            Text(
-                                                "Duration: ${
-                                                    DateUtils.formatElapsedTime(
-                                                        workout.duration
-                                                    )
-                                                }"
-                                            )
+                                            Row {
+                                                Text(
+                                                    workout.name,
+                                                    style = MaterialTheme.typography.titleLarge
+                                                )
+                                            }
+                                            Row {
+                                                Text(
+                                                    "Volume: ",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontStyle = FontStyle.Italic
+                                                )
+                                                Text(
+                                                    "${maybeKgToLb(
+                                                        workout.volume,
+                                                        viewModel.state.value.useImperialSystem
+                                                    )} ${if (viewModel.state.value.useImperialSystem) "lb" else "kg"}",
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                            Row {
+                                                Text(
+                                                    "Calories: ",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontStyle = FontStyle.Italic
+                                                )
+                                                Text(
+                                                    "${workout.calories.toInt()} kcal",
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                            Row {
+                                                Text(
+                                                    "Duration: ",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontStyle = FontStyle.Italic
+                                                )
+                                                Text(
+                                                    "${(workout.duration / 60).toInt()}m",
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+
                                         }
+                                        Text(
+                                            date.replace("-", "at"),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            modifier = Modifier.align(CenterVertically)
+                                        )
                                     }
                                 }
                                 Spacer(Modifier.height(8.dp))

@@ -12,7 +12,8 @@ import java.util.Calendar
 import javax.inject.Inject
 
 data class HistoryState(
-    val workoutRecords: Map<Int, Map<Int, List<WorkoutRecordAndName>>> = emptyMap()
+    val workoutRecords: Map<Int, Map<Int, List<WorkoutRecordAndName>>> = emptyMap(),
+    val useImperialSystem: Boolean = false
 )
 
 sealed class HistoryEvent{
@@ -26,7 +27,12 @@ class HistoryViewModel @Inject constructor(private val repository: Repository): 
 
     init {
         viewModelScope.launch {
-            repository.getWorkoutHistoryAndName().collect{ records ->
+            repository.getImperialSystem().collect {
+                _state.value = state.value.copy(useImperialSystem = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getWorkoutHistoryAndName().collect { records ->
                 val filteredRecords = records.filter { it.duration > 0 }
                 val groupByYear = filteredRecords.groupBy { record -> record.startDate!!.get(Calendar.YEAR) }
                 val yearToWeekToRecord = groupByYear.mapValues {
