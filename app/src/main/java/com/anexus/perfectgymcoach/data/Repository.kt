@@ -25,8 +25,9 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 @Singleton
 class Repository @Inject constructor(
     private val db: WorkoutDatabase,
-    private val context: Context
+    context: Context
 ) {
+    private val dataStore = context.dataStore
     private val currentPlan = longPreferencesKey("Current plan")
     private val currentWorkout = longPreferencesKey("Current workout")
     private val userWeight = floatPreferencesKey("User weight")
@@ -155,10 +156,10 @@ class Repository @Inject constructor(
     suspend fun addExercise(exercise: Exercise) = db.exerciseDao.insert(exercise)
 
 
-    fun getCurrentPlan(): Flow<Long?> = context.dataStore.data.map{ it[currentPlan] }
+    fun getCurrentPlan(): Flow<Long?> = dataStore.data.map{ it[currentPlan] }
 
     suspend fun setCurrentPlan(planId: Long, overrideValue: Boolean){
-        context.dataStore.edit {
+        dataStore.edit {
             if (it[currentPlan] == null || overrideValue){
                 it[currentPlan] = planId
             }
@@ -168,44 +169,44 @@ class Repository @Inject constructor(
 
 
     // TODO: move default value outside (60 kg)
-    fun getUserWeight(): Flow<Float> = context.dataStore.data.map{ it[userWeight] ?: 60f }
+    fun getUserWeight(): Flow<Float> = dataStore.data.map{ it[userWeight] ?: 60f }
 
-    suspend fun setUserWeight(newWeight: Float) = context.dataStore.edit { it[userWeight] = newWeight }
-
-
-    // TODO: move default value outside
-    fun getUserHeight(): Flow<Float> = context.dataStore.data.map{ it[userHeight] ?: 170f }
-
-    suspend fun setUserHeight(newHeight: Float) = context.dataStore.edit { it[userHeight] = newHeight }
+    suspend fun setUserWeight(newWeight: Float) = dataStore.edit { it[userWeight] = newWeight }
 
 
     // TODO: move default value outside
-    fun getUserYear(): Flow<Int> = context.dataStore.data.map{ it[userAgeYear] ?: 2000 }
+    fun getUserHeight(): Flow<Float> = dataStore.data.map{ it[userHeight] ?: 170f }
 
-    suspend fun setUserYear(newYear: Int) = context.dataStore.edit { it[userAgeYear] = newYear }
-
-
-    // TODO: move default value outside
-    fun getUserSex(): Flow<String> = context.dataStore.data.map{ it[userSex] ?: "Male" }
-
-    suspend fun setUserSex(newSex: String) = context.dataStore.edit { it[userSex] = newSex }
+    suspend fun setUserHeight(newHeight: Float) = dataStore.edit { it[userHeight] = newHeight }
 
 
     // TODO: move default value outside
-    fun getUserName(): Flow<String> = context.dataStore.data.map{ it[userName] ?: "what's your name?" }
+    fun getUserYear(): Flow<Int> = dataStore.data.map{ it[userAgeYear] ?: 2000 }
 
-    suspend fun setUserName(newName: String) = context.dataStore.edit { it[userName] = newName }
+    suspend fun setUserYear(newYear: Int) = dataStore.edit { it[userAgeYear] = newYear }
 
 
     // TODO: move default value outside
-    fun getImperialSystem(): Flow<Boolean> = context.dataStore.data.map{ it[imperialSystem] ?: false }
+    fun getUserSex(): Flow<String> = dataStore.data.map{ it[userSex] ?: "Male" }
 
-    suspend fun setImperialSystem(newValue: Boolean) = context.dataStore.edit { it[imperialSystem] = newValue }
+    suspend fun setUserSex(newSex: String) = dataStore.edit { it[userSex] = newSex }
 
 
-    fun getCurrentWorkout(): Flow<Long?> = context.dataStore.data.map{ it[currentWorkout] }
+    // TODO: move default value outside
+    fun getUserName(): Flow<String> = dataStore.data.map{ it[userName] ?: "what's your name?" }
 
-    suspend fun setCurrentWorkout(newValue: Long?) = context.dataStore.edit {
+    suspend fun setUserName(newName: String) = dataStore.edit { it[userName] = newName }
+
+
+    // TODO: move default value outside
+    fun getImperialSystem(): Flow<Boolean> = dataStore.data.map{ it[imperialSystem] ?: false }
+
+    suspend fun setImperialSystem(newValue: Boolean) = dataStore.edit { it[imperialSystem] = newValue }
+
+
+    fun getCurrentWorkout(): Flow<Long?> = dataStore.data.map{ it[currentWorkout] }
+
+    suspend fun setCurrentWorkout(newValue: Long?) = dataStore.edit {
         if (newValue == null)
             it.remove(currentWorkout)
         else
