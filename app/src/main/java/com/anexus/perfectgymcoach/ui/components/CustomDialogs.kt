@@ -70,6 +70,7 @@ fun InsertNameDialog(
             },
             confirmButton = {
                 TextButton(
+                    enabled = text.isNotBlank(),
                     onClick = {
                         insertName(text.trim())
                         toggleDialog()
