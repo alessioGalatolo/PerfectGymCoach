@@ -54,18 +54,17 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
-import com.anexus.perfectgymcoach.ui.destinations.AddExerciseDialogDestination
-import com.anexus.perfectgymcoach.ui.destinations.CreateExerciseDialogDestination
+import com.anexus.perfectgymcoach.ui.ChangePlanGraph
 import com.anexus.perfectgymcoach.viewmodels.ExercisesEvent
 import com.anexus.perfectgymcoach.viewmodels.ExercisesViewModel
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
+import com.ramcosta.composedestinations.generated.destinations.CreateExerciseDialogDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.delay
 
-@ChangePlanNavGraph
-@Destination
+@Destination<ChangePlanGraph>
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalComposeUiApi::class, ExperimentalAnimationApi::class
 )

@@ -27,10 +27,11 @@ import com.anexus.perfectgymcoach.ui.screens.*
 import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
+import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.navigation.dependency
 import com.ramcosta.composedestinations.navigation.popBackStack
 import com.ramcosta.composedestinations.navigation.popUpTo
+import com.ramcosta.composedestinations.rememberNavHostEngine
 import com.ramcosta.composedestinations.utils.isRouteOnBackStack
 import com.ramcosta.composedestinations.utils.startDestination
 import dagger.hilt.android.AndroidEntryPoint
@@ -63,7 +64,7 @@ class MainActivity : ComponentActivity() {
                 }
             }}
             // navigation controller for everything (main screen)
-            val engine = rememberAnimatedNavHostEngine()
+            val engine = rememberNavHostEngine()
             val navController = engine.rememberNavController()
 
             PerfectGymCoachTheme (darkTheme = darkTheme) {

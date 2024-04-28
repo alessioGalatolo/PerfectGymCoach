@@ -29,22 +29,22 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
-import com.anexus.perfectgymcoach.ui.destinations.AddProgramExerciseDestination
-import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
+import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
+import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutCard(
+    navigator: DestinationsNavigator,
     program: WorkoutProgram,
     exercises: List<ProgramExerciseAndInfo>,
     onCardClick: () -> Unit,
+    modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
-    onRename: (() -> Unit)? = null,
-    navigator: DestinationsNavigator,
-    modifier: Modifier = Modifier
+    onRename: (() -> Unit)? = null
 ){
     val haptic = LocalHapticFeedback.current
     var expanded by remember { mutableStateOf(false) }

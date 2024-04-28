@@ -20,16 +20,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanDifficulty
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanGoal
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanSplit
-import com.anexus.perfectgymcoach.ui.GeneratePlanNavGraph
-import com.anexus.perfectgymcoach.ui.destinations.ViewGeneratedPlanDestination
+import com.anexus.perfectgymcoach.ui.GeneratePlanGraph
 import com.anexus.perfectgymcoach.viewmodels.GeneratePlanViewModel
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.generated.destinations.ViewGeneratedPlanDestination
 import kotlinx.coroutines.launch
 
-@GeneratePlanNavGraph(start = true)
-@Destination
+@Destination<GeneratePlanGraph>(start = true)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CustomizePlanGeneration(

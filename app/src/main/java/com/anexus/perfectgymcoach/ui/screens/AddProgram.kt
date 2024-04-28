@@ -24,19 +24,18 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
-import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
+import com.anexus.perfectgymcoach.ui.ChangePlanGraph
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
-import com.anexus.perfectgymcoach.ui.destinations.AddProgramExerciseDestination
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.anexus.perfectgymcoach.viewmodels.ProgramsViewModel
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
-@ChangePlanNavGraph
-@Destination
+@Destination<ChangePlanGraph>
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddProgram(
@@ -165,7 +164,8 @@ fun AddProgram(
                                 }
                             }
                             WorkoutCard(
-                                programEntry,
+                                navigator = navigator,
+                                program = programEntry,
                                 viewModel.state.value.exercisesAndInfo[programEntry.programId]
                                     ?: emptyList(),
                                 onCardClick = {
@@ -185,7 +185,6 @@ fun AddProgram(
                                 }, onDelete = {
                                     viewModel.onEvent(ProgramsEvent.DeleteProgram(programEntry.programId))
                                 },
-                                navigator = navigator,
                                 modifier = Modifier.padding(end = 16.dp)
                             )
                         }

@@ -20,18 +20,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.ui.destinations.HistoryDestination
-import com.anexus.perfectgymcoach.ui.destinations.HomeDestination
-import com.anexus.perfectgymcoach.ui.destinations.ProfileDestination
-import com.anexus.perfectgymcoach.ui.destinations.StatisticsDestination
-import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.NavHostGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
+import com.ramcosta.composedestinations.generated.destinations.HomeDestination
+import com.ramcosta.composedestinations.generated.destinations.ProfileDestination
+import com.ramcosta.composedestinations.generated.destinations.StatisticsDestination
 import com.ramcosta.composedestinations.navigation.popBackStack
 import com.ramcosta.composedestinations.navigation.popUpTo
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
+import com.ramcosta.composedestinations.spec.NavHostGraphSpec
+import com.ramcosta.composedestinations.utils.currentDestinationAsState
+import com.ramcosta.composedestinations.utils.startDestination
 
 enum class BottomBarDestination(
     val direction: DirectionDestinationSpec,
@@ -46,8 +51,7 @@ enum class BottomBarDestination(
 }
 
 
-@RootNavGraph(start=true)
-@Destination
+@Destination<RootGraph>(start=true)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun RootDestinationGraph(){
@@ -56,9 +60,9 @@ fun RootDestinationGraph(){
         rememberTopAppBarState()
     )
 
-    val navController = rememberAnimatedNavController()
-    val currentDestination = navController.appCurrentDestinationAsState().value
-        ?: NavGraphs.root.startAppDestination
+    val navController = rememberNavController()
+    val currentDestination = navController.currentDestinationAsState().value
+        ?: NavGraphs.root.startDestination
 
     Scaffold(modifier = Modifier
         .nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -66,7 +70,7 @@ fun RootDestinationGraph(){
             AnimatedVisibility(
                 enter = fadeIn() + slideInVertically(),
                 exit = fadeOut() + slideOutVertically (),
-                visible = BottomBarDestination.values().any { currentDestination == it.direction }
+                visible = BottomBarDestination.entries.any { currentDestination == it.direction }
             ) {
                 LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
                     scrollBehavior = scrollBehavior,
@@ -81,14 +85,14 @@ fun RootDestinationGraph(){
             }
         }, content = { innerPadding ->
             val topPadding by animateDpAsState(
-                if (BottomBarDestination.values().any { currentDestination == it.direction })
+                if (BottomBarDestination.entries.any { currentDestination == it.direction })
                     innerPadding.calculateTopPadding()
-                else 0.dp
+                else 0.dp, label = ""
             )
             val bottomPadding by animateDpAsState(
-                if (BottomBarDestination.values().any { currentDestination == it.direction })
+                if (BottomBarDestination.entries.any { currentDestination == it.direction })
                     innerPadding.calculateBottomPadding()
-                else 0.dp
+                else 0.dp, label = ""
             )
             DestinationsNavHost(
                 navGraph = NavGraphs.bottomNavigation,
@@ -99,10 +103,10 @@ fun RootDestinationGraph(){
             AnimatedVisibility(
                 enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
                 exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-                visible = BottomBarDestination.values().any { currentDestination == it.direction }
+                visible = BottomBarDestination.entries.any { currentDestination == it.direction }
             ) {
-                NavigationBar() {
-                    BottomBarDestination.values().forEach { destination ->
+                NavigationBar {
+                    BottomBarDestination.entries.forEach { destination ->
                         val selected = currentDestination == destination.direction
                         //                    navController.isRouteOnBackStack(destination.direction)
                         NavigationBarItem(

@@ -29,14 +29,13 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
-import com.anexus.perfectgymcoach.ui.destinations.ViewExercisesDestination
+import com.anexus.perfectgymcoach.ui.ChangePlanGraph
 import com.anexus.perfectgymcoach.viewmodels.ProgramsEvent
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.ViewExercisesDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@ChangePlanNavGraph
-@Destination
+@Destination<ChangePlanGraph>
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ExercisesByMuscle(

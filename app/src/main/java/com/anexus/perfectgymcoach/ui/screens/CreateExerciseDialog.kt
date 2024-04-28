@@ -21,15 +21,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
-import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
+import com.anexus.perfectgymcoach.ui.ChangePlanGraph
 import com.anexus.perfectgymcoach.viewmodels.CreateExerciseEvent
 import com.anexus.perfectgymcoach.viewmodels.CreateExerciseViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@ChangePlanNavGraph
-@Destination
+@Destination<ChangePlanGraph>
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CreateExerciseDialog(

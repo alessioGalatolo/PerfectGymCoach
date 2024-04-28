@@ -39,11 +39,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecordAndName
-import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
-import com.anexus.perfectgymcoach.ui.destinations.WorkoutRecapDestination
+import com.anexus.perfectgymcoach.ui.BottomNavigationGraph
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.viewmodels.HistoryViewModel
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -144,8 +144,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 }
 
 
-@BottomNavigationNavGraph
-@Destination
+@Destination<BottomNavigationGraph>
 @Composable
 fun History(
     navigator: DestinationsNavigator,
@@ -212,7 +211,7 @@ fun History(
                                 if (isFirst)
                                     isFirst = false
                                 else
-                                    Divider()
+                                    HorizontalDivider()
                                 Column(modifier = Modifier.fillMaxWidth().clickable{
                                     navigator.navigate(
                                         WorkoutRecapDestination(
@@ -221,68 +220,57 @@ fun History(
                                         onlyIfResumed = true
                                     )
                                 }) {
-                                    Row(
-                                        Modifier
-                                            .padding(dimensionResource(R.dimen.card_inner_padding))
-                                            .fillMaxWidth(),
-                                        verticalAlignment = CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        val dateFormat =
-                                            SimpleDateFormat("d MMM (yyyy) - HH:mm")
-                                        val date: String =
-                                            dateFormat.format(workout.startDate!!.time)
-                                        Column {
-                                            Row {
-                                                Text(
-                                                    workout.name,
-                                                    style = MaterialTheme.typography.titleLarge
-                                                )
-                                            }
-                                            Row {
-                                                Text(
-                                                    "Volume: ",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontStyle = FontStyle.Italic
-                                                )
-                                                Text(
-                                                    "${maybeKgToLb(
-                                                        workout.volume,
-                                                        viewModel.state.value.useImperialSystem
-                                                    )} ${if (viewModel.state.value.useImperialSystem) "lb" else "kg"}",
-                                                    style = MaterialTheme.typography.bodySmall
-                                                )
-                                            }
-                                            Row {
-                                                Text(
-                                                    "Calories: ",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontStyle = FontStyle.Italic
-                                                )
-                                                Text(
-                                                    "${workout.calories.toInt()} kcal",
-                                                    style = MaterialTheme.typography.bodySmall
-                                                )
-                                            }
-                                            Row {
-                                                Text(
-                                                    "Duration: ",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontStyle = FontStyle.Italic
-                                                )
-                                                Text(
-                                                    "${(workout.duration / 60).toInt()}m",
-                                                    style = MaterialTheme.typography.bodySmall
-                                                )
-                                            }
-
-                                        }
+                                    val dateFormat =
+                                        SimpleDateFormat("d MMM (yyyy) - HH:mm")
+                                    val date: String =
+                                        dateFormat.format(workout.startDate!!.time)
+                                    Row {
                                         Text(
-                                            date.replace("-", "at"),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            modifier = Modifier.align(CenterVertically)
+                                            workout.name,
+                                            style = MaterialTheme.typography.titleLarge
                                         )
                                     }
+                                    Row {
+                                        Text(
+                                            "Volume: ",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontStyle = FontStyle.Italic
+                                        )
+                                        Text(
+                                            "${maybeKgToLb(
+                                                workout.volume,
+                                                viewModel.state.value.useImperialSystem
+                                            )} ${if (viewModel.state.value.useImperialSystem) "lb" else "kg"}",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    Row {
+                                        Text(
+                                            "Calories: ",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontStyle = FontStyle.Italic
+                                        )
+                                        Text(
+                                            "${workout.calories.toInt()} kcal",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    Row {
+                                        Text(
+                                            "Duration: ",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontStyle = FontStyle.Italic
+                                        )
+                                        Text(
+                                            "${(workout.duration / 60).toInt()}m",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+
+                                    Text(
+                                        date.replace("-", "at"),
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
                                 }
                                 Spacer(Modifier.height(8.dp))
                             }

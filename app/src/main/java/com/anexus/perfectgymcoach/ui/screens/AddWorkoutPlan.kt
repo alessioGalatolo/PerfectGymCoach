@@ -23,19 +23,18 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
-import com.anexus.perfectgymcoach.ui.ChangePlanNavGraph
+import com.anexus.perfectgymcoach.ui.ChangePlanGraph
 import com.anexus.perfectgymcoach.ui.components.InsertNameDialog
-import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
-import com.anexus.perfectgymcoach.ui.destinations.CustomizePlanGenerationDestination
 import com.anexus.perfectgymcoach.viewmodels.PlansEvent
 import com.anexus.perfectgymcoach.viewmodels.PlansViewModel
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
+import com.ramcosta.composedestinations.generated.destinations.CustomizePlanGenerationDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
-@ChangePlanNavGraph(start = true)
-@Destination
+@Destination<ChangePlanGraph>(start=true)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWorkoutPlan(
@@ -234,7 +233,12 @@ fun LazyItemScope.PlanCard(
 
 @Composable
 fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
-    FilledTonalButton(onClick = { navigator.navigate(CustomizePlanGenerationDestination(), onlyIfResumed = true) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+    FilledTonalButton(
+        onClick = {
+            navigator.navigate(CustomizePlanGenerationDestination(), onlyIfResumed = true)
+        },
+        modifier = Modifier.align(Alignment.CenterHorizontally))
+    {
         Icon(Icons.Filled.AutoAwesome, null)
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text("Generate a new plan")

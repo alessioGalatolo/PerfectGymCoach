@@ -33,7 +33,7 @@ import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.Sex
 import com.anexus.perfectgymcoach.data.Theme
-import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
+import com.anexus.perfectgymcoach.ui.BottomNavigationGraph
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.ui.maybeLbToKg
@@ -45,8 +45,7 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
 
-@BottomNavigationNavGraph
-@Destination
+@Destination<BottomNavigationGraph>
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 fun Profile(

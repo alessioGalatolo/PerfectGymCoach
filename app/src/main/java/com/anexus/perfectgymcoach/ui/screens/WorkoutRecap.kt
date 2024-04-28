@@ -42,29 +42,28 @@ import coil.request.ImageRequest
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
-import com.anexus.perfectgymcoach.ui.WorkoutNavGraph
 import com.anexus.perfectgymcoach.ui.barbellFromWeight
 import com.anexus.perfectgymcoach.ui.components.InfoDialog
-import com.anexus.perfectgymcoach.ui.destinations.HistoryDestination
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.viewmodels.RecapEvent
 import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
+import com.anexus.perfectgymcoach.ui.WorkoutOnlyGraph
 import com.jaikeerthick.composable_graphs.color.*
 import com.jaikeerthick.composable_graphs.composables.LineGraph
 import com.jaikeerthick.composable_graphs.data.GraphData
 import com.jaikeerthick.composable_graphs.style.LineGraphStyle
 import com.jaikeerthick.composable_graphs.style.LinearGraphVisibility
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.text.SimpleDateFormat
 import kotlin.math.ceil
 
 
-@WorkoutNavGraph
-@Destination
+@Destination<WorkoutOnlyGraph>
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutRecap(
@@ -119,7 +118,6 @@ fun WorkoutRecap(
     }
     if (
         viewModel.state.value.workoutId != 0L &&
-        viewModel.state.value.exerciseRecords.isNotEmpty() &&
         viewModel.state.value.workoutRecord != null
     ){
         Scaffold(topBar = {

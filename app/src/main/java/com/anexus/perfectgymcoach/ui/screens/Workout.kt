@@ -36,10 +36,7 @@ import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.exercise.ProgramExerciseAndInfo
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
-import com.anexus.perfectgymcoach.ui.WorkoutNavGraph
 import com.anexus.perfectgymcoach.ui.components.*
-import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
-import com.anexus.perfectgymcoach.ui.destinations.WorkoutRecapDestination
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
@@ -47,13 +44,15 @@ import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import com.anexus.perfectgymcoach.data.Theme
+import com.anexus.perfectgymcoach.ui.WorkoutOnlyGraph
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
+import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
-@WorkoutNavGraph(start = true)
-@Destination
+@Destination<WorkoutOnlyGraph>(start = true)
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class
 )
@@ -206,6 +205,8 @@ fun Workout(
 
     val completeWorkout: () -> Unit = {
         viewModel.onEvent(WorkoutEvent.FinishWorkout(workoutIntensity.value))
+        // FIXME: I'm not sure but I fear that if we navigate up before the above is finished
+        // then it doesn't ever finish
         navigator.navigateUp()
         navigator.navigate(
             WorkoutRecapDestination(workoutId = viewModel.state.value.workoutId)

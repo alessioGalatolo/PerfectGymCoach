@@ -64,8 +64,9 @@ android {
 }
 
 dependencies {
-    implementation 'io.github.raamcosta.compose-destinations:animations-core:1.9.42-beta'
-    ksp 'io.github.raamcosta.compose-destinations:ksp:1.10.2'
+    implementation "io.github.raamcosta.compose-destinations:core:$destinations_version"
+    implementation "io.github.raamcosta.compose-destinations:bottom-sheet:$destinations_version"
+    ksp "io.github.raamcosta.compose-destinations:ksp:$destinations_version"
     implementation 'com.github.jaikeerthick:Composable-Graphs:v1.2.1' // Have to manually check for updates
     implementation "androidx.palette:palette-ktx:1.0.0"
     implementation "io.coil-kt:coil-compose:2.2.0"

@@ -31,13 +31,14 @@ import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_record.WorkoutRecord
 import com.anexus.perfectgymcoach.ui.barbellFromWeight
-import com.anexus.perfectgymcoach.ui.destinations.ExercisesByMuscleDestination
 import com.anexus.perfectgymcoach.ui.maybeKgToLb
 import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -113,7 +114,7 @@ fun ExercisePage(
                     .wrapContentSize()
                     .weight(1f, false)
             ) {
-                Icon(Icons.Outlined.ArrowForward, null)
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward, null)
             }
         }
         HorizontalPager(

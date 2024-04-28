@@ -25,27 +25,25 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.anexus.perfectgymcoach.R
-import com.anexus.perfectgymcoach.ui.BottomNavigationNavGraph
 import com.anexus.perfectgymcoach.ui.components.ResumeWorkout
 import com.anexus.perfectgymcoach.ui.components.WorkoutCard
-import com.anexus.perfectgymcoach.ui.destinations.AddProgramDestination
-import com.anexus.perfectgymcoach.ui.destinations.AddProgramExerciseDestination
-import com.anexus.perfectgymcoach.ui.destinations.AddWorkoutPlanDestination
-import com.anexus.perfectgymcoach.ui.destinations.WorkoutDestination
 import com.anexus.perfectgymcoach.viewmodels.HomeEvent
 import com.anexus.perfectgymcoach.viewmodels.HomeViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import com.anexus.perfectgymcoach.ui.BottomNavigationGraph
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.NavGraph
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
+import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
+import com.ramcosta.composedestinations.generated.destinations.AddWorkoutPlanDestination
+import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 
 
-@BottomNavigationNavGraph(start=true)
-@Destination
+@Destination<BottomNavigationGraph>(start = true)
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class
 )
@@ -163,7 +161,8 @@ fun Home(
                                 programId = currentProgram.programId
                             ),
                             onlyIfResumed = true
-                        )},
+                        )
+                    },
                     navigator = navigator
                 )
                 Spacer(modifier = Modifier.height(8.dp))
