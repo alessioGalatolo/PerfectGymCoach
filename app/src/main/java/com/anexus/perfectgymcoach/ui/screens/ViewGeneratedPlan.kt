@@ -32,7 +32,6 @@ import kotlinx.coroutines.launch
 
 @GeneratePlanNavGraph
 @Destination
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ViewGeneratedPlan(
     navigator: DestinationsNavigator,
@@ -44,9 +43,9 @@ fun ViewGeneratedPlan(
     viewModel.onEvent(
         GeneratePlanEvent.GeneratePlan(
             // FIXME: should pass the enum class instead of string
-            WorkoutPlanGoal.values().first { it.goal == goalChoice },
-            WorkoutPlanDifficulty.values().first { it.expertiseLevel == expertiseLevel },
-            WorkoutPlanSplit.values().first { it.split == workoutSplit }
+            WorkoutPlanGoal.entries.first { it.goal == goalChoice },
+            WorkoutPlanDifficulty.entries.first { it.expertiseLevel == expertiseLevel },
+            WorkoutPlanSplit.entries.first { it.split == workoutSplit }
         )
     )
 

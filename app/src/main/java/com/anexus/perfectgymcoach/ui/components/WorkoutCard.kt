@@ -61,7 +61,7 @@ fun WorkoutCard(
                 }))
     {
         Column {
-            val pagerState = rememberPagerState()
+            val pagerState = rememberPagerState(pageCount = { exercises.size })
             if (exercises.isNotEmpty()) {
                 Box(
                     Modifier.wrapContentHeight(Alignment.Top),
@@ -70,7 +70,7 @@ fun WorkoutCard(
                     val imageWidth = LocalConfiguration.current.screenWidthDp.dp // - 32.dp // 2*padding
                     val imageHeight = imageWidth/3*2
 
-                    HorizontalPager(pageCount = exercises.size, state = pagerState,
+                    HorizontalPager(state = pagerState,
                         modifier = Modifier
                         .clip(AbsoluteRoundedCornerShape(12.dp))) { page ->
                         Box (Modifier.fillMaxWidth()) {

@@ -95,7 +95,7 @@ fun Workout(
         updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, viewModel.state.value.imperialSystem))) }
     )
 
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { if (viewModel.state.value.workoutTime != null) viewModel.state.value.workoutExercises.size+1 else viewModel.state.value.workoutExercises.size })
     val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
             if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {

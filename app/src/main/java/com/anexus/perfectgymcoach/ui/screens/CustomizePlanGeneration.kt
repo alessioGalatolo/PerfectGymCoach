@@ -37,9 +37,9 @@ fun CustomizePlanGeneration(
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
-    val pagerState = rememberPagerState()
-    val scope = rememberCoroutineScope()
     val totalPageCount = 3
+    val pagerState = rememberPagerState(pageCount = { totalPageCount })
+    val scope = rememberCoroutineScope()
     val goalChoice = rememberSaveable { mutableStateOf("") }
     val expertiseLevel = rememberSaveable { mutableStateOf("") }
     val workoutSplit = rememberSaveable { mutableStateOf("") }
@@ -63,7 +63,6 @@ fun CustomizePlanGeneration(
                     .padding(innerPadding)
                     .fillMaxSize()) {
                 HorizontalPager(
-                    pageCount = totalPageCount,
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
                 ) {

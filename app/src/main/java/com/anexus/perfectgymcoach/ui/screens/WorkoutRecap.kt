@@ -164,10 +164,10 @@ fun WorkoutRecap(
                     Pair(Pair("Workout active time", "s"), records.map { it.activeTime })
                 )
                 item{
-                    val pagerState = rememberPagerState()
+                    val pagerState = rememberPagerState(pageCount = { graphsYaxis.size })
                     ElevatedCard (Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                         if (records.size > 1){
-                            HorizontalPager(pageCount = graphsYaxis.size, state = pagerState) { page ->
+                            HorizontalPager(state = pagerState) { page ->
                                 Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                     val clickedValue: MutableState<Pair<Any, Any>> = remember {
                                         mutableStateOf(

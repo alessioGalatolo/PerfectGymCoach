@@ -37,6 +37,7 @@ import com.anexus.perfectgymcoach.ui.maybeLbToKg
 import com.anexus.perfectgymcoach.viewmodels.ProfileEvent
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -89,7 +90,7 @@ fun ExercisePage(
                     .wrapContentSize()
                     .weight(1f, false)
             ) {
-                Icon(Icons.Outlined.ArrowBack, null)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, null)
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -116,7 +117,6 @@ fun ExercisePage(
             }
         }
         HorizontalPager(
-            pageCount = if (workoutTime != null) workoutExercises.size+1 else workoutExercises.size,
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top
@@ -224,7 +224,7 @@ fun ExercisePage(
                                                 expanded = expanded,
                                                 onDismissRequest = { expanded = false },
                                             ) {
-                                                ExerciseRecord.BarbellType.values().forEach { selectionOption ->
+                                                ExerciseRecord.BarbellType.entries.forEach { selectionOption ->
                                                     val fullName = if (selectionOption == ExerciseRecord.BarbellType.OTHER)
                                                         selectionOption.barbellName + " (Custom value)"
                                                     else
@@ -434,7 +434,7 @@ fun WorkoutFinishPage(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
                 ) {
-                    WorkoutRecord.WorkoutIntensity.values().forEachIndexed { index, selectionOption ->
+                    WorkoutRecord.WorkoutIntensity.entries.forEachIndexed { index, selectionOption ->
                         DropdownMenuItem(
                             text = {},
                             leadingIcon = {

@@ -19,7 +19,7 @@ suspend fun generatePlan(
 ): Long {
     val muscle2Exercises = emptyMap<Exercise.Muscle, List<Exercise>>().toMutableMap()
     val random = Random(42)  // FIXME: should not have fixed seed
-    for (muscle in Exercise.Muscle.values().toMutableList().minus(Exercise.Muscle.EVERYTHING)){
+    for (muscle in Exercise.Muscle.entries.toMutableList().minus(Exercise.Muscle.EVERYTHING)){
         muscle2Exercises[muscle] = repository.getExercises(muscle).first()
     }
     val planId = repository.addPlan(
@@ -29,11 +29,12 @@ suspend fun generatePlan(
     )
 
     val muscleDays = emptyList<List<Exercise.Muscle>>().toMutableList()
-    val nonAutoSplit = if (workoutSplit == WorkoutPlanSplit.AUTO) WorkoutPlanSplit.values().random() else workoutSplit
+    val nonAutoSplit = if (workoutSplit == WorkoutPlanSplit.AUTO) WorkoutPlanSplit.entries.toTypedArray()
+        .random() else workoutSplit
 
     when (nonAutoSplit) {
         WorkoutPlanSplit.FULL_BODY -> muscleDays.add(
-            Exercise.Muscle.values().toMutableList().minus(Exercise.Muscle.EVERYTHING)
+            Exercise.Muscle.entries.toMutableList().minus(Exercise.Muscle.EVERYTHING)
         )
         WorkoutPlanSplit.BRO -> muscleDays.addAll(
             listOf(
@@ -49,7 +50,7 @@ suspend fun generatePlan(
             )
         )
         WorkoutPlanSplit.GAINZ -> muscleDays.addAll(
-            Exercise.Muscle.values().toMutableList().minus(Exercise.Muscle.EVERYTHING).map {
+            Exercise.Muscle.entries.toMutableList().minus(Exercise.Muscle.EVERYTHING).map {
                 listOf(it)
             }
         )

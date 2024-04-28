@@ -206,7 +206,7 @@ fun Home(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth().padding(dimensionResource(R.dimen.card_inner_padding))
                     ) {
-                        val pagerState = rememberPagerState()
+                        val pagerState = rememberPagerState(pageCount = { exs.size })
                         Column(Modifier.weight(1.6f).fillMaxHeight()) {
                             Text(
                                 text = it.name,
@@ -221,7 +221,7 @@ fun Home(
                         ){
                             if (exs.isNotEmpty()) {
                                 HorizontalPager(
-                                    pageCount = exs.size, state = pagerState,
+                                    state = pagerState,
                                     modifier = Modifier.width(150.dp)
                                         .height(150.dp / 3 * 2)
                                         .clip(AbsoluteRoundedCornerShape(12.dp))
