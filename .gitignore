@@ -9,3 +9,6 @@
 .cxx
 local.properties
 .keys
+
+app/release
+*.jks

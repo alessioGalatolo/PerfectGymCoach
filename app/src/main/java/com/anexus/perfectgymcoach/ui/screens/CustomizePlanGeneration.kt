@@ -17,6 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanDifficulty
+import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanGoal
+import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanSplit
 import com.anexus.perfectgymcoach.ui.GeneratePlanNavGraph
 import com.anexus.perfectgymcoach.ui.destinations.ViewGeneratedPlanDestination
 import com.anexus.perfectgymcoach.viewmodels.GeneratePlanViewModel
@@ -108,11 +111,8 @@ fun GoalChoice(goalChoice: MutableState<String>){
         .padding(16.dp)) {
         Text("What is your goal when training?",
             style = MaterialTheme.typography.titleLarge)
-        val radioOptions = listOf(
-            "Build muscle (hypertrophy)",
-            "Increase strength",
-            "Lose weight (cardio training)"
-        )
+        val radioOptions = WorkoutPlanGoal.values().map { it.goal }
+
         // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
         Column(Modifier.selectableGroup()) {
             radioOptions.forEach { text ->
@@ -149,12 +149,7 @@ fun ExpertiseLevel(expertiseLevel: MutableState<String>){
         .padding(16.dp)) {
         Text("What is your expertise level?",
             style = MaterialTheme.typography.titleLarge)
-        val radioOptions = listOf(
-            "You should know my level",
-            "Beginner (just starting out)",
-            "Intermediate (feel confident to try some more advanced exercises)",
-            "Advanced (you got this👌)"
-        )
+        val radioOptions = WorkoutPlanDifficulty.values().map { it.expertiseLevel }
         // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
         Column(Modifier.selectableGroup()) {
             radioOptions.forEach { text ->
@@ -191,13 +186,7 @@ fun WorkoutSplit(workoutSplit: MutableState<String>){
         .padding(16.dp)) {
         Text("How many times per week do you want to exercise?",
             style = MaterialTheme.typography.titleLarge)
-        val radioOptions = listOf(
-            "Full-body routine",
-            "Bro split (pull, push, legs)",
-            "Upper/Lower body split",
-            "1 Muscle group per day",
-            "Surprise me"
-        )
+        val radioOptions = WorkoutPlanSplit.values().map { it.split }
         // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
         Column(Modifier.selectableGroup()) {
             radioOptions.forEach { text ->

@@ -2,6 +2,11 @@ package com.anexus.perfectgymcoach.data.exercise
 
 import com.anexus.perfectgymcoach.R
 
+// TODO: add difficulty to exercises. Idea: beginner are very hard to do bad exercises e.g. machines
+// Advanced are *really* advanced exercises e.g. planche
+// medium is everything else
+// TODO: also double check that exercise with more than one secondary muscle are compound, otherwise
+// change function in utils
 val INITIAL_EXERCISE_DATA = listOf(
     /*
         CHEST EXERCISES
@@ -173,7 +178,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Upright cable row",
         equipment = Exercise.Equipment.CABLES,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.SHOULDERS),
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
         image = R.drawable.generic_cable
     ),
 

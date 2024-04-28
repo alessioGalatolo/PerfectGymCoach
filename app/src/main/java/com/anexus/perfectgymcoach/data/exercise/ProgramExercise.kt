@@ -38,8 +38,8 @@ data class ProgramExercise (
     val orderInProgram: Int,
     val reps: List<Int>,
     val rest: List<Int>,
-    val note: String,
-    val variation: String,
+    val note: String = "",
+    val variation: String = "",
     val supersetExercise: Long? = null
 ) : Parcelable
 

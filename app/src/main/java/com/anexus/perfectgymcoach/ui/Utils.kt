@@ -1,10 +1,31 @@
 package com.anexus.perfectgymcoach.ui
 
+import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ExerciseRecord
 import kotlin.math.round
 
 
 const val decimalPlaces = 100  // 2 decimal places
+
+fun isPrimaryMuscle(muscle: Exercise.Muscle): Boolean {
+    if (muscle == Exercise.Muscle.CHEST)
+        return true
+    if (muscle == Exercise.Muscle.BACK)
+        return true
+    if (muscle == Exercise.Muscle.SHOULDERS)
+        return true
+    if (muscle == Exercise.Muscle.LEGS)
+        return true
+    return false
+}
+
+fun exerciseIsCompound(exercise: Exercise): Boolean {
+    if (exercise.secondaryMuscles.size > 1)
+        return true
+    if (exercise.name.lowercase().contains("squat")) // FIXME: not ideal
+        return true
+    return false
+}
 
 fun maybeKgToLb(kg: Float, useImperial: Boolean): Float {
     if (!useImperial)

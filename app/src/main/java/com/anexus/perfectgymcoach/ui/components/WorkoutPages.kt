@@ -394,6 +394,8 @@ fun WorkoutFinishPage(
             .padding(horizontal = 8.dp)
             .padding(top = 8.dp)){
         Text("Total workout time: ${DateUtils.formatElapsedTime(workoutTime)}", style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(32.dp))
+        Text("Don't forget to stretch after you finish!", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically){
             Text("How intense was this workout?"/*, Modifier.weight(1f)*/)
@@ -452,7 +454,7 @@ fun WorkoutFinishPage(
                 }
             }
         }
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.height(16.dp))
         TextButton(onClick = { navigator.navigate(
             ExercisesByMuscleDestination(
                 programName = "Current workout",
@@ -462,6 +464,7 @@ fun WorkoutFinishPage(
         ) }, modifier = Modifier.align(CenterHorizontally)) {
             Text("Add exercise to workout")
         }
+        Spacer(Modifier.height(160.dp))
 
     }
 }

@@ -19,3 +19,26 @@ data class WorkoutPlanUpdateProgram(
     val planId: Long,
     val currentProgram: Int
 ): Parcelable
+
+// classes below are used when generating a plan
+enum class WorkoutPlanGoal(val goal: String){
+    MUSCLE("Build muscle (hypertrophy)"),
+    STRENGTH("Increase strength"),
+    ENDURANCE("Increase endurance"),
+    WEIGHT_LOSS("Lose weight (cardio training)"),
+}
+
+enum class WorkoutPlanDifficulty(val expertiseLevel: String) {
+    AUTO("You should know my level"),
+    BEGINNER("Beginner: just starting out"),
+    INTERMEDIATE("Intermediate:feel confident to try some more advanced exercises"),
+    ADVANCED("Advanced: you got this👌")
+}
+
+enum class WorkoutPlanSplit(val split: String) {
+    FULL_BODY("Full-body routine: 1+ days a week"),
+    BRO("Bro split (pull/push/legs): 3 days a week"),
+    UPPER_LOWER("Upper/Lower body split: 2+ days a week"),
+    GAINZ("1 Muscle group per day: 5 days a week"),
+    AUTO("Surprise me")
+}

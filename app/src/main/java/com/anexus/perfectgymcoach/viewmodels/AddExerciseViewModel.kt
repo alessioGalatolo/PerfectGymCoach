@@ -76,7 +76,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
     var getWorkoutJob: Job? = null
 
 
-    fun onEvent(event: AddExerciseEvent): Boolean{
+    fun onEvent(event: AddExerciseEvent): Boolean {
         when (event) {
             is AddExerciseEvent.TryAddExercise -> {
                 if ((state.value.sets.toIntOrNull() ?: 0) <= 0)

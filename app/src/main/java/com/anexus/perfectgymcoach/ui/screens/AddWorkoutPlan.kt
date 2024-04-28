@@ -123,7 +123,6 @@ fun AddWorkoutPlan(
                         Text("Current plan", fontWeight = FontWeight.Bold)
                     } else if (index == 1) {
                         Column (Modifier.fillMaxWidth()){
-                            GeneratePlanButton(navigator)
                             Text("Other plans", fontWeight = FontWeight.Bold)
                         }
                     }
@@ -139,6 +138,11 @@ fun AddWorkoutPlan(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
+                    if (index == 0) {
+                        Column (Modifier.fillMaxWidth()) {
+                            GeneratePlanButton(navigator)
+                        }
+                    }
                 }
                 item{
                     var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode
