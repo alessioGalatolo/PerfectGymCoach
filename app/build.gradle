@@ -72,9 +72,8 @@ dependencies {
     implementation "io.coil-kt:coil-compose:2.2.0"
     implementation "com.google.accompanist:accompanist-pager-indicators:$accompanist_version"
     implementation "com.google.accompanist:accompanist-systemuicontroller:$accompanist_version"
-    implementation "com.google.accompanist:accompanist-placeholder-material:$accompanist_version"
     implementation 'com.google.code.gson:gson:2.10.1'
-    implementation "androidx.datastore:datastore-preferences:1.1.0"
+    implementation "androidx.datastore:datastore-preferences:1.1.1"
     implementation "androidx.room:room-runtime:$room_version"
     ksp "androidx.room:room-compiler:$room_version"
     implementation "androidx.room:room-ktx:$room_version"
@@ -82,9 +81,9 @@ dependencies {
     ksp "com.google.dagger:hilt-compiler:$dagger_hilt"   // Hilt compiler
     implementation "com.google.dagger:hilt-android:$dagger_hilt"
     implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
-    implementation 'androidx.core:core-ktx:1.13.0'
-    implementation "androidx.compose.compiler:compiler:1.5.12"
-    implementation 'androidx.compose.material:material-icons-extended:1.6.6'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation "androidx.compose.compiler:compiler:1.5.13"
+    implementation 'androidx.compose.material:material-icons-extended:1.6.7'
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.material3:material3:$material3_version"
     implementation "androidx.compose.material3:material3-window-size-class:$material3_version"
