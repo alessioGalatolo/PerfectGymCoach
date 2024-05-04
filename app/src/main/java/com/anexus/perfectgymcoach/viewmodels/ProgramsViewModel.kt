@@ -96,7 +96,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
             }
             is ProgramsEvent.DeleteProgram -> {
                 viewModelScope.launch {
-                    repository.deleteProgram(event.programId)
+                    repository.removeProgramFromPlan(event.programId)
                 }
             }
         }

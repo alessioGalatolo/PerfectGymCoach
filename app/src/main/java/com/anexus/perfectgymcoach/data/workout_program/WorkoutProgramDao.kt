@@ -33,6 +33,7 @@ interface WorkoutProgramDao {
     @Update(entity = WorkoutProgram::class)
     suspend fun updateOrder(workoutProgramReorders: List<WorkoutProgramReorder>)
 
-    @Query("DELETE FROM `program` WHERE programId = :programId")
-    suspend fun delete(programId: Long)
+    @Update(entity = WorkoutProgram::class)
+    suspend fun removeFromPlan(removePlan: RemovePlan)
+
 }

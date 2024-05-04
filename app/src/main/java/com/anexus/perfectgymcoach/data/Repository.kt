@@ -9,6 +9,7 @@ import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExerciseReorder
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
+import com.anexus.perfectgymcoach.data.workout_program.RemovePlan
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramRename
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgramReorder
@@ -69,8 +70,9 @@ class Repository @Inject constructor(
         db.workoutProgramDao.updateOrder(workoutProgramReorder)
 
     // FIXME: should check that the 'plan.currentProgram' is updated as well
-    suspend fun deleteProgram(programId: Long) = db.workoutProgramDao.delete(programId)
-
+    suspend fun removeProgramFromPlan(programId: Long) = db.workoutProgramDao.removeFromPlan(
+        RemovePlan(programId = programId)
+    )
 
     fun getProgramExercisesAndInfo(programId: Long): Flow<List<ProgramExerciseAndInfo>> =
         db.programExerciseDao.getExercisesAndInfo(programId)
