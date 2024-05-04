@@ -81,6 +81,14 @@ fun Workout(
         }
     }
 
+    LaunchedEffect (viewModel.state.value.shutDown){
+        if (viewModel.state.value.shutDown) {
+            navigator.navigateUp()
+            navigator.navigate(
+                WorkoutRecapDestination(workoutId = viewModel.state.value.workoutId)
+            )
+        }
+    }
     CancelWorkoutDialog(
         dialogueIsOpen = viewModel.state.value.cancelWorkoutDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog) },
@@ -205,12 +213,6 @@ fun Workout(
 
     val completeWorkout: () -> Unit = {
         viewModel.onEvent(WorkoutEvent.FinishWorkout(workoutIntensity.value))
-        // FIXME: I'm not sure but I fear that if we navigate up before the above is finished
-        // then it doesn't ever finish
-        navigator.navigateUp()
-        navigator.navigate(
-            WorkoutRecapDestination(workoutId = viewModel.state.value.workoutId)
-        )
     }
 
     val pagerPageCount by remember { derivedStateOf {

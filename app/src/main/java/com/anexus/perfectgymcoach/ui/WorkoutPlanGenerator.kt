@@ -1,5 +1,6 @@
 package com.anexus.perfectgymcoach.ui
 
+import android.icu.util.Calendar
 import com.anexus.perfectgymcoach.data.Repository
 import com.anexus.perfectgymcoach.data.exercise.Exercise
 import com.anexus.perfectgymcoach.data.exercise.ProgramExercise
@@ -9,6 +10,7 @@ import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanGoal
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanSplit
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
 import kotlin.random.Random
 
 suspend fun generatePlan(
@@ -24,7 +26,7 @@ suspend fun generatePlan(
     }
     val planId = repository.addPlan(
         WorkoutPlan(
-            name = "Generated program ${random.nextInt()}"
+            name = "Generated program ${SimpleDateFormat("d MMM (yyyy)").format(Calendar.getInstance().timeInMillis)}"
         )
     )
 

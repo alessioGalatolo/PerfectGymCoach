@@ -43,6 +43,15 @@ fun CustomizePlanGeneration(
     val expertiseLevel = rememberSaveable { mutableStateOf("") }
     val workoutSplit = rememberSaveable { mutableStateOf("") }
 
+    val canGoNext = remember { derivedStateOf {
+        when(pagerState.currentPage) {
+            0 -> goalChoice.value.isNotBlank()
+            1 -> expertiseLevel.value.isNotBlank()
+            2 -> workoutSplit.value.isNotBlank()
+            else -> false
+        }
+    }}
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
@@ -73,7 +82,10 @@ fun CustomizePlanGeneration(
                 }
             }
         }, bottomBar = {
-            Row(Modifier.fillMaxWidth().navigationBarsPadding(), horizontalArrangement = Arrangement.SpaceAround) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(), horizontalArrangement = Arrangement.SpaceAround) {
                 TextButton(enabled = pagerState.currentPage != 0,
                     onClick = {
                         scope.launch {
@@ -84,6 +96,7 @@ fun CustomizePlanGeneration(
                 }
                 HorizontalPagerIndicator(pagerState = pagerState, pageCount = totalPageCount, modifier = Modifier.align(CenterVertically))
                 TextButton(
+                    enabled = canGoNext.value,
                     onClick = {
                         if (pagerState.currentPage != totalPageCount-1)
                             scope.launch {
@@ -105,8 +118,10 @@ fun CustomizePlanGeneration(
 
 @Composable
 fun GoalChoice(goalChoice: MutableState<String>){
-    Column(Modifier.fillMaxSize()
-        .padding(16.dp)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)) {
         Text("What is your goal when training?",
             style = MaterialTheme.typography.titleLarge)
         val radioOptions = WorkoutPlanGoal.values().map { it.goal }
@@ -119,7 +134,7 @@ fun GoalChoice(goalChoice: MutableState<String>){
                         .fillMaxWidth()
                         .height(56.dp)
                         .selectable(
-                            selected = ( text == goalChoice.value),
+                            selected = (text == goalChoice.value),
                             onClick = { goalChoice.value = text },
                             role = Role.RadioButton
                         )
@@ -143,8 +158,10 @@ fun GoalChoice(goalChoice: MutableState<String>){
 
 @Composable
 fun ExpertiseLevel(expertiseLevel: MutableState<String>){
-    Column(Modifier.fillMaxSize()
-        .padding(16.dp)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)) {
         Text("What is your expertise level?",
             style = MaterialTheme.typography.titleLarge)
         val radioOptions = WorkoutPlanDifficulty.values().map { it.expertiseLevel }
@@ -180,8 +197,10 @@ fun ExpertiseLevel(expertiseLevel: MutableState<String>){
 
 @Composable
 fun WorkoutSplit(workoutSplit: MutableState<String>){
-    Column(Modifier.fillMaxSize()
-        .padding(16.dp)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)) {
         Text("How many times per week do you want to exercise?",
             style = MaterialTheme.typography.titleLarge)
         val radioOptions = WorkoutPlanSplit.values().map { it.split }

@@ -1,5 +1,6 @@
 package com.anexus.perfectgymcoach.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -39,6 +40,7 @@ data class WorkoutState(
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
     val weightBottomBar: String = "0.0", // weight to be displayed in bottom bar
     val imperialSystem: Boolean = false,
+    val shutDown: Boolean = false,  // used when finishing workout, waits to save then exit
     val userTheme: Theme = Theme.SYSTEM
 )
 
@@ -260,11 +262,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     val planPrograms = repository.getPlanMapPrograms().first().entries.find {
                         it.value.find { it1 -> it1.programId == state.value.programId } != null
                     }!!
-
                     val currentProgram = planPrograms.value.find {
                         it.programId == state.value.programId
                     }!!
-
                     /*
                     scenario: user does not do the upcoming workout, does another one instead
                         Now, after he finishes, should the next workout be the old upcoming one
@@ -277,6 +277,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
                     ))
                     repository.setCurrentWorkout(null)
+                    _state.value = state.value.copy(shutDown = true)
                 }
             }
             is WorkoutEvent.CancelWorkout -> {

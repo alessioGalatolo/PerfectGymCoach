@@ -42,7 +42,7 @@ fun maybeLbToKg(weight: Float, useImperial: Boolean): Float {
 fun barbellFromWeight(weight: Float, useImperial: Boolean, isRecord: Boolean): String {
     if (weight == 0f && !isRecord)
         return ExerciseRecord.BarbellType.OTHER.barbellName + "..."
-    return (ExerciseRecord.BarbellType.values().find {
+    return (ExerciseRecord.BarbellType.entries.find {
         it.weight[false] == weight ||
                 it.weight[true] == maybeKgToLb(weight, true)
     }?.barbellName
