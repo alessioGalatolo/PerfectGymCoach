@@ -1,5 +1,6 @@
 package com.anexus.perfectgymcoach.ui.screens
 
+import android.icu.util.Calendar
 import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -47,7 +48,6 @@ import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDesti
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Calendar
 
 
 @Composable

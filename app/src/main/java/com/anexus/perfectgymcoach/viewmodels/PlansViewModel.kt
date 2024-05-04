@@ -18,7 +18,7 @@ data class PlansState(
 )
 
 sealed class PlansEvent{
-    object TogglePlanDialogue : PlansEvent()
+    data object TogglePlanDialogue : PlansEvent()
 
     data class AddPlan(val workoutPlan: WorkoutPlan): PlansEvent()
 

@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
@@ -70,7 +70,7 @@ fun ExercisesByMuscle(
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Go back"
                         )
                     }
@@ -130,7 +130,7 @@ fun ExercisesByMuscle(
                         }
                     }
                 }
-                items(items = Exercise.Muscle.values(), key = { it.ordinal }) {
+                items(items = Exercise.Muscle.entries.toTypedArray(), key = { it.ordinal }) {
                     Card(
                         onClick = {
                             navigator.navigate(

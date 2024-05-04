@@ -249,7 +249,7 @@ fun AddExerciseDialog(
                                 verticalAlignment = CenterVertically
                             ) {
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
+                                    verticalAlignment = CenterVertically,
                                     modifier = Modifier.weight(0.5f)
                                 ) {
                                     MyDropdownMenu(

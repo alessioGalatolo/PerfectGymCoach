@@ -124,7 +124,7 @@ fun GoalChoice(goalChoice: MutableState<String>){
             .padding(16.dp)) {
         Text("What is your goal when training?",
             style = MaterialTheme.typography.titleLarge)
-        val radioOptions = WorkoutPlanGoal.values().map { it.goal }
+        val radioOptions = WorkoutPlanGoal.entries.map { it.goal }
 
         // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
         Column(Modifier.selectableGroup()) {
@@ -139,7 +139,7 @@ fun GoalChoice(goalChoice: MutableState<String>){
                             role = Role.RadioButton
                         )
                         .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = CenterVertically
                 ) {
                     RadioButton(
                         selected = (text == goalChoice.value),
@@ -164,7 +164,7 @@ fun ExpertiseLevel(expertiseLevel: MutableState<String>){
             .padding(16.dp)) {
         Text("What is your expertise level?",
             style = MaterialTheme.typography.titleLarge)
-        val radioOptions = WorkoutPlanDifficulty.values().map { it.expertiseLevel }
+        val radioOptions = WorkoutPlanDifficulty.entries.map { it.expertiseLevel }
         // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
         Column(Modifier.selectableGroup()) {
             radioOptions.forEach { text ->
@@ -178,7 +178,7 @@ fun ExpertiseLevel(expertiseLevel: MutableState<String>){
                             role = Role.RadioButton
                         )
                         .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = CenterVertically
                 ) {
                     RadioButton(
                         selected = (text == expertiseLevel.value),
@@ -203,7 +203,7 @@ fun WorkoutSplit(workoutSplit: MutableState<String>){
             .padding(16.dp)) {
         Text("How many times per week do you want to exercise?",
             style = MaterialTheme.typography.titleLarge)
-        val radioOptions = WorkoutPlanSplit.values().map { it.split }
+        val radioOptions = WorkoutPlanSplit.entries.map { it.split }
         // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
         Column(Modifier.selectableGroup()) {
             radioOptions.forEach { text ->
@@ -217,7 +217,7 @@ fun WorkoutSplit(workoutSplit: MutableState<String>){
                             role = Role.RadioButton
                         )
                         .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = CenterVertically
                 ) {
                     RadioButton(
                         selected = (text == workoutSplit.value),

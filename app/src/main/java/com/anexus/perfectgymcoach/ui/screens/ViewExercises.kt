@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
@@ -84,18 +85,18 @@ fun ViewExercises(
 
     val context = LocalContext.current
 
-    viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.values()[muscleOrdinal]))
+    viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.entries[muscleOrdinal]))
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(Exercise.Muscle.values()[muscleOrdinal].muscleName) },
+                title = { Text(Exercise.Muscle.entries[muscleOrdinal].muscleName) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Go back"
                         )
                     }
@@ -105,7 +106,7 @@ fun ViewExercises(
         }, content = { innerPadding ->
             val haptic = LocalHapticFeedback.current
             var isLongPressing by remember { mutableStateOf(false) }
-            var longPressImage by remember { mutableStateOf(R.drawable.finish_workout) }
+            var longPressImage by remember { mutableIntStateOf(R.drawable.finish_workout) }
 
             // fixme: padding should be of box but items do not go under the navigation bar in that case
             Box (contentAlignment = Center) {
@@ -139,8 +140,10 @@ fun ViewExercises(
                                     },
                                     placeholder = { Text("Search exercise") },
                                     singleLine = true,
-                                    colors = TextFieldDefaults.textFieldColors(
-                                        containerColor = Color.Transparent,
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        disabledContainerColor = Color.Transparent,
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent
                                     ),
@@ -186,12 +189,12 @@ fun ViewExercises(
                         }
                     }
                     item {
-                        var selectedFilter by remember { mutableStateOf(-1) }
+                        var selectedFilter by remember { mutableIntStateOf(-1) }
                         LazyRow (horizontalArrangement = Arrangement.spacedBy(8.dp)){
                             item{
                                 Spacer(Modifier.width(8.dp))
                             }
-                            itemsIndexed(items = Exercise.Equipment.values().drop(1), { _, it -> it.ordinal }){ index, equipment ->
+                            itemsIndexed(items = Exercise.Equipment.entries.drop(1), { _, it -> it.ordinal }){ index, equipment ->
                                 FilterChip(
                                     selected = selectedFilter == index,
                                     onClick = {

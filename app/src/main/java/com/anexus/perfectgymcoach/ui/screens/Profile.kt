@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -330,7 +331,7 @@ fun Profile(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
                     ) {
-                        Sex.values().forEach { selectionOption -> // fixme
+                        Sex.entries.forEach { selectionOption -> // fixme
                             DropdownMenuItem(
                                 text = { Text(selectionOption.sexName) },
                                 onClick = {
@@ -346,7 +347,7 @@ fun Profile(
                 Spacer(Modifier.height(8.dp))
                 IconButton(onClick = { genderDialogueShown = true },
                     modifier = Modifier.weight(0.2f)) {
-                    Icon(Icons.Default.HelpOutline, null)
+                    Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
                 }
             }
         }
@@ -365,7 +366,7 @@ fun Profile(
             Text("Body Mass Index: ${round(bmi*10f)/10} ($body)")
 
             IconButton(onClick = { bmiDialogueShown = true }) {
-                Icon(Icons.Default.HelpOutline, null)
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
             }
         }
         Spacer(Modifier.height(16.dp))
@@ -413,7 +414,7 @@ fun Profile(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
                 ) {
-                    Theme.values().forEach { selectionOption -> // fixme
+                    Theme.entries.forEach { selectionOption -> // fixme
                         DropdownMenuItem(
                             text = { Text(selectionOption.themeName) },
                             onClick = {

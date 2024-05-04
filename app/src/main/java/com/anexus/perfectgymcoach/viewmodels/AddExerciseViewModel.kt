@@ -48,9 +48,9 @@ sealed class AddExerciseEvent{
         val exerciseId: Long
     ): AddExerciseEvent()
 
-    object ToggleAdvancedSets: AddExerciseEvent()
+    data object ToggleAdvancedSets: AddExerciseEvent()
 
-    object TryAddExercise: AddExerciseEvent()
+    data object TryAddExercise: AddExerciseEvent()
 
     data class UpdateNotes(val newNote: String): AddExerciseEvent()
 
@@ -72,8 +72,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
     private val _state = mutableStateOf(AddExerciseState())
     val state: State<AddExerciseState> = _state
 
-    var getProgramJob: Job? = null
-    var getWorkoutJob: Job? = null
+    private var getProgramJob: Job? = null
+    private var getWorkoutJob: Job? = null
 
 
     fun onEvent(event: AddExerciseEvent): Boolean {

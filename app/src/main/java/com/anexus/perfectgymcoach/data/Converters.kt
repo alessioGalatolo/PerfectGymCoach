@@ -36,7 +36,7 @@ class Converters {
 
     @TypeConverter
     fun listIntToListMuscle(value: List<Int>): List<Exercise.Muscle> = value.map {
-        Exercise.Muscle.values()[it]
+        Exercise.Muscle.entries[it]
     }
 
     @TypeConverter

@@ -26,7 +26,7 @@ data class HomeState(
 )
 
 sealed class HomeEvent{
-    object ResetCurrentWorkout: HomeEvent()
+    data object ResetCurrentWorkout: HomeEvent()
 }
 
 @HiltViewModel

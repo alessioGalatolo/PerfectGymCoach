@@ -15,7 +15,7 @@ data class ExerciseState(
     val name: String = "",
     val equipment: Exercise.Equipment = Exercise.Equipment.BARBELL,
     val primaryMuscle: Exercise.Muscle = Exercise.Muscle.ABS,
-    val secondaryMuscles: List<Boolean> = List(Exercise.Muscle.values().size-1) { false },
+    val secondaryMuscles: List<Boolean> = List(Exercise.Muscle.entries.size-1) { false },
     val difficulty: Exercise.ExerciseDifficulty = Exercise.ExerciseDifficulty.MEDIUM
 )
 
@@ -32,7 +32,7 @@ sealed class CreateExerciseEvent{
 
     data class ToggleSecondaryMuscle(val index: Int): CreateExerciseEvent()
 
-    object TryCreateExercise: CreateExerciseEvent()
+    data object TryCreateExercise: CreateExerciseEvent()
 }
 
 @HiltViewModel
@@ -48,7 +48,7 @@ class CreateExerciseViewModel @Inject constructor(private val repository: Reposi
                     val secondaryMuscles = mutableListOf<Exercise.Muscle>()
                     state.value.secondaryMuscles.forEachIndexed { index, muscle ->
                         if (muscle)
-                            secondaryMuscles.add(Exercise.Muscle.values()[index+1])
+                            secondaryMuscles.add(Exercise.Muscle.entries[index+1])
                     }
                     viewModelScope.launch {
                         repository.addExercise(

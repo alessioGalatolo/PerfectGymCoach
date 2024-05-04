@@ -7,7 +7,7 @@ enum class Sex (val sexName: String){
 
         companion object {
                 fun fromName(name: String?): Sex{
-                        for (sex in Sex.values()){
+                        for (sex in entries){
                                 if (sex.sexName == name)
                                         return sex
                         }
@@ -23,7 +23,7 @@ enum class Theme (val themeName: String){
 
         companion object {
                 fun fromName(name: String?): Theme{
-                        for (theme in Theme.values()){
+                        for (theme in entries){
                                 if (theme.themeName == name)
                                         return theme
                         }

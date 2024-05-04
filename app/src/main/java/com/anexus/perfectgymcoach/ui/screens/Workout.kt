@@ -43,6 +43,7 @@ import com.anexus.perfectgymcoach.viewmodels.WorkoutEvent
 import com.anexus.perfectgymcoach.viewmodels.WorkoutViewModel
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import com.anexus.perfectgymcoach.data.Theme
 import com.anexus.perfectgymcoach.ui.WorkoutOnlyGraph
 import com.ramcosta.composedestinations.annotation.Destination
@@ -73,9 +74,8 @@ fun Workout(
 
     val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
 
-
-    if (startWorkout.value){
-        scope.launch {
+    LaunchedEffect(startWorkout.value) {
+        if (startWorkout.value) {
             viewModel.onEvent(WorkoutEvent.StartWorkout)
             startWorkout.value = false
         }
@@ -439,7 +439,7 @@ fun Workout(
                     navigationIcon = {
                         IconButton(onClick = { navigator.navigateUp() }) {
                             Icon(
-                                imageVector = Icons.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Go back"
                             )
                         }

@@ -326,7 +326,7 @@ fun ExercisePage(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    var recordsToShow by remember { mutableStateOf(2) }
+                    var recordsToShow by remember { mutableIntStateOf(2) }
                     currentExerciseRecords.subList(0, min(currentExerciseRecords.size, recordsToShow)).forEach { record ->  // should maybe become lazy
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
@@ -417,7 +417,7 @@ fun WorkoutFinishPage(
                         Row(verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .padding(8.dp)){
-                            repeat(WorkoutRecord.WorkoutIntensity.values().size){
+                            repeat(WorkoutRecord.WorkoutIntensity.entries.size){
                                 Icon(Icons.Default.FitnessCenter, null,
                                     tint = if (it < workoutIntensity.value.ordinal+1) LocalContentColor.current else Color.Transparent)
                             }

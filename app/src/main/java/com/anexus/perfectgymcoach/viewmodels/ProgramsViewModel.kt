@@ -23,7 +23,7 @@ data class ProgramsState(
 )
 
 sealed class ProgramsEvent{
-    object ToggleAddProgramDialog : ProgramsEvent()
+    data object ToggleAddProgramDialog : ProgramsEvent()
 
     data class ToggleChangeNameDialog(val programId: Long = 0) : ProgramsEvent()
 

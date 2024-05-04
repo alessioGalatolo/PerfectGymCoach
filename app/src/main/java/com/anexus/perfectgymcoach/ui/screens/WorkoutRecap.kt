@@ -50,6 +50,7 @@ import com.anexus.perfectgymcoach.viewmodels.RecapViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import com.anexus.perfectgymcoach.ui.WorkoutOnlyGraph
 import com.jaikeerthick.composable_graphs.color.*
 import com.jaikeerthick.composable_graphs.composables.LineGraph
@@ -278,10 +279,10 @@ fun WorkoutRecap(
                                         onClick = { calorieDialogIsOpen.value = true },
                                         modifier = Modifier.weight(0.1f)
                                     ) {
-                                        Icon(Icons.Default.HelpOutline, null)
+                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
                                     }
                                 }
-                                Divider()
+                                HorizontalDivider()
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -309,10 +310,10 @@ fun WorkoutRecap(
                                         onClick = { volumeDialogIsOpen.value = true },
                                         modifier = Modifier.weight(0.1f)
                                     ) {
-                                        Icon(Icons.Default.HelpOutline, null)
+                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
                                     }
                                 }
-                                Divider()
+                                HorizontalDivider()
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -330,7 +331,7 @@ fun WorkoutRecap(
                                                 )
                                     )
                                 }
-                                Divider()
+                                HorizontalDivider()
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,

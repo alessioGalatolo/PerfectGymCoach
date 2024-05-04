@@ -91,7 +91,7 @@ fun CreateExerciseDialog(
                     Text("Select equipment")
                     // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
                     Column(Modifier.selectableGroup()) {
-                        Exercise.Equipment.values().slice(1 until Exercise.Equipment.values().size)
+                        Exercise.Equipment.entries.toTypedArray().slice(1 until Exercise.Equipment.entries.size)
                             .map { it.equipmentName } .forEachIndexed { index, text ->
                             Row(
                                 Modifier
@@ -100,7 +100,7 @@ fun CreateExerciseDialog(
                                     .selectable(
                                         selected = (text == viewModel.state.value.equipment.equipmentName),
                                         onClick = { viewModel.onEvent(CreateExerciseEvent.UpdateEquipment(
-                                            Exercise.Equipment.values()[index+1]
+                                            Exercise.Equipment.entries[index+1]
                                         )) },
                                         role = Role.RadioButton
                                     )
@@ -124,7 +124,7 @@ fun CreateExerciseDialog(
                     Spacer(Modifier.height(16.dp))
                     Text("Select difficulty")
                     Column(Modifier.selectableGroup()) {
-                        Exercise.ExerciseDifficulty.values().map { it.difficulty } .forEachIndexed { index, text ->
+                        Exercise.ExerciseDifficulty.entries.map { it.difficulty } .forEachIndexed { index, text ->
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
@@ -132,7 +132,7 @@ fun CreateExerciseDialog(
                                         .selectable(
                                             selected = (text == viewModel.state.value.difficulty.difficulty),
                                             onClick = { viewModel.onEvent(CreateExerciseEvent.UpdateDifficulty(
-                                                Exercise.ExerciseDifficulty.values()[index]
+                                                Exercise.ExerciseDifficulty.entries[index]
                                             )) },
                                             role = Role.RadioButton
                                         )
@@ -156,7 +156,7 @@ fun CreateExerciseDialog(
                     Spacer(Modifier.height(16.dp))
                     Text("Select primary muscle")
                     Column(Modifier.selectableGroup()) {
-                        Exercise.Muscle.values().slice(1 until Exercise.Muscle.values().size)
+                        Exercise.Muscle.entries.toTypedArray().slice(1 until Exercise.Muscle.entries.size)
                             .map { it.muscleName } .forEachIndexed { index, text ->
                                 Row(
                                     Modifier
@@ -165,7 +165,7 @@ fun CreateExerciseDialog(
                                         .selectable(
                                             selected = (text == viewModel.state.value.primaryMuscle.muscleName),
                                             onClick = { viewModel.onEvent(CreateExerciseEvent.UpdatePrimaryMuscle(
-                                                Exercise.Muscle.values()[index+1]
+                                                Exercise.Muscle.entries[index+1]
                                             )) },
                                             role = Role.RadioButton
                                         )
@@ -189,7 +189,7 @@ fun CreateExerciseDialog(
                     Spacer(Modifier.height(16.dp))
                     Text("Select secondary muscle(s)")
                     Column(Modifier.selectableGroup()) {
-                        Exercise.Muscle.values().slice(1 until Exercise.Muscle.values().size)
+                        Exercise.Muscle.entries.toTypedArray().slice(1 until Exercise.Muscle.entries.size)
                             .map { it.muscleName } .forEachIndexed { index, text ->
                                 Row(
                                     Modifier

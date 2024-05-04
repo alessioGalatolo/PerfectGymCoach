@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material3.*
@@ -52,7 +53,7 @@ fun AddWorkoutPlan(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
-    scope.launch {
+    LaunchedEffect(openDialog.value) {
         if (openDialog.value) {
             awaitFrame()
             awaitFrame()
@@ -69,7 +70,7 @@ fun AddWorkoutPlan(
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Go back"
                         )
                     }
@@ -207,8 +208,8 @@ fun LazyItemScope.PlanCard(
                         if (false isTransitioningTo true) {
                             keyframes {
                                 durationMillis = 250
-                                default_icon_size + 5.dp at 0 with LinearOutSlowInEasing // for 0-15 ms
-                                default_icon_size + 10.dp at 15 with FastOutLinearInEasing // for 15-75 ms
+                                default_icon_size + 5.dp at 0 using LinearOutSlowInEasing // for 0-15 ms
+                                default_icon_size + 10.dp at 15 using FastOutLinearInEasing // for 15-75 ms
                                 default_icon_size + 15.dp at 75 // ms
                                 default_icon_size + 10.dp at 150 // ms
                             }

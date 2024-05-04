@@ -104,7 +104,7 @@ class Repository @Inject constructor(
     suspend fun addWorkoutExercises(workoutExercises: List<WorkoutExercise>) =
         db.workoutExerciseDao.insert(workoutExercises)
 
-    suspend fun getWorkoutExercises(workoutId: Long) =
+    fun getWorkoutExercises(workoutId: Long) =
         db.workoutExerciseDao.getWorkoutExercises(workoutId)
 
     suspend fun deleteWorkoutExercise(workoutExerciseId: Long) =

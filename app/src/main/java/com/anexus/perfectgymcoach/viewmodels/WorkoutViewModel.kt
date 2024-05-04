@@ -45,26 +45,26 @@ data class WorkoutState(
 )
 
 sealed class WorkoutEvent{
-    object StartWorkout: WorkoutEvent()
+    data object StartWorkout: WorkoutEvent()
 
-    object StartRetrievingExercises: WorkoutEvent()
+    data object StartRetrievingExercises: WorkoutEvent()
 
     data class FinishWorkout(val workoutIntensity: WorkoutRecord.WorkoutIntensity): WorkoutEvent()
 
-    object ResumeWorkout: WorkoutEvent()
+    data object ResumeWorkout: WorkoutEvent()
 
-    object CancelWorkout: WorkoutEvent()
+    data object CancelWorkout: WorkoutEvent()
 
-    object DeleteCurrentRecords: WorkoutEvent()
+    data object DeleteCurrentRecords: WorkoutEvent()
 
-    object ToggleOtherEquipmentDialog: WorkoutEvent()
+    data object ToggleOtherEquipmentDialog: WorkoutEvent()
 
     data class TryCompleteSet(
         val exerciseInWorkout: Int,
         val exerciseRest: Long
     ): WorkoutEvent()
 
-    object ToggleCancelWorkoutDialog : WorkoutEvent()
+    data object ToggleCancelWorkoutDialog : WorkoutEvent()
 
     data class InitWorkout(val programId: Long): WorkoutEvent()
 
