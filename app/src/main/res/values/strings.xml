@@ -24,4 +24,5 @@
     <string name="empty_history">You currently don\'t have any workout records. Complete a workout to see it here!</string>
     <string name="no_analytics">This is where your analytics will be once you have completed more than one workout from the same program!</string>
     <string name="note_empty_workout">Note: adding an exercise with the plus button will only add it to the current workout and not the future ones. If you want otherwise use the edit button instead.</string>
+    <string name="archived_plans">Archived plans</string>
 </resources>

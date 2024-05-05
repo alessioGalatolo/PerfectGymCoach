@@ -7,6 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.anexus.perfectgymcoach.data.exercise.*
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExercise
 import com.anexus.perfectgymcoach.data.workout_exercise.WorkoutExerciseReorder
+import com.anexus.perfectgymcoach.data.workout_plan.ArchiveWorkoutPlan
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanUpdateProgram
 import com.anexus.perfectgymcoach.data.workout_program.RemovePlan
@@ -40,6 +41,9 @@ class Repository @Inject constructor(
     private val imperialSystem = booleanPreferencesKey("Imperial system user")
 
 
+    /*
+     * WORKOUT PLAN
+     */
     fun getPlans() = db.workoutPlanDao.getPlans()
 
     fun getPlan(planId: Long) = db.workoutPlanDao.getPlan(planId)
@@ -52,7 +56,14 @@ class Repository @Inject constructor(
     suspend fun updateCurrentPlan(workoutPlanUpdateProgram: WorkoutPlanUpdateProgram) =
         db.workoutPlanDao.updateCurrentProgram(workoutPlanUpdateProgram)
 
+    suspend fun archivePlan(planId: Long) = db.workoutPlanDao.archivePlan(ArchiveWorkoutPlan(planId))
 
+    suspend fun unarchivePlan(planId: Long) = db.workoutPlanDao.archivePlan(ArchiveWorkoutPlan(planId, false))
+
+
+    /*
+     * WORKOUT PROGRAM
+     */
     fun getProgramsMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<ProgramExercise>>> =
         db.workoutProgramDao.getProgramsMapExercises(planId)
 
@@ -98,6 +109,9 @@ class Repository @Inject constructor(
         db.programExerciseDao.updateSuperset(updateExerciseSupersets)
 
 
+    /*
+     * WORKOUT EXERCISE
+     */
     suspend fun addWorkoutExercise(workoutExercise: WorkoutExercise) =
         db.workoutExerciseDao.insert(workoutExercise)
 
@@ -114,6 +128,9 @@ class Repository @Inject constructor(
         db.workoutExerciseDao.updateOrder(workoutExerciseReorder)
 
 
+    /*
+     * EXERCISE RECORD
+     */
     fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
 
     fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
@@ -130,6 +147,9 @@ class Repository @Inject constructor(
     suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
 
 
+    /*
+     * WORKOUT RECORD
+     */
     fun getWorkoutRecord(workoutId: Long) = db.workoutRecordDao.getRecord(workoutId)
 
     fun getWorkoutRecordsByProgram(programId: Long) = db.workoutRecordDao.getRecordsByProgram(programId)
@@ -146,6 +166,9 @@ class Repository @Inject constructor(
     suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 
 
+    /*
+     * EXERCISE
+     */
     fun getExercises(muscle: Exercise.Muscle): Flow<List<Exercise>> {
         return if (muscle == Exercise.Muscle.EVERYTHING) {
             db.exerciseDao.getAllExercises()
@@ -159,6 +182,9 @@ class Repository @Inject constructor(
     suspend fun addExercise(exercise: Exercise) = db.exerciseDao.insert(exercise)
 
 
+    /*
+     * DATA STORE (SETTINGS)
+     */
     fun getCurrentPlan(): Flow<Long?> = dataStore.data.map{ it[currentPlan] }
 
     suspend fun setCurrentPlan(planId: Long, overrideValue: Boolean){

@@ -25,5 +25,6 @@ interface WorkoutPlanDao {
     @Update(entity = WorkoutPlan::class)
     suspend fun updateCurrentProgram(workoutPlanUpdateProgram: WorkoutPlanUpdateProgram)
 
-    // TODO: delete plan
+    @Update(entity = WorkoutPlan::class)
+    suspend fun archivePlan(archiveWorkoutPlan: ArchiveWorkoutPlan)
 }

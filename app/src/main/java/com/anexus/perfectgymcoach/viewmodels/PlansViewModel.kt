@@ -13,6 +13,7 @@ import javax.inject.Inject
 
 data class PlansState(
     val workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = emptyList(),
+    val archivedPlans: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = emptyList(),
     val openAddPlanDialogue: Boolean = false,
     val currentPlanId: Long? = null
 )
@@ -24,8 +25,11 @@ sealed class PlansEvent{
 
     data class SetCurrentPlan(val planId: Long): PlansEvent()
 
+    data class ArchivePlan(val planId: Long): PlansEvent()
+
+    data class UnarchivePlan(val planId: Long): PlansEvent()
+
     // TODO: ChangeOrder
-    // TODO: RemovePlan
 }
 
 @HiltViewModel
@@ -38,6 +42,8 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
         workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = state.value.workoutPlanMapPrograms
     ){
         var plans = workoutPlanMapPrograms
+        val archivedPlans = workoutPlanMapPrograms.filter { (plan, _) -> plan.archived }
+        plans = plans.filter { (plan, _) -> !plan.archived }
         // most recently created plans go first
         plans = plans.sortedByDescending { plan ->
             plan.first.planId
@@ -49,6 +55,7 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
         }
         _state.value = state.value.copy(
             workoutPlanMapPrograms = plans,
+            archivedPlans = archivedPlans,
             currentPlanId = currentPlanId
         )
     }
@@ -81,6 +88,18 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
             is PlansEvent.SetCurrentPlan -> {
                 viewModelScope.launch{
                     repository.setCurrentPlan(event.planId, overrideValue = true)
+                }
+            }
+
+            is PlansEvent.ArchivePlan -> {
+                viewModelScope.launch {
+                    repository.archivePlan(event.planId)
+                }
+            }
+
+            is PlansEvent.UnarchivePlan -> {
+                viewModelScope.launch {
+                    repository.unarchivePlan(event.planId)
                 }
             }
         }

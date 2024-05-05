@@ -11,13 +11,20 @@ import kotlinx.parcelize.Parcelize
 data class WorkoutPlan(
     @PrimaryKey(autoGenerate = true) val planId: Long = 0L,
     val name: String,
-    val currentProgram: Int = 0 // The index of the upcoming program after ordering
+    val currentProgram: Int = 0, // The index of the upcoming program after ordering
+    val archived: Boolean = false,  // instead of deleting the plan
 ): Parcelable
 
 @Parcelize
 data class WorkoutPlanUpdateProgram(
     val planId: Long,
     val currentProgram: Int
+): Parcelable
+
+@Parcelize
+data class ArchiveWorkoutPlan(
+    val planId: Long,
+    val archived: Boolean = true
 ): Parcelable
 
 // classes below are used when generating a plan
