@@ -38,8 +38,12 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
         workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = state.value.workoutPlanMapPrograms
     ){
         var plans = workoutPlanMapPrograms
+        // most recently created plans go first
+        plans = plans.sortedByDescending { plan ->
+            plan.first.planId
+        }
         if(currentPlanId != null){
-            plans = workoutPlanMapPrograms.sortedByDescending {plan ->
+            plans = plans.sortedByDescending {plan ->
                 if (plan.first.planId == currentPlanId) 1 else 0
             }
         }
