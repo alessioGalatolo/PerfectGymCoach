@@ -221,6 +221,7 @@ fun Home(
                             if (exs.isNotEmpty()) {
                                 HorizontalPager(
                                     state = pagerState,
+                                    userScrollEnabled = false,
                                     modifier = Modifier.width(150.dp)
                                         .height(150.dp / 3 * 2)
                                         .clip(AbsoluteRoundedCornerShape(12.dp))
