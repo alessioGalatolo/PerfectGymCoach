@@ -82,7 +82,7 @@ fun WorkoutRecap(
             // We attach this *URL* annotation to the following content
             // until `pop()` is called
             pushStringAnnotation(tag = "URL",
-                annotation = "https://developer.android.com") // FIXME
+                annotation = "https://doi.org/10.1007/s40279-017-0793-0")
             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)
             ) {
                 append("Learn more.")
