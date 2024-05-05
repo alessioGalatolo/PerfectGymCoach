@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
+import androidx.room.Index
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import kotlinx.parcelize.Parcelize
 
@@ -29,6 +30,11 @@ import kotlinx.parcelize.Parcelize
             childColumns = ["supersetExercise"],
             onDelete = ForeignKey.SET_DEFAULT
         )
+    ],
+    indices = [
+        Index("extProgramId"),
+        Index("extExerciseId"),
+        Index("supersetExercise")
     ]
 )
 data class ProgramExercise (

@@ -206,6 +206,7 @@ fun AddWorkoutPlan(
                             Column (Modifier.fillMaxWidth()){
                                 Text("Other plans", fontWeight = FontWeight.Bold)
                             }
+                            Spacer(Modifier.height(8.dp))
                         }
                         // Archived chat card
                         OutlinedCard(onClick = {

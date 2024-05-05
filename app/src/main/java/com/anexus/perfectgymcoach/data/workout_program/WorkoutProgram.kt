@@ -4,6 +4,7 @@ import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import kotlinx.parcelize.Parcelize
@@ -15,7 +16,10 @@ import kotlinx.parcelize.Parcelize
         parentColumns = ["planId"],
         childColumns = ["extPlanId"],
         onDelete = CASCADE
-    )]
+    )],
+    indices = [
+        Index("extPlanId")
+    ]
 )
 @Parcelize
 data class WorkoutProgram(

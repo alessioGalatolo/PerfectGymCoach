@@ -3,6 +3,7 @@ package com.anexus.perfectgymcoach.data.workout_record
 import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.anexus.perfectgymcoach.data.workout_program.WorkoutProgram
 import kotlinx.parcelize.Parcelize
@@ -14,7 +15,8 @@ import java.util.*
         parentColumns = ["programId"],
         childColumns = ["extProgramId"],
 //        onDelete = CASCADE
-    )]
+    )],
+    indices = [Index("extProgramId")]
 )
 @Parcelize
 data class WorkoutRecord(
