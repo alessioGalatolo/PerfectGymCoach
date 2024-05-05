@@ -19,7 +19,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import com.anexus.perfectgymcoach.R
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -185,7 +184,7 @@ fun LazyItemScope.PlanCard(
         ) {
 //          // TODO: maybe add back image as random icon
 
-            Column {
+            Column (Modifier.weight(1f)){
                 Text(text = plan.name, style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 programs.forEach {
@@ -202,28 +201,28 @@ fun LazyItemScope.PlanCard(
                     label = "Checked indicator"
                 )
 
-                val default_icon_size = 24.dp
+                // FIXME: this should not be hardcoded but IconButtonTokens.IconSize is internal
+                val defaultIconSize = 24.dp
                 val size by transition.animateDp(
                     transitionSpec = {
                         if (false isTransitioningTo true) {
                             keyframes {
-                                durationMillis = 250
-                                default_icon_size + 5.dp at 0 using LinearOutSlowInEasing // for 0-15 ms
-                                default_icon_size + 10.dp at 15 using FastOutLinearInEasing // for 15-75 ms
-                                default_icon_size + 15.dp at 75 // ms
-                                default_icon_size + 10.dp at 150 // ms
+                                durationMillis = 300
+                                defaultIconSize + 5.dp at 0 using LinearOutSlowInEasing // for 0-15 ms
+                                defaultIconSize + 10.dp at (durationMillis / 10) using FastOutSlowInEasing // for 15-75 ms
+                                defaultIconSize + 15.dp at (durationMillis / 4) // ms
+                                defaultIconSize + 10.dp at (durationMillis / 2) // ms
                             }
                         } else {
                             spring(stiffness = Spring.StiffnessVeryLow)
                         }
                     },
                     label = "Size"
-                ) { default_icon_size }
+                ) { defaultIconSize }
 
                 Icon(
                     imageVector = if (plan.planId == currentPlanId) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                     contentDescription = null,
-//                tint = tint,
                     modifier = Modifier.size(size)
                 )
             }
