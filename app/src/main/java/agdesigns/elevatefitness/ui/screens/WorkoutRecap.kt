@@ -48,6 +48,7 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.ui.WorkoutOnlyGraph
+import androidx.compose.ui.graphics.Color
 import com.jaikeerthick.composable_graphs.color.*
 import com.jaikeerthick.composable_graphs.composables.LineGraph
 import com.jaikeerthick.composable_graphs.data.GraphData
@@ -75,8 +76,9 @@ fun WorkoutRecap(
         toggleDialogue = { volumeDialogIsOpen.value = !volumeDialogIsOpen.value })
     {
         val annotatedText = buildAnnotatedString {
-            append(stringResource(R.string.volume_info))
-
+            withStyle(style = SpanStyle(color = LocalContentColor.current)) {
+                append(stringResource(R.string.volume_info))
+            }
             // We attach this *URL* annotation to the following content
             // until `pop()` is called
             pushStringAnnotation(tag = "URL",
