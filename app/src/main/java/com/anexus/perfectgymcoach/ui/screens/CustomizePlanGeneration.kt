@@ -102,12 +102,16 @@ fun CustomizePlanGeneration(
                             scope.launch {
                                 pagerState.animateScrollToPage(pagerState.currentPage+1)
                             }
-                        else
-                            navigator.navigate(ViewGeneratedPlanDestination(
-                                goalChoice.value,
-                                expertiseLevel.value,
-                                workoutSplit.value
-                            ))
+                        else {
+                            navigator.navigateUp()
+                            navigator.navigate(
+                                ViewGeneratedPlanDestination(
+                                    goalChoice.value,
+                                    expertiseLevel.value,
+                                    workoutSplit.value
+                                )
+                            )
+                        }
                     }, modifier = Modifier.align(CenterVertically)) {
                     Text(if (pagerState.currentPage != totalPageCount-1) "Next" else "Generate!")
                 }

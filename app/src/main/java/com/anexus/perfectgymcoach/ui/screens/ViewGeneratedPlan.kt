@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanDifficulty
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanGoal
 import com.anexus.perfectgymcoach.data.workout_plan.WorkoutPlanSplit
+import com.anexus.perfectgymcoach.ui.ChangePlanGraph
 import com.anexus.perfectgymcoach.ui.GeneratePlanGraph
 import com.anexus.perfectgymcoach.viewmodels.GeneratePlanEvent
 import com.anexus.perfectgymcoach.viewmodels.GeneratePlanViewModel
@@ -59,6 +60,7 @@ fun ViewGeneratedPlan(
             Text("Generating a plan just for you...", style = MaterialTheme.typography.titleLarge)
         }
     } else {
+        navigator.navigateUp()
         navigator.navigate(
             AddProgramDestination(
                 viewModel.state.value.generatedPlan!!.name,
