@@ -70,14 +70,15 @@ fun RootDestinationGraph(){
             ) {
                 LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
                     scrollBehavior = scrollBehavior,
-                    actions = {
-                        IconButton(onClick = { /* TODO */ }) {
-                            Icon(
-                                imageVector = Icons.Filled.Settings,
-                                contentDescription = "App settings"
-                            )
-                        }
-                    })
+//                    actions = {
+//                        IconButton(onClick = { /* TODO */ }) {
+//                            Icon(
+//                                imageVector = Icons.Filled.Settings,
+//                                contentDescription = "App settings"
+//                            )
+//                        }
+//                    } // TODO: add when app needs settings
+                )
             }
         }, content = { innerPadding ->
             val topPadding by animateDpAsState(
