@@ -11,11 +11,11 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.anexus.perfectgymcoach"
+        applicationId "agdesigns.elevatefitness"
         minSdk 24
         targetSdk 34
         versionCode 1
-        versionName "1.0"
+        versionName "0.0.1"
 
         kapt {
             arguments {
@@ -31,8 +31,12 @@ android {
 
     buildTypes {
         release {
+            debuggable false
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
         }
     }
     compileOptions {
@@ -60,7 +64,7 @@ android {
             }
         }
     }
-    namespace 'com.anexus.perfectgymcoach'
+    namespace 'agdesigns.elevatefitness'
 }
 
 dependencies {
