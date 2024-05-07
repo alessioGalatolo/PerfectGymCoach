@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.workout_exercise.WorkoutExercise
+import androidx.compose.material.minimumInteractiveComponentSize
 
 @Composable
 fun WorkoutBottomBar(
@@ -125,7 +126,7 @@ fun RowScope.TextFieldWithButtons(
             .fillMaxWidth()
             .weight(1f, true)
     ) {
-        IconButton(onClick = onDecrement, modifier = Modifier.weight(0.3f)) {
+        IconButton(onClick = onDecrement, modifier = Modifier.weight(0.3f).minimumInteractiveComponentSize()) {
             Icon(Icons.Filled.Remove, "Decrease")  // FIXME: accessibility -> increase what?
         }
         OutlinedTextField(
@@ -139,7 +140,7 @@ fun RowScope.TextFieldWithButtons(
                 .heightIn(1.dp, Dp.Infinity)
                 .weight(0.5f)
         )
-        IconButton(onClick = onIncrement, modifier = Modifier.weight(0.3f)) {
+        IconButton(onClick = onIncrement, modifier = Modifier.weight(0.3f).minimumInteractiveComponentSize()) {
             Icon(Icons.Filled.Add, "Increase")  // FIXME: accessibility -> decrease what?
         }
     }
