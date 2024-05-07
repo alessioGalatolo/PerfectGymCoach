@@ -144,7 +144,7 @@ fun AddWorkoutPlan(
             // if you have some plans
             LazyColumn(
                 contentPadding = innerPadding,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal=16.dp)
             ) {
                 itemsIndexed(items = viewModel.state.value.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
                 { index, plan ->
