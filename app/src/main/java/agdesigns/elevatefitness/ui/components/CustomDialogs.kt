@@ -274,7 +274,6 @@ fun InputOtherEquipmentDialog(
                 Text(text = "Enter other barbell weight")
             },
             text = {
-
                 TextField(
                     value = text,
                     onValueChange = { text = it },
@@ -305,9 +304,10 @@ fun InputOtherEquipmentDialog(
                 TextButton(
                     onClick = {
                         updateTare(text.trim().toFloatOrNull() ?: 0f)
-                        toggleDialog()
                         text = ""
-                    }
+                        toggleDialog()
+                    },
+                    enabled = text.toFloatOrNull() != null
                 ) {
                     Text("Confirm")
                 }

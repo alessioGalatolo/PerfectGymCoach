@@ -58,6 +58,9 @@ fun Profile(
         name = viewModel.state.value.name
     }
     var userYear by remember { mutableStateOf("0") }
+    val validUserYear by remember { derivedStateOf {
+        userYear.toIntOrNull() != null && userYear.toInt() in 1900..Calendar.getInstance().get(Calendar.YEAR)
+    }}
     LaunchedEffect(viewModel.state.value.userYear){
         userYear = viewModel.state.value.userYear.toString()
     }
@@ -136,8 +139,9 @@ fun Profile(
             val age by remember { derivedStateOf { Calendar.getInstance().get(Calendar.YEAR) - viewModel.state.value.userYear }}
             Text("Age: $age")
 
-            IconButton(onClick = { editYear = !editYear
-                if(!editYear){
+            IconButton(onClick = {
+                editYear = !editYear
+                if(!editYear && validUserYear){
                     viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
                 }
             }) {
@@ -160,14 +164,22 @@ fun Profile(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Done
                         ),
+                        isError = !validUserYear,
                         keyboardActions = KeyboardActions(
                             onDone = {
-                                keyboardController?.hide()
-                                viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
-                                editYear = false
-                                focusManager.clearFocus()
+                                if (validUserYear) {
+                                    keyboardController?.hide()
+                                    viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
+                                    editYear = false
+                                    focusManager.clearFocus()
+                                }
                             }
-                        ), modifier = Modifier
+                        ),
+                        supportingText = {
+                            if (!validUserYear)
+                                Text("Please enter a valid number")
+                        },
+                        modifier = Modifier
                             .widthIn(1.dp, Dp.Infinity)
                             .focusRequester(focusRequester)
                     )
@@ -182,6 +194,7 @@ fun Profile(
         ) {
             var showUpdateWeightButton by remember { mutableStateOf(false) }
             var weightValue by remember { mutableStateOf("") }
+            val validWeight by remember { derivedStateOf { weightValue.toFloatOrNull() != null && weightValue.toFloat() > 0 }}
             val focusRequester = remember { FocusRequester() }
 
             LaunchedEffect(viewModel.state.value.weight, viewModel.state.value.imperialSystem){
@@ -208,15 +221,22 @@ fun Profile(
                         else
                             Text("kg")
                     },
+                    isError = !validWeight,
+                    supportingText = {
+                        if (!validWeight)
+                            Text("Please enter a valid number")
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            updateWeight(weightValue)
+                            if (validWeight)
+                                updateWeight(weightValue)
                         }
-                    ), modifier = Modifier
+                    ),
+                    modifier = Modifier
                         .widthIn(1.dp, Dp.Infinity)
                         .focusRequester(focusRequester)
                         .onFocusChanged {
@@ -227,7 +247,8 @@ fun Profile(
                 )
                 if (showUpdateWeightButton) {
                     IconButton(onClick = {
-                        updateWeight(weightValue)
+                        if (validWeight)
+                            updateWeight(weightValue)
                     }) {
                         Icon(Icons.Default.Done, null)
                     }
@@ -242,7 +263,7 @@ fun Profile(
         ) {
             var showUpdateHeightButton by remember { mutableStateOf(false) }
             var heightValue by remember { mutableStateOf("") }
-
+            val validHeight by remember { derivedStateOf { heightValue.toFloatOrNull() != null && heightValue.toFloat() > 0 }}
             LaunchedEffect(viewModel.state.value.height, viewModel.state.value.imperialSystem){
                 heightValue = if (viewModel.state.value.imperialSystem)
                     "${viewModel.state.value.height / 2.54f}"
@@ -271,13 +292,19 @@ fun Profile(
                         else
                             Text("cm")
                     },
+                    isError = !validHeight,
+                    supportingText = {
+                        if (!validHeight)
+                            Text("Please enter a valid number")
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            updateHeight(heightValue)
+                            if (validHeight)
+                                updateHeight(heightValue)
                         }
                     ), modifier = Modifier
                         .widthIn(1.dp, Dp.Infinity)
@@ -290,7 +317,8 @@ fun Profile(
                 )
                 if (showUpdateHeightButton) {
                     IconButton(onClick = {
-                        updateHeight(heightValue)
+                        if (validHeight)
+                            updateHeight(heightValue)
                     }) {
                         Icon(Icons.Default.Done, null)
                     }
