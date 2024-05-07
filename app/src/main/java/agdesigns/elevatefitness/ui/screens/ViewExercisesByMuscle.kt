@@ -109,7 +109,7 @@ fun ExercisesByMuscle(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = null,
+                                contentDescription = "Search",
                                 modifier = Modifier.padding(
                                     start = 16.dp,
                                     top = 8.dp,

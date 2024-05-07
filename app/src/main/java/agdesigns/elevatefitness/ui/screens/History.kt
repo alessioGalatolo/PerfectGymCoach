@@ -72,13 +72,13 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                     Spacer(Modifier.height(4.dp))
                                     Icon(
                                         Icons.Filled.SentimentNeutral,
-                                        contentDescription = null,
+                                        contentDescription = "Neutral emotion",
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                     Spacer(Modifier.height(4.dp))
                                     Icon(
                                         Icons.Filled.Remove,
-                                        contentDescription = null,
+                                        contentDescription = "No workout",
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                 }
@@ -91,7 +91,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                         scope.launch {
                                             listState.animateScrollToItem(index =
                                                 recordsMap.toSortedMap().tailMap(week).keys.size // week headers
-                                                // TODO: does this work?
+                                                // FIXME: does this work? not very well.
                                             )
                                         }
                                     }
@@ -112,13 +112,13 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                     ).random() else Icons.Filled.SentimentVerySatisfied
                                     Icon(
                                         icon,
-                                        contentDescription = null,
+                                        contentDescription = "Let's go!",
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
                                     Spacer(Modifier.height(4.dp))
                                     Row (Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly){
                                         for (i in 1..weekRecords.size) {
-                                            Icon(Icons.Filled.FitnessCenter, contentDescription = null)
+                                            Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout $i")
                                         }
                                     }
                                 }

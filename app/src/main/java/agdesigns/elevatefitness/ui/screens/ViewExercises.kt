@@ -123,7 +123,7 @@ fun ViewExercises(
                                 modifier = Modifier.fillMaxWidth()) {
                                 Icon(
                                     imageVector = Icons.Default.Search,
-                                    contentDescription = null,
+                                    contentDescription = "Search",
                                     modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
                                     tint = MaterialTheme.colorScheme.outline
                                 )
@@ -164,7 +164,7 @@ fun ViewExercises(
                                     searchText = ""
                                     viewModel.onEvent(ExercisesEvent.FilterExercise(searchText))
                                 }){
-                                    Icon(Icons.Default.Close, null,
+                                    Icon(Icons.Default.Close, "Delete current text in search",
                                         tint = if (searchText.isBlank()) Color.Transparent else LocalContentColor.current,
                                         modifier = Modifier
                                             .padding(end = 16.dp, top = 8.dp, bottom = 8.dp)
@@ -207,7 +207,7 @@ fun ViewExercises(
                                         {
                                             Icon(
                                                 imageVector = Icons.Default.Done,
-                                                contentDescription = "Localized Description",
+                                                contentDescription = "Selected",
                                                 modifier = Modifier.size(FilterChipDefaults.IconSize)
                                             )
                                         }
@@ -269,7 +269,7 @@ fun ViewExercises(
                                     .crossfade(true)
                                     .build(),
                                 contentScale = ContentScale.Crop,
-                                contentDescription = null,
+                                contentDescription = "Exercise image",
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(LocalConfiguration.current.screenWidthDp.dp / 4)
@@ -325,7 +325,7 @@ fun ViewExercises(
                                     )
                                 }
                             ) {
-                                Icon(Icons.Default.Add, null)
+                                Icon(Icons.Default.Add, "Create exercise")
                                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                                 Text("Create exercise")
                             }
@@ -340,7 +340,7 @@ fun ViewExercises(
                     enter = fadeIn() + scaleIn(),
                     exit = fadeOut() + scaleOut()
                 ) {
-                    Image(painterResource(id = longPressImage), null,
+                    Image(painterResource(id = longPressImage), "Bigger exercise image",
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp)))

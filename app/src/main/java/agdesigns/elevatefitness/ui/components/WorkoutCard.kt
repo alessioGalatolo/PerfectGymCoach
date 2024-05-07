@@ -75,7 +75,7 @@ fun WorkoutCard(
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
                                 model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
-                                contentDescription = null,
+                                contentDescription = "Image of the exercise",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -148,7 +148,7 @@ fun WorkoutCard(
                         modifier = Modifier
                             .padding(8.dp)
                     ) {
-                        Icon(Icons.Default.RocketLaunch, null)
+                        Icon(Icons.Default.RocketLaunch, "Quick start workout")
                         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                         Text("Quick start")
                     }
@@ -168,7 +168,7 @@ fun WorkoutCard(
                                 onlyIfResumed = true
                             )
                         }) {
-                            Icon(Icons.Outlined.Edit, null)
+                            Icon(Icons.Outlined.Edit, "Edit program")
                         }
                     } else {
                         IconButton(onClick = {
@@ -179,7 +179,7 @@ fun WorkoutCard(
                                 onlyIfResumed = true
                             )
                         }) {
-                            Icon(Icons.Outlined.PlayCircle, null)
+                            Icon(Icons.Outlined.PlayCircle, "Start workout")
                         }
                         Box(
                             modifier = Modifier.wrapContentSize()
@@ -187,7 +187,7 @@ fun WorkoutCard(
                             IconButton(onClick = { expanded = true }) {
                                 Icon(
                                     Icons.Default.MoreVert,
-                                    contentDescription = "Localized description",
+                                    contentDescription = "More options",
                                 )
                             }
                             DropdownMenu(
@@ -226,7 +226,7 @@ fun WorkoutCard(
                                     leadingIcon = {
                                         Icon(
                                             Icons.Outlined.Edit,
-                                            contentDescription = null
+                                            contentDescription = "Edit program"
                                         )
                                     })
                                 if (onRename != null) {
@@ -239,7 +239,7 @@ fun WorkoutCard(
                                         leadingIcon = {
                                             Icon(
                                                 Icons.Outlined.DriveFileRenameOutline,
-                                                contentDescription = null
+                                                contentDescription = "Rename"
                                             )
                                         }
                                     )
@@ -254,7 +254,7 @@ fun WorkoutCard(
                                         leadingIcon = {
                                             Icon(
                                                 Icons.Outlined.Delete,
-                                                contentDescription = null
+                                                contentDescription = "Delete program"
                                             )
                                         }
                                     )

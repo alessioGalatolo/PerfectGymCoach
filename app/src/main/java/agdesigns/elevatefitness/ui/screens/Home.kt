@@ -228,7 +228,7 @@ fun Home(
                                     Box(Modifier.wrapContentSize()) {
                                         AsyncImage(
                                             model = exs[page].image,
-                                            contentDescription = null,
+                                            contentDescription = "Exercise image",
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier
                                                 .height(150.dp / 3 * 2)
@@ -260,7 +260,7 @@ fun Home(
                                         onlyIfResumed = true
                                     )
                                 }) {
-                                Icon(Icons.Default.RocketLaunch, null)
+                                Icon(Icons.Default.RocketLaunch, "Quick start workout")
                             }
                         }
                         IconButton(
@@ -273,7 +273,7 @@ fun Home(
                                     onlyIfResumed = true
                                 )
                             }) {
-                            Icon(Icons.Outlined.Edit, null)
+                            Icon(Icons.Outlined.Edit, "Edit program")
                         }
                     }
                 }

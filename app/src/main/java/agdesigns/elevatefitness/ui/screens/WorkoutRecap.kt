@@ -131,7 +131,7 @@ fun WorkoutRecap(
                         onlyIfResumed = true
                     )
                 }) {
-                    Icon(Icons.Default.Close, null)
+                    Icon(Icons.Default.Close, "Close")
                 }
             })
         }) { innerPadding ->
@@ -263,7 +263,7 @@ fun WorkoutRecap(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(
-                                            Icons.Outlined.LocalFireDepartment, null,
+                                            Icons.Outlined.LocalFireDepartment, "Calories burned",
                                             Modifier.size(50.dp)
                                         )
                                         Spacer(Modifier.width(8.dp))
@@ -277,7 +277,7 @@ fun WorkoutRecap(
                                         onClick = { calorieDialogIsOpen.value = true },
                                         modifier = Modifier.weight(0.1f)
                                     ) {
-                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
+                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/Info")
                                     }
                                 }
                                 HorizontalDivider()
@@ -291,7 +291,7 @@ fun WorkoutRecap(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(
-                                            painterResource(R.drawable.weight_icon), null,
+                                            painterResource(R.drawable.weight_icon), "Volume lifted",
                                             Modifier.size(50.dp)
                                         )
                                         Spacer(Modifier.width(8.dp))
@@ -308,7 +308,7 @@ fun WorkoutRecap(
                                         onClick = { volumeDialogIsOpen.value = true },
                                         modifier = Modifier.weight(0.1f)
                                     ) {
-                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
+                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/Info")
                                     }
                                 }
                                 HorizontalDivider()
@@ -318,7 +318,7 @@ fun WorkoutRecap(
                                     horizontalArrangement = Arrangement.Start
                                 ) {
                                     Icon(
-                                        Icons.Outlined.Schedule, null,
+                                        Icons.Outlined.Schedule, "Workout time",
                                         Modifier.size(50.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))
@@ -336,7 +336,7 @@ fun WorkoutRecap(
                                     horizontalArrangement = Arrangement.Start
                                 ) {
                                     Icon(
-                                        Icons.Outlined.PendingActions, null,
+                                        Icons.Outlined.PendingActions, "Active time",
                                         Modifier.size(50.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))
@@ -364,7 +364,7 @@ fun WorkoutRecap(
                                 .crossfade(true)
                                 .build(),
                             contentScale = ContentScale.Crop,
-                            contentDescription = null,
+                            contentDescription = "Exercise image",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(LocalConfiguration.current.screenWidthDp.dp / 4)

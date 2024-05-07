@@ -156,7 +156,7 @@ fun AddProgramExercise(
                                     Icons.Default.Link
                                 else
                                     Icons.Default.LinkOff,
-                                    null,
+                                    if (linked) "Superset" else "Superset off",
                                     Modifier.scale(scale.value)
                                         .rotate(orientation.value)
                                 )
@@ -209,7 +209,7 @@ fun AddProgramExercise(
                                                 }
                                         }
                                         .build(),
-                                    null,
+                                    "Exercise image",
                                     Modifier
                                         .fillMaxWidth()
                                         .height(LocalConfiguration.current.screenWidthDp.dp / 3)
@@ -226,7 +226,7 @@ fun AddProgramExercise(
                                     IconButton(onClick = { expanded = true }) {
                                         Icon(
                                             Icons.Default.MoreVert,
-                                            contentDescription = "Localized description",
+                                            contentDescription = "More options",
                                             tint = if (brightImage.value) Color.Black else Color.White
                                         )
                                     }
@@ -247,7 +247,7 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.ArrowUpward,
-                                                    contentDescription = null
+                                                    contentDescription = "Move up"
                                                 )
                                             })
                                         DropdownMenuItem(
@@ -263,7 +263,7 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.ArrowDownward,
-                                                    contentDescription = null
+                                                    contentDescription = "Move down"
                                                 )
                                             })
                                         DropdownMenuItem(
@@ -282,7 +282,7 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.Edit,
-                                                    contentDescription = null
+                                                    contentDescription = "Edit"
                                                 )
                                             })
                                         DropdownMenuItem(
@@ -296,7 +296,7 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.Delete,
-                                                    contentDescription = null
+                                                    contentDescription = "Delete"
                                                 )
                                             })
                                     }

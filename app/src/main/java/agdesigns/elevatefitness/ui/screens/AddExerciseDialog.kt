@@ -112,7 +112,7 @@ fun AddExerciseDialog(
                     item {
                         AsyncImage(
                             viewModel.state.value.exercise!!.image,
-                            null,
+                            "Exercise image",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp)

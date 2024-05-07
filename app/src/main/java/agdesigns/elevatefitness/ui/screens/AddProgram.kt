@@ -150,7 +150,7 @@ fun AddProgram(
                                         WorkoutProgramReorder(viewModel.state.value.programs[index-1].programId, programEntry.orderInWorkoutPlan)
                                     )))
                                 }, enabled = index > 0) {
-                                    Icon(Icons.Default.ArrowUpward, null)
+                                    Icon(Icons.Default.ArrowUpward, "Move program up (changing its order in the plan)")
                                 }
                                 Text("Day", fontWeight = FontWeight.SemiBold, fontStyle = FontStyle.Italic)
                                 Text("${programEntry.orderInWorkoutPlan+1}",
@@ -160,7 +160,7 @@ fun AddProgram(
                                         WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan+1),
                                         WorkoutProgramReorder(viewModel.state.value.programs[index+1].programId, programEntry.orderInWorkoutPlan)
                                     ))) }, enabled = index+1 < viewModel.state.value.programs.size) {
-                                    Icon(Icons.Default.ArrowDownward, null)
+                                    Icon(Icons.Default.ArrowDownward, "Move program down (changing its order in the plan)")
                                 }
                             }
                             WorkoutCard(

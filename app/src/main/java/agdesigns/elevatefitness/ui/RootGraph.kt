@@ -108,10 +108,16 @@ fun RootDestinationGraph(){
                         //                    navController.isRouteOnBackStack(destination.direction)
                         NavigationBarItem(
                             icon = {
-                                Icon(
-                                    if (selected) destination.iconSelected else destination.icon,
-                                    contentDescription = null
-                                )
+                                if (selected)
+                                    Icon(
+                                        destination.iconSelected,
+                                        contentDescription = stringResource(destination.label) + " (current)"
+                                    )
+                                else
+                                    Icon(
+                                        destination.icon,
+                                        contentDescription = stringResource(destination.label)
+                                    )
                             },
                             label = { Text(stringResource(destination.label)) },
                             selected = selected,

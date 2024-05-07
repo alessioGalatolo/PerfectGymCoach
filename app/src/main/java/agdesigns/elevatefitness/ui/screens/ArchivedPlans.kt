@@ -193,7 +193,7 @@ fun LazyItemScope.ArchivedPlanCard(
                 Column(verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         icon,
-                        contentDescription = "Localized description",
+                        contentDescription = "Unarchive plan",
                         modifier = Modifier
                             .padding(horizontal = 20.dp)
                             .scale(scale)
@@ -238,7 +238,7 @@ fun LazyItemScope.ArchivedPlanCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Unarchive,
-                        contentDescription = null
+                        contentDescription = "Unarchive plan"
                     )
                 }
             }

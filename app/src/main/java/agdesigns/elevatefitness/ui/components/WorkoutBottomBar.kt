@@ -126,7 +126,7 @@ fun RowScope.TextFieldWithButtons(
             .weight(1f, true)
     ) {
         IconButton(onClick = onDecrement, modifier = Modifier.weight(0.3f)) {
-            Icon(Icons.Filled.Remove, null)
+            Icon(Icons.Filled.Remove, "Decrease")  // FIXME: accessibility -> increase what?
         }
         OutlinedTextField(
             value = text(),
@@ -140,7 +140,7 @@ fun RowScope.TextFieldWithButtons(
                 .weight(0.5f)
         )
         IconButton(onClick = onIncrement, modifier = Modifier.weight(0.3f)) {
-            Icon(Icons.Filled.Add, null)
+            Icon(Icons.Filled.Add, "Increase")  // FIXME: accessibility -> decrease what?
         }
     }
 }

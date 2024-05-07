@@ -287,7 +287,7 @@ fun Workout(
                                     }
                             }
                             .build(),
-                        null,
+                        "Exercise image",
                         Modifier
                             .fillMaxWidth()
                             .height(imageHeight),
@@ -462,7 +462,7 @@ fun Workout(
                         )
                     }, Modifier.padding(bottom = 24.dp),
                     containerColor = MaterialTheme.colorScheme.secondary) {
-                        Icon(Icons.Default.Edit, null)
+                        Icon(Icons.Default.Edit, "Add an exercise to current and future workouts of this program")
                     }
                     LargeFloatingActionButton(onClick = {
                         navigator.navigate(
@@ -474,7 +474,7 @@ fun Workout(
                         )
                     }) {
                         Icon(
-                            Icons.Default.Add, null,
+                            Icons.Default.Add, "Add an exercise to current workout",
                             Modifier.size(FloatingActionButtonDefaults.LargeIconSize)
                         )
                     }

@@ -103,11 +103,14 @@ fun Profile(
                         viewModel.onEvent(ProfileEvent.UpdateName(name))
                 }, modifier = Modifier.weight(0.2f)
                 ) {
-                    Icon(if (editName) Icons.Default.Done else Icons.Default.Edit, null)
+                    if (editName)
+                        Icon(Icons.Default.Done, "Done")
+                    else
+                        Icon(Icons.Default.Edit, "Edit name")
                 }
             }
             Spacer(Modifier.width(16.dp))
-            Icon(Icons.Default.AccountCircle, null,
+            Icon(Icons.Default.AccountCircle, "Profile",
                 Modifier
                     .size(60.dp)
                     .weight(0.5f))
@@ -145,7 +148,10 @@ fun Profile(
                     viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
                 }
             }) {
-                Icon(if(editYear) Icons.Default.Done else Icons.Default.Edit, null)
+                if(editYear)
+                    Icon(Icons.Default.Done, "Done")
+                else
+                    Icon(Icons.Default.Edit, "Edit age")
             }
         }
         Spacer(Modifier.height(16.dp))
@@ -250,7 +256,7 @@ fun Profile(
                         if (validWeight)
                             updateWeight(weightValue)
                     }) {
-                        Icon(Icons.Default.Done, null)
+                        Icon(Icons.Default.Done, "Done editing")
                     }
                 }
             }
@@ -320,7 +326,7 @@ fun Profile(
                         if (validHeight)
                             updateHeight(heightValue)
                     }) {
-                        Icon(Icons.Default.Done, null)
+                        Icon(Icons.Default.Done, "Done editing")
                     }
                 }
             }
@@ -374,7 +380,7 @@ fun Profile(
                 Spacer(Modifier.height(8.dp))
                 IconButton(onClick = { genderDialogueShown = true },
                     modifier = Modifier.weight(0.2f)) {
-                    Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
+                    Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/info")
                 }
             }
         }
@@ -393,7 +399,7 @@ fun Profile(
             Text("Body Mass Index: ${round(bmi*10f)/10} ($body)")
 
             IconButton(onClick = { bmiDialogueShown = true }) {
-                Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/info")
             }
         }
         Spacer(Modifier.height(16.dp))

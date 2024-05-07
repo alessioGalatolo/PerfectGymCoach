@@ -178,7 +178,7 @@ fun InfoDialog(dialogueIsOpen: Boolean, toggleDialogue: () -> Unit, infoText: @C
             onDismissRequest = {
                 toggleDialogue()
             },
-            icon = { Icon(Icons.Outlined.Info, null)},
+            icon = { Icon(Icons.Outlined.Info, "Info")},
             text = {
                 infoText()
             },

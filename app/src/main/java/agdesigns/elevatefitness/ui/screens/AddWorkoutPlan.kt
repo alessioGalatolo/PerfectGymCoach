@@ -294,7 +294,7 @@ fun LazyItemScope.PlanCard(
                 Column(verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         icon,
-                        contentDescription = "Localized description",
+                        contentDescription = "Archive plan",
                         modifier = Modifier
                             .padding(horizontal = 20.dp)
                             .scale(scale)
@@ -362,7 +362,7 @@ fun LazyItemScope.PlanCard(
 
                     Icon(
                         imageVector = if (plan.planId == currentPlanId) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = null,
+                        contentDescription = if (plan.planId == currentPlanId) "Current plan" else "Set as current plan",
                         modifier = Modifier.size(size)
                     )
                 }
@@ -380,7 +380,7 @@ fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
         },
         modifier = Modifier.align(Alignment.CenterHorizontally))
     {
-        Icon(Icons.Filled.AutoAwesome, null)
+        Icon(Icons.Filled.AutoAwesome, "Magic")
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text("Generate a new plan")
     }

@@ -89,7 +89,7 @@ fun ExercisePage(
                     .wrapContentSize()
                     .weight(1f, false)
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, null)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Previous exercise")
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -112,7 +112,7 @@ fun ExercisePage(
                     .wrapContentSize()
                     .weight(1f, false)
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowForward, null)
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward, "Next exercise")
             }
         }
         HorizontalPager(
@@ -416,7 +416,7 @@ fun WorkoutFinishPage(
                             modifier = Modifier
                                 .padding(8.dp)){
                             repeat(WorkoutRecord.WorkoutIntensity.entries.size){
-                                Icon(Icons.Default.FitnessCenter, null,
+                                Icon(Icons.Default.FitnessCenter, "Intensity",
                                     tint = if (it < workoutIntensity.value.ordinal+1) LocalContentColor.current else Color.Transparent)
                             }
                         }
@@ -468,6 +468,7 @@ fun WorkoutFinishPage(
     }
 }
 
+// FIXME: is this used anymore?
 @Composable
 fun ExerciseSettingsMenu(
     navigator: DestinationsNavigator,
@@ -480,7 +481,7 @@ fun ExerciseSettingsMenu(
         IconButton(onClick = { expanded = true }) {
             Icon(
                 Icons.Default.MoreVert,
-                contentDescription = "Localized description"
+                contentDescription = "More options"
             )
         }
         DropdownMenu(
@@ -493,7 +494,7 @@ fun ExerciseSettingsMenu(
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Edit,
-                        contentDescription = null
+                        contentDescription = "Change exercise"
                     )
                 })
             DropdownMenuItem(
@@ -502,7 +503,7 @@ fun ExerciseSettingsMenu(
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Delete,
-                        contentDescription = null
+                        contentDescription = "Delete exercise"
                     )
                 })
             DropdownMenuItem(
@@ -511,7 +512,7 @@ fun ExerciseSettingsMenu(
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Close,
-                        contentDescription = null
+                        contentDescription = "Cancel workout"
                     )
                 })
         }
