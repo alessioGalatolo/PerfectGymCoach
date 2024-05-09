@@ -219,6 +219,7 @@ fun AddExerciseDialog(
                                             viewModel.state.value.sets.toIntOrNull()?.minus(1).toString()
                                         ))
                                     },
+                                    contentDescription = "Sets"
                                 )
                             }
                             Row(
@@ -248,10 +249,10 @@ fun AddExerciseDialog(
                                     modifier = Modifier.weight(0.5f)
                                 ) {
                                     MyDropdownMenu(
-                                        prompt = "Reps" + "*",
+                                        prompt = "Reps" + "*",  // FIXME: why is there a star?
                                         options = (1..12).map { "$it" },
                                         text = viewModel.state.value.reps,
-                                        onTextChange = { viewModel.onEvent(AddExerciseEvent.UpdateReps(it)) },
+                                        onTextChange = { if (it.toIntOrNull() != null) viewModel.onEvent(AddExerciseEvent.UpdateReps(it)) },
                                         keyboardType = KeyboardType.Number
                                     )
                                 }
@@ -268,7 +269,7 @@ fun AddExerciseDialog(
                                         prompt = "Rest" + "*",
                                         options = (15..120 step 15).map { "$it" },
                                         text = viewModel.state.value.rest,
-                                        onTextChange = { viewModel.onEvent(AddExerciseEvent.UpdateRest(it)) },
+                                        onTextChange = { if (it.toIntOrNull() != null) viewModel.onEvent(AddExerciseEvent.UpdateRest(it)) },
                                         keyboardType = KeyboardType.Number
                                     ) {
                                         Text("sec")
@@ -312,13 +313,14 @@ fun AddExerciseDialog(
                                                 reps.toIntOrNull()?.minus(1).toString(),
                                                 index
                                             ))
-                                        }
+                                        },
+                                        contentDescription = "Reps for set ${index+1}"
                                     )
                                     Spacer(Modifier.width(8.dp))
                                 }
                                 Row(Modifier.weight(1f)) {
                                     MyDropdownMenu(
-                                        prompt = "Rest" + "*",
+                                        prompt = "Rest" + "*" + " ${index+1}",
                                         options = (15..120 step 15).map { "$it" },
                                         text = viewModel.state.value.restArray[index],
                                         onTextChange = {

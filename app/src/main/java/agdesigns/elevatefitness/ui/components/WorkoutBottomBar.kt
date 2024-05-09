@@ -78,7 +78,8 @@ fun WorkoutBottomBar(
                     text = { repsToDisplay },
                     onNewText = { new -> updateReps(new) },
                     onIncrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) + 1).toString()) },
-                    onDecrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) - 1).toString()) }
+                    onDecrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) - 1).toString()) },
+                    contentDescription = "reps"
                 )
                 Spacer(Modifier.width(8.dp))
                 TextFieldWithButtons(
@@ -94,7 +95,8 @@ fun WorkoutBottomBar(
                             (weightToDisplay.toFloatOrNull() ?: 0f)
                                     - currentExercise.equipment.increment
                             ).toString()
-                    )}
+                    )},
+                    contentDescription = "weight"
                 )
             }
 
@@ -119,7 +121,8 @@ fun RowScope.TextFieldWithButtons(
     text: () -> String,
     onNewText: (String) -> Unit,
     onIncrement: () -> Unit,
-    onDecrement: () -> Unit
+    onDecrement: () -> Unit,
+    contentDescription: String = ""
 ) {
     Row(verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -127,7 +130,7 @@ fun RowScope.TextFieldWithButtons(
             .weight(1f, true)
     ) {
         IconButton(onClick = onDecrement, modifier = Modifier.weight(0.3f).minimumInteractiveComponentSize()) {
-            Icon(Icons.Filled.Remove, "Decrease")  // FIXME: accessibility -> increase what?
+            Icon(Icons.Filled.Remove, "Decrease $contentDescription")  // FIXME: accessibility -> increase what?
         }
         OutlinedTextField(
             value = text(),
@@ -141,7 +144,7 @@ fun RowScope.TextFieldWithButtons(
                 .weight(0.5f)
         )
         IconButton(onClick = onIncrement, modifier = Modifier.weight(0.3f).minimumInteractiveComponentSize()) {
-            Icon(Icons.Filled.Add, "Increase")  // FIXME: accessibility -> decrease what?
+            Icon(Icons.Filled.Add, "Increase $contentDescription")  // FIXME: accessibility -> decrease what?
         }
     }
 }
