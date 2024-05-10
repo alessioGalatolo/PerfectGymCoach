@@ -15,7 +15,8 @@ data class Exercise(
     val primaryMuscle: Muscle,
     val secondaryMuscles: List<Muscle> = emptyList(),
     val image: Int = R.drawable.finish_workout,
-    val difficulty: ExerciseDifficulty = ExerciseDifficulty.MEDIUM,  // TODO: not actually used in the app yet
+    val description: String = "Description not available",
+    val difficulty: ExerciseDifficulty = ExerciseDifficulty.INTERMEDIATE,
     val variations: List<String> = emptyList()
 
 ) : Parcelable {
@@ -42,7 +43,7 @@ data class Exercise(
 
     enum class ExerciseDifficulty(val difficulty: String){
         BEGINNER("Beginner"),
-        MEDIUM("Medium"),
+        INTERMEDIATE("Intermediate"),
         ADVANCED("Advanced")
     }
 }

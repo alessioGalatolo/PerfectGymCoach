@@ -141,6 +141,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 variation = it.variation,
                                 name = it.name,
                                 image = it.image,
+                                description = it.description,
                                 equipment = it.equipment,
                                 note = it.note,
                                 reps = it.reps.toImmutableList(),

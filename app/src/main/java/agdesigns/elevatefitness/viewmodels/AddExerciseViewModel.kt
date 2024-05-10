@@ -93,6 +93,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 extWorkoutId = state.value.workoutId,
                                 orderInProgram = state.value.exerciseNumber,
                                 name = state.value.exercise!!.name,
+                                description = state.value.exercise!!.description,
                                 image = state.value.exercise!!.image,
                                 equipment = state.value.exercise!!.equipment,
                                 reps =

@@ -37,6 +37,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -56,6 +57,7 @@ fun ExercisePage(
     navigator: DestinationsNavigator,
     setsDone: State<Int>,
     title: @Composable () -> Unit,
+    exerciseDescription: String,
     addSet: () -> Unit,
     updateBottomBar: (Int, Float) -> Unit,
     currentExerciseRecords: List<ExerciseRecordAndEquipment>,
@@ -72,6 +74,10 @@ fun ExercisePage(
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
+    var infoDialogOpen by remember { mutableStateOf(false) }
+    InfoDialog(dialogueIsOpen = infoDialogOpen, toggleDialogue = { infoDialogOpen = !infoDialogOpen }) {
+        Text(exerciseDescription)
+    }
     Column(
         Modifier.padding(top = 8.dp)
     ) {
@@ -132,6 +138,13 @@ fun ExercisePage(
                             }
                             append(workoutExercises[page].note)
                         }, modifier = Modifier.align(CenterHorizontally))
+                    }
+
+                    IconButton(
+                        onClick = { infoDialogOpen = true },
+                        Modifier.fillMaxWidth().align(CenterHorizontally)
+                    ) {
+                        Icon(Icons.AutoMirrored.Outlined.HelpOutline, "Exercise description")
                     }
                     // content
                     if (restCounter != null){
@@ -348,7 +361,13 @@ fun ExercisePage(
                                             .combinedClickable(onLongClick = {
 
                                             }, onClick = {
-                                                updateBottomBar(rep, maybeKgToLb(record.weights[index], useImperialSystem))
+                                                updateBottomBar(
+                                                    rep,
+                                                    maybeKgToLb(
+                                                        record.weights[index],
+                                                        useImperialSystem
+                                                    )
+                                                )
                                             })
                                     ) {
                                         FilledIconToggleButton(checked = false, // FIXME: can use different component?

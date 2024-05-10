@@ -16,7 +16,7 @@ data class ExerciseState(
     val equipment: Exercise.Equipment = Exercise.Equipment.BARBELL,
     val primaryMuscle: Exercise.Muscle = Exercise.Muscle.ABS,
     val secondaryMuscles: List<Boolean> = List(Exercise.Muscle.entries.size-1) { false },
-    val difficulty: Exercise.ExerciseDifficulty = Exercise.ExerciseDifficulty.MEDIUM
+    val difficulty: Exercise.ExerciseDifficulty = Exercise.ExerciseDifficulty.INTERMEDIATE
 )
 
 sealed class CreateExerciseEvent{

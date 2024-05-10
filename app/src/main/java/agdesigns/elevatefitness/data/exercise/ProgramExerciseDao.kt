@@ -14,14 +14,14 @@ interface ProgramExerciseDao {
     @Query("SELECT * FROM programexercise WHERE programExerciseId LIKE :programExerciseId")
     fun getProgramExercise(programExerciseId: Long): Flow<ProgramExercise>
 
-    @Query("SELECT programexercise.*, exercise.image, exercise.equipment, exercise.name " +
+    @Query("SELECT programexercise.*, exercise.image, exercise.equipment, exercise.name, exercise.description " +
             "FROM programexercise " +
             "LEFT JOIN exercise ON programexercise.extExerciseId = exercise.exerciseId " +
             "WHERE programexercise.extProgramId = :programId")
     fun getExercisesAndInfo(programId: Long): Flow<List<ProgramExerciseAndInfo>>
 
 
-    @Query("SELECT programexercise.*, exercise.image, exercise.equipment, exercise.name " +
+    @Query("SELECT programexercise.*, exercise.image, exercise.equipment, exercise.name, exercise.description " +
             "FROM programexercise " +
             "LEFT JOIN exercise ON programexercise.extExerciseId = exercise.exerciseId " +
             "WHERE programexercise.extProgramId IN (:programIds) "

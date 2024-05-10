@@ -68,6 +68,7 @@ data class ProgramExerciseAndInfo (
     val extExerciseId: Long,
     val orderInProgram: Int,
     val name: String,
+    val description: String,
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String,

@@ -52,6 +52,7 @@ data class WorkoutExercise (
     val extExerciseId: Long,
     val name: String,
     val image: Int,
+    val description: String,
     val equipment: Exercise.Equipment,
     val orderInProgram: Int,
     val reps: List<Int>,

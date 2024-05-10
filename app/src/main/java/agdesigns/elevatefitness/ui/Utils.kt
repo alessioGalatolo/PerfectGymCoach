@@ -7,19 +7,30 @@ import kotlin.math.round
 
 const val decimalPlaces = 100  // 2 decimal places
 
-fun isPrimaryMuscle(muscle: Exercise.Muscle): Boolean {
-    if (muscle == Exercise.Muscle.CHEST)
-        return true
-    if (muscle == Exercise.Muscle.BACK)
-        return true
-    if (muscle == Exercise.Muscle.SHOULDERS)
-        return true
-    if (muscle == Exercise.Muscle.LEGS)
-        return true
-    return false
+fun isMajorMover(muscle: Exercise.Muscle): Boolean {
+    return when (muscle) {
+        Exercise.Muscle.CHEST,
+        Exercise.Muscle.BACK,
+        Exercise.Muscle.SHOULDERS,
+        Exercise.Muscle.LEGS -> true
+        else -> false
+    }
+}
+
+fun isFreeWeight(equipment: Exercise.Equipment): Boolean {
+    return when (equipment) {
+        Exercise.Equipment.BARBELL,
+        Exercise.Equipment.DUMBBELL,
+        Exercise.Equipment.BODY_WEIGHT -> true
+        else -> false
+    }
 }
 
 fun exerciseIsCompound(exercise: Exercise): Boolean {
+    if (!isFreeWeight(exercise.equipment))
+        return false
+    if (!isMajorMover(exercise.primaryMuscle))
+        return false
     if (exercise.secondaryMuscles.size > 1)
         return true
     if (exercise.name.lowercase().contains("squat")) // FIXME: not ideal

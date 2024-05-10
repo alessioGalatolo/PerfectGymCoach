@@ -93,7 +93,7 @@ suspend fun generatePlan(
         val exercisesPerMuscle = exercisesPerProgram / day.size
         var exerciseCount = 0
         day.forEach { muscle ->
-            var exerciseForThisMuscle = if (isPrimaryMuscle(muscle)) exercisesPerMuscle+1 else exercisesPerMuscle-1
+            var exerciseForThisMuscle = if (isMajorMover(muscle)) exercisesPerMuscle+1 else exercisesPerMuscle-1
 
             var exercises = muscle2Exercises[muscle]!!.toMutableList()
             if (nonAutoDifficulty == WorkoutPlanDifficulty.BEGINNER)
@@ -104,7 +104,7 @@ suspend fun generatePlan(
                     exercises.filter { it.difficulty != Exercise.ExerciseDifficulty.ADVANCED }.toMutableList()
 
             // If not beginner start with compound exercise
-            if (nonAutoDifficulty != WorkoutPlanDifficulty.BEGINNER && isPrimaryMuscle(muscle)) {
+            if (nonAutoDifficulty != WorkoutPlanDifficulty.BEGINNER && isMajorMover(muscle)) {
                 val currentSets = minSetsPerExercise + random.nextInt(1, 3)
                 val chosenExercise = exercises.filter { exerciseIsCompound(it) }
                     .random()

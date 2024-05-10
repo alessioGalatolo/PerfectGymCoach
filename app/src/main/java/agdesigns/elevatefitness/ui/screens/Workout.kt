@@ -325,6 +325,7 @@ fun Workout(
                     setsDone = setsDone,
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
+                    exerciseDescription = currentExercise?.description ?: "Description not available",
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounter = restCounter,
