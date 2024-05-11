@@ -1,25 +1,28 @@
 package agdesigns.elevatefitness.ui.screens
 
+import agdesigns.elevatefitness.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanSplit
 import agdesigns.elevatefitness.ui.GeneratePlanGraph
-import com.google.accompanist.pager.HorizontalPagerIndicator
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.ViewGeneratedPlanDestination
@@ -40,16 +43,12 @@ fun CustomizePlanGeneration(
     val expertiseLevel = rememberSaveable { mutableStateOf("") }
     val workoutSplit = rememberSaveable { mutableStateOf("") }
 
-    val canGoNext = remember { derivedStateOf {
-        when(pagerState.currentPage) {
-            0 -> goalChoice.value.isNotBlank()
-            1 -> expertiseLevel.value.isNotBlank()
-            2 -> workoutSplit.value.isNotBlank()
-            else -> false
-        }
-    }}
-
+    // FIXME: maybe replace with predictivebackhandler?
+    BackHandler(pagerState.currentPage > 0) {
+        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+    }
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
             TopAppBar(title = { Text("Generate a new plan") },
@@ -63,43 +62,31 @@ fun CustomizePlanGeneration(
                     }
                 })
         }, content = { innerPadding ->
-            Column(
-                Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+            HorizontalPager(
+                state = pagerState,
+                userScrollEnabled = false,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                LazyColumn(
+                    contentPadding = innerPadding,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
                 ) {
                     when (it) {
-                        0 -> GoalChoice(goalChoice)
-                        1 -> ExpertiseLevel(expertiseLevel)
-                        2 -> WorkoutSplit(workoutSplit)
-                    }
-                }
-            }
-        }, bottomBar = {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding(), horizontalArrangement = Arrangement.SpaceAround) {
-                TextButton(enabled = pagerState.currentPage != 0,
-                    onClick = {
-                        scope.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        0 -> goalChoice { choice ->
+                            goalChoice.value = choice
+                            scope.launch { pagerState.animateScrollToPage(1) }
                         }
-                    }, modifier = Modifier.align(CenterVertically)) {
-                    Text("Back", modifier = Modifier.align(CenterVertically))
-                }
-                HorizontalPagerIndicator(pagerState = pagerState, pageCount = totalPageCount, modifier = Modifier.align(CenterVertically))
-                TextButton(
-                    enabled = canGoNext.value,
-                    onClick = {
-                        if (pagerState.currentPage != totalPageCount-1)
-                            scope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage+1)
-                            }
-                        else {
+
+                        1 -> expertiseLevel { choice ->
+                            expertiseLevel.value = choice
+                            scope.launch { pagerState.animateScrollToPage(2) }
+                        }
+
+                        2 -> workoutSplit { choice ->
+                            workoutSplit.value = choice
                             navigator.navigateUp()
                             navigator.navigate(
                                 ViewGeneratedPlanDestination(
@@ -109,129 +96,121 @@ fun CustomizePlanGeneration(
                                 )
                             )
                         }
-                    }, modifier = Modifier.align(CenterVertically)) {
-                    Text(if (pagerState.currentPage != totalPageCount-1) "Next" else "Generate!")
+                    }
                 }
             }
         }
     )
 }
 
-@Composable
-fun GoalChoice(goalChoice: MutableState<String>){
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp)) {
-        Text("What is your goal when training?",
-            style = MaterialTheme.typography.titleLarge)
-        val radioOptions = WorkoutPlanGoal.entries.map { it.goal }
 
-        // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
-        Column(Modifier.selectableGroup()) {
-            radioOptions.forEach { text ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .selectable(
-                            selected = (text == goalChoice.value),
-                            onClick = { goalChoice.value = text },
-                            role = Role.RadioButton
-                        )
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = CenterVertically
-                ) {
-                    RadioButton(
-                        selected = (text == goalChoice.value),
-                        onClick = null // null recommended for accessibility with screenreaders
-                    )
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-            }
+@OptIn(ExperimentalFoundationApi::class)
+fun LazyListScope.goalChoice(completeGoal: (String) -> Unit){
+    val goalImages = mapOf(
+        WorkoutPlanGoal.MUSCLE.goal to R.drawable.cable_curl,
+        WorkoutPlanGoal.STRENGTH.goal to R.drawable.headstand_push_up,
+        WorkoutPlanGoal.ENDURANCE.goal to R.drawable.plank,
+        WorkoutPlanGoal.WEIGHT_LOSS.goal to R.drawable.sit_ups
+    )
+    // fixme: would like this to be a stickyHeader but it is currently bugged
+    item {
+        Text(
+            "What is your goal when training?",
+            style = MaterialTheme.typography.titleLarge
+        )
+    }
+    items(goalImages.size) { index ->
+        val goal = goalImages.keys.elementAt(index)
+        val image = goalImages.values.elementAt(index)
+        ElevatedCard(Modifier.clickable {
+            completeGoal(goal)
+        }) {
+            AsyncImage(
+                model = image,
+                contentDescription = "$goal image",
+                contentScale = ContentScale.Inside,
+                modifier = Modifier
+                    .fillMaxWidth()
+            )
+            Text(
+                text = goal,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
 
-@Composable
-fun ExpertiseLevel(expertiseLevel: MutableState<String>){
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp)) {
-        Text("What is your expertise level?",
-            style = MaterialTheme.typography.titleLarge)
-        val radioOptions = WorkoutPlanDifficulty.entries.map { it.expertiseLevel }
-        // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
-        Column(Modifier.selectableGroup()) {
-            radioOptions.forEach { text ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .selectable(
-                            selected = (text == expertiseLevel.value),
-                            onClick = { expertiseLevel.value = text },
-                            role = Role.RadioButton
-                        )
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = CenterVertically
-                ) {
-                    RadioButton(
-                        selected = (text == expertiseLevel.value),
-                        onClick = null // null recommended for accessibility with screenreaders
-                    )
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-            }
+@OptIn(ExperimentalFoundationApi::class)
+fun LazyListScope.expertiseLevel(completeExpertise: (String) -> Unit) {
+    val expertiseImages = mapOf(
+        WorkoutPlanDifficulty.BEGINNER.expertiseLevel to R.drawable.chest_press,
+        WorkoutPlanDifficulty.INTERMEDIATE.expertiseLevel to R.drawable.deadlift,
+        WorkoutPlanDifficulty.ADVANCED.expertiseLevel to R.drawable.muscle_up
+    )
+    stickyHeader {
+        Text(
+            "What is your expertise level?",
+            style = MaterialTheme.typography.titleLarge
+        )
+    }
+    items(expertiseImages.size) { index ->
+        val level = expertiseImages.keys.elementAt(index)
+        val image = expertiseImages.values.elementAt(index)
+        ElevatedCard(Modifier.clickable {
+            completeExpertise(level)
+        }) {
+            AsyncImage(
+                model = image,
+                contentDescription = "$level image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+            )
+            Text(
+                text = level,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
 
-@Composable
-fun WorkoutSplit(workoutSplit: MutableState<String>){
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp)) {
-        Text("How many times per week do you want to exercise?",
-            style = MaterialTheme.typography.titleLarge)
-        val radioOptions = WorkoutPlanSplit.entries.map { it.split }
-        // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
-        Column(Modifier.selectableGroup()) {
-            radioOptions.forEach { text ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .selectable(
-                            selected = (text == workoutSplit.value),
-                            onClick = { workoutSplit.value = text },
-                            role = Role.RadioButton
-                        )
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = CenterVertically
-                ) {
-                    RadioButton(
-                        selected = (text == workoutSplit.value),
-                        onClick = null // null recommended for accessibility with screenreaders
-                    )
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-            }
+
+@OptIn(ExperimentalFoundationApi::class)
+fun LazyListScope.workoutSplit(completeSplit: (String) -> Unit) {
+    val workoutImages = mapOf(
+        WorkoutPlanSplit.BRO.split to R.drawable.bench_press,
+        WorkoutPlanSplit.GAINZ.split to R.drawable.generic_barbell,
+        WorkoutPlanSplit.FULL_BODY.split to R.drawable.generic_machine,
+        WorkoutPlanSplit.UPPER_LOWER.split to R.drawable.chest_dip,
+    )
+
+    stickyHeader {
+        Text(
+            "How many times per week do you want to exercise?",
+            style = MaterialTheme.typography.titleLarge
+        )
+    }
+
+    items(workoutImages.size) { index ->
+        val split = workoutImages.keys.elementAt(index)
+        val image = workoutImages.values.elementAt(index)
+        ElevatedCard(Modifier.clickable {
+            completeSplit(split)
+        }) {
+            AsyncImage(
+                model = image,
+                contentDescription = "$split image",
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+            )
+            Text(
+                text = split,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
-

@@ -17,6 +17,7 @@ data class Exercise(
     val image: Int = R.drawable.finish_workout,
     val description: String = "Description not available",
     val difficulty: ExerciseDifficulty = ExerciseDifficulty.INTERMEDIATE,
+    val probability: Float = 1f, // weight used when randomly selecting exercises
     val variations: List<String> = emptyList()
 
 ) : Parcelable {

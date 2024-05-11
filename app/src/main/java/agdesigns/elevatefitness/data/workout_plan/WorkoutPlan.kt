@@ -38,7 +38,7 @@ enum class WorkoutPlanGoal(val goal: String){
 enum class WorkoutPlanDifficulty(val expertiseLevel: String) {
     AUTO("You should know my level"),
     BEGINNER("Beginner: just starting out"),
-    INTERMEDIATE("Intermediate:feel confident to try some more advanced exercises"),
+    INTERMEDIATE("Intermediate: feel confident to try some more advanced exercises"),
     ADVANCED("Advanced: you got this👌")
 }
 
