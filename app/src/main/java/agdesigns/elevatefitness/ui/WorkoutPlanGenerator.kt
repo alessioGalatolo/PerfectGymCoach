@@ -13,16 +13,66 @@ import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import kotlin.random.Random
 
+
+// Extension function for Collection
+fun <T> Collection<T>.weightedRandom(weights: List<Double>): T {
+    // TODO: may check whether T has a weight attribute but needs to be done at runtime
+    if (this.size != weights.size) {
+        throw IllegalArgumentException("Items and weights must be of the same size")
+    }
+
+    // Convert collection to a list (if it isn't already a list)
+    val itemList = this.toList()
+
+    // Step 1: Calculate cumulative weights
+    val cumulativeWeights = mutableListOf<Double>()
+    var cumulativeSum = 0.0
+    for (weight in weights) {
+        cumulativeSum += weight
+        cumulativeWeights.add(cumulativeSum)
+    }
+
+    // Step 2: Generate a random number
+    val randomValue = Random.nextDouble() * cumulativeSum
+
+    // Step 3: Find the item corresponding to the random number
+    for ((index, cumWeight) in cumulativeWeights.withIndex()) {
+        if (randomValue <= cumWeight) {
+            return itemList[index]
+        }
+    }
+
+    // Fallback, should not happen if weights are properly specified
+    return itemList.last()
+}
+
+
 suspend fun generatePlan(
     repository: Repository,
     goalChoice: WorkoutPlanGoal,
     expertiseLevel: WorkoutPlanDifficulty,
     workoutSplit: WorkoutPlanSplit
 ): Long {
-    val muscle2Exercises = emptyMap<Exercise.Muscle, List<Exercise>>().toMutableMap()
-    val random = Random(42)  // FIXME: should not have fixed seed
+    val muscle2Exercises = emptyMap<Exercise.Muscle, Array<Exercise>>().toMutableMap()
+    val random = Random(Calendar.getInstance().timeInMillis)
     for (muscle in Exercise.Muscle.entries.toMutableList().minus(Exercise.Muscle.EVERYTHING)){
-        muscle2Exercises[muscle] = repository.getExercises(muscle).first()
+        muscle2Exercises[muscle] = repository.getExercises(muscle).first().toTypedArray()
+    }
+
+    // lower weights for exercises in current programs
+    val currentPlanId = repository.getCurrentPlan().first()
+    if (currentPlanId != null) {
+        val currentPrograms = repository.getProgramsMapExercises(currentPlanId).first()
+        val oldExercises = currentPrograms.values.flatten().map { it.extExerciseId }
+        for ((_, exercises) in muscle2Exercises) {
+            for (exIndex in exercises.indices) {
+                if (oldExercises.contains(exercises[exIndex].exerciseId)) {
+                    exercises[exIndex] = exercises[exIndex].copy(probability = exercises[exIndex].probability * 0.5f)
+                }
+            }
+        }
+
+
     }
     val planId = repository.addPlan(
         WorkoutPlan(
@@ -106,8 +156,8 @@ suspend fun generatePlan(
             // If not beginner start with compound exercise
             if (nonAutoDifficulty != WorkoutPlanDifficulty.BEGINNER && isMajorMover(muscle)) {
                 val currentSets = minSetsPerExercise + random.nextInt(1, 3)
-                val chosenExercise = exercises.filter { exerciseIsCompound(it) }
-                    .random()
+                val compoundEx = exercises.filter { exerciseIsCompound(it) }
+                val chosenExercise = compoundEx.weightedRandom(compoundEx.map { it.probability })
                 exercises.remove(chosenExercise)
                 repository.addProgramExercise(
                     ProgramExercise(
@@ -126,7 +176,7 @@ suspend fun generatePlan(
                     break
                 val currentSets = minSetsPerExercise + random.nextInt(0, 2)
 
-                val chosenExercise = exercises.random()
+                val chosenExercise = exercises.weightedRandom(exercises.map { it.probability })
                 exercises.remove(chosenExercise)
                 repository.addProgramExercise(
                     ProgramExercise(
