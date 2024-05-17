@@ -421,6 +421,11 @@ fun Workout(
                                         value
                                     )
                                 )
+                            },
+                            autoStepWeight = { newValue, equipment, decrement ->
+                                viewModel.onEvent(
+                                    WorkoutEvent.AutoStepWeight(newValue, equipment, decrement)
+                                )
                             }
                         )
                     }

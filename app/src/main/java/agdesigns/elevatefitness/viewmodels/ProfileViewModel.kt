@@ -18,7 +18,12 @@ data class ProfileState(
     val sex: Sex = Sex.OTHER,
     val theme: Theme = Theme.SYSTEM,
     val name: String = "",
-    val imperialSystem: Boolean = false
+    val imperialSystem: Boolean = false,
+    val incrementBodyweight: Float = 0f,
+    val incrementBarbell: Float = 0f,
+    val incrementDumbbell: Float = 0f,
+    val incrementMachine: Float = 0f,
+    val incrementCable: Float = 0f,
 )
 
 sealed class ProfileEvent{
@@ -33,6 +38,16 @@ sealed class ProfileEvent{
     data class UpdateSex(val newSex: Sex): ProfileEvent()
 
     data class UpdateTheme(val newTheme: Theme): ProfileEvent()
+
+    data class UpdateIncrementBodyweight(val newIncrement: Float): ProfileEvent()
+
+    data class UpdateIncrementBarbell(val newIncrement: Float): ProfileEvent()
+
+    data class UpdateIncrementDumbbell(val newIncrement: Float): ProfileEvent()
+
+    data class UpdateIncrementMachine(val newIncrement: Float): ProfileEvent()
+
+    data class UpdateIncrementCable(val newIncrement: Float): ProfileEvent()
 
     data class SwitchImperialSystem(val newValue: Boolean): ProfileEvent()
 }
@@ -78,6 +93,31 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(theme = it)
             }
         }
+        viewModelScope.launch {
+            repository.getBodyweightIncrement().collect {
+                _state.value = state.value.copy(incrementBodyweight = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getBarbellIncrement().collect {
+                _state.value = state.value.copy(incrementBarbell = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getDumbbellIncrement().collect {
+                _state.value = state.value.copy(incrementDumbbell = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getMachineIncrement().collect {
+                _state.value = state.value.copy(incrementMachine = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getCableIncrement().collect {
+                _state.value = state.value.copy(incrementCable = it)
+            }
+        }
     }
 
     fun onEvent(event: ProfileEvent){
@@ -115,6 +155,31 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
             is ProfileEvent.UpdateTheme -> {
                 viewModelScope.launch {
                     repository.setTheme(event.newTheme)
+                }
+            }
+            is ProfileEvent.UpdateIncrementBarbell -> {
+                viewModelScope.launch {
+                    repository.setBarbellIncrement(event.newIncrement)
+                }
+            }
+            is ProfileEvent.UpdateIncrementBodyweight -> {
+                viewModelScope.launch {
+                    repository.setBodyweightIncrement(event.newIncrement)
+                }
+            }
+            is ProfileEvent.UpdateIncrementCable -> {
+                viewModelScope.launch {
+                    repository.setCableIncrement(event.newIncrement)
+                }
+            }
+            is ProfileEvent.UpdateIncrementDumbbell -> {
+                viewModelScope.launch {
+                    repository.setDumbbellIncrement(event.newIncrement)
+                }
+            }
+            is ProfileEvent.UpdateIncrementMachine -> {
+                viewModelScope.launch {
+                    repository.setMachineIncrement(event.newIncrement)
                 }
             }
         }

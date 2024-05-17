@@ -39,6 +39,11 @@ class Repository @Inject constructor(
     private val userName = stringPreferencesKey("User name")
     private val userAgeYear = intPreferencesKey("User age year")
     private val imperialSystem = booleanPreferencesKey("Imperial system user")
+    private val incrementBodyweight = floatPreferencesKey("Increment body weight")
+    private val incrementBarbell = floatPreferencesKey("Increment barbell")
+    private val incrementDumbbell = floatPreferencesKey("Increment dumbbell")
+    private val incrementMachine = floatPreferencesKey("Increment machine")
+    private val incrementCable = floatPreferencesKey("Increment cable")
 
 
     /*
@@ -236,6 +241,37 @@ class Repository @Inject constructor(
     fun getImperialSystem(): Flow<Boolean> = dataStore.data.map{ it[imperialSystem] ?: false }
 
     suspend fun setImperialSystem(newValue: Boolean) = dataStore.edit { it[imperialSystem] = newValue }
+
+
+    // TODO: move default value outside
+    fun getBodyweightIncrement(): Flow<Float> = dataStore.data.map{ it[incrementBodyweight] ?: 2.5f }
+
+    suspend fun setBodyweightIncrement(newValue: Float) = dataStore.edit { it[incrementBodyweight] = newValue }
+
+
+    // TODO: move default value outside
+    fun getBarbellIncrement(): Flow<Float> = dataStore.data.map{ it[incrementBarbell] ?: 2.5f }
+
+    suspend fun setBarbellIncrement(newValue: Float) = dataStore.edit { it[incrementBarbell] = newValue }
+
+
+
+    // TODO: move default value outside
+    fun getDumbbellIncrement(): Flow<Float> = dataStore.data.map{ it[incrementDumbbell] ?: 2f }
+
+    suspend fun setDumbbellIncrement(newValue: Float) = dataStore.edit { it[incrementDumbbell] = newValue }
+
+
+    // TODO: move default value outside
+    fun getMachineIncrement(): Flow<Float> = dataStore.data.map{ it[incrementMachine] ?: 5f }
+
+    suspend fun setMachineIncrement(newValue: Float) = dataStore.edit { it[incrementMachine] = newValue }
+
+
+    // TODO: move default value outside
+    fun getCableIncrement(): Flow<Float> = dataStore.data.map{ it[incrementCable] ?: 2.5f }
+
+    suspend fun setCableIncrement(newValue: Float) = dataStore.edit { it[incrementCable] = newValue }
 
 
     fun getCurrentWorkout(): Flow<Long?> = dataStore.data.map{ it[currentWorkout] }

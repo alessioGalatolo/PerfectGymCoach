@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.components
 
+import agdesigns.elevatefitness.data.exercise.Exercise
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -13,7 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.workout_exercise.WorkoutExercise
-import androidx.compose.material.minimumInteractiveComponentSize
+import androidx.compose.material3.minimumInteractiveComponentSize
 
 @Composable
 fun WorkoutBottomBar(
@@ -29,7 +30,8 @@ fun WorkoutBottomBar(
     repsToDisplay: String,
     updateReps: (String) -> Unit,
     weightToDisplay: String,
-    updateWeight: (String) -> Unit
+    updateWeight: (String) -> Unit,
+    autoStepWeight: (String, Exercise.Equipment, Boolean) -> Unit
 ) {
     Column(
         Modifier
@@ -86,15 +88,15 @@ fun WorkoutBottomBar(
                     "Weight",
                     text = { weightToDisplay },
                     onNewText = { new -> updateWeight(new) },
-                    onIncrement = { updateWeight((
-                                (weightToDisplay.toFloatOrNull() ?: 0f)
-                                        + currentExercise.equipment.increment
-                            ).toString()
+                    onIncrement = { autoStepWeight(
+                        weightToDisplay,
+                        currentExercise.equipment,
+                        false
                     )},
-                    onDecrement = { updateWeight((
-                            (weightToDisplay.toFloatOrNull() ?: 0f)
-                                    - currentExercise.equipment.increment
-                            ).toString()
+                    onDecrement = { autoStepWeight(
+                        weightToDisplay,
+                        currentExercise.equipment,
+                        true
                     )},
                     contentDescription = "weight"
                 )

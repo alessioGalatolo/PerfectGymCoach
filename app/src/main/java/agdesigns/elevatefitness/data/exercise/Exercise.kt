@@ -33,13 +33,13 @@ data class Exercise(
         TRICEPS("Triceps", R.drawable.triceps)
     }
 
-    enum class Equipment(val equipmentName: String, val increment: Float){
-        EVERYTHING("See all", 1f), // Used when filtering by muscle to get everything
-        BARBELL("Barbell", 2.5f),
-        BODY_WEIGHT("Body weight", 2.5f),
-        CABLES("Cables", 2.5f),
-        DUMBBELL("Dumbbell", 2f),
-        MACHINE("Machine", 5f)
+    enum class Equipment(val equipmentName: String){
+        EVERYTHING("See all"), // Used when filtering by muscle to get everything
+        BARBELL("Barbell"),
+        BODY_WEIGHT("Body weight"),
+        CABLES("Cables"),
+        DUMBBELL("Dumbbell"),
+        MACHINE("Machine")
     }
 
     enum class ExerciseDifficulty(val difficulty: String){

@@ -40,7 +40,12 @@ data class WorkoutState(
     val weightBottomBar: String = "0.0", // weight to be displayed in bottom bar
     val imperialSystem: Boolean = false,
     val shutDown: Boolean = false,  // used when finishing workout, waits to save then exit
-    val userTheme: Theme = Theme.SYSTEM
+    val userTheme: Theme = Theme.SYSTEM,
+    val incrementBodyweight: Float = 0f,
+    val incrementBarbell: Float = 0f,
+    val incrementDumbbell: Float = 0f,
+    val incrementMachine: Float = 0f,
+    val incrementCable: Float = 0f,
 )
 
 sealed class WorkoutEvent{
@@ -75,6 +80,13 @@ sealed class WorkoutEvent{
 
     data class UpdateWeight(val newValue: String): WorkoutEvent()
 
+    // same as above but updates the weight based on the equipment's default de/increment value
+    data class AutoStepWeight(
+        val newValue: String,
+        val equipment: Exercise.Equipment,
+        val subtract: Boolean
+    ): WorkoutEvent()
+
     data class UpdateTare(val newValue: Float): WorkoutEvent()
 
     data class EditSetRecord(
@@ -105,6 +117,31 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
         viewModelScope.launch {
             repository.getImperialSystem().collect {
                 _state.value = state.value.copy(imperialSystem = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getBodyweightIncrement().collect {
+                _state.value = state.value.copy(incrementBodyweight = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getBarbellIncrement().collect {
+                _state.value = state.value.copy(incrementBarbell = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getDumbbellIncrement().collect {
+                _state.value = state.value.copy(incrementDumbbell = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getMachineIncrement().collect {
+                _state.value = state.value.copy(incrementMachine = it)
+            }
+        }
+        viewModelScope.launch {
+            repository.getCableIncrement().collect {
+                _state.value = state.value.copy(incrementCable = it)
             }
         }
     }
@@ -306,6 +343,20 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.UpdateWeight -> {
                 _state.value = state.value.copy(weightBottomBar = event.newValue)
+            }
+            is WorkoutEvent.AutoStepWeight -> {
+                var increment = when (event.equipment) {
+                    Exercise.Equipment.EVERYTHING -> throw Exception("Was asked about the increment of 'everything' equipment. This should not happen.")  // should never happen
+                    Exercise.Equipment.BARBELL -> state.value.incrementBarbell
+                    Exercise.Equipment.BODY_WEIGHT -> state.value.incrementBodyweight
+                    Exercise.Equipment.CABLES -> state.value.incrementCable
+                    Exercise.Equipment.DUMBBELL -> state.value.incrementDumbbell
+                    Exercise.Equipment.MACHINE -> state.value.incrementMachine
+                }
+                if (event.subtract)
+                    increment *= -1f
+                val newValue = (event.newValue.toFloatOrNull() ?: 0f) + increment
+                _state.value = state.value.copy(weightBottomBar = newValue.toString())
             }
             is WorkoutEvent.UpdateTare -> {
                 _state.value = state.value.copy(tare = event.newValue)
