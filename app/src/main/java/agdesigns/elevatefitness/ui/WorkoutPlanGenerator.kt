@@ -54,7 +54,8 @@ suspend fun generatePlan(
     workoutSplit: WorkoutPlanSplit
 ): Long {
     val muscle2Exercises = emptyMap<Exercise.Muscle, Array<Exercise>>().toMutableMap()
-    val random = Random(Calendar.getInstance().timeInMillis)
+    val currentTime = Calendar.getInstance().timeInMillis
+    val random = Random(currentTime)
     for (muscle in Exercise.Muscle.entries.toMutableList().minus(Exercise.Muscle.EVERYTHING)){
         muscle2Exercises[muscle] = repository.getExercises(muscle).first().toTypedArray()
     }
@@ -76,7 +77,8 @@ suspend fun generatePlan(
     }
     val planId = repository.addPlan(
         WorkoutPlan(
-            name = "Generated program ${SimpleDateFormat("d MMM (yyyy)").format(Calendar.getInstance().timeInMillis)}"
+            name = "Generated program ${SimpleDateFormat("d MMM (yyyy)").format(currentTime)}",
+            creationDate = currentTime
         )
     )
 

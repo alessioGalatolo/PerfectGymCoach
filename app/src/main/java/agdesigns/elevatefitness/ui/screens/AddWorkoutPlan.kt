@@ -56,6 +56,7 @@ import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.ui.components.InsertNameDialog
 import agdesigns.elevatefitness.viewmodels.PlansEvent
 import agdesigns.elevatefitness.viewmodels.PlansViewModel
+import android.icu.util.Calendar
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.generated.destinations.ArchivedPlansDestination
@@ -76,7 +77,13 @@ fun AddWorkoutPlan(
         prompt = "Name of the new plan",
         dialogueIsOpen = viewModel.state.value.openAddPlanDialogue,
         toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
-        insertName = { planName -> viewModel.onEvent(PlansEvent.AddPlan(WorkoutPlan(name = planName))) }
+        insertName = {
+            planName -> viewModel.onEvent(
+            PlansEvent.AddPlan(
+                WorkoutPlan(
+                    name = planName,
+                    creationDate = Calendar.getInstance().timeInMillis
+                ))) }
     )
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }

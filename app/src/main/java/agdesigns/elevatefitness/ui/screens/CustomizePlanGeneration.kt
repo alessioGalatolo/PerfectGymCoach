@@ -20,6 +20,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
@@ -122,21 +125,40 @@ fun LazyListScope.goalChoice(completeGoal: (String) -> Unit){
     items(goalImages.size) { index ->
         val goal = goalImages.keys.elementAt(index)
         val image = goalImages.values.elementAt(index)
-        ElevatedCard(Modifier.clickable {
-            completeGoal(goal)
-        }) {
-            AsyncImage(
-                model = image,
-                contentDescription = "$goal image",
-                contentScale = ContentScale.Inside,
-                modifier = Modifier
-                    .fillMaxWidth()
-            )
-            Text(
-                text = goal,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(16.dp)
-            )
+        if (goal == WorkoutPlanGoal.WEIGHT_LOSS.goal || goal == WorkoutPlanGoal.ENDURANCE.goal) {
+            Card {
+                AsyncImage(
+                    model = image,
+                    contentDescription = "$goal image",
+                    contentScale = ContentScale.Inside,
+                    colorFilter = ColorFilter.tint(Color.Black, BlendMode.Color),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                )
+                Text(
+                    text = "$goal. Not currently available.",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+        else {
+            ElevatedCard(Modifier.clickable {
+                completeGoal(goal)
+            }) {
+                AsyncImage(
+                    model = image,
+                    contentDescription = "$goal image",
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                )
+                Text(
+                    text = goal,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         }
     }
 }
