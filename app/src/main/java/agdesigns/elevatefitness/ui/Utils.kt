@@ -22,7 +22,7 @@ fun isMajorMover(muscle: Exercise.Muscle): Boolean {
         Exercise.Muscle.CHEST,
         Exercise.Muscle.BACK,
         Exercise.Muscle.SHOULDERS,
-        Exercise.Muscle.LEGS -> true
+        Exercise.Muscle.QUADRICEPS -> true
         else -> false
     }
 }
@@ -43,7 +43,7 @@ fun exerciseIsCompound(exercise: Exercise): Boolean {
         return false
     if (exercise.secondaryMuscles.size > 1)
         return true
-    if (exercise.name.lowercase().contains("squat")) // FIXME: not ideal
+    if (exercise.name.lowercase().contains("squat")) // FIXME: not ideal But can now be fixed
         return true
     return false
 }

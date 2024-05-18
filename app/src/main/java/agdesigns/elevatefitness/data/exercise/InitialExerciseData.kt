@@ -138,7 +138,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Deadlift",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
         image = R.drawable.deadlift,
         description = "To perform a deadlift, stand with your feet hip-width apart, toes pointing forward, and the barbell over the center of your feet. Bend at your hips and knees to reach down and grasp the bar with a grip slightly wider than shoulder width, alternating one hand facing forwards and the other facing back for stability. Keep your back flat and your chest up as you lift the bar by extending your hips and knees. The bar should stay close to your legs, almost touching. Drive through your heels, not the balls of your feet. As the bar passes your knees, push your hips forward to stand up straight. Lower the bar by bending at the hips and controlling the descent without rounding your back."
     ),
@@ -146,7 +146,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Sumo deadlift",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
         image = R.drawable.sumo_deadlift,
         description = "To perform a sumo deadlift, position your feet wider than shoulder-width apart with your toes pointing outwards, much like a sumo wrestler’s stance. The bar should be close to your shins. Bend at the hips to reach down and grip the bar between your legs using an overhand grip or a mixed grip (one hand over, one hand under). Keep your back straight and chest up to ensure a strong, neutral spine position. Drive through your heels, pulling the bar up while straightening your hips and knees simultaneously. The bar should travel straight up, close to your body. Once the bar passes your knees, thrust your hips forward to lock out at the top. Lower the bar by bending at the hips first, then the knees, while maintaining a flat back throughout the movement."
     ),
@@ -170,7 +170,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Barbell t-bar row",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
         image = R.drawable.generic_barbell,
         description = "To perform a barbell T-bar row, start by standing over the bar with feet shoulder-width apart. Grip the handle attached to one end of the barbell, and while keeping your knees slightly bent, lean forward from your hips until your torso is almost parallel to the floor. Maintain a straight back, pull the barbell towards your chest just below your ribs, engaging the middle back muscles. Lower the barbell back to the starting position in a controlled manner to complete one rep."
     ),
@@ -314,7 +314,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Dumbbell deadlift",
         equipment = Exercise.Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
         description = "To perform a dumbbell deadlift, start by standing with your feet hip-width apart, holding a dumbbell in each hand in front of your thighs. Your palms should be facing your body. Push your hips back and slightly bend your knees, lowering the dumbbells along the front of your legs until they reach about mid-shin level. Keep your back flat and look forward to keep your neck in a neutral position. Drive through your heels to return to a standing position, pushing your hips forward and bringing the dumbbells back up to the starting position. Repeat the movement for the desired number of repetitions.",
         image = R.drawable.generic_dumbbell
     ),
@@ -674,13 +674,21 @@ val INITIAL_EXERCISE_DATA = listOf(
     ),
 
     /*
-        Legs
+        QUADS, GLUTES, HAMSTRINGS (was LEGS) TODO: split by muscle
      */
     // Barbell
     Exercise(
+        name = "Barbell hip thrust",
+        equipment = Exercise.Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.GLUTES,
+        secondaryMuscles = listOf(Exercise.Muscle.HAMSTRINGS, Exercise.Muscle.ABS),
+        image = R.drawable.generic_barbell,
+        description = "Sit on the ground with your upper back against a bench, feet flat on the floor. Roll a barbell over your hips. Drive through your heels to lift your hips, squeezing your glutes at the top, then lower back down.",
+    ),
+    Exercise(
         name = "Barbell clean",
         equipment = Exercise.Equipment.BARBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
         secondaryMuscles = listOf(Exercise.Muscle.ABS, Exercise.Muscle.BACK),
         image = R.drawable.barbell_clean,
         description = "Begin with a barbell on the floor close to your shins. Bend at your hips and knees to grip the barbell with an overhand grip. Lift the bar by extending your knees and hips. As the bar rises close to your thighs, pull yourself under the bar, catching it at your shoulders while squatting, then stand up.",
@@ -689,8 +697,8 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Squat",
         equipment = Exercise.Equipment.BARBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.HAMSTRINGS),
         image = R.drawable.barbell_squat,
         description = "Stand with feet shoulder-width apart, toes slightly pointed out. Bend your hips and knees to lower your body as if sitting back into a chair, keeping your chest up and back straight, then return to standing.",
         variations = listOf(
@@ -701,35 +709,45 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Barbell lunge",
         equipment = Exercise.Equipment.BARBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = listOf(Exercise.Muscle.ABS, Exercise.Muscle.CALVES),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.ABS, Exercise.Muscle.CALVES),
         description = "Stand with a barbell on your upper back. Step forward with one leg, lowering your hips to drop your back knee toward the floor. Keep your front knee over the ankle and back straight. Push back to the starting position and repeat on the other side.",
         image = R.drawable.barbell_lunge
     ),
     Exercise(
         name = "Romanian deadlift",
         equipment = Exercise.Equipment.BARBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.HAMSTRINGS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES),
         image = R.drawable.romanian_deadlift,
         description = "Hold a barbell at hip level with a grip slightly wider than shoulder width. With knees slightly bent, push your hips back and lower the barbell along your thighs, keeping it close to your body until you feel a stretch in your hamstrings, then return to the start.",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED
     ),
+
     // Cables
     Exercise(
         name = "Cable leg curl",
         equipment = Exercise.Equipment.CABLES,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.HAMSTRINGS,
         secondaryMuscles = emptyList(),
         description = "Attach an ankle cuff to a low cable pulley. Face the machine, attach the cuff to your ankle, and curl your leg towards your buttocks against the resistance, then slowly return to the starting position.",
         image = R.drawable.generic_cable
     ),
+    Exercise(
+        name = "Cable pull-through",
+        equipment = Exercise.Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.GLUTES,
+        secondaryMuscles = listOf(Exercise.Muscle.HAMSTRINGS, Exercise.Muscle.BACK),
+        description = "Stand facing away from a low cable pulley with a rope attachment between your legs. Hinge at your hips to pull the rope through, squeezing your glutes at the top, then return to the starting position.",
+        image = R.drawable.cable_row
+    ),
+
     // Bodyweight
     Exercise(
         name = "Bodyweight squat",
         equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.HAMSTRINGS),
         image = R.drawable.squat,
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         description = "Stand with feet shoulder-width apart. Bend your knees and hips to lower your body as though sitting in a chair, then push back up to standing.",
@@ -740,7 +758,7 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Bodyweight step ups",
         equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         description = "Stand in front of a bench or step. Step up with one foot, press through your heel to lift your body onto the step, then step down and repeat with the other leg.",
@@ -749,16 +767,17 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Bodyweight lunge",
         equipment = Exercise.Equipment.BODY_WEIGHT,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES),
         description = "Stand with feet hip-width apart. Step forward with one leg and lower your hips to drop your back knee toward the ground, keeping the front knee over the ankle. Push back to the starting position and switch legs.",
         image = R.drawable.lunge
     ),
+
     // Machine
     Exercise(
         name = "Machine leg curl",
         equipment = Exercise.Equipment.MACHINE,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.HAMSTRINGS,
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         description = "Lie face down on the leg curl machine with your legs under the pad. Flex your knees to pull the pad towards your buttocks, then slowly return to the starting position.",
@@ -767,7 +786,7 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Machine leg extension",
         equipment = Exercise.Equipment.MACHINE,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         description = "Sit on the machine with your legs under the pad and feet pointed forward. Extend your legs to lift the weight, then lower back to the starting position.",
@@ -776,15 +795,15 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Machine hack squat",
         equipment = Exercise.Equipment.MACHINE,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.HAMSTRINGS),
         description = "Position yourself in a hack squat machine with your back against the pad and shoulders under the shoulder pads. Bend your knees and lower down into a squat, then press back up to the starting position.",
         image = R.drawable.generic_machine
     ),
     Exercise(
         name = "Leg press",
         equipment = Exercise.Equipment.MACHINE,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         description = "Sit in a leg press machine with your back against the pad and feet on the platform. Bend your knees to lower the platform toward you, then press the platform away until your legs are extended.",
@@ -793,7 +812,7 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Abduction machine",
         equipment = Exercise.Equipment.MACHINE,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = emptyList(),
         description = "Sit in the machine with your back against the pad and legs inside the leg pads. Push legs outwards against the resistance, then slowly bring them back together.",
         image = R.drawable.generic_machine
@@ -801,9 +820,18 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Adduction machine",
         equipment = Exercise.Equipment.MACHINE,
-        primaryMuscle = Exercise.Muscle.LEGS,
+        primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = emptyList(),
         description = "Sit in the machine with your back against the pad and legs outside the leg pads. Squeeze legs inward against the resistance, then slowly release back to the starting position.",
+        image = R.drawable.generic_machine
+    ),
+    Exercise(
+        name = "Machine glute kickback",
+        equipment = Exercise.Equipment.MACHINE,
+        primaryMuscle = Exercise.Muscle.GLUTES,
+        secondaryMuscles = listOf(Exercise.Muscle.HAMSTRINGS),
+        difficulty = Exercise.ExerciseDifficulty.BEGINNER,
+        description = "Position yourself in the machine with your chest against the pad and one foot on the platform. Push the platform back by extending your hip, then return to the starting position.",
         image = R.drawable.generic_machine
     ),
 
@@ -811,24 +839,24 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Bulgarian split squat",
         equipment = Exercise.Equipment.DUMBBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES),
         description = "Stand with one foot elevated behind you on a bench. With your front foot forward, lower your body by bending your front knee, keeping your torso upright. Drive through the front heel to return to the starting position.",
         image = R.drawable.generic_dumbbell
     ),
     Exercise(
         name = "Dumbbell lunges",
         equipment = Exercise.Equipment.DUMBBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES),
         description = "Hold a dumbbell in each hand with arms at your sides. Step forward with one leg and lower your body until the front knee is bent at 90 degrees. Push back to the starting position and repeat with the other leg.",
         image = R.drawable.dumbbell_lunge
     ),
     Exercise(
         name = "Goblet squat",
         equipment = Exercise.Equipment.DUMBBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.QUADRICEPS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.HAMSTRINGS),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         description = "Hold a dumbbell close to your chest with both hands. Perform a squat by lowering your body, keeping your chest up and back straight. Push through your heels to return to the starting position.",
         image = R.drawable.generic_dumbbell
@@ -836,11 +864,20 @@ val INITIAL_EXERCISE_DATA = listOf(
     Exercise(
         name = "Dumbbell step ups",
         equipment = Exercise.Equipment.DUMBBELL,
-        primaryMuscle = Exercise.Muscle.LEGS,
-        secondaryMuscles = emptyList(),
+        primaryMuscle = Exercise.Muscle.GLUTES,
+        secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS),
         description = "Holding a dumbbell in each hand, step onto a bench or platform with one foot, pushing through the heel to bring your other foot up. Step down with the leading foot and repeat.",
         image = R.drawable.generic_dumbbell
     ),
+    Exercise(
+        name = "Dumbbell Romanian deadlift",
+        equipment = Exercise.Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.HAMSTRINGS,
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.BACK),
+        image = R.drawable.generic_dumbbell,
+        description = "Stand with feet hip-width apart, holding a dumbbell in each hand. With a slight bend in your knees, hinge at your hips to lower the dumbbells along your legs until you feel a stretch in your hamstrings. Return to standing by driving your hips forward.",
+    ),
+
 
     /*
         Calves
@@ -917,7 +954,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         name = "Clean and press",
         equipment = Exercise.Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.SHOULDERS,
-        secondaryMuscles = listOf(Exercise.Muscle.BACK, Exercise.Muscle.TRICEPS, Exercise.Muscle.CHEST, Exercise.Muscle.LEGS, Exercise.Muscle.ABS),
+        secondaryMuscles = listOf(Exercise.Muscle.BACK, Exercise.Muscle.TRICEPS, Exercise.Muscle.CHEST, Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
         image = R.drawable.clean_press,
         description = "Start with a barbell on the ground. Perform a clean by lifting the bar to your shoulders in one fluid motion. Then, press the bar overhead by extending your arms fully before lowering it back down.",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED

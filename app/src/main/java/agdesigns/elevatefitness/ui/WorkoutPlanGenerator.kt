@@ -95,13 +95,13 @@ suspend fun generatePlan(
             listOf(
                 listOf(Exercise.Muscle.CHEST, Exercise.Muscle.SHOULDERS, Exercise.Muscle.TRICEPS),
                 listOf(Exercise.Muscle.BACK, Exercise.Muscle.BICEPS),
-                listOf(Exercise.Muscle.LEGS, Exercise.Muscle.CALVES, Exercise.Muscle.ABS)
+                listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.HAMSTRINGS, Exercise.Muscle.GLUTES, Exercise.Muscle.CALVES, Exercise.Muscle.ABS)
             )
         )
         WorkoutPlanSplit.UPPER_LOWER -> muscleDays.addAll(
             listOf(
                 listOf(Exercise.Muscle.CHEST, Exercise.Muscle.BACK, Exercise.Muscle.SHOULDERS, Exercise.Muscle.TRICEPS, Exercise.Muscle.BICEPS),
-                listOf(Exercise.Muscle.LEGS, Exercise.Muscle.CALVES, Exercise.Muscle.ABS)
+                listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.HAMSTRINGS, Exercise.Muscle.GLUTES, Exercise.Muscle.CALVES, Exercise.Muscle.ABS)
             )
         )
         WorkoutPlanSplit.GAINZ -> muscleDays.addAll(

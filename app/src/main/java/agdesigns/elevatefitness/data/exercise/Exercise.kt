@@ -28,7 +28,9 @@ data class Exercise(
         BICEPS("Biceps", R.drawable.biceps),
         CALVES("Calves", R.drawable.calves),
         CHEST("Chest", R.drawable.chest),
-        LEGS("Legs", R.drawable.legs),
+        GLUTES("Glutes", R.drawable.glutes), // FIXME: different image
+        HAMSTRINGS("Hamstrings", R.drawable.hamstrings),
+        QUADRICEPS("Quadriceps", R.drawable.quadriceps),
         SHOULDERS("Shoulders", R.drawable.shoulders),
         TRICEPS("Triceps", R.drawable.triceps)
     }
