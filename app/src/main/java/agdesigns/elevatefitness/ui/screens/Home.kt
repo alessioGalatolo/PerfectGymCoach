@@ -43,8 +43,7 @@ import kotlinx.coroutines.delay
 
 @Destination<BottomNavigationGraph>(start = true)
 @Composable
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class
-)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 fun Home(
     navigator: DestinationsNavigator,
     viewModel: HomeViewModel = hiltViewModel()
@@ -100,6 +99,7 @@ fun Home(
                     stringResource(id = R.string.empty_home),
                     modifier = Modifier.padding(16.dp)
                 )
+                GeneratePlanButton(navigator)
             }
         }
     } else if (viewModel.state.value.programs?.isEmpty() == true) {
@@ -201,10 +201,15 @@ fun Home(
                         } ?: emptyList()
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().padding(dimensionResource(R.dimen.card_inner_padding))
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(dimensionResource(R.dimen.card_inner_padding))
                     ) {
                         val pagerState = rememberPagerState(pageCount = { exs.size })
-                        Column(Modifier.weight(1.6f).fillMaxHeight()) {
+                        Column(
+                            Modifier
+                                .weight(1.6f)
+                                .fillMaxHeight()) {
                             Text(
                                 text = it.name,
                                 style = MaterialTheme.typography.titleLarge
@@ -214,13 +219,16 @@ fun Home(
                             }
                         }
                         Column (verticalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                         ){
                             if (exs.isNotEmpty()) {
                                 HorizontalPager(
                                     state = pagerState,
                                     userScrollEnabled = false,
-                                    modifier = Modifier.width(150.dp)
+                                    modifier = Modifier
+                                        .width(150.dp)
                                         .height(150.dp / 3 * 2)
                                         .clip(AbsoluteRoundedCornerShape(12.dp))
                                         .align(Alignment.End)
