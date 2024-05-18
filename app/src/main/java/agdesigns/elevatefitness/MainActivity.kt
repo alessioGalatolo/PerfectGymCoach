@@ -17,6 +17,9 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.Theme
 import agdesigns.elevatefitness.ui.*
 import agdesigns.elevatefitness.ui.screens.*
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.graphics.Color
 import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
@@ -47,6 +50,16 @@ class MainActivity : ComponentActivity() {
                     Theme.DARK -> true
                 }
             }}
+            DisposableEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme }
+                )
+                onDispose {}
+            }
+
             // navigation controller for everything (main screen)
             val engine = rememberNavHostEngine()
             val navController = engine.rememberNavController()

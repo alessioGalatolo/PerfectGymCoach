@@ -31,7 +31,6 @@ import agdesigns.elevatefitness.viewmodels.HomeViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
@@ -43,17 +42,13 @@ import kotlinx.coroutines.delay
 
 @Destination<BottomNavigationGraph>(start = true)
 @Composable
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 fun Home(
     navigator: DestinationsNavigator,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val haptic = LocalHapticFeedback.current
-    val sysUiController = rememberSystemUiController()
-    val darkTheme = isSystemInDarkTheme()
-    LaunchedEffect(darkTheme) {
-        sysUiController.statusBarDarkContentEnabled = !darkTheme
-    }
+
     var resumeWorkoutDialogOpen by remember {
         mutableStateOf(false)
     }

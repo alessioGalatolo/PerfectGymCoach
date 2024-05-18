@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.components
 
+import android.app.Activity
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -14,10 +15,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.zIndex
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import androidx.core.view.WindowCompat
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +38,7 @@ fun FullScreenImageCard(
     floatingActionButton: @Composable () -> Unit,
     bottomBar: @Composable (PaddingValues, @Composable (@Composable () -> Unit) -> Unit) -> Unit
 ) {
-    val deviceCornerRadius = 12.dp // TODO: should be same as device (waiting compose API)
+    val deviceCornerRadius = 12.dp
 
     val localDensity = LocalDensity.current
     val statusBarsHeight = WindowInsets.Companion.statusBars.asPaddingValues().calculateTopPadding()
@@ -57,13 +61,17 @@ fun FullScreenImageCard(
     ) / s.heightOffsetLimit) }}  // FIXME: transition is late
 
     // make status bar transparent to see image behind
-    val sysUiController = rememberSystemUiController()
+    // This is an approximation of what happened in accompanist systemUiController
+    // but it is not deprecated :(
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window ?: (LocalContext.current as? Activity)?.window
+    val view = LocalView.current
     val transitionStarted = transition > 0.0
     LaunchedEffect(transitionStarted, brightImage, darkTheme) {
-        sysUiController.setStatusBarColor(
-            color = Color.Transparent,
-            darkIcons = (brightImage && !transitionStarted) || (transitionStarted && !darkTheme)
-        )
+        window?.let {
+            WindowCompat.getInsetsController(it, view)
+        }?.let {
+            it.isAppearanceLightStatusBars = (brightImage && !transitionStarted) || (transitionStarted && !darkTheme)
+        }
     }
 
     Box (contentAlignment = TopCenter,
