@@ -56,6 +56,7 @@ fun ExercisePage(
     workoutId: Long,
     navigator: DestinationsNavigator,
     setsDone: State<Int>,
+    fabHeight: Dp,
     title: @Composable () -> Unit,
     exerciseDescription: String,
     addSet: () -> Unit,
@@ -128,7 +129,7 @@ fun ExercisePage(
         ) { page ->
             if (page == workoutExercises.size) {
                 // page for finishing the workout
-                WorkoutFinishPage(workoutTime!!, workoutIntensity, workoutId, navigator)
+                WorkoutFinishPage(workoutTime!!, workoutIntensity, workoutId, fabHeight, navigator)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
                     if (workoutExercises[page].note.isNotBlank()) {
@@ -393,6 +394,9 @@ fun ExercisePage(
                         }
                         Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
                     }
+                    if (fabHeight > 0.dp) {
+                        Spacer(Modifier.height(fabHeight))
+                    }
                 }
             }
         }
@@ -405,6 +409,7 @@ fun WorkoutFinishPage(
     workoutTime: Long,
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     workoutId: Long,
+    fabHeight: Dp,
     navigator: DestinationsNavigator
 ) {
     Column(
@@ -483,7 +488,9 @@ fun WorkoutFinishPage(
             Text("Add exercise to workout")
         }
         Spacer(Modifier.height(160.dp))
-
+        if (fabHeight > 0.dp) {
+            Spacer(Modifier.height(fabHeight))
+        }
     }
 }
 

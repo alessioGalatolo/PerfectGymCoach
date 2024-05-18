@@ -39,6 +39,7 @@ class Repository @Inject constructor(
     private val userName = stringPreferencesKey("User name")
     private val userAgeYear = intPreferencesKey("User age year")
     private val imperialSystem = booleanPreferencesKey("Imperial system user")
+    private val dontWantNotificationAccess = booleanPreferencesKey("Don't want notification access")
     private val incrementBodyweight = floatPreferencesKey("Increment body weight")
     private val incrementBarbell = floatPreferencesKey("Increment barbell")
     private val incrementDumbbell = floatPreferencesKey("Increment dumbbell")
@@ -235,6 +236,12 @@ class Repository @Inject constructor(
     fun getUserName(): Flow<String> = dataStore.data.map{ it[userName] ?: "what's your name?" }
 
     suspend fun setUserName(newName: String) = dataStore.edit { it[userName] = newName }
+
+
+    // TODO: move default value outside
+    fun getDontWantNotificationAccess(): Flow<Boolean> = dataStore.data.map{ it[dontWantNotificationAccess] ?: false }
+
+    suspend fun setDontWantNotificationAccess(newValue: Boolean) = dataStore.edit { it[dontWantNotificationAccess] = newValue }
 
 
     // TODO: move default value outside

@@ -43,12 +43,30 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.Theme
+import agdesigns.elevatefitness.service.NotificationListener
 import agdesigns.elevatefitness.ui.WorkoutOnlyGraph
+import agdesigns.elevatefitness.ui.hasNotificationAccess
+import android.content.ComponentName
+import android.content.Intent
+import android.graphics.Bitmap
+import android.media.MediaMetadata
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
+import android.media.session.PlaybackState.STATE_PLAYING
+import android.os.Build
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.core.content.ContextCompat.getSystemService
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Destination<WorkoutOnlyGraph>(start = true)
@@ -71,7 +89,74 @@ fun Workout(
     val scope = rememberCoroutineScope()
 
     val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
+    val context = LocalContext.current
+    var alreadyRequestedPermission by rememberSaveable { mutableStateOf(false) }
 
+    val shouldOpenRequest by remember { derivedStateOf {
+        !viewModel.state.value.cantRequestNotificationAccess
+        && !hasNotificationAccess(context)
+        && !viewModel.state.value.requestNotificationAccessDialogOpen
+        && !alreadyRequestedPermission
+    } }
+    // FIXME: for some reason this only becomes true when a workout has started??
+    // I don't know why but it is an acceptable behaviour for now
+    LaunchedEffect(shouldOpenRequest) {
+        if (
+            shouldOpenRequest
+        ) {
+            viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog)
+            alreadyRequestedPermission = true
+        }
+    }
+    var retrieveMediaJob: Job? by remember {
+        mutableStateOf(null)
+    }
+    var session: MediaController? by remember { mutableStateOf(null) }
+    var mediaTitle: String? by remember { mutableStateOf(null) }
+    var mediaAuthor: String by remember { mutableStateOf("Author not available") }
+    var isPlaying: Boolean by remember { mutableStateOf(false) }
+    var artworkBitmap: Bitmap? by remember { mutableStateOf(null) }
+    DisposableEffect(context) {
+        // FIXME: this looks like it belongs in a viewModel but the problem is the context
+        retrieveMediaJob = scope.launch {
+            while (true) {
+                if (hasNotificationAccess(context) && session == null) {
+                    val m = getSystemService(context, MediaSessionManager::class.java)!!
+                    val component = ComponentName(context, NotificationListener::class.java)
+                    session = m.getActiveSessions(component).filter {
+                        it.metadata?.description?.title != null
+                    }.getOrNull(0)
+                    if (session != null) {
+                        val callback = object : MediaController.Callback() {
+                            override fun onPlaybackStateChanged(state: PlaybackState?) {
+                                isPlaying = state?.state == STATE_PLAYING
+                            }
+
+                            override fun onMetadataChanged(metadata: MediaMetadata?) {
+                                mediaTitle = metadata?.description?.title?.toString()
+                                mediaAuthor = metadata?.description?.subtitle?.toString() ?: "Author not available"
+                                val newBitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                                    ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+                                if (newBitmap != null && !newBitmap.sameAs(artworkBitmap)) {
+                                    artworkBitmap = newBitmap
+                                }
+                            }
+                        }
+                        session!!.registerCallback(callback)
+                        mediaTitle = session!!.metadata!!.description.title.toString()
+                        mediaAuthor = session!!.metadata!!.description.subtitle.toString()
+                        artworkBitmap = session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                            ?: session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ART)
+                        isPlaying = session!!.playbackState?.state == STATE_PLAYING
+                    }
+                }
+                delay(100)
+            }
+        }
+        onDispose {
+            retrieveMediaJob?.cancel()
+        }
+    }
     LaunchedEffect(startWorkout.value) {
         if (startWorkout.value) {
             viewModel.onEvent(WorkoutEvent.StartWorkout)
@@ -87,6 +172,18 @@ fun Workout(
             )
         }
     }
+
+    RequestNotificationAccessDialog(
+        dialogIsOpen = viewModel.state.value.requestNotificationAccessDialogOpen,
+        toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog) },
+        openPermissionRequest = {
+            val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+            context.startActivity(intent)
+        },
+        dontAskAgain = {
+            viewModel.onEvent(WorkoutEvent.DontRequestNotificationAgain)
+        }
+    )
     CancelWorkoutDialog(
         dialogueIsOpen = viewModel.state.value.cancelWorkoutDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog) },
@@ -100,7 +197,12 @@ fun Workout(
         updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, viewModel.state.value.imperialSystem))) }
     )
 
-    val pagerState = rememberPagerState(pageCount = { if (viewModel.state.value.workoutTime != null) viewModel.state.value.workoutExercises.size+1 else viewModel.state.value.workoutExercises.size })
+    val pagerState = rememberPagerState(pageCount = {
+        if (viewModel.state.value.workoutTime != null)
+            viewModel.state.value.workoutExercises.size+1
+        else
+            viewModel.state.value.workoutExercises.size
+    })
     val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
             if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {
@@ -220,6 +322,8 @@ fun Workout(
             viewModel.state.value.workoutExercises.size
     }}
 
+    var fabHeight by remember { mutableStateOf(0.dp) }
+
     if (viewModel.state.value.workoutExercises.isNotEmpty()) {
         BackHandler(onBack = onClose)
         val currentImageId by remember { derivedStateOf {
@@ -227,7 +331,6 @@ fun Workout(
                 R.drawable.finish_workout
             else currentExercise!!.image
         }}
-        val context = LocalContext.current
         val brightImage = remember { mutableStateOf(false) }
         val imageWidth = LocalConfiguration.current.screenWidthDp.dp
         val imageHeight = imageWidth/3*2
@@ -326,6 +429,7 @@ fun Workout(
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
                     exerciseDescription = currentExercise?.description ?: "Description not available",
+                    fabHeight = fabHeight,
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounter = restCounter,
@@ -352,6 +456,101 @@ fun Workout(
                         }
                     }
                 )
+            },
+            floatingActionButton = {
+                if (mediaTitle != null) {
+                    fabHeight = 8.dp + 8.dp + 48.dp + 8.dp + 16.dp
+                    val darkColors = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicDarkColorScheme(LocalContext.current) else darkColorScheme()
+                    SwipeToDismissBox(
+                        state = rememberSwipeToDismissBoxState(),
+                        backgroundContent = {}
+                    ) {
+                        AnimatedVisibility(
+                            visible = !pagerState.isScrollInProgress,
+                            enter = fadeIn(),
+                            exit = fadeOut()
+                        ) {
+                            ElevatedCard(
+                                colors = CardDefaults.elevatedCardColors(containerColor = darkColors.surface),
+                                modifier = Modifier.padding(start = 32.dp).clickable {  // weird padding as it pretends to be a fab
+                                    if (session?.packageName != null) {
+                                        val intent = context.packageManager.getLaunchIntentForPackage(session!!.packageName!!)
+                                        context.startActivity(intent)
+                                    }
+                                }
+                            ) {
+                                Spacer(Modifier.height(8.dp))
+                                Row(
+                                    verticalAlignment = CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp)
+                                ) {
+                                    if (artworkBitmap != null) {
+                                        AsyncImage(
+                                            artworkBitmap, "Song artwork",
+                                            Modifier
+                                                .size(48.dp)
+                                                .clip(
+                                                    RoundedCornerShape(8.dp)
+                                                )
+                                        )
+                                    } else {
+                                        Icon(
+                                            Icons.Default.MusicNote,
+                                            "No song artwork",
+                                            Modifier.size(48.dp)
+                                        )
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            mediaTitle!!,
+                                            maxLines = 1,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            mediaAuthor,
+                                            maxLines = 1,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = darkColors.secondary
+                                        )
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    IconButton(
+                                        colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                                        onClick = {
+                                            if (session != null) {
+                                                if (session!!.playbackState?.state == STATE_PLAYING)
+                                                    session!!.transportControls.pause()
+                                                else
+                                                    session!!.transportControls.play()
+                                            }
+                                        }
+                                    ) {
+                                        if (isPlaying) {
+                                            Icon(Icons.Default.Pause, "Pause")
+                                        } else {
+                                            Icon(Icons.Default.PlayArrow, "Play")
+                                        }
+                                    }
+                                    IconButton(
+                                        colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                                        onClick = {
+                                            if (session != null) {
+                                                session!!.transportControls.skipToNext()
+                                            }
+                                        }
+                                    ) {
+                                        Icon(Icons.Default.SkipNext, "Next track")
+                                    }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
+                        }
+                    }
+                }
             }
         ) { padding, bottomBarSurface ->
             val snackbarState = remember { SnackbarHostState() }

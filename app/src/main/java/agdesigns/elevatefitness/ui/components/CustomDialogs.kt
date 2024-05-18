@@ -324,3 +324,45 @@ fun InputOtherEquipmentDialog(
         )
     }
 }
+
+@Composable
+fun RequestNotificationAccessDialog(
+    dialogIsOpen: Boolean,
+    toggleDialog: () -> Unit,
+    openPermissionRequest: () -> Unit,
+    dontAskAgain: () -> Unit
+) {
+    if (dialogIsOpen) {
+        AlertDialog(
+            onDismissRequest = {
+                toggleDialog()
+            },
+            title = {
+                Text(text = "Would you like to control your music during your workout?")
+            },
+            text = {
+                Text(text = "If you want, you can enable this app to show and control your music while your workout is running. However, it needs access to your notification to do so. If you want to allow that, press 'Let's do it!' and look for this app in the list and enable the notification access.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        openPermissionRequest()
+                        toggleDialog()
+                    }
+                ) {
+                    Text("Let's do it!")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        dontAskAgain()
+                        toggleDialog()
+                    }
+                ) {
+                    Text("Don't ask again")
+                }
+            }
+        )
+    }
+}

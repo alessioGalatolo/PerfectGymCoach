@@ -14,10 +14,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ElevateFitness"
         tools:targetApi="33">
+        <service android:name=".service.NotificationListener"
+            android:exported="false"
+            android:label="Enable media controls"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.notification.default_filter_types"
+                android:value="ongoing|silent">
+            </meta-data>
+            <meta-data
+                android:name="android.service.notification.disabled_filter_types"
+                android:value="conversations|alerting">
+            </meta-data>
+        </service>
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.ElevateFitness">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

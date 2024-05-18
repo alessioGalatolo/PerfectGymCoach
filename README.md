@@ -45,6 +45,11 @@ Despite my disclaimer below, this repo has seen some interest from the open sour
    * [Dynamic theming](app/src/main/java/agdesigns/elevatefitness/ui/theme/Theme.kt)
    * [FullScreenImageCard](app/src/main/java/agdesigns/elevatefitness/ui/components/FullScreenImageCard.kt) should be the implementation of a Card with image when it goes full screen (see the result of [this animation](https://firebasestorage.googleapis.com/v0/b/design-spec/o/projects%2Fm3%2Fimages%2Fl0d2qjpe-cards-expand_3P_2.mp4?alt=media&token=f6252b7c-cb3d-4c91-9701-13b9bf9f482d)). At the time there was nothing similar in compose, now I don't know :)
    * [Search Bar](app/src/main/java/agdesigns/elevatefitness/ui/screens/ViewExercises.kt): this was actually implemented before material 3 search bar became available in compose and does not fully respect the guidelines because I think it's prettier this way :)
+1. Control media playing on device
+   * [Manifest permission](app/src/main/AndroidManifest.xml): get BIND_NOTIFICATION_LISTENER_SERVICE permission (to read media notification)
+   * [NotificationListener](app/src/main/java/agdesigns/elevatefitness/service/NotificationListener.kt)
+   * [Permission request dialog](app/src/main/java/agdesigns/elevatefitness/ui/components/CustomDialogs.kt) see RequestNotificationAccessDialog
+   * [Use retrieved media](app/src/main/java/agdesigns/elevatefitness/ui/screens/Workout.kt) see retrieveMediaJob and what follows SwipeToDismissBox.
 
 ## Disclaimer
 This app is pretty much a mess, it is open source as I've had this habit for quite some time now but it probably shouldn't /(ㄒoㄒ)/~~

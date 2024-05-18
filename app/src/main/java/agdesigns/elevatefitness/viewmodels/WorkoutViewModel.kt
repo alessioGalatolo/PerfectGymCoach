@@ -14,6 +14,7 @@ import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
+import agdesigns.elevatefitness.ui.hasNotificationAccess
 import agdesigns.elevatefitness.ui.maybeLbToKg
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -29,6 +30,8 @@ import kotlin.math.max
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
     val otherEquipmentDialogOpen: Boolean = false,
+    val requestNotificationAccessDialogOpen: Boolean = false,
+    val cantRequestNotificationAccess: Boolean = true,
     val programId: Long = 0L,
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecordAndEquipment>> = emptyMap(), // old records
@@ -69,6 +72,10 @@ sealed class WorkoutEvent{
     ): WorkoutEvent()
 
     data object ToggleCancelWorkoutDialog : WorkoutEvent()
+
+    data object ToggleRequestNotificationAccessDialog : WorkoutEvent()
+
+    data object DontRequestNotificationAgain : WorkoutEvent()
 
     data class InitWorkout(val programId: Long): WorkoutEvent()
 
@@ -144,6 +151,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(incrementCable = it)
             }
         }
+        viewModelScope.launch {
+            repository.getDontWantNotificationAccess().collect {
+                _state.value = state.value.copy(cantRequestNotificationAccess = it)
+            }
+        }
     }
 
     fun onEvent(event: WorkoutEvent): Boolean{
@@ -152,6 +164,16 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(
                     cancelWorkoutDialogOpen = !state.value.cancelWorkoutDialogOpen
                 )
+            }
+            is WorkoutEvent.ToggleRequestNotificationAccessDialog -> {
+                _state.value = state.value.copy(
+                    requestNotificationAccessDialogOpen = !state.value.requestNotificationAccessDialogOpen
+                )
+            }
+            is WorkoutEvent.DontRequestNotificationAgain -> {
+                viewModelScope.launch {
+                    repository.setDontWantNotificationAccess(true)
+                }
             }
             is WorkoutEvent.InitWorkout -> {
                 if (retrieveExercises == null) { // only retrieve once

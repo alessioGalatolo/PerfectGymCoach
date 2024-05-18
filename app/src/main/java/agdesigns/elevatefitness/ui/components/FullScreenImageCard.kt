@@ -31,6 +31,7 @@ fun FullScreenImageCard(
     brightImage: Boolean,
     darkTheme: Boolean,
     content: @Composable () -> Unit,
+    floatingActionButton: @Composable () -> Unit,
     bottomBar: @Composable (PaddingValues, @Composable (@Composable () -> Unit) -> Unit) -> Unit
 ) {
     val deviceCornerRadius = 12.dp // TODO: should be same as device (waiting compose API)
@@ -137,7 +138,9 @@ fun FullScreenImageCard(
                     // bottom bar
 
                 }
-            }, bottomBar = { bottomBar(
+            },
+            floatingActionButton = { floatingActionButton() },
+            bottomBar = { bottomBar(
                 WindowInsets.navigationBars.asPaddingValues()
             ) { bottomBarContent ->
                 Surface(

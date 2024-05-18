@@ -2,10 +2,20 @@ package agdesigns.elevatefitness.ui
 
 import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.data.exercise.ExerciseRecord
+import android.content.Context
+import android.provider.Settings
 import kotlin.math.round
 
 
 const val decimalPlaces = 100  // 2 decimal places
+
+fun hasNotificationAccess(context: Context): Boolean {
+    val contentResolver = context.contentResolver
+    val enabledNotificationListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+    val packageName = context.packageName
+
+    return enabledNotificationListeners.isNotEmpty() && enabledNotificationListeners.contains(packageName)
+}
 
 fun isMajorMover(muscle: Exercise.Muscle): Boolean {
     return when (muscle) {

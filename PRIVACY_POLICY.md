@@ -10,7 +10,7 @@ I hereby state, to the best of my knowledge and belief, that I have not programm
 
 ### Explanation of permissions requested in the app
 
-This app doesn't require any special permission.
+`BIND_NOTIFICATION_LISTENER_SERVICE` is used to access music playing on device (if any). So that it can also be controlled from within the app. This permission still requires manual user confirmation.
 
 ### Contact information
 If you have any questions regarding privacy while using the Application, or have questions about our practices, please contact: [galatoloalessio@gmail.com](mailto:galatoloalessio@gmail.com) 
