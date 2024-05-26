@@ -102,7 +102,7 @@ class Repository @Inject constructor(
     fun getProgramExercise(programExerciseId: Long) =
         db.programExerciseDao.getProgramExercise(programExerciseId)
 
-    suspend fun addProgramExercise(exercise: ProgramExercise) =
+    suspend fun addProgramExercise(exercise: ProgramExercise): Long =
         db.programExerciseDao.insert(exercise)
 
     suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =

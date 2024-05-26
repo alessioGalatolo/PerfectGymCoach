@@ -30,10 +30,10 @@ data class ArchiveWorkoutPlan(
 
 // classes below are used when generating a plan
 enum class WorkoutPlanGoal(val goal: String){
-    MUSCLE("Build muscle (hypertrophy)"),
+    HYPERTROPHY("Build muscle (hypertrophy)"),
     STRENGTH("Increase strength"),
     ENDURANCE("Increase endurance"),
-    WEIGHT_LOSS("Lose weight (cardio training)"),
+    CARDIO("Lose weight (cardio training)"),
 }
 
 enum class WorkoutPlanDifficulty(val expertiseLevel: String) {

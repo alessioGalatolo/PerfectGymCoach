@@ -110,10 +110,10 @@ fun CustomizePlanGeneration(
 @OptIn(ExperimentalFoundationApi::class)
 fun LazyListScope.goalChoice(completeGoal: (String) -> Unit){
     val goalImages = mapOf(
-        WorkoutPlanGoal.MUSCLE.goal to R.drawable.cable_curl,
+        WorkoutPlanGoal.HYPERTROPHY.goal to R.drawable.cable_curl,
         WorkoutPlanGoal.STRENGTH.goal to R.drawable.headstand_push_up,
         WorkoutPlanGoal.ENDURANCE.goal to R.drawable.plank,
-        WorkoutPlanGoal.WEIGHT_LOSS.goal to R.drawable.sit_ups
+        WorkoutPlanGoal.CARDIO.goal to R.drawable.sit_ups
     )
     // fixme: would like this to be a stickyHeader but it is currently bugged
     item {
@@ -125,7 +125,7 @@ fun LazyListScope.goalChoice(completeGoal: (String) -> Unit){
     items(goalImages.size) { index ->
         val goal = goalImages.keys.elementAt(index)
         val image = goalImages.values.elementAt(index)
-        if (goal == WorkoutPlanGoal.WEIGHT_LOSS.goal || goal == WorkoutPlanGoal.ENDURANCE.goal) {
+        if (goal == WorkoutPlanGoal.CARDIO.goal || goal == WorkoutPlanGoal.ENDURANCE.goal) {
             Card {
                 AsyncImage(
                     model = image,

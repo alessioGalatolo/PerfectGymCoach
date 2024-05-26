@@ -35,7 +35,7 @@ interface ProgramExerciseDao {
     suspend fun updateSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(plan: ProgramExercise)
+    suspend fun insert(plan: ProgramExercise): Long
 
     @Query("DELETE FROM programexercise WHERE programExerciseId = :programExerciseId")
     suspend fun delete(programExerciseId: Long)
