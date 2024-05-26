@@ -187,6 +187,9 @@ class Repository @Inject constructor(
 
     suspend fun addExercise(exercise: Exercise) = db.exerciseDao.insert(exercise)
 
+    suspend fun resetExerciseProbability(exerciseId: Long) = db.exerciseDao.resetProbability(exerciseId)
+
+    suspend fun resetAllExerciseProbability() = db.exerciseDao.resetAllProbabilities()
 
     /*
      * DATA STORE (SETTINGS)

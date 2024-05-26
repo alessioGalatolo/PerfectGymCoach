@@ -26,9 +26,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.components.InfoDialog
+import agdesigns.elevatefitness.ui.components.ResetExerciseProbabilityDialog
 import agdesigns.elevatefitness.ui.components.TextFieldWithButtons
 import agdesigns.elevatefitness.viewmodels.AddExerciseEvent
 import agdesigns.elevatefitness.viewmodels.AddExerciseViewModel
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.HelpOutline
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -58,6 +63,20 @@ fun AddExerciseDialog(
         viewModel.onEvent(AddExerciseEvent.GetProgramAndProgramExercise(programId, programExerciseId, exerciseId))
     else if (exerciseId != 0L)
         viewModel.onEvent(AddExerciseEvent.GetProgramAndExercise(programId, exerciseId))
+
+    var awesomeDialogOpen by rememberSaveable { mutableStateOf(false) }
+    InfoDialog(
+        dialogueIsOpen = awesomeDialogOpen,
+        toggleDialogue = { awesomeDialogOpen = !awesomeDialogOpen }) {
+        Text("This number is used to generate new plans. A number higher than 1 means a higher probability of being included in workouts. A number lower than 1 means a lower probability. 1 is default.")
+    }
+    var resetProbabilityDialogOpen by rememberSaveable { mutableStateOf(false) }
+    ResetExerciseProbabilityDialog(
+        dialogIsOpen = resetProbabilityDialogOpen,
+        toggleDialog = { resetProbabilityDialogOpen = !resetProbabilityDialogOpen },
+        resetExercise = { viewModel.onEvent(AddExerciseEvent.ResetProbability(viewModel.state.value.exercise!!.exerciseId)) },
+        resetAllExercises = { viewModel.onEvent(AddExerciseEvent.ResetProbability()) }
+    )
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // make topappbar opaque
@@ -118,6 +137,26 @@ fun AddExerciseDialog(
                                 .padding(bottom = 16.dp)
                                 .clip(AbsoluteRoundedCornerShape(0.dp, 0.dp, 12.dp, 12.dp))
                         )
+                    }
+                    item {
+                        Row(
+                            verticalAlignment = CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, "Magic generation")
+                            Spacer(Modifier.width(8.dp))
+                            Text("Current probability: ${viewModel.state.value.exercise!!.probability}")
+                            TextButton(onClick = { resetProbabilityDialogOpen = true }) {
+                                Text("Reset")
+                            }
+                            IconButton(onClick = { awesomeDialogOpen = true }) {
+                                Icon(Icons.AutoMirrored.Filled.HelpOutline, "More info")
+                            }
+                            // TODO: check overflow on long probabilities
+                        }
                     }
                     item {
                         OutlinedTextField(

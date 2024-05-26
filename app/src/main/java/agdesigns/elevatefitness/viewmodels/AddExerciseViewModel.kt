@@ -34,6 +34,8 @@ data class AddExerciseState(
 )
 
 sealed class AddExerciseEvent{
+    // if exerciseId is null, will reset all the exercises probability
+    data class ResetProbability(val exerciseId: Long? = null): AddExerciseEvent()
 
     data class GetProgramAndExercise(val programId: Long, val exerciseId: Long): AddExerciseEvent()
 
@@ -295,6 +297,15 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                             }!!.orderInProgram
                         )
                     }
+                }
+            }
+
+            is AddExerciseEvent.ResetProbability -> {
+                viewModelScope.launch {
+                    if (event.exerciseId != null)
+                        repository.resetExerciseProbability(event.exerciseId)
+                    else
+                        repository.resetAllExerciseProbability()
                 }
             }
         }

@@ -1,7 +1,11 @@
 package agdesigns.elevatefitness.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -9,14 +13,17 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.android.awaitFrame
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
@@ -361,6 +368,76 @@ fun RequestNotificationAccessDialog(
                     }
                 ) {
                     Text("Don't ask again")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun ResetExerciseProbabilityDialog(
+    dialogIsOpen: Boolean,
+    toggleDialog: () -> Unit,
+    resetExercise: () -> Unit,
+    resetAllExercises: () -> Unit
+) {
+    val (resetAllChecked, onStateChange) = remember { mutableStateOf(false) }
+    if (dialogIsOpen) {
+        AlertDialog(
+            onDismissRequest = {
+                toggleDialog()
+            },
+            title = {
+                Text(text = "Reset exercise probability?")
+            },
+            text = {
+                Column {
+                    Text(text = "By tapping on 'Reset' you will reset the exercise's probability of appearing in newly generated workouts. For a fresh start you can also reset the probability of all the exercises.")
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .toggleable(
+                                value = resetAllChecked,
+                                onValueChange = { onStateChange(!resetAllChecked) },
+                                role = Role.Checkbox
+                            )
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = resetAllChecked,
+                            onCheckedChange = null // null recommended for accessibility with screenreaders
+                        )
+                        Text(
+                            text = "Reset all exercises' probability",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (resetAllChecked) {
+                            resetAllExercises()
+                        } else {
+                            resetExercise()
+                        }
+                        toggleDialog()
+                    }
+                ) {
+                    Text("Reset")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        toggleDialog()
+                    }
+                ) {
+                    Text("Cancel")
                 }
             }
         )

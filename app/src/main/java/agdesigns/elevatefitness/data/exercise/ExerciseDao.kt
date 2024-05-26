@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy.Companion.REPLACE
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -27,5 +28,11 @@ interface ExerciseDao {
 
     @Insert(onConflict = REPLACE)
     fun insertAll(exercises: List<Exercise>)
+
+    @Query("UPDATE exercise SET probability = :newProbability WHERE exerciseId = :exerciseId")
+    suspend fun resetProbability(exerciseId: Long, newProbability: Double = 1.0)
+
+    @Query("UPDATE exercise SET probability = :newProbability")
+    suspend fun resetAllProbabilities(newProbability: Double = 1.0)
 
 }
