@@ -141,6 +141,7 @@ fun CancelWorkoutDialog(
     cancelWorkout: () -> Unit,
     deleteData: () -> Unit
 ) {
+    val (cancelData, onStateChange) = remember { mutableStateOf(false) }
     if (dialogueIsOpen) {
         AlertDialog(
             onDismissRequest = {
@@ -150,27 +151,51 @@ fun CancelWorkoutDialog(
                 Text(text = "Delete workout data?")
             },
             text = {
-                Text(text = "Do you want to delete the recorded exercise data as well as cancelling the workout? (Go back or tap anywhere outside this dialog to keep working out)")
+                Column {
+                    Text(text = "Do you want to delete the recorded exercise data as well as cancelling the workout?")
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .toggleable(
+                                value = cancelData,
+                                onValueChange = { onStateChange(!cancelData) },
+                                role = Role.Checkbox
+                            )
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = cancelData,
+                            onCheckedChange = null // null recommended for accessibility with screenreaders
+                        )
+                        Text(
+                            text = "Delete exercise data",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         toggleDialog()
-                        deleteData()
+                        if (cancelData)
+                            deleteData()
                         cancelWorkout()
                     }
                 ) {
-                    Text("Delete data and cancel workout")
+                    Text("Cancel workout")
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = {
                         toggleDialog()
-                        cancelWorkout()
                     }
                 ) {
-                    Text("Cancel workout")
+                    Text("Keep doing workout")
                 }
             }
         )
