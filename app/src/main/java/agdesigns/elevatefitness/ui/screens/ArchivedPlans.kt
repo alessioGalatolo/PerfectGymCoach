@@ -100,11 +100,12 @@ fun ArchivedPlans(
             // if you have some archived plans
             LazyColumn(
                 contentPadding = innerPadding,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp)
             ) {
                 itemsIndexed(items = viewModel.state.value.archivedPlans, key = { _, it -> it.first.planId })
                 { index, plan ->
                     // TODO: consider having only the first plan in card, the others are simple list items
+                    Spacer(Modifier.height(4.dp))
                     ArchivedPlanCard(
                         navigator = navigator,
                         plan = plan.first,
@@ -128,7 +129,7 @@ fun ArchivedPlans(
                             }
                         }
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(4.dp))
                 }
             }
         }

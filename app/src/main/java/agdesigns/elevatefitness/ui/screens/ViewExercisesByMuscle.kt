@@ -41,7 +41,8 @@ fun ExercisesByMuscle(
     programName: String,
     programId: Long = 0,
     workoutId: Long = 0,
-    successfulAddExercise: Boolean = false
+    successfulAddExercise: Boolean = false,
+    returnAfterAdding: Boolean = false
 ) {
     // scroll behaviour for top bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -49,12 +50,15 @@ fun ExercisesByMuscle(
     )
 
     val snackbarHostState = remember { SnackbarHostState() }
-
     val showSnackbar = rememberSaveable { mutableStateOf(successfulAddExercise) }
     LaunchedEffect(showSnackbar){
         if (showSnackbar.value){
-            snackbarHostState.showSnackbar("Exercise added successfully, you can continue adding")
-            showSnackbar.value = false
+            if (!returnAfterAdding) {
+                snackbarHostState.showSnackbar("Exercise added successfully, you can continue adding")
+                showSnackbar.value = false
+            } else {
+                navigator.navigateUp()
+            }
         }
     }
 
@@ -100,7 +104,9 @@ fun ExercisesByMuscle(
                                                 programId = programId,
                                                 workoutId = workoutId,
                                                 muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
-                                                focusSearch = true
+                                                focusSearch = true,
+                                                programName = programName,
+                                                returnAfterAdding = returnAfterAdding
                                             ),
                                             onlyIfResumed = true
                                         )
@@ -135,7 +141,9 @@ fun ExercisesByMuscle(
                                 ViewExercisesDestination(
                                     programId = programId,
                                     workoutId = workoutId,
-                                    muscleOrdinal = it.ordinal
+                                    muscleOrdinal = it.ordinal,
+                                    programName = programName,
+                                    returnAfterAdding = returnAfterAdding
                                 ),
                                 onlyIfResumed = true
                             )

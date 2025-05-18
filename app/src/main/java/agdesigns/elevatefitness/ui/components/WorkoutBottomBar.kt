@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.workout_exercise.WorkoutExercise
 import androidx.compose.material3.minimumInteractiveComponentSize
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WorkoutBottomBar(
     contentPadding: PaddingValues,
@@ -33,6 +34,7 @@ fun WorkoutBottomBar(
     updateWeight: (String) -> Unit,
     autoStepWeight: (String, Exercise.Equipment, Boolean) -> Unit
 ) {
+    val imeVisible = WindowInsets.isImeVisible
     Column(
         Modifier
             .padding(contentPadding)
@@ -102,11 +104,17 @@ fun WorkoutBottomBar(
                 )
             }
 
-            // fixme: becomes hidden when keyboard out for typing in above fields
+            /*
+             FIXME: bottom padding if ime is needed otherwise button will be below keyboard
+             but it's bad to hardcode the padding. There are also still some bugs with keyboard and
+             this bottom bar.
+             */
             Row(Modifier.fillMaxWidth()) {
                 Button(
                     onClick = completeSet,
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = if (imeVisible) 48.dp else 0.dp)
                 ) {
                     Text("Complete")
                 }

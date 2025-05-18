@@ -55,7 +55,7 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.os.Build
-import androidx.compose.foundation.background
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -65,7 +65,6 @@ import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscle
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -81,6 +80,7 @@ fun Workout(
     resumeWorkout: Boolean = false,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
     if (resumeWorkout)
         viewModel.onEvent(WorkoutEvent.ResumeWorkout)
     else
@@ -90,8 +90,9 @@ fun Workout(
 
     val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
     val context = LocalContext.current
-    var alreadyRequestedPermission by rememberSaveable { mutableStateOf(false) }
 
+    // request to have notification access to show music playing
+    var alreadyRequestedPermission by rememberSaveable { mutableStateOf(false) }
     val shouldOpenRequest by remember { derivedStateOf {
         !viewModel.state.value.cantRequestNotificationAccess
         && !hasNotificationAccess(context)
@@ -188,7 +189,8 @@ fun Workout(
         dialogueIsOpen = viewModel.state.value.cancelWorkoutDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog) },
         cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navigator.navigateUp() },
-        deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) }
+        deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) },
+        hasRecords = viewModel.state.value.hasRecordedExercise
     )
     InputOtherEquipmentDialog(
         dialogIsOpen = viewModel.state.value.otherEquipmentDialogOpen,
@@ -343,6 +345,7 @@ fun Workout(
             }
         }}
         FullScreenImageCard(
+            snackbarHostState = snackbarHostState,
             topAppBarNavigationIcon = { appBarShown ->
                 val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
                 IconButton(onClick = onClose) {
@@ -434,9 +437,25 @@ fun Workout(
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounter = restCounter,
                     workoutIntensity = workoutIntensity,
+                    updateExerciseProbability = { probability ->
+                        scope.launch {
+                            // if already snackbarring, dismiss it before a new one.
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            if (probability > 0)
+                                snackbarHostState.showSnackbar("Increasing exercise probability when generating new plans...")
+                            else
+                                snackbarHostState.showSnackbar("Decreasing exercise probability when generating new plans...")
+                        }
+                        viewModel.onEvent(WorkoutEvent.UpdateExerciseProbability(pagerState.currentPage, probability))
+                    },
                     updateBottomBar = { rep, weight ->
-                        viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
-                        viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
+                        if (rep != null)
+                            viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
+                        else
+                            // this should never happen. Log it
+                            Log.w("Workout", "updateBottomBar called with null rep")
+                        if (weight != null)
+                            viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
                     },
                     updateValues = { a, b, c, d -> viewModel.onEvent(WorkoutEvent.EditSetRecord(a, b, c, d)) },
                     updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare))},
@@ -445,16 +464,15 @@ fun Workout(
                     toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
                     changeExercise = { exerciseInWorkout, originalSize ->
                         scope.launch {
-                            awaitFrame()  // wait for exercise to be added
-                            awaitFrame()
                             viewModel.onEvent(
-                                WorkoutEvent.DeleteChangeExercise(
+                                WorkoutEvent.ReplaceExercise(
                                     exerciseInWorkout,
                                     originalSize
                                 )
                             )
                         }
-                    }
+                    },
+                    removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) }
                 )
             },
             floatingActionButton = {
@@ -553,9 +571,8 @@ fun Workout(
                 }
             }
         ) { padding, bottomBarSurface ->
-            val snackbarState = remember { SnackbarHostState() }
-            Column {
-                SnackbarHost(hostState = snackbarState)
+            // FIXME: column doesn't seem necessary here
+//            Column (modifier = Modifier.background(Color.Black)) {
                 AnimatedVisibility(
                     visible = !pagerState.isScrollInProgress,
                     enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
@@ -577,7 +594,8 @@ fun Workout(
                                     )
                                 ) {
                                     scope.launch {
-                                        snackbarState.showSnackbar("Please enter valid numbers")
+                                        snackbarHostState.currentSnackbarData?.dismiss()
+                                        snackbarHostState.showSnackbar("Please enter valid numbers")
                                     }
                                 } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
                                     val superExercise =
@@ -628,7 +646,7 @@ fun Workout(
                             }
                         )
                     }
-                }
+//                }
             }
         }
     } else if (viewModel.state.value.workoutId != 0L){

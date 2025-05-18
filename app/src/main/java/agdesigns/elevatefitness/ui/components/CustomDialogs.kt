@@ -139,7 +139,8 @@ fun CancelWorkoutDialog(
     dialogueIsOpen: Boolean,
     toggleDialog: () -> Unit,
     cancelWorkout: () -> Unit,
-    deleteData: () -> Unit
+    deleteData: () -> Unit,
+    hasRecords: Boolean
 ) {
     val (cancelData, onStateChange) = remember { mutableStateOf(false) }
     if (dialogueIsOpen) {
@@ -148,33 +149,34 @@ fun CancelWorkoutDialog(
                 toggleDialog()
             },
             title = {
-                Text(text = "Delete workout data?")
+                Text(text = "Confirm exit from workout?")
             },
             text = {
                 Column {
-                    Text(text = "Do you want to delete the recorded exercise data as well as cancelling the workout?")
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .toggleable(
-                                value = cancelData,
-                                onValueChange = { onStateChange(!cancelData) },
-                                role = Role.Checkbox
+                    Text(text = "Do you want to cancel the current workout? This will delete the workout but will keep the exercise data if there are any.")
+                    if (hasRecords)
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .toggleable(
+                                    value = cancelData,
+                                    onValueChange = { onStateChange(!cancelData) },
+                                    role = Role.Checkbox
+                                )
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = cancelData,
+                                onCheckedChange = null // null recommended for accessibility with screenreaders
                             )
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = cancelData,
-                            onCheckedChange = null // null recommended for accessibility with screenreaders
-                        )
-                        Text(
-                            text = "Delete exercise data",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                    }
+                            Text(
+                                text = "Also delete recorded exercises",
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
                 }
             },
             confirmButton = {
@@ -186,7 +188,7 @@ fun CancelWorkoutDialog(
                         cancelWorkout()
                     }
                 ) {
-                    Text("Cancel workout")
+                    Text("Exit workout")
                 }
             },
             dismissButton = {
@@ -271,7 +273,7 @@ fun ChangeRepsWeightDialog(
             },
             confirmButton = {
                 TextButton(
-                    enabled = reps.toIntOrNull() != null && weight.toFloatOrNull() != null,
+                    enabled = reps.toUIntOrNull() != null && weight.toFloatOrNull() != null,
                     onClick = {
                         toggleDialog()
                         updateValues(reps.toInt(), weight.toFloat())
@@ -364,6 +366,7 @@ fun RequestNotificationAccessDialog(
     openPermissionRequest: () -> Unit,
     dontAskAgain: () -> Unit
 ) {
+    val (dontAskAgainChecked, onStateChange) = remember { mutableStateOf(false) }
     if (dialogIsOpen) {
         AlertDialog(
             onDismissRequest = {
@@ -373,7 +376,31 @@ fun RequestNotificationAccessDialog(
                 Text(text = "Would you like to control your music during your workout?")
             },
             text = {
-                Text(text = "If you want, you can enable this app to show and control your music while your workout is running. However, it needs access to your notification to do so. If you want to allow that, press 'Let's do it!' and look for this app in the list and enable the notification access.")
+                Column {
+                    Text(text = "If you want, you can enable this app to show and control your music while your workout is running. However, it needs access to your notification to do so. If you want to allow that, press 'Let's do it!' and look for this app in the list and enable the notification access.")
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .toggleable(
+                                value = dontAskAgainChecked,
+                                onValueChange = { onStateChange(!dontAskAgainChecked) },
+                                role = Role.Checkbox
+                            )
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = dontAskAgainChecked,
+                            onCheckedChange = null // null recommended for accessibility with screenreaders
+                        )
+                        Text(
+                            text = "Don't ask again",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
@@ -388,11 +415,12 @@ fun RequestNotificationAccessDialog(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        dontAskAgain()
+                        if (dontAskAgainChecked)
+                            dontAskAgain()
                         toggleDialog()
                     }
                 ) {
-                    Text("Don't ask again")
+                    Text("Not now")
                 }
             }
         )

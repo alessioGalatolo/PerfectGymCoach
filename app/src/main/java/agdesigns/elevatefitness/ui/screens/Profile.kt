@@ -116,10 +116,10 @@ fun Profile(
                     }
                 }
                 Spacer(Modifier.width(16.dp))
-                Icon(Icons.Default.AccountCircle, "Profile",
-                    Modifier
-                        .size(60.dp)
-                        .weight(0.5f))
+//                Icon(Icons.Default.AccountCircle, "Profile",
+//                    Modifier
+//                        .size(60.dp)
+//                        .weight(0.5f))
             }
             Spacer(Modifier.height(8.dp))
             if (editName){
@@ -155,12 +155,19 @@ fun Profile(
 
                 IconButton(onClick = {
                     editYear = !editYear
-                    if (!editYear && validUserYear) {
-                        viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
+                    if (!editYear) {
+                        if (validUserYear)
+                            viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
+                        else
+                            // reset userYear
+                            userYear = viewModel.state.value.userYear.toString()
                     }
                 }) {
                     if (editYear)
-                        Icon(Icons.Default.Done, "Done")
+                        if (validUserYear)
+                            Icon(Icons.Default.Done, "Done")
+                        else
+                            Icon(Icons.Default.Close, "Cancel")
                     else
                         Icon(Icons.Default.Edit, "Edit age")
                 }
@@ -269,8 +276,16 @@ fun Profile(
                         IconButton(onClick = {
                             if (validWeight)
                                 updateWeight(weightValue)
+                            else
+                                weightValue = maybeKgToLb(
+                                    viewModel.state.value.weight,
+                                    viewModel.state.value.imperialSystem
+                                ).toString()
                         }) {
-                            Icon(Icons.Default.Done, "Done editing")
+                            if (validWeight)
+                                Icon(Icons.Default.Done, "Done editing")
+                            else
+                                Icon(Icons.Default.Close, "Cancel")
                         }
                     }
                 }
@@ -342,8 +357,13 @@ fun Profile(
                         IconButton(onClick = {
                             if (validHeight)
                                 updateHeight(heightValue)
+                            else
+                                heightValue = viewModel.state.value.height.toString()
                         }) {
-                            Icon(Icons.Default.Done, "Done editing")
+                            if (validHeight)
+                                Icon(Icons.Default.Done, "Done editing")
+                            else
+                                Icon(Icons.Default.Close, "Cancel")
                         }
                     }
                 }
@@ -639,8 +659,16 @@ fun LazyItemScope.ChangeGenericWeight(
                 IconButton(onClick = {
                     if (validWeight)
                         updateWeightAndClose(weightValue)
+                    else
+                        weightValue = maybeKgToLb(
+                            initialWeightValue,
+                            imperialSystem
+                        ).toString()
                 }) {
-                    Icon(Icons.Default.Done, "Done editing")
+                    if (validWeight)
+                        Icon(Icons.Default.Done, "Done editing")
+                    else
+                        Icon(Icons.Default.Close, "Cancel")
                 }
             }
         }

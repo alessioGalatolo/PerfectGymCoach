@@ -10,12 +10,14 @@ import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.data.exercise.ExerciseRecord
 import agdesigns.elevatefitness.data.exercise.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.workout_exercise.WorkoutExercise
+import agdesigns.elevatefitness.data.workout_exercise.WorkoutExerciseReorder
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
-import agdesigns.elevatefitness.ui.hasNotificationAccess
 import agdesigns.elevatefitness.ui.maybeLbToKg
+import android.util.Log
+import androidx.compose.foundation.layout.size
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -26,6 +28,7 @@ import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.math.max
+import androidx.compose.runtime.snapshotFlow
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
@@ -49,6 +52,7 @@ data class WorkoutState(
     val incrementDumbbell: Float = 0f,
     val incrementMachine: Float = 0f,
     val incrementCable: Float = 0f,
+    val hasRecordedExercise: Boolean = false // used to add a flag in cancel workout
 )
 
 sealed class WorkoutEvent{
@@ -79,7 +83,9 @@ sealed class WorkoutEvent{
 
     data class InitWorkout(val programId: Long): WorkoutEvent()
 
-    data class DeleteChangeExercise(val exerciseInWorkout: Int, val originalSize: Int): WorkoutEvent()
+    data class ReplaceExercise(val exerciseInWorkout: Int, val originalSize: Int): WorkoutEvent()
+
+    data class RemoveExercise(val exerciseInWorkout: Int): WorkoutEvent()
 
     data class AddSetToExercise(val exerciseInWorkout: Int): WorkoutEvent()
 
@@ -217,11 +223,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.StartRetrievingExercises -> {
                 viewModelScope.launch {
                     repository.getWorkoutExercises(state.value.workoutId).collect{ exs ->
-                        _state.value = state.value.copy(workoutExercises = exs)
+                        val sortedExs = exs.sortedBy { it.orderInProgram }
+                        _state.value = state.value.copy(workoutExercises = sortedExs)
                         retrieveExercisesRecords?.cancel()
                         retrieveExercisesRecords = this.launch {
                             repository.getExerciseRecordsAndEquipment(
-                                exs.map { it.extExerciseId }
+                                sortedExs.map { it.extExerciseId }
                             ).collect { records ->
                                 val allRecords = records.groupBy { it.extExerciseId }
                                 // TODO: sort by date before putting in
@@ -230,6 +237,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 )
                             }
                         }
+                    }
+                }
+                viewModelScope.launch {
+                    repository.getWorkoutExerciseRecordsAndInfo(state.value.workoutId).collect {
+                        _state.value = state.value.copy(hasRecordedExercise = it.isNotEmpty())
                     }
                 }
             }
@@ -251,12 +263,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.TryCompleteSet -> {
                 // TODO: check if superset and if
-                if (state.value.repsBottomBar.toIntOrNull() == null ||
-                        state.value.weightBottomBar.toFloatOrNull() == null)
+                if (state.value.repsBottomBar.toUIntOrNull() == null ||
+                    state.value.weightBottomBar.toFloatOrNull() == null)
                     return false
                 viewModelScope.launch {
                     val record = state.value.allRecords[
-                            state.value.workoutExercises[event.exerciseInWorkout].extExerciseId
+                        state.value.workoutExercises[event.exerciseInWorkout].extExerciseId
                     ]?.find {
                         it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
                     }  // FIXME: same find is repeated elsewhere
@@ -396,7 +408,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             val workout = repository.getWorkoutRecord(state.value.workoutId).first()
                             onEvent(WorkoutEvent.StartRetrievingExercises)
                             _state.value = state.value.copy(
-                                workoutTime = (Calendar.getInstance().timeInMillis - workout.startDate!!.timeInMillis) / 1000
+                                workoutTime = (Calendar.getInstance().timeInMillis - workout.startDate!!.timeInMillis) / 1000,
+                                programId = workout.extProgramId
                             )
                             startTimer()
                         }
@@ -407,7 +420,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.EditSetRecord -> {
                 viewModelScope.launch {
                     val record = state.value.allRecords[
-                            state.value.workoutExercises[event.exerciseInWorkout].extExerciseId
+                        state.value.workoutExercises[event.exerciseInWorkout].extExerciseId
                     ]?.find {
                         it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
                     }  // FIXME: same find is repeated elsewhere
@@ -436,22 +449,38 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     }
                 }
             }
-            is WorkoutEvent.DeleteChangeExercise -> {
-                // FIXME: delete exercise in workout, move last added exercise to here
-//                if (state.value.workoutExercises.size > event.originalSize) {
-//                    viewModelScope.launch {
-//                        val id = state.value.workoutExercises.last().workoutExerciseId
-//                        repository.deleteWorkoutExercise(
-//                            state.value.workoutExercises[event.exerciseInWorkout].workoutExerciseId
-//                        )
-//                        repository.updateWorkoutExerciseNumber(
-//                            WorkoutExerciseReorder(
-//                                id,
-//                                event.exerciseInWorkout
-//                            )
-//                        )
-//                    }
-//                } // does not work because it is called before the exercise is added
+            is WorkoutEvent.ReplaceExercise -> {
+                viewModelScope.launch {
+                    // Wait for the condition to be met by observing changes to state.value.workoutExercises
+                    snapshotFlow { state.value.workoutExercises }
+                        .mapNotNull { exercises ->
+                            if (exercises.size > event.originalSize) {
+                                exercises.last().workoutExerciseId // Return the ID if condition met
+                            } else {
+                                null // Otherwise, return null to keep waiting
+                            }
+                        }
+                        .first() // Get the first non-null emission (meaning the condition is met)
+                        .let { lastWorkoutExerciseId ->
+                            // Now that the condition is met, perform your repository operations
+                            repository.deleteWorkoutExercise(
+                                state.value.workoutExercises[event.exerciseInWorkout].workoutExerciseId
+                            )
+                            repository.updateWorkoutExerciseNumber(
+                                WorkoutExerciseReorder(
+                                    lastWorkoutExerciseId,
+                                    event.exerciseInWorkout
+                                )
+                            )
+                        }
+                }
+            }
+            is WorkoutEvent.RemoveExercise -> {
+                viewModelScope.launch {
+                    repository.deleteWorkoutExercise(
+                        state.value.workoutExercises[event.exerciseInWorkout].workoutExerciseId
+                    )
+                }
             }
             is WorkoutEvent.ToggleOtherEquipmentDialog -> {
                 _state.value = state.value.copy(

@@ -31,6 +31,7 @@ fun FullScreenImageCard(
     topAppBarActions: @Composable RowScope.(Boolean) -> Unit,
     title: @Composable () -> Unit,
     image: @Composable BoxScope.() -> Unit,
+    snackbarHostState: SnackbarHostState,
     imageHeight: Dp,
     brightImage: Boolean,
     darkTheme: Boolean,
@@ -66,11 +67,19 @@ fun FullScreenImageCard(
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window ?: (LocalContext.current as? Activity)?.window
     val view = LocalView.current
     val transitionStarted = transition > 0.0
-    LaunchedEffect(transitionStarted, brightImage, darkTheme) {
+    DisposableEffect(transitionStarted, brightImage, darkTheme) {
         window?.let {
             WindowCompat.getInsetsController(it, view)
         }?.let {
             it.isAppearanceLightStatusBars = (brightImage && !transitionStarted) || (transitionStarted && !darkTheme)
+        }
+        onDispose {
+            // revert icon colors
+            window?.let {
+                WindowCompat.getInsetsController(it, view)
+            }?.let {
+                it.isAppearanceLightStatusBars = !darkTheme
+            }
         }
     }
 
@@ -83,15 +92,17 @@ fun FullScreenImageCard(
         Scaffold (
             Modifier.fillMaxSize(),
             containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 // FIXME: low level transition needed because compose likes to hide its functions
-                val transparentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0f)
+                // TODO: check if new compose exposes something useful for this
+                val transparentColor = MaterialTheme.colorScheme.surface.copy(alpha = 1f)
                 val tonedColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
                     BottomAppBarDefaults.ContainerElevation
                 )
                 val backgroundColor by remember { derivedStateOf { lerp(
-                        transparentColor,
-                        tonedColor,
+                        transparentColor, // start from base color e.g., white to remove transparency instantly
+                        tonedColor,  // transition to right color slowly together with text
                         FastOutLinearInEasing.transform(transition)
                     )}}
                 TopAppBar(
@@ -106,8 +117,9 @@ fun FullScreenImageCard(
                     },
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = backgroundColor,
-                        scrolledContainerColor = backgroundColor
+                        // transition instantly from transparent
+                        containerColor = if (transitionStarted) backgroundColor else Color.Transparent,
+                        scrolledContainerColor = if (transitionStarted) backgroundColor else Color.Transparent
                     ),
                     navigationIcon = { topAppBarNavigationIcon(transitionStarted) },
                     actions = { topAppBarActions(transitionStarted) },
@@ -151,6 +163,7 @@ fun FullScreenImageCard(
             bottomBar = { bottomBar(
                 WindowInsets.navigationBars.asPaddingValues()
             ) { bottomBarContent ->
+                // TODO: why are we defining a surface to pass to the bottom bar instead of creating it there?
                 Surface(
                     tonalElevation = NavigationBarDefaults.Elevation,
                     modifier = Modifier

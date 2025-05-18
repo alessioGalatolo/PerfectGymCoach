@@ -114,6 +114,8 @@ suspend fun generatePlan(
     expertiseLevel: WorkoutPlanDifficulty,
     workoutSplit: WorkoutPlanSplit
 ): Long {
+    // FIXME: bug when no plans -> empty abs program when goal = build, exp = adv, split = 1 muscle per day
+
     // TODO: ideally it might also take into consideration profile values e.g. sex, age, weight, etc.
     val muscle2Exercises = emptyMap<Exercise.Muscle, Array<Exercise>>().toMutableMap()
     val currentTime = Calendar.getInstance().timeInMillis
@@ -220,6 +222,9 @@ suspend fun generatePlan(
                 if (nonAutoDifficulty != WorkoutPlanDifficulty.BEGINNER && isMajorMover(muscle)) {
                     val currentSets = minSetsPerExercise + random.nextInt(0, 2)
                     val compoundEx = exercises.filter { exerciseIsCompound(it) }
+                    if (compoundEx.isEmpty())
+                        // no more compound exercises for this muscle
+                        break
                     val chosenExercise =
                         compoundEx.weightedRandom(compoundEx.map { it.probability })
                     exercises.remove(chosenExercise)
@@ -243,9 +248,10 @@ suspend fun generatePlan(
                         )
                     )
                     exerciseForThisMuscle--
-                    exercises = exercises.filterNot { exerciseIsCompound(it) }.toMutableList()
                 }
             }
+            // avoid unwanted compound exercises
+            exercises = exercises.filterNot { exerciseIsCompound(it) }.toMutableList()
             for (i in 0..exerciseForThisMuscle) {
                 if (exercises.isEmpty())
                     break

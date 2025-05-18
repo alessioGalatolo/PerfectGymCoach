@@ -49,6 +49,8 @@ fun AddExerciseDialog(
     workoutId: Long = 0L, // workoutId can only happen with exercise Id
     exerciseId: Long = 0L,
     programExerciseId: Long = 0L,
+    programName: String = "",
+    returnAfterAdding: Boolean = false,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
@@ -109,10 +111,11 @@ fun AddExerciseDialog(
                             navigator.navigateUp()
                             navigator.navigate(
                                 ExercisesByMuscleDestination(
-                                    programName = viewModel.state.value.programName,
+                                    programName = programName,
                                     programId = programId,
                                     workoutId = workoutId,
-                                    successfulAddExercise = true
+                                    successfulAddExercise = true,
+                                    returnAfterAdding = returnAfterAdding
                                 )
                             )
                         }

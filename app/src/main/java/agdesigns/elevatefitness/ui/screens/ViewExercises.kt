@@ -72,6 +72,8 @@ fun ViewExercises(
     workoutId: Long = 0L,
     muscleOrdinal: Int,
     focusSearch: Boolean = false,
+    programName: String = "",
+    returnAfterAdding: Boolean = false,
     viewModel: ExercisesViewModel = hiltViewModel()
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -253,7 +255,9 @@ fun ViewExercises(
                                                 AddExerciseDialogDestination(
                                                     programId = programId,
                                                     workoutId = workoutId,
-                                                    exerciseId = exercise.exerciseId
+                                                    exerciseId = exercise.exerciseId,
+                                                    programName = programName,
+                                                    returnAfterAdding = returnAfterAdding
                                                 ),
                                                 onlyIfResumed = true
                                             )

@@ -61,7 +61,7 @@ fun ExercisePage(
     title: @Composable () -> Unit,
     exerciseDescription: String,
     addSet: () -> Unit,
-    updateBottomBar: (Int, Float) -> Unit,
+    updateBottomBar: (Int?, Float?) -> Unit,
     currentExerciseRecords: List<ExerciseRecordAndEquipment>,
     ongoingRecord: ExerciseRecordAndEquipment?,
     restCounter: Long?,
@@ -72,7 +72,8 @@ fun ExercisePage(
     updateTare: (Float) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit,
     toggleOtherEquipment: () -> Unit,
-    changeExercise: (Int, Int) -> Unit
+    changeExercise: (Int, Int) -> Unit,
+    removeExercise: (Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -206,23 +207,35 @@ fun ExercisePage(
                             fontWeight = FontWeight.Bold
                         )
 
-                        // FIXME: currently not working/empty
-//                        AnimatedVisibility(
-//                            visible = workoutTime != null,
-//                            enter = fadeIn(),
-//                            exit = fadeOut()
-//                        ) {
-//                            ExerciseSettingsMenu(navigator) {
-//                                navigator.navigate(
-//                                    ExercisesByMuscleDestination(
-//                                        programName = "Current workout",
-//                                        workoutId = workoutId,
-//                                    ),
-//                                    onlyIfResumed = true
-//                                )
-//                                changeExercise(page, workoutExercises.size)
-//                            }
-//                        }
+                        AnimatedVisibility(
+                            visible = workoutTime != null,
+                            enter = fadeIn(),
+                            exit = fadeOut()
+                        ) {
+                            ExerciseSettingsMenu(changeExercise = {
+                                changeExercise(page, workoutExercises.size)
+                                navigator.navigate(
+                                    ExercisesByMuscleDestination(
+                                        programName = "Current workout",
+                                        workoutId = workoutId,
+                                        returnAfterAdding = true
+                                    ),
+                                    onlyIfResumed = true
+                                )
+                            }, removeExercise = {
+                                removeExercise(page)
+                            }, addExercise = {
+                                navigator.navigate(
+                                    ExercisesByMuscleDestination(
+                                        programName = "Current workout",
+                                        workoutId = workoutId,
+                                        returnAfterAdding = true
+                                    ),
+                                    onlyIfResumed = true
+                                )
+                                scope.launch { pagerState.animateScrollToPage(pagerState.pageCount-1) }
+                            })
+                        }
                     }
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(
@@ -234,6 +247,7 @@ fun ExercisePage(
                                             min(setsDone.value, workoutExercises[page].rest.size-1)
                                     ]}s", Modifier.align(Alignment.Start))
 
+                            // if barbell, allow to add barbell weight (used for volume)
                             AnimatedVisibility(
                                 visible = workoutTime != null &&
                                         workoutExercises[page].equipment == Exercise.Equipment.BARBELL,
@@ -343,7 +357,7 @@ fun ExercisePage(
                                             )
                                             updateBottomBar(
                                                 repsInRow.toInt(),
-                                                weightInRow.toFloatOrNull() ?: 0f
+                                                weightInRow.toFloatOrNull()
                                             )
                                         })
                                 ) {
@@ -393,6 +407,7 @@ fun ExercisePage(
                                     Text("Barbell used: " + barbellFromWeight(record.tare, useImperialSystem, true)
                                     )
                                 } else if (record.equipment == Exercise.Equipment.BODY_WEIGHT) {
+                                    // FIXME: bug where bodyweight = 0?
                                     Text("Bodyweight at the time: ${maybeKgToLb(record.tare, useImperialSystem)} " + if(useImperialSystem) "lb" else "kg")
                                 }
                                 record.reps.forEachIndexed { index, rep ->
@@ -538,11 +553,12 @@ fun WorkoutFinishPage(
     }
 }
 
-// FIXME: is this used anymore?
+
 @Composable
 fun ExerciseSettingsMenu(
-    navigator: DestinationsNavigator,
-    changeExercise: () -> Unit
+    changeExercise: () -> Unit,
+    removeExercise: () -> Unit,
+    addExercise: () -> Unit
 ) {
     Box(
         modifier = Modifier.wrapContentSize()
@@ -559,30 +575,30 @@ fun ExerciseSettingsMenu(
             onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
-                text = { Text("Change exercise") },
+                text = { Text("Replace exercise") },
                 onClick = changeExercise,
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Edit,
-                        contentDescription = "Change exercise"
+                        contentDescription = "Replace exercise"
                     )
                 })
             DropdownMenuItem(
-                text = { Text("Delete exercise") },
-                onClick = { /* TODO */ },
+                text = { Text("Skip this time") },
+                onClick = removeExercise,
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Delete,
-                        contentDescription = "Delete exercise"
+                        contentDescription = "Skip this time"
                     )
                 })
             DropdownMenuItem(
-                text = { Text("Cancel workout") },
-                onClick = { /* TODO */ },
+                text = { Text("Add another exercise") },
+                onClick = addExercise,
                 leadingIcon = {
                     Icon(
-                        Icons.Outlined.Close,
-                        contentDescription = "Cancel workout"
+                        Icons.Outlined.Add,
+                        contentDescription = "Add another exercise"
                     )
                 })
         }

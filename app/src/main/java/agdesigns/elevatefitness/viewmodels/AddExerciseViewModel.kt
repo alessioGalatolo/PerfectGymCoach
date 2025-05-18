@@ -249,6 +249,10 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                             exercise = repository.getExercise(event.exerciseId).first(),
                             exerciseNumber = programMapExercises.values.first().size
                         )
+
+                        repository.getExercise(event.exerciseId).collect {
+                            _state.value = state.value.copy(exercise = it)
+                        }
                     }
                 }
             }
@@ -303,7 +307,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
             is AddExerciseEvent.ResetProbability -> {
                 viewModelScope.launch {
                     if (event.exerciseId != null)
-                        repository.resetExerciseProbability(event.exerciseId)
+                        repository.updateExerciseProbability(event.exerciseId)
                     else
                         repository.resetAllExerciseProbability()
                 }
