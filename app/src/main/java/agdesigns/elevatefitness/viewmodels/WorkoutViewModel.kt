@@ -83,6 +83,8 @@ sealed class WorkoutEvent{
 
     data class AddSetToExercise(val exerciseInWorkout: Int): WorkoutEvent()
 
+    data class UpdateExerciseProbability(val exerciseInWorkout: Int, val probability: Int): WorkoutEvent()
+
     data class UpdateReps(val newValue: String): WorkoutEvent()
 
     data class UpdateWeight(val newValue: String): WorkoutEvent()
@@ -455,6 +457,27 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(
                     otherEquipmentDialogOpen = !state.value.otherEquipmentDialogOpen
                 )
+            }
+
+            is WorkoutEvent.UpdateExerciseProbability -> {
+                val exerciseId = state.value.workoutExercises[event.exerciseInWorkout].extExerciseId
+                viewModelScope.launch {
+                    var probability = repository.getExercise(exerciseId).first().probability
+                    when (event.probability) {
+                        1 -> probability *= 1.1
+                        2 -> probability = (probability / 0.9) * 1.1
+                        -1 -> probability *= 0.9
+                        -2 -> probability = (probability / 1.1) * 0.9
+                    }
+                    if (probability <= 0.0)
+                        probability = 0.01
+                    else if (probability > 2.0)
+                        probability = 2.0
+                    repository.updateExerciseProbability(
+                        exerciseId,
+                        probability
+                    )
+                }
             }
         }
         return true

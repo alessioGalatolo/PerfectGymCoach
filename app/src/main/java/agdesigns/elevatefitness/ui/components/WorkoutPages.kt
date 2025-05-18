@@ -38,6 +38,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.ui.platform.LocalDensity
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -67,6 +68,7 @@ fun ExercisePage(
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     useImperialSystem: Boolean,
     tare: Float,
+    updateExerciseProbability: (Int) -> Unit,
     updateTare: (Float) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit,
     toggleOtherEquipment: () -> Unit,
@@ -140,12 +142,51 @@ fun ExercisePage(
                             append(workoutExercises[page].note)
                         }, modifier = Modifier.align(CenterHorizontally))
                     }
+                    Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
+                        var likesExercise by rememberSaveable { mutableStateOf(false) }
+                        var dislikesExercise by rememberSaveable { mutableStateOf(false) }
 
-                    IconButton(
-                        onClick = { infoDialogOpen = true },
-                        Modifier.fillMaxWidth().align(CenterHorizontally)
-                    ) {
-                        Icon(Icons.AutoMirrored.Outlined.HelpOutline, "Exercise description")
+                        IconButton(onClick = {
+                            // if already disliked, remove dislike
+                            if (dislikesExercise) {
+                                dislikesExercise = false
+                                // increase prob to remove previous dislike
+                                updateExerciseProbability(1)
+                            } else {
+                                val increment = if (likesExercise) -1 else -2
+                                updateExerciseProbability(increment)
+                                likesExercise = false
+                                dislikesExercise = true
+                            }
+                        }) {
+                            Icon(
+                                if (dislikesExercise) Icons.Default.ThumbDown else Icons.Outlined.ThumbDown,
+                                "Dislike this exercise"
+                            )
+                        }
+                        // FIXME: it is not clear that this is info about the exercise, not about the like/dislike
+                        IconButton(
+                            onClick = { infoDialogOpen = true }
+                        ) {
+                            Icon(Icons.Outlined.Info, "Exercise description")
+                        }
+                        IconButton(onClick = {
+                            if (likesExercise) {
+                                likesExercise = false
+                                updateExerciseProbability(-1)
+                            } else {
+                                val increment = if (dislikesExercise) 1 else 2
+                                updateExerciseProbability(increment)
+                                likesExercise = true
+                                dislikesExercise = false
+                            }
+
+                        }) {
+                            Icon(
+                                if (likesExercise) Icons.Default.ThumbUp else Icons.Outlined.ThumbUp,
+                                "Like this exercise"
+                            )
+                        }
                     }
                     // content
                     if (restCounter != null){
@@ -399,6 +440,9 @@ fun ExercisePage(
                     }
                 }
             }
+            // Spacer for nav bar
+            val localDensity = LocalDensity.current
+            Spacer(Modifier.height(with(localDensity) { WindowInsets.navigationBars.getBottom(localDensity).toDp() }))
         }
     }
 }

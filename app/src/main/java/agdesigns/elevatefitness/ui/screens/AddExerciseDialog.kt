@@ -148,7 +148,8 @@ fun AddExerciseDialog(
                         ) {
                             Icon(Icons.Default.AutoAwesome, "Magic generation")
                             Spacer(Modifier.width(8.dp))
-                            Text("Current probability: ${viewModel.state.value.exercise!!.probability}")
+                            val currentProbability = viewModel.state.value.exercise!!.probability
+                            Text("Current probability: %.2f".format(currentProbability))
                             TextButton(onClick = { resetProbabilityDialogOpen = true }) {
                                 Text("Reset")
                             }
