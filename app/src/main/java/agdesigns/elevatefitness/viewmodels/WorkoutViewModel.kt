@@ -29,6 +29,7 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.math.max
 import androidx.compose.runtime.snapshotFlow
+import org.json.JSONObject
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
@@ -162,6 +163,20 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
         viewModelScope.launch {
             repository.getDontWantNotificationAccess().collect {
                 _state.value = state.value.copy(cantRequestNotificationAccess = it)
+            }
+        }
+        viewModelScope.launch {
+            while (true) { // FIXME
+                val message = JSONObject()
+                message.put("exerciseName", "Some ex")
+                message.put("rest", 0)
+                message.put("reps", state.value.repsBottomBar.toUIntOrNull() ?: 0)
+                message.put("weight", state.value.weightBottomBar.toDoubleOrNull() ?: 0.0)
+                message.put("note", "Some note")
+                repository.sendWorkout2Wear(
+                    message
+                )
+                delay(1000)
             }
         }
     }

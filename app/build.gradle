@@ -1,14 +1,15 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
     id 'kotlin-parcelize'
     id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
-    id 'com.google.devtools.ksp' version '1.9.23-1.0.20'
+    id 'com.google.devtools.ksp' version '2.0.21-1.0.25'
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "agdesigns.elevatefitness"
@@ -49,9 +50,6 @@ android {
     buildFeatures {
         compose true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion "1.5.12"
-    }
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
@@ -67,9 +65,11 @@ android {
     namespace 'agdesigns.elevatefitness'
 }
 
+
 dependencies {
     implementation "io.github.raamcosta.compose-destinations:core:$destinations_version"
     implementation "io.github.raamcosta.compose-destinations:bottom-sheet:$destinations_version"
+    implementation 'com.google.android.gms:play-services-wearable:19.0.0'
     ksp "io.github.raamcosta.compose-destinations:ksp:$destinations_version"
     implementation 'com.github.jaikeerthick:Composable-Graphs:v1.2.1' // Have to manually check for updates
     implementation "androidx.palette:palette-ktx:1.0.0"
@@ -85,7 +85,6 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$dagger_hilt"
     implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
     implementation 'androidx.core:core-ktx:1.13.1'
-    implementation "androidx.compose.compiler:compiler:1.5.13"
     implementation 'androidx.compose.material:material-icons-extended:1.6.7'
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.material3:material3:$material3_version"

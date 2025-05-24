@@ -17,8 +17,12 @@ import agdesigns.elevatefitness.data.workout_program.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
+import android.util.Log
+import com.google.android.gms.wearable.Wearable
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,7 +31,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 @Singleton
 class Repository @Inject constructor(
     private val db: WorkoutDatabase,
-    context: Context
+    @ApplicationContext  private val context: Context
 ) {
     private val dataStore = context.dataStore
     private val currentPlan = longPreferencesKey("Current plan")
@@ -45,6 +49,19 @@ class Repository @Inject constructor(
     private val incrementDumbbell = floatPreferencesKey("Increment dumbbell")
     private val incrementMachine = floatPreferencesKey("Increment machine")
     private val incrementCable = floatPreferencesKey("Increment cable")
+
+    /*
+     * Wear connection
+     */
+    fun sendWorkout2Wear(message: JSONObject) {
+        val nodes = Wearable.getNodeClient(context).connectedNodes
+        nodes.addOnSuccessListener {
+            for (node in it) {
+                Wearable.getMessageClient(context)
+                    .sendMessage(node.id, "/phone2watch", message.toString().toByteArray())
+            }
+        }
+    }
 
 
     /*
