@@ -1,7 +1,6 @@
-package agdesigns.elevatefitness.presentation
+package agdesigns.elevatefitness.data
 
 import android.content.Context
-import android.util.Log
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
@@ -14,8 +13,9 @@ import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
+
 @Singleton
-class WearMessageHandler @Inject constructor(
+class WearMessagesReceiver @Inject constructor(
     @ApplicationContext private val context: Context
 ) : MessageClient.OnMessageReceivedListener {
 
@@ -26,23 +26,29 @@ class WearMessageHandler @Inject constructor(
     )
     val messages: SharedFlow<JSONObject> = _messages.asSharedFlow()
 
+    private val _syncRequest = MutableSharedFlow<Boolean>(
+        replay = 0,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val syncRequest: SharedFlow<Boolean> = _syncRequest.asSharedFlow()
+
     init {
         Wearable.getMessageClient(context).addListener(this)
     }
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
-        if (messageEvent.path == "/phone2watch") {
+        if (messageEvent.path == "/watch2phone") {
             val msg = String(messageEvent.data, Charsets.UTF_8)
             val json = JSONObject(msg)
             _messages.tryEmit(json)
+        } else if (messageEvent.path == "/request_sync") {
+            _syncRequest.tryEmit(true)
         }
     }
 
+    // FIXME: should be called
     fun cleanup() {
         Wearable.getMessageClient(context).removeListener(this)
-    }
-
-    fun reopen() {
-        Wearable.getMessageClient(context).addListener(this)
     }
 }

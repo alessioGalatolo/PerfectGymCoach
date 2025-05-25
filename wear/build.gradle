@@ -49,8 +49,11 @@ dependencies {
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
-    implementation 'androidx.wear.compose:compose-material:1.2.1'
-    implementation 'androidx.wear.compose:compose-foundation:1.2.1'
+    implementation 'androidx.compose.material:material-icons-extended:1.6.7'
+    implementation 'androidx.wear.compose:compose-material:1.4.1' // some stuff is used in material3
+    implementation "androidx.wear.compose:compose-material3:1.5.0-beta02"
+    implementation "androidx.wear.compose:compose-foundation:1.5.0-beta02"
+    implementation "androidx.wear.compose:compose-navigation:1.5.0-beta02"
     implementation 'androidx.wear:wear-tooling-preview:1.0.0'
     implementation 'androidx.activity:activity-compose:1.10.1'
     implementation 'androidx.core:core-splashscreen:1.0.1'

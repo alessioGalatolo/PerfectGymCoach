@@ -66,6 +66,7 @@ import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDesti
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @Destination<WorkoutOnlyGraph>(start = true)
@@ -205,6 +206,11 @@ fun Workout(
         else
             viewModel.state.value.workoutExercises.size
     })
+    // communicate with viewModel so that it know current exercise
+    // FIXME: wouldn't it be easier to use currentExercise?
+    LaunchedEffect(pagerState.currentPage, viewModel.state.value.workoutExercises) {
+        viewModel.onEvent(WorkoutEvent.UpdateCurrentPage(pagerState.currentPage))
+    }
     val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
             if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {
@@ -254,6 +260,10 @@ fun Workout(
         ongoingRecord?.reps?.size ?: 0
     }}
 
+    LaunchedEffect(setsDone.value){
+        // update viewModel so that it can be transmitted to wear os
+        viewModel.onEvent(WorkoutEvent.UpdateSetsDone(setsDone.value))
+    }
     LaunchedEffect(currentExercise, setsDone){
         if (currentExercise != null && setsDone.value < currentExercise!!.reps.size) {
             viewModel.onEvent(

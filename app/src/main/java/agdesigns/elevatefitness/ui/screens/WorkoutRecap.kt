@@ -186,6 +186,7 @@ fun WorkoutRecap(
                                             fontStyle = Italic
                                         )
                                         Text(
+                                            // FIXME: why are we outputting the date here?
                                             text = "${
                                                 if (clickedValue.value.first.toString()
                                                         .isBlank()

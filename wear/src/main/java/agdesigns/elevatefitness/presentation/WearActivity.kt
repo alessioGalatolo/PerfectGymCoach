@@ -53,11 +53,6 @@ class WearActivity : ComponentActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        wearRepository.close()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         wearRepository.close()
@@ -71,5 +66,7 @@ class WearActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         wearRepository.reopen()
+        // TODO: is this needed?
+        wearRepository.forceSync()
     }
 }

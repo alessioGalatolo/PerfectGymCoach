@@ -319,7 +319,8 @@ fun ExercisePage(
                                 val toBeDone = setsDone.value <= setCount
                                 val repsInRow: String
                                 val weightInRow: String
-                                if (toBeDone || setCount >= ongoingRecord!!.reps.size) {
+                                // FIXME: ongoingRecord null pointer when completing set from watch
+                                if (toBeDone || setCount >= (ongoingRecord?.reps?.size ?: 0)) {
                                     repsInRow = repsCount.toString()
                                     val currentRecord = currentExerciseRecords.firstOrNull()
                                     weightInRow = if (currentRecord != null) {
@@ -329,7 +330,8 @@ fun ExercisePage(
                                         "..."
                                     }
                                 } else {
-                                    repsInRow = ongoingRecord.reps[setCount].toString()
+                                    // if ongoingRecord is null, it should go in the other branch anyway
+                                    repsInRow = ongoingRecord!!.reps[setCount].toString()
                                     weightInRow = maybeKgToLb(ongoingRecord.weights[setCount], useImperialSystem).toString()
                                 }
                                 var dialogIsOpen by rememberSaveable { mutableStateOf(false) }

@@ -16,8 +16,10 @@ import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
 import agdesigns.elevatefitness.ui.maybeLbToKg
+import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
-import androidx.compose.foundation.layout.size
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -29,7 +31,8 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.math.max
 import androidx.compose.runtime.snapshotFlow
-import org.json.JSONObject
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.PutDataMapRequest
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
@@ -41,6 +44,7 @@ data class WorkoutState(
     val allRecords: Map<Long, List<ExerciseRecordAndEquipment>> = emptyMap(), // old records
     val workoutTime: Long? = null, // in seconds
     val restTimestamp: Long? = null, // workout time of end of rest
+    val wearRestTimestamp: Long? = null, // same as above but as used in the wear os companion app
     val workoutId: Long = 0L,
     val tare: Float = 0f,
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
@@ -53,6 +57,8 @@ data class WorkoutState(
     val incrementDumbbell: Float = 0f,
     val incrementMachine: Float = 0f,
     val incrementCable: Float = 0f,
+    val currentPage: Int = 0,  // needed to know which is the current exercise
+    val setsDone: Int = 0,
     val hasRecordedExercise: Boolean = false // used to add a flag in cancel workout
 )
 
@@ -112,6 +118,9 @@ sealed class WorkoutEvent{
         val set: Int
     ): WorkoutEvent()
 
+    data class UpdateCurrentPage(val currentPage: Int) : WorkoutEvent()
+    data class UpdateSetsDone(val value: Int) : WorkoutEvent()
+
 }
 
 @HiltViewModel
@@ -166,17 +175,30 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
         }
         viewModelScope.launch {
-            while (true) { // FIXME
-                val message = JSONObject()
-                message.put("exerciseName", "Some ex")
-                message.put("rest", 0)
-                message.put("reps", state.value.repsBottomBar.toUIntOrNull() ?: 0)
-                message.put("weight", state.value.weightBottomBar.toDoubleOrNull() ?: 0.0)
-                message.put("note", "Some note")
-                repository.sendWorkout2Wear(
-                    message
+            // check if user complete set from watch
+            repository.getWatchSetCompletion().collect {
+                val exerciseName = it.getString("exerciseName")
+                val weight = it.getDouble("weight").toFloat()
+                val reps = it.getInt("reps")
+                val exercise = state.value.workoutExercises[state.value.currentPage]
+                // FIXME: should find another way of checking this, strings may be slightly different
+                if (!exercise.name.startsWith(exerciseName))
+                    Log.e("WorkoutViewModel", "Exercise name does not match, $exerciseName != ${exercise.name}")
+                _state.value = state.value.copy(
+                    repsBottomBar = reps.toString(),
+                    weightBottomBar = weight.toString()
                 )
-                delay(1000)
+                onEvent(WorkoutEvent.TryCompleteSet(
+                    state.value.currentPage,
+                    exercise.rest[state.value.setsDone].toLong())
+                )
+            }
+        }
+        viewModelScope.launch {
+            // check for sync requests
+            repository.getSyncRequest().collect {
+                Log.d("WorkoutViewModel", "Sync request received")
+                sendWorkout2Wear(sendImage = true)
             }
         }
     }
@@ -288,7 +310,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
                     }  // FIXME: same find is repeated elsewhere
 
-                    _state.value = state.value.copy(restTimestamp = state.value.workoutTime!!+event.exerciseRest)
+                    _state.value = state.value.copy(
+                        restTimestamp = state.value.workoutTime!!+event.exerciseRest,
+                        wearRestTimestamp = Calendar.getInstance().timeInMillis + event.exerciseRest * 1000
+                    )
+                    sendWorkout2Wear()
                     if (record == null) {
                         val exercise = state.value.workoutExercises[event.exerciseInWorkout]
                         if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT)
@@ -394,6 +420,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.UpdateWeight -> {
                 _state.value = state.value.copy(weightBottomBar = event.newValue)
+                sendWorkout2Wear()
             }
             is WorkoutEvent.AutoStepWeight -> {
                 var increment = when (event.equipment) {
@@ -408,6 +435,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     increment *= -1f
                 val newValue = (event.newValue.toFloatOrNull() ?: 0f) + increment
                 _state.value = state.value.copy(weightBottomBar = newValue.toString())
+                sendWorkout2Wear()
             }
             is WorkoutEvent.UpdateTare -> {
                 _state.value = state.value.copy(tare = event.newValue)
@@ -523,8 +551,79 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     )
                 }
             }
+
+            is WorkoutEvent.UpdateCurrentPage -> {
+                _state.value = state.value.copy(currentPage = event.currentPage)
+                sendWorkout2Wear(sendImage = true)
+            }
+
+            is WorkoutEvent.UpdateSetsDone -> {
+                _state.value = state.value.copy(setsDone = event.value)
+                sendWorkout2Wear()
+            }
         }
         return true
+    }
+
+    private fun sendWorkout2Wear(
+        sendImage: Boolean = false
+    ) {
+        viewModelScope.launch {
+            if (state.value.currentPage < state.value.workoutExercises.size) {
+                val exercise = state.value.workoutExercises[state.value.currentPage]
+                val nextExercise = if (state.value.currentPage < state.value.workoutExercises.size - 1)
+                    state.value.workoutExercises[state.value.currentPage + 1] else null
+                val exerciseIncrement = when (exercise.equipment) {
+                    Exercise.Equipment.EVERYTHING -> throw Exception("Was asked about the increment of 'everything' equipment. This should not happen.")  // should never happen
+                    Exercise.Equipment.BARBELL -> state.value.incrementBarbell
+                    Exercise.Equipment.BODY_WEIGHT -> state.value.incrementBodyweight
+                    Exercise.Equipment.CABLES -> state.value.incrementCable
+                    Exercise.Equipment.DUMBBELL -> state.value.incrementDumbbell
+                    Exercise.Equipment.MACHINE -> state.value.incrementMachine
+                }
+                val dataMapReq = PutDataMapRequest.create("/phone2watch")
+                var exerciseName = exercise.name
+                if (exercise.variation.isNotEmpty())
+                    exerciseName += " " + exercise.variation
+                dataMapReq.dataMap.putString("exerciseName", exerciseName)
+                if (nextExercise != null) {
+                    var nextExerciseName = nextExercise.name
+                    if (nextExercise.variation.isNotEmpty())
+                        nextExerciseName += " " + nextExercise.variation
+                    dataMapReq.dataMap.putString("nextExerciseName", nextExerciseName)
+                }
+                dataMapReq.dataMap.putFloat("exerciseIncrement", exerciseIncrement)
+                dataMapReq.dataMap.putInt("setsDone", state.value.setsDone)
+                dataMapReq.dataMap.putIntegerArrayList("rest", exercise.rest as ArrayList<Int>)
+                dataMapReq.dataMap.putIntegerArrayList("reps", exercise.reps as ArrayList<Int>)
+                dataMapReq.dataMap.putString("note", exercise.note)
+                dataMapReq.dataMap.putFloat("weight", state.value.weightBottomBar.toFloat())
+                if (state.value.restTimestamp != null)
+                    dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp!!)
+
+                repository.sendWorkout2Wear(
+                    dataMapReq
+                )
+                if (sendImage) {
+                    val imageAsset = repository.getAssetFromResId(exercise.image)
+                    val imageReq = PutDataMapRequest.create("/image2watch")
+                    imageReq.dataMap.putAsset("image", imageAsset)
+                    repository.sendWorkout2Wear(
+                        imageReq
+                    )
+                }
+
+            } else if (state.value.currentPage == state.value.workoutExercises.size) {
+                if (state.value.workoutExercises.isNotEmpty()) {
+                    // likely on finish page
+                    // TODO send data
+
+                } else {
+                    // if it's empty it's either uninitialised or empty workout
+                    // TODO: handle latter case
+                }
+            }
+        }
     }
 
     private fun startTimer(){
@@ -536,6 +635,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 delay(1000)
             }
         }.onEach {
+            // fixme: it would be better to fetch from calendar
             _state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)
         }
             .launchIn(viewModelScope)

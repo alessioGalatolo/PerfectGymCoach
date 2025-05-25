@@ -17,12 +17,19 @@ import agdesigns.elevatefitness.data.workout_program.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
+import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
+import androidx.annotation.DrawableRes
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +38,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 @Singleton
 class Repository @Inject constructor(
     private val db: WorkoutDatabase,
+    private val wearMessagesReceiver: WearMessagesReceiver,
     @ApplicationContext  private val context: Context
 ) {
     private val dataStore = context.dataStore
@@ -53,16 +61,23 @@ class Repository @Inject constructor(
     /*
      * Wear connection
      */
-    fun sendWorkout2Wear(message: JSONObject) {
-        val nodes = Wearable.getNodeClient(context).connectedNodes
-        nodes.addOnSuccessListener {
-            for (node in it) {
-                Wearable.getMessageClient(context)
-                    .sendMessage(node.id, "/phone2watch", message.toString().toByteArray())
+    fun sendWorkout2Wear(message: PutDataMapRequest) {
+        message.dataMap.putLong("message_timestamp", System.currentTimeMillis())
+        val putReq = message.asPutDataRequest().setUrgent()
+
+        Wearable.getDataClient(context)
+            .putDataItem(putReq)
+            .addOnSuccessListener { dataItem ->
+                Log.d("WearSender", "DataItem sent: $dataItem")
             }
-        }
+            .addOnFailureListener { e ->
+                Log.e("WearSender", "Failed sending DataItem", e)
+            }
     }
 
+    fun getWatchSetCompletion(): Flow<JSONObject> = wearMessagesReceiver.messages
+
+    fun getSyncRequest(): Flow<Boolean> = wearMessagesReceiver.syncRequest
 
     /*
      * WORKOUT PLAN
@@ -310,15 +325,29 @@ class Repository @Inject constructor(
             it[currentWorkout] = newValue
     }
 
+    /*
+     * Utils
+     */
+    fun getBitmapFromResId(@DrawableRes imageId: Int): Bitmap {
+        return BitmapFactory.decodeResource(context.resources, imageId)
+    }
+
+    fun getAssetFromResId(@DrawableRes imageId: Int): Asset {
+        val bitmap = getBitmapFromResId(imageId)
+        return ByteArrayOutputStream().let { byteStream ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 5, byteStream)
+            Asset.createFromBytes(byteStream.toByteArray())
+        }
+    }
 
     companion object {
 
         // For Singleton instantiation
         @Volatile private var instance: Repository? = null
 
-        fun getInstance(workoutDatabase: WorkoutDatabase, context: Context) =
+        fun getInstance(workoutDatabase: WorkoutDatabase, wearMessagesReceiver: WearMessagesReceiver, context: Context) =
             instance ?: synchronized(this) {
-                instance ?: Repository(workoutDatabase, context).also { instance = it }
+                instance ?: Repository(workoutDatabase, wearMessagesReceiver, context).also { instance = it }
             }
     }
 }

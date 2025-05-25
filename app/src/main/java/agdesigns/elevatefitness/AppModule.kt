@@ -3,6 +3,7 @@ package agdesigns.elevatefitness
 import android.content.Context
 import agdesigns.elevatefitness.data.WorkoutDatabase
 import agdesigns.elevatefitness.data.Repository
+import agdesigns.elevatefitness.data.WearMessagesReceiver
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,7 +34,11 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideRepository(db: WorkoutDatabase, @ApplicationContext context: Context
-    ): Repository = Repository.getInstance(db, context)
+    fun provideRepository(db: WorkoutDatabase, wearMessagesReceiver: WearMessagesReceiver, @ApplicationContext context: Context
+    ): Repository = Repository.getInstance(db, wearMessagesReceiver, context)
 
+    @Singleton
+    @Provides
+    fun provideWearMessageReceiver(@ApplicationContext context: Context
+    ): WearMessagesReceiver = WearMessagesReceiver(context)
 }
