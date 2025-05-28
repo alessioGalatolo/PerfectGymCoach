@@ -27,7 +27,7 @@ core_splashscreen = "1.0.1"
 # other
 palette = "1.0.0"
 # external libraries
-graphs = "1.2.1"
+graphs = "1.2.3"
 # tests
 junit = "4.13.2"
 junit_ext = "1.1.5"

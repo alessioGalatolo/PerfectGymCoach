@@ -49,11 +49,12 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.ui.WorkoutOnlyGraph
 import androidx.compose.ui.graphics.Color
-import com.jaikeerthick.composable_graphs.color.*
-import com.jaikeerthick.composable_graphs.composables.LineGraph
-import com.jaikeerthick.composable_graphs.data.GraphData
-import com.jaikeerthick.composable_graphs.style.LineGraphStyle
-import com.jaikeerthick.composable_graphs.style.LinearGraphVisibility
+import com.jaikeerthick.composable_graphs.composables.line.LineGraph
+import com.jaikeerthick.composable_graphs.composables.line.model.LineData
+import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphColors
+import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphFillType
+import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphStyle
+import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphVisibility
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -166,9 +167,9 @@ fun WorkoutRecap(
                         if (records.size > 1){
                             HorizontalPager(state = pagerState) { page ->
                                 Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                                    val clickedValue: MutableState<Pair<Any, Any>> = remember {
+                                    val clickedValue: MutableState<LineData> = remember {
                                         mutableStateOf(
-                                            Pair(
+                                            LineData(
                                                 SimpleDateFormat("d MMM").format(
                                                     viewModel.state.value.workoutRecord!!.startDate!!.time
                                                 ),
@@ -187,48 +188,47 @@ fun WorkoutRecap(
                                         )
                                         Text(
                                             // FIXME: why are we outputting the date here?
-                                            text = "${
-                                                if (clickedValue.value.first.toString()
-                                                        .isBlank()
-                                                ) "-"
-                                                else clickedValue.value.first
-                                            }" +
-                                                    ", ${clickedValue.value.second} " +
+                                            text = (clickedValue.value.x.ifBlank { "-" }) +
+                                                    ", ${clickedValue.value.y} " +
                                                     graphsYaxis[page].first.second,
                                             color = MaterialTheme.colorScheme.primary,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                     val maxDatesInXAxis = 6
+                                    val dateFormatter = SimpleDateFormat("d MMM")
+                                    val interval = ceil(records.size.toDouble() / maxDatesInXAxis).toInt()
+
+                                    val data = records.mapIndexed { index, record ->
+                                        val xLabel = if (index % interval == 0)
+                                            dateFormatter.format(record.startDate!!.time)
+                                        else
+                                            ""
+                                        LineData(x = xLabel, y = graphsYaxis[page].second[index])
+                                    }
                                     LineGraph(
-                                        xAxisData = List(records.size) { index ->
-                                            GraphData.String(
-                                                if (index % ceil(records.size.toDouble() / maxDatesInXAxis).toInt() == 0)
-                                                    SimpleDateFormat("d MMM").format(records[index].startDate!!.time)
-                                                else
-                                                    ""
-                                            )
-                                        },
-                                        yAxisData = graphsYaxis[page].second,
-                                        onPointClicked = { x ->
-                                            clickedValue.value = x
+                                        data = data,
+                                        onPointClick = { point ->
+                                            clickedValue.value = point
                                         },
                                         style = LineGraphStyle(
-                                            visibility = LinearGraphVisibility(
-                                                isHeaderVisible = true,
+                                            visibility = LineGraphVisibility(
                                                 isYAxisLabelVisible = true,
                                                 isXAxisLabelVisible = true,
                                                 isCrossHairVisible = true,
                                                 isGridVisible = true
                                             ),
-                                            colors = LinearGraphColors(
+                                            // FIXME: replace colors with theme accents
+                                            colors = LineGraphColors(
                                                 lineColor = MaterialTheme.colorScheme.primary,
                                                 pointColor = MaterialTheme.colorScheme.primary,
-                                                clickHighlightColor = PointHighlight2,
-                                                fillGradient = Brush.verticalGradient(
-                                                    listOf(
-                                                        MaterialTheme.colorScheme.secondary,
-                                                        Gradient2
+                                                clickHighlightColor = Color(0x75388E3C), // was PointHighlight2 but now it's internal
+                                                fillType = LineGraphFillType.Gradient(
+                                                    brush = Brush.verticalGradient(
+                                                        listOf(
+                                                            MaterialTheme.colorScheme.secondary,
+                                                            Color(0x00FFFFFF)  // was Gradient2
+                                                        )
                                                     )
                                                 )
                                             )
