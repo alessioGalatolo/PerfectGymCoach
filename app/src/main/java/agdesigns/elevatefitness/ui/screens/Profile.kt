@@ -71,12 +71,6 @@ fun Profile(
     var editYear by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    var genderDialogueShown by remember { mutableStateOf(false) }
-    InfoDialog(dialogueIsOpen = genderDialogueShown,
-        toggleDialogue = { genderDialogueShown = !genderDialogueShown }
-    ) {
-        Text(stringResource(R.string.gender_info))
-    }
     var bmiDialogueShown by remember { mutableStateOf(false) }
     InfoDialog(dialogueIsOpen = bmiDialogueShown,
         toggleDialogue = { bmiDialogueShown = !bmiDialogueShown }
@@ -376,50 +370,41 @@ fun Profile(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Biological sex: ")
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    var expanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
+                var expanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier
+                        .widthIn(1.dp, Dp.Infinity)
+                        .weight(1f)
+                ) {
+                    OutlinedTextField(
+                        readOnly = true,
+                        value = viewModel.state.value.sex.sexName,
+                        onValueChange = {},
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            errorContainerColor = Color.Transparent
+                        ),
+                        modifier = Modifier.menuAnchor()
+                    )
+                    ExposedDropdownMenu(
                         expanded = expanded,
-                        onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier
-                            .widthIn(1.dp, Dp.Infinity)
-                            .weight(1f)
+                        onDismissRequest = { expanded = false },
                     ) {
-                        OutlinedTextField(
-                            readOnly = true,
-                            value = viewModel.state.value.sex.sexName,
-                            onValueChange = {},
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            colors = ExposedDropdownMenuDefaults.textFieldColors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                errorContainerColor = Color.Transparent
-                            ),
-                            modifier = Modifier.menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false },
-                        ) {
-                            Sex.entries.forEach { selectionOption -> // fixme
-                                DropdownMenuItem(
-                                    text = { Text(selectionOption.sexName) },
-                                    onClick = {
-                                        viewModel.onEvent(ProfileEvent.UpdateSex(selectionOption))
-                                        expanded = false
-                                        focusManager.clearFocus()
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
-                            }
+                        Sex.entries.forEach { selectionOption -> // fixme
+                            DropdownMenuItem(
+                                text = { Text(selectionOption.sexName) },
+                                onClick = {
+                                    viewModel.onEvent(ProfileEvent.UpdateSex(selectionOption))
+                                    expanded = false
+                                    focusManager.clearFocus()
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
                         }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    IconButton(
-                        onClick = { genderDialogueShown = true },
-                        modifier = Modifier.weight(0.2f)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/info")
                     }
                 }
             }
