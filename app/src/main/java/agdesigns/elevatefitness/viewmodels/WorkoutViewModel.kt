@@ -25,7 +25,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import okhttp3.internal.toImmutableList
 import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -250,7 +249,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 description = it.description,
                                 equipment = it.equipment,
                                 note = it.note,
-                                reps = it.reps.toImmutableList(),
+                                reps = it.reps.toList(),
                                 rest = it.rest,
                                 supersetExercise = it.supersetExercise
                             )

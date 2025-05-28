@@ -39,8 +39,6 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.palette.graphics.Palette
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.ProgramExerciseReorder
 import agdesigns.elevatefitness.ui.ChangePlanGraph
@@ -48,6 +46,11 @@ import agdesigns.elevatefitness.viewmodels.ExercisesEvent
 import agdesigns.elevatefitness.viewmodels.ExercisesViewModel
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.crossfade
+import coil3.toBitmap
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
@@ -201,7 +204,7 @@ fun AddProgramExercise(
                                         .data(exercise.image)
                                         .crossfade(true)
                                         .listener { _, result ->
-                                            val image = result.drawable.toBitmap()
+                                            val image = result.image.toBitmap()
                                             Palette.from(image).maximumColorCount(3)
                                                 .clearFilters()
                                                 .setRegion(image.width-50, 0, image.width,50)

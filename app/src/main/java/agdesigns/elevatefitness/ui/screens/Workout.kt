@@ -29,8 +29,6 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.palette.graphics.Palette
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.workout_exercise.WorkoutExercise
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
@@ -62,6 +60,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.content.ContextCompat.getSystemService
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.crossfade
+import coil3.toBitmap
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
@@ -396,7 +399,7 @@ fun Workout(
                             .data(currentImageId)
                             .crossfade(true)
                             .listener { _, result ->
-                                val image = result.drawable.toBitmap()
+                                val image = result.image.toBitmap()
                                 Palette.from(image).maximumColorCount(3)
                                     .clearFilters()
                                     .setRegion(0, 0, image.width,50)

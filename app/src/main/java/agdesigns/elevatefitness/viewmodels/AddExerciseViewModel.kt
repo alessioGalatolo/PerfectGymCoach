@@ -12,7 +12,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import okhttp3.internal.toImmutableList
 import java.lang.Integer.min
 import javax.inject.Inject
 
@@ -207,7 +206,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     } else if (event.newSets.toInt() < state.value.restArray.size) {
                         restArrayMutable = restArrayMutable.subList(0, event.newSets.toInt())
                     }
-                    restArray = restArrayMutable.toImmutableList()
+                    restArray = restArrayMutable.toList()
 
 
                     var repsArrayMutable = state.value.repsArray.subList(
@@ -223,7 +222,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     } else if (event.newSets.toInt() < state.value.repsArray.size) {
                         repsArrayMutable = repsArrayMutable.subList(0, event.newSets.toInt())
                     }
-                    repsArray = repsArrayMutable.toImmutableList()
+                    repsArray = repsArrayMutable.toList()
                 }
                 _state.value = state.value.copy(
                     sets = event.newSets,

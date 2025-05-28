@@ -34,8 +34,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.ui.barbellFromWeight
@@ -66,6 +64,9 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.text.SimpleDateFormat
 import kotlin.math.ceil
 import androidx.core.net.toUri
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
