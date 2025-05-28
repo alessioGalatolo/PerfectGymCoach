@@ -7,6 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import kotlinx.parcelize.Parcelize
+import java.time.ZonedDateTime
 import java.util.*
 
 @Entity(
@@ -22,7 +23,7 @@ import java.util.*
 data class WorkoutRecord(
     @PrimaryKey(autoGenerate = true) val workoutId: Long = 0L,
     val extProgramId: Long,
-    val startDate: Calendar? = null,
+    val startDate: ZonedDateTime? = null,
     val intensity: WorkoutIntensity = WorkoutIntensity.NORMAL_INTENSITY,
     val duration: Long = 0L, // seconds
     val volume: Double = 0.0,
@@ -39,7 +40,7 @@ data class WorkoutRecord(
 @Parcelize
 data class WorkoutRecordStart(
     val workoutId: Long,
-    val startDate: Calendar
+    val startDate: ZonedDateTime
 ): Parcelable
 
 @Parcelize
@@ -56,7 +57,7 @@ data class WorkoutRecordFinish(
 data class WorkoutRecordAndName(
     @PrimaryKey(autoGenerate = true) val workoutId: Long = 0L,
     val extProgramId: Long,
-    val startDate: Calendar?,
+    val startDate: ZonedDateTime?,
     val intensity: WorkoutRecord.WorkoutIntensity,
     val duration: Long = 0L, // seconds
     val volume: Float = 0f,

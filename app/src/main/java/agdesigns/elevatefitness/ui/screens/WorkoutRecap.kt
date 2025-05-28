@@ -49,6 +49,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.ui.WorkoutOnlyGraph
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.withLink
 import com.jaikeerthick.composable_graphs.composables.line.LineGraph
 import com.jaikeerthick.composable_graphs.composables.line.model.LineData
 import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphColors
@@ -60,6 +65,9 @@ import com.ramcosta.composedestinations.generated.destinations.HistoryDestinatio
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.text.SimpleDateFormat
 import kotlin.math.ceil
+import androidx.core.net.toUri
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
 @Destination<WorkoutOnlyGraph>
@@ -76,39 +84,26 @@ fun WorkoutRecap(
     InfoDialog(dialogueIsOpen = volumeDialogIsOpen.value,
         toggleDialogue = { volumeDialogIsOpen.value = !volumeDialogIsOpen.value })
     {
+        val context = LocalContext.current
+
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = LocalContentColor.current)) {
-                append(stringResource(R.string.volume_info))
+                append("Volume info: ")
             }
-            // We attach this *URL* annotation to the following content
-            // until `pop()` is called
-            pushStringAnnotation(tag = "URL",
-                annotation = "https://doi.org/10.1007/s40279-017-0793-0")
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)
+            withLink(
+                LinkAnnotation.Url(
+                    url = "https://doi.org/10.1007/s40279-017-0793-0",
+                    styles = TextLinkStyles(
+                        style = SpanStyle(color = MaterialTheme.colorScheme.primary)
+                    )
+                )
             ) {
                 append("Learn more.")
             }
-            pop()
         }
-        val context = LocalContext.current
-        ClickableText(
-            text = annotatedText,
-            onClick = { offset ->
-                // We check if there is an *URL* annotation attached to the text
-                // at the clicked position
-                annotatedText.getStringAnnotations(tag = "URL", start = offset,
-                    end = offset)
-                    .firstOrNull()?.let { annotation ->
-                        startActivity(
-                            context,
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse(annotation.item)
-                            ),
-                            null
-                        )
-                    }
-            }
+
+        Text(
+            text = annotatedText
         )
     }
     InfoDialog(dialogueIsOpen = calorieDialogIsOpen.value,
@@ -166,13 +161,12 @@ fun WorkoutRecap(
                     ElevatedCard (Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                         if (records.size > 1){
                             HorizontalPager(state = pagerState) { page ->
+                                val formatter = DateTimeFormatter.ofPattern("d MMM")
                                 Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                     val clickedValue: MutableState<LineData> = remember {
                                         mutableStateOf(
                                             LineData(
-                                                SimpleDateFormat("d MMM").format(
-                                                    viewModel.state.value.workoutRecord!!.startDate!!.time
-                                                ),
+                                                viewModel.state.value.workoutRecord!!.startDate!!.format(formatter),
                                                 graphsYaxis[page].second.last()
     //                                            viewModel.state.value.workoutRecord!!.volume
                                             )
@@ -196,12 +190,11 @@ fun WorkoutRecap(
                                         )
                                     }
                                     val maxDatesInXAxis = 6
-                                    val dateFormatter = SimpleDateFormat("d MMM")
                                     val interval = ceil(records.size.toDouble() / maxDatesInXAxis).toInt()
 
                                     val data = records.mapIndexed { index, record ->
                                         val xLabel = if (index % interval == 0)
-                                            dateFormatter.format(record.startDate!!.time)
+                                            record.startDate!!.format(formatter)
                                         else
                                             ""
                                         LineData(x = xLabel, y = graphsYaxis[page].second[index])
@@ -368,7 +361,7 @@ fun WorkoutRecap(
                             contentDescription = "Exercise image",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(LocalConfiguration.current.screenWidthDp.dp / 4)
+                                .height(with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4 )
                                 .align(Alignment.CenterHorizontally)
                                 .clip(RoundedCornerShape(12.dp))
                         )

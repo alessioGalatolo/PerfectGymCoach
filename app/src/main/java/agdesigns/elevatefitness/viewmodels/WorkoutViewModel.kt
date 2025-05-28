@@ -33,6 +33,8 @@ import kotlin.math.max
 import androidx.compose.runtime.snapshotFlow
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
+import java.time.Duration
+import java.time.ZonedDateTime
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
@@ -290,7 +292,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         repository.startWorkout(
                             WorkoutRecordStart(
                                 state.value.workoutId,
-                                startDate = Calendar.getInstance()
+                                startDate = ZonedDateTime.now()
                             )
                         )
                         repository.setCurrentWorkout(state.value.workoutId)
@@ -312,7 +314,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
                     _state.value = state.value.copy(
                         restTimestamp = state.value.workoutTime!!+event.exerciseRest,
-                        wearRestTimestamp = Calendar.getInstance().timeInMillis + event.exerciseRest * 1000
+                        wearRestTimestamp = ZonedDateTime.now().toInstant().toEpochMilli() + event.exerciseRest * 1000
                     )
                     sendWorkout2Wear()
                     if (record == null) {
@@ -324,7 +326,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 extWorkoutId = state.value.workoutId,
                                 extExerciseId = exercise.extExerciseId,
                                 exerciseInWorkout = event.exerciseInWorkout,
-                                date = Calendar.getInstance(),
+                                date = ZonedDateTime.now(),
                                 reps = listOf(state.value.repsBottomBar.toInt()),
                                 weights = listOf(
                                     maybeLbToKg(state.value.weightBottomBar.toFloat(), state.value.imperialSystem)
@@ -451,7 +453,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             val workout = repository.getWorkoutRecord(state.value.workoutId).first()
                             onEvent(WorkoutEvent.StartRetrievingExercises)
                             _state.value = state.value.copy(
-                                workoutTime = (Calendar.getInstance().timeInMillis - workout.startDate!!.timeInMillis) / 1000,
+                                workoutTime = Duration.between(ZonedDateTime.now(), workout.startDate!!).seconds,
                                 programId = workout.extProgramId
                             )
                             startTimer()

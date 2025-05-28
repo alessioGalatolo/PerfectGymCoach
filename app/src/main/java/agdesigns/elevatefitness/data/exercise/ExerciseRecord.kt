@@ -7,6 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import kotlinx.parcelize.Parcelize
+import java.time.ZonedDateTime
 import java.util.*
 
 @Parcelize
@@ -33,7 +34,7 @@ data class ExerciseRecord(
     val extExerciseId: Long,
     val extWorkoutId: Long,
     val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
-    val date: Calendar, // redundant but simplifies
+    val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
     val variation: String,
@@ -59,7 +60,7 @@ data class ExerciseRecordAndEquipment(
     val extExerciseId: Long,
     val extWorkoutId: Long,
     val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
-    val date: Calendar, // redundant but simplifies
+    val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
     val tare: Float = 0f,
@@ -75,7 +76,7 @@ data class ExerciseRecordAndInfo(
     val extExerciseId: Long,
     val extWorkoutId: Long,
     val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
-    val date: Calendar, // redundant but simplifies
+    val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
     val variation: String,

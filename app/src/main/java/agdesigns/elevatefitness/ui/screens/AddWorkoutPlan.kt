@@ -56,7 +56,7 @@ import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.ui.components.InsertNameDialog
 import agdesigns.elevatefitness.viewmodels.PlansEvent
 import agdesigns.elevatefitness.viewmodels.PlansViewModel
-import android.icu.util.Calendar
+import androidx.compose.material3.IconButtonDefaults
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.generated.destinations.ArchivedPlansDestination
@@ -64,6 +64,7 @@ import com.ramcosta.composedestinations.generated.destinations.CustomizePlanGene
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 
 @Destination<ChangePlanGraph>(start=true)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -82,7 +83,7 @@ fun AddWorkoutPlan(
             PlansEvent.AddPlan(
                 WorkoutPlan(
                     name = planName,
-                    creationDate = Calendar.getInstance().timeInMillis
+                    creationDate = ZonedDateTime.now(),
                 ))) }
     )
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -236,7 +237,6 @@ fun AddWorkoutPlan(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LazyItemScope.PlanCard(
     navigator: DestinationsNavigator,
@@ -309,7 +309,7 @@ fun LazyItemScope.PlanCard(
                     )
                 }
             }
-        }, modifier = Modifier.animateItemPlacement()
+        }, modifier = Modifier.animateItem()
     ) {
         ElevatedCard(
             modifier = Modifier

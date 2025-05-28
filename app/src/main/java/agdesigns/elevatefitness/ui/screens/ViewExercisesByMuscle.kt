@@ -97,7 +97,7 @@ fun ExercisesByMuscle(
                                 .fillMaxWidth()
                                 .combinedClickable(
                                     interactionSource = remember { MutableInteractionSource() },
-                                    indication = rememberRipple(),
+                                    indication = ripple(),
                                     onClick = {
                                         navigator.navigate(
                                             ViewExercisesDestination(

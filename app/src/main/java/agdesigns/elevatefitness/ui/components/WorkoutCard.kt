@@ -30,6 +30,8 @@ import agdesigns.elevatefitness.data.exercise.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -52,7 +54,7 @@ fun WorkoutCard(
             .fillMaxWidth()
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(),
+                indication = ripple(),
                 onClick = onCardClick,
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -66,7 +68,7 @@ fun WorkoutCard(
                     Modifier.wrapContentHeight(Alignment.Top),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    val imageWidth = LocalConfiguration.current.screenWidthDp.dp // - 32.dp // 2*padding
+                    val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } // - 32.dp // 2*padding
                     val imageHeight = imageWidth/3*2
 
                     HorizontalPager(state = pagerState,

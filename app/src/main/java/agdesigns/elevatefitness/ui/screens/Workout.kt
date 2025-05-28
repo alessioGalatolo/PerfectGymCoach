@@ -59,6 +59,8 @@ import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.content.ContextCompat.getSystemService
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
@@ -344,7 +346,7 @@ fun Workout(
             else currentExercise!!.image
         }}
         val brightImage = remember { mutableStateOf(false) }
-        val imageWidth = LocalConfiguration.current.screenWidthDp.dp
+        val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
         val imageHeight = imageWidth/3*2
         val systemTheme = isSystemInDarkTheme()
         val useDarkTheme by remember { derivedStateOf {

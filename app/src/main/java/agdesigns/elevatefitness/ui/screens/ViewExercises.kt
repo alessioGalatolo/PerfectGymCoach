@@ -55,15 +55,18 @@ import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.viewmodels.ExercisesEvent
 import agdesigns.elevatefitness.viewmodels.ExercisesViewModel
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.core.content.ContextCompat.startActivity
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
 import com.ramcosta.composedestinations.generated.destinations.CreateExerciseDialogDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
+import androidx.core.net.toUri
 
 @Destination<ChangePlanGraph>
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
-    ExperimentalComposeUiApi::class, ExperimentalAnimationApi::class
+@OptIn(ExperimentalMaterial3Api::class
 )
 @Composable
 fun ViewExercises(
@@ -236,17 +239,17 @@ fun ViewExercises(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
                                 .fillMaxWidth()
-                                .animateItemPlacement()
+                                .animateItem()
                                 .combinedClickable(
                                     interactionSource = interactionSource,
-                                    indication = rememberRipple(),
+                                    indication = ripple(),
                                     onClick = {
                                         if (exercise.name == "Can you hear the silence?") {
-                                            ContextCompat.startActivity(
+                                            startActivity(
                                                 context,
                                                 Intent(
                                                     Intent.ACTION_VIEW,
-                                                    Uri.parse("https://www.tiktok.com/@poet_jenix/video/7111621457775561989")  // FIXME
+                                                    "https://www.tiktok.com/@poet_jenix/video/7111621457775561989".toUri()  // FIXME
                                                 ),
                                                 null
                                             )
@@ -276,7 +279,7 @@ fun ViewExercises(
                                 contentDescription = "Exercise image",
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(LocalConfiguration.current.screenWidthDp.dp / 4)
+                                    .height(with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4)
                                     .align(Alignment.CenterHorizontally)
                                     .clip(RoundedCornerShape(12.dp))
                             )

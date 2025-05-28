@@ -1,6 +1,5 @@
 package agdesigns.elevatefitness.ui
 
-import android.icu.util.Calendar
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.data.exercise.ProgramExercise
@@ -12,6 +11,8 @@ import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanSplit
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.random.Random
 
@@ -118,8 +119,8 @@ suspend fun generatePlan(
 
     // TODO: ideally it might also take into consideration profile values e.g. sex, age, weight, etc.
     val muscle2Exercises = emptyMap<Exercise.Muscle, Array<Exercise>>().toMutableMap()
-    val currentTime = Calendar.getInstance().timeInMillis
-    val random = Random(currentTime)
+    val currentTime = ZonedDateTime.now()
+    val random = Random(currentTime.toInstant().toEpochMilli())
     for (muscle in Exercise.Muscle.entries.toMutableList().minus(Exercise.Muscle.EVERYTHING)){
         muscle2Exercises[muscle] = repository.getExercises(muscle).first().toTypedArray()
     }
@@ -139,10 +140,11 @@ suspend fun generatePlan(
 
 
     }
+    val formatter = DateTimeFormatter.ofPattern("d MMM (yyyy)")
     val planId = repository.addPlan(
         WorkoutPlan(
             name = "${goalChoice.name.lowercase()
-                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }} program ${SimpleDateFormat("d MMM (yyyy)").format(currentTime)}",
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }} program ${currentTime.format(formatter)}",
             creationDate = currentTime
         )
     )

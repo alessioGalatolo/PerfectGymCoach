@@ -43,6 +43,7 @@ import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscle
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import kotlin.math.min
 
 @OptIn(
@@ -286,7 +287,7 @@ fun ExercisePage(
                                                     unfocusedContainerColor = Color.Transparent,
                                                     errorContainerColor = Color.Transparent
                                                 ),
-                                                modifier = Modifier.menuAnchor()
+                                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                                             )
                                             ExposedDropdownMenu(
                                                 expanded = expanded,
@@ -399,9 +400,9 @@ fun ExercisePage(
                     currentExerciseRecords.subList(0, min(currentExerciseRecords.size, recordsToShow)).forEach { record ->  // should maybe become lazy
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                                val dateFormat = SimpleDateFormat("d MMM (yy)")
+                                val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
                                 Text(
-                                    dateFormat.format(record.date.time),
+                                    record.date.format(formatter),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontStyle = FontStyle.Italic // TODO: add how many days ago
                                 )
@@ -512,7 +513,7 @@ fun WorkoutFinishPage(
                         unfocusedContainerColor = Color.Transparent,
                         errorContainerColor = Color.Transparent
                     ),
-                    modifier = Modifier.menuAnchor()
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,

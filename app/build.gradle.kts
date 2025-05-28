@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 android {
@@ -14,8 +19,8 @@ android {
 
     defaultConfig {
         applicationId = "agdesigns.elevatefitness"
-        minSdk = 24
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "0.0.1"
 
@@ -25,11 +30,6 @@ android {
             useSupportLibrary = true
         }
 
-        kapt {
-            arguments {
-                arg("room.schemaLocation", "$projectDir/schemas")
-            }
-        }
     }
 
     buildTypes {
@@ -59,9 +59,9 @@ android {
         compose = true
     }
 
-    packagingOptions {
+    packaging {
         resources {
-            excludes += setOf("/META-INF/{AL2.0,LGPL2.1}")
+            excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
     }
 

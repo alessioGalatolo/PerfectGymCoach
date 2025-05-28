@@ -139,7 +139,7 @@ fun AddProgram(
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .animateItemPlacement(),
+                                .animateItem(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {

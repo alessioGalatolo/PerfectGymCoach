@@ -2,16 +2,24 @@ package agdesigns.elevatefitness.data
 
 import androidx.room.TypeConverter
 import agdesigns.elevatefitness.data.exercise.Exercise
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.*
 
 /**
  * Type converters to allow Room to reference complex data types.
  */
 class Converters {
-    @TypeConverter fun dateToDatestamp(value: Calendar?): Long = value?.timeInMillis ?: 0L
+    private val zoneId = ZoneId.systemDefault()
 
-    @TypeConverter fun datestampToDate(value: Long): Calendar? =
-        if (value == 0L) null else Calendar.getInstance().apply { timeInMillis = value }
+    @TypeConverter
+    fun zonedDateTimeToTimestamp(value: ZonedDateTime?): Long =
+        value?.toInstant()?.toEpochMilli() ?: 0L
+
+    @TypeConverter
+    fun timestampToZonedDateTime(value: Long): ZonedDateTime? =
+        if (value == 0L) null else Instant.ofEpochMilli(value).atZone(zoneId)
 
     @TypeConverter
     fun listIntToString(value: List<Int>): String = if (value.isEmpty()) "" else value.joinToString(",")

@@ -4,6 +4,7 @@ import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
+import java.time.ZonedDateTime
 
 
 @Entity(tableName = "plan")
@@ -11,7 +12,7 @@ import kotlinx.parcelize.Parcelize
 data class WorkoutPlan(
     @PrimaryKey(autoGenerate = true) val planId: Long = 0L,
     val name: String,
-    val creationDate: Long, // in millis; should be used to e.g. suggest to create new plan
+    val creationDate: ZonedDateTime, // in millis; should be used to e.g. suggest to create new plan
     val currentProgram: Int = 0, // The index of the upcoming program after ordering
     val archived: Boolean = false,  // instead of deleting the plan
 ): Parcelable

@@ -45,6 +45,7 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import java.time.ZonedDateTime
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
@@ -63,7 +64,7 @@ fun Profile(
     }
     var userYear by remember { mutableStateOf("0") }
     val validUserYear by remember { derivedStateOf {
-        userYear.toIntOrNull() != null && userYear.toInt() in 1900..Calendar.getInstance().get(Calendar.YEAR)
+        userYear.toIntOrNull() != null && userYear.toInt() in 1900..ZonedDateTime.now().year
     }}
     LaunchedEffect(viewModel.state.value.userYear){
         userYear = viewModel.state.value.userYear.toString()
@@ -142,7 +143,7 @@ fun Profile(
             ) {
                 val age by remember {
                     derivedStateOf {
-                        Calendar.getInstance().get(Calendar.YEAR) - viewModel.state.value.userYear
+                        ZonedDateTime.now().year - viewModel.state.value.userYear
                     }
                 }
                 Text("Age: $age", Modifier.weight(1f))
@@ -388,7 +389,7 @@ fun Profile(
                             unfocusedContainerColor = Color.Transparent,
                             errorContainerColor = Color.Transparent
                         ),
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -475,7 +476,7 @@ fun Profile(
                             unfocusedContainerColor = Color.Transparent,
                             errorContainerColor = Color.Transparent
                         ),
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,

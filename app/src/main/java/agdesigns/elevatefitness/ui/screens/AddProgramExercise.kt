@@ -46,6 +46,8 @@ import agdesigns.elevatefitness.data.exercise.ProgramExerciseReorder
 import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.viewmodels.ExercisesEvent
 import agdesigns.elevatefitness.viewmodels.ExercisesViewModel
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
@@ -170,7 +172,7 @@ fun AddProgramExercise(
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .animateItemPlacement()
+                                .animateItem()
                                 .combinedClickable(
                                     onLongClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -212,7 +214,7 @@ fun AddProgramExercise(
                                     "Exercise image",
                                     Modifier
                                         .fillMaxWidth()
-                                        .height(LocalConfiguration.current.screenWidthDp.dp / 3)
+                                        .height(with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 3)
                                         .align(Alignment.TopCenter)
                                         .clip(RoundedCornerShape(12.dp)),
                                     contentScale = ContentScale.Crop

@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.ui.components
 
 import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -64,7 +65,7 @@ fun FullScreenImageCard(
     // make status bar transparent to see image behind
     // This is an approximation of what happened in accompanist systemUiController
     // but it is not deprecated :(
-    val window = (LocalView.current.parent as? DialogWindowProvider)?.window ?: (LocalContext.current as? Activity)?.window
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window ?: LocalActivity.current?.window
     val view = LocalView.current
     val transitionStarted = transition > 0.0
     DisposableEffect(transitionStarted, brightImage, darkTheme) {

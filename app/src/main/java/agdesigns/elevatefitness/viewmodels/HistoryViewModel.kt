@@ -8,7 +8,8 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordAndName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import java.util.Calendar
+import java.time.temporal.WeekFields
+import java.util.Locale
 import javax.inject.Inject
 
 data class HistoryState(
@@ -34,9 +35,10 @@ class HistoryViewModel @Inject constructor(private val repository: Repository): 
         viewModelScope.launch {
             repository.getWorkoutHistoryAndName().collect { records ->
                 val filteredRecords = records.filter { it.duration > 0 }
-                val groupByYear = filteredRecords.groupBy { record -> record.startDate!!.get(Calendar.YEAR) }
+                val groupByYear = filteredRecords.groupBy { record -> record.startDate!!.year }
+                val weekField = WeekFields.of(Locale.getDefault()).weekOfYear()
                 val yearToWeekToRecord = groupByYear.mapValues {
-                    it.value.groupBy { record -> record.startDate!!.get(Calendar.WEEK_OF_YEAR) }
+                    it.value.groupBy { record -> record.startDate!!.get(weekField) }
                 }
                 _state.value = state.value.copy(
                     workoutRecords = yearToWeekToRecord

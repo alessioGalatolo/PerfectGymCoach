@@ -202,7 +202,7 @@ fun LazyItemScope.ArchivedPlanCard(
                     )
                 }
             }
-        }, modifier = Modifier.animateItemPlacement()
+        }, modifier = Modifier.animateItem()
     ) {
         ElevatedCard(
             modifier = Modifier

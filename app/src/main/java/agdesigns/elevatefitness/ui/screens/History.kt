@@ -1,6 +1,5 @@
 package agdesigns.elevatefitness.ui.screens
 
-import android.icu.util.Calendar
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,12 +38,17 @@ import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDesti
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 
 @Composable
 fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listState: LazyListState) {
     if (recordsMap.isNotEmpty()) {
-        val currentWeek = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR)
+        val weekField = WeekFields.of(Locale.getDefault()).weekOfYear()
+        val currentWeek = ZonedDateTime.now().get(weekField)
         val scope = rememberCoroutineScope()
         Column(Modifier.fillMaxWidth()) {
             LazyRow(
@@ -160,7 +164,7 @@ fun History(
             )
         }
     else {
-        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val currentYear = ZonedDateTime.now().year
         val listState = rememberLazyListState()
         LazyColumn(
             state = listState,
@@ -185,7 +189,7 @@ fun History(
                     }
                     yearIteration = recordMap.key
                 }
-                var weekIteration = Calendar.getInstance().get(Calendar.YEAR)
+                var weekIteration = ZonedDateTime.now().year
                 item {
                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
                         for (record in recordMap.value.toSortedMap(compareByDescending { it })) {
@@ -211,10 +215,8 @@ fun History(
                                         onlyIfResumed = true
                                     )
                                 }) {
-                                    val dateFormat =
-                                        SimpleDateFormat("d MMM (yyyy) - HH:mm")
-                                    val date: String =
-                                        dateFormat.format(workout.startDate!!.time)
+                                    val formatter = DateTimeFormatter.ofPattern("d MMM (yyyy) - HH:mm")
+                                    val date = workout.startDate!!.format(formatter)
                                     Row {
                                         Text(
                                             workout.name,

@@ -33,7 +33,6 @@ import agdesigns.elevatefitness.viewmodels.AddExerciseEvent
 import agdesigns.elevatefitness.viewmodels.AddExerciseViewModel
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.HelpOutline
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -209,7 +208,7 @@ fun AddExerciseDialog(
                                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .menuAnchor()
+                                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                                     )
                                     ExposedDropdownMenu(
                                         expanded = expanded.value,
@@ -444,7 +443,7 @@ fun MyDropdownMenu(
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             modifier = Modifier
                 .widthIn(1.dp, Dp.Infinity)
-                .menuAnchor()
+                .menuAnchor(MenuAnchorType.PrimaryEditable, true)
         )
 
         if (options.isNotEmpty()) {
