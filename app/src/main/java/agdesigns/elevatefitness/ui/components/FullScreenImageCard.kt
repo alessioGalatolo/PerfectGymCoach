@@ -2,6 +2,10 @@ package agdesigns.elevatefitness.ui.components
 
 import android.app.Activity
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SharedTransitionScope.SharedContentState
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -25,9 +29,11 @@ import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
-fun FullScreenImageCard(
+fun SharedTransitionScope.FullScreenImageCard(
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedState: SharedContentState,
     topAppBarNavigationIcon: @Composable (Boolean) -> Unit,
     topAppBarActions: @Composable RowScope.(Boolean) -> Unit,
     title: @Composable () -> Unit,
@@ -87,7 +93,13 @@ fun FullScreenImageCard(
     Box (contentAlignment = TopCenter,
         modifier = Modifier
             .background(Color.Transparent)
-            .fillMaxSize()){
+            .fillMaxSize()
+            // FIXME: should not animate bottom bar
+            .sharedBounds(
+                sharedContentState = sharedState,
+                animatedVisibilityScope = animatedVisibilityScope,
+            )
+    ){
         image()
 
         Scaffold (

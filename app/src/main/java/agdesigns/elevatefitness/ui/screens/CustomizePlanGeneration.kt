@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanSplit
+import agdesigns.elevatefitness.ui.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.GeneratePlanGraph
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -31,7 +32,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.ViewGeneratedPlanDestination
 import kotlinx.coroutines.launch
 
-@Destination<GeneratePlanGraph>(start = true)
+@Destination<GeneratePlanGraph>(start = true, style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CustomizePlanGeneration(

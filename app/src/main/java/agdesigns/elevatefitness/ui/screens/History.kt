@@ -31,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordAndName
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
+import agdesigns.elevatefitness.ui.FadeTransition
 import agdesigns.elevatefitness.ui.maybeKgToLb
 import agdesigns.elevatefitness.viewmodels.HistoryViewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -139,7 +140,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 }
 
 
-@Destination<BottomNavigationGraph>
+@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun History(
     navigator: DestinationsNavigator,
@@ -211,8 +212,7 @@ fun History(
                                     navigator.navigate(
                                         WorkoutRecapDestination(
                                             workoutId = workout.workoutId
-                                        ),
-                                        onlyIfResumed = true
+                                        )
                                     )
                                 }) {
                                     val formatter = DateTimeFormatter.ofPattern("d MMM (yyyy) - HH:mm")

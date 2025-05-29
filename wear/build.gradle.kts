@@ -64,7 +64,6 @@ dependencies {
     implementation(libs.wear.compose.material)
     implementation(libs.wear.compose.material3)
     implementation(libs.wear.compose.foundation)
-    implementation(libs.wear.compose.navigation)
     implementation(libs.wear.tooling.preview)
 
     implementation(libs.activity.compose)

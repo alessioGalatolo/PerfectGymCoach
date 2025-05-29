@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.viewmodels.ExercisesEvent
 import agdesigns.elevatefitness.viewmodels.ExercisesViewModel
 import androidx.compose.ui.platform.LocalDensity
@@ -66,7 +67,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 
-@Destination<ChangePlanGraph>
+@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class
 )
 @Composable
@@ -262,8 +263,7 @@ fun ViewExercises(
                                                     exerciseId = exercise.exerciseId,
                                                     programName = programName,
                                                     returnAfterAdding = returnAfterAdding
-                                                ),
-                                                onlyIfResumed = true
+                                                )
                                             )
                                         }
                                     },
@@ -328,8 +328,7 @@ fun ViewExercises(
                                 modifier = Modifier.align(Center),
                                 onClick = {
                                     navigator.navigate(
-                                        CreateExerciseDialogDestination(),
-                                        onlyIfResumed = true
+                                        CreateExerciseDialogDestination()
                                     )
                                 }
                             ) {

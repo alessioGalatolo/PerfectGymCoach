@@ -20,13 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.core.graphics.ColorUtils
-import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
@@ -41,7 +39,10 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.Theme
+import agdesigns.elevatefitness.data.exercise.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.data.exercise.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.service.NotificationListener
+import agdesigns.elevatefitness.ui.FadeTransition
 import agdesigns.elevatefitness.ui.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.hasNotificationAccess
 import android.content.ComponentName
@@ -57,6 +58,7 @@ import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.content.ContextCompat.getSystemService
@@ -71,21 +73,31 @@ import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDesti
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
+import kotlin.math.max
 
-@Destination<WorkoutOnlyGraph>(start = true)
+@Destination<WorkoutOnlyGraph>(start = true, style = FadeTransition::class)
 @OptIn(
-    ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class
+    ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class,
+    ExperimentalSharedTransitionApi::class
 )
 @Composable
-fun Workout(
+fun SharedTransitionScope.Workout(
+    animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     programId: Long = 0,
+    previewExercise: ProgramExerciseAndInfo? = null, // preview of the first exercise, used for transition
     quickStart: Boolean = false,
     resumeWorkout: Boolean = false,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
+    // for container transform animation
+    val sharedStateCard = rememberSharedContentState("card_$programId")
+    val sharedStateImg = rememberSharedContentState("img_$programId")
+    val sharedStateTitle = rememberSharedContentState("exName_$programId")
+
     val snackbarHostState = remember { SnackbarHostState() }
     if (resumeWorkout)
         viewModel.onEvent(WorkoutEvent.ResumeWorkout)
@@ -205,7 +217,9 @@ fun Workout(
         updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, viewModel.state.value.imperialSystem))) }
     )
 
-    val pagerState = rememberPagerState(pageCount = {
+    val pagerState = rememberPagerState(
+        initialPage = previewExercise?.orderInProgram ?: 0,
+        pageCount = {
         if (viewModel.state.value.workoutTime != null)
             viewModel.state.value.workoutExercises.size+1
         else
@@ -341,25 +355,27 @@ fun Workout(
 
     var fabHeight by remember { mutableStateOf(0.dp) }
 
-    if (viewModel.state.value.workoutExercises.isNotEmpty()) {
+    val brightImage = remember { mutableStateOf(false) }
+    val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val imageHeight = imageWidth/3*2
+    val systemTheme = isSystemInDarkTheme()
+    val useDarkTheme by remember { derivedStateOf {
+        when (viewModel.state.value.userTheme) {
+            Theme.SYSTEM -> systemTheme
+            Theme.LIGHT -> false
+            Theme.DARK -> true
+        }
+    }}
+    if (viewModel.state.value.workoutExercises.isNotEmpty() && !animatedVisibilityScope.transition.isRunning) {
         BackHandler(onBack = onClose)
         val currentImageId by remember { derivedStateOf {
             if (pagerState.currentPage == viewModel.state.value.workoutExercises.size)
                 R.drawable.finish_workout
             else currentExercise!!.image
         }}
-        val brightImage = remember { mutableStateOf(false) }
-        val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
-        val imageHeight = imageWidth/3*2
-        val systemTheme = isSystemInDarkTheme()
-        val useDarkTheme by remember { derivedStateOf {
-            when (viewModel.state.value.userTheme) {
-                Theme.SYSTEM -> systemTheme
-                Theme.LIGHT -> false
-                Theme.DARK -> true
-            }
-        }}
         FullScreenImageCard(
+            animatedVisibilityScope = animatedVisibilityScope,
+            sharedState = sharedStateCard,
             snackbarHostState = snackbarHostState,
             topAppBarNavigationIcon = { appBarShown ->
                 val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
@@ -391,10 +407,20 @@ fun Workout(
             },
             title = title,
             image = {
-                Box(Modifier.wrapContentHeight(Top), contentAlignment = TopCenter) { // TODO: add swipe
+                val roundedCornersShape = CardDefaults.shape
+                Box(Modifier
+                    .wrapContentHeight(Top)
+                    .graphicsLayer {
+                        shape = roundedCornersShape
+                        clip = true // <- this ensures clipping is applied during transition
+                    }
+                    .sharedElement(
+                        sharedStateImg,
+                        animatedVisibilityScope,
+                        clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                    ), contentAlignment = TopCenter) { // TODO: add swipe
                     AsyncImage(
                         ImageRequest.Builder(context)
-//                            .size(imageWidth, imageHeight)
                             .allowHardware(false)
                             .data(currentImageId)
                             .crossfade(true)
@@ -412,10 +438,7 @@ fun Workout(
                         Modifier
                             .fillMaxWidth()
                             .height(imageHeight),
-                        contentScale = ContentScale.Crop/*
-                        onState = { imageHeight.value =  it.painter?.intrinsicSize?.height ?: 0f },
-                        Modifier.fillMaxWidth().onSizeChanged { imageHeight.value = it.height.toFloat() }*/
-//                        loading = { CircularProgressIndicator() }
+                        contentScale = ContentScale.Crop
                     )
 
                     HorizontalPagerIndicator(
@@ -433,7 +456,7 @@ fun Workout(
             content = {
                 val restCounter: Long? by remember { derivedStateOf {
                     if (viewModel.state.value.restTimestamp != null && currentExercise != null)
-                        kotlin.math.max(0L,
+                        max(0L,
                             viewModel.state.value.restTimestamp!! - viewModel.state.value.workoutTime!!)
                     else null
                 }}
@@ -505,12 +528,17 @@ fun Workout(
                         ) {
                             ElevatedCard(
                                 colors = CardDefaults.elevatedCardColors(containerColor = darkColors.surface),
-                                modifier = Modifier.padding(start = 32.dp).clickable {  // weird padding as it pretends to be a fab
-                                    if (session?.packageName != null) {
-                                        val intent = context.packageManager.getLaunchIntentForPackage(session!!.packageName!!)
-                                        context.startActivity(intent)
+                                modifier = Modifier
+                                    .padding(start = 32.dp)
+                                    .clickable {  // weird padding as it pretends to be a fab
+                                        if (session?.packageName != null) {
+                                            val intent =
+                                                context.packageManager.getLaunchIntentForPackage(
+                                                    session!!.packageName!!
+                                                )
+                                            context.startActivity(intent)
+                                        }
                                     }
-                                }
                             ) {
                                 Spacer(Modifier.height(8.dp))
                                 Row(
@@ -664,6 +692,148 @@ fun Workout(
 //                }
             }
         }
+    } else if (previewExercise != null) {
+        // placeholder mainly used for animation
+        FullScreenImageCard(
+            animatedVisibilityScope = animatedVisibilityScope,
+            sharedState = sharedStateCard,
+            snackbarHostState = snackbarHostState,
+            topAppBarNavigationIcon = { appBarShown ->
+                val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
+                IconButton(onClick = { /* just a placeholder, won't be clicked anyway */}) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close",
+                        tint = if (needsDarkColor) Color.Gray else Color.White
+                    )
+                }
+            },
+            topAppBarActions = {},
+            title = { },
+            image = {
+                val roundedCornersShape = CardDefaults.shape
+                Box(Modifier
+                    .wrapContentHeight(Top)
+                    .graphicsLayer(
+                        shape = roundedCornersShape,
+                        clip = true // <- this ensures clipping is applied during transition
+                    )
+                    .sharedElement(
+                        sharedStateImg,
+                        animatedVisibilityScope,
+                        clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                    ), contentAlignment = TopCenter) { // TODO: add swipe
+                    AsyncImage(
+                        ImageRequest.Builder(context)
+                            .allowHardware(false)
+                            .data(previewExercise.image)
+                            .crossfade(true)
+                            .listener { _, result ->
+                                val image = result.image.toBitmap()
+                                Palette.from(image).maximumColorCount(3)
+                                    .clearFilters()
+                                    .setRegion(0, 0, image.width, 50)
+                                    .generate {
+                                        brightImage.value = (ColorUtils.calculateLuminance(it?.getDominantColor(Color.Black.toArgb()) ?: 0)) > 0.5
+                                    }
+                            }
+                            .build(),
+                        "Exercise image",
+                        Modifier
+                            .fillMaxWidth()
+                            .height(imageHeight),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            },
+            imageHeight = imageHeight,
+            brightImage = brightImage.value,
+            darkTheme = useDarkTheme,
+            content = {
+                val exampleRecord = ExerciseRecordAndEquipment(
+                    recordId = 0L,
+                    extExerciseId = 0L,
+                    extWorkoutId = 0L,
+                    exerciseInWorkout = previewExercise.orderInProgram,
+                    date = ZonedDateTime.now(),
+                    reps = previewExercise.reps,
+                    weights = previewExercise.reps.map { 0f },
+                    tare = 0f,
+                    variation = previewExercise.variation,
+                    rest = previewExercise.rest,
+                    equipment = previewExercise.equipment
+                )
+                val workoutExercisesExample = listOf(
+                    WorkoutExercise(
+                        workoutExerciseId = 0L,
+                        extWorkoutId = 0L,
+                        extProgramExerciseId = 0L,
+                        extExerciseId = 0L,
+                        name = previewExercise.name,
+                        image = previewExercise.image,
+                        description = previewExercise.description,
+                        equipment = previewExercise.equipment,
+                        orderInProgram = previewExercise.orderInProgram,
+                        reps = previewExercise.reps,
+                        rest = previewExercise.rest,
+                        note = previewExercise.note,
+                        variation = previewExercise.variation,
+                        supersetExercise = previewExercise.supersetExercise
+                    ),
+                    WorkoutExercise(
+                        workoutExerciseId = 0L,
+                        extWorkoutId = 0L,
+                        extProgramExerciseId = 0L,
+                        extExerciseId = 0L,
+                        name = previewExercise.name,
+                        image = previewExercise.image,
+                        description = previewExercise.description,
+                        equipment = previewExercise.equipment,
+                        orderInProgram = previewExercise.orderInProgram,
+                        reps = previewExercise.reps,
+                        rest = previewExercise.rest,
+                        note = previewExercise.note,
+                        variation = previewExercise.variation,
+                        supersetExercise = previewExercise.supersetExercise
+                    )
+
+                )
+                ExercisePage(
+                    pagerState = rememberPagerState(pageCount = { 2 }),
+                    workoutTime = null,
+                    workoutExercises = workoutExercisesExample,
+                    workoutId = 0L,
+                    navigator = navigator,
+                    setsDone = setsDone,
+                    ongoingRecord = exampleRecord,
+                    currentExerciseRecords = emptyList(),
+                    exerciseDescription = "",
+                    fabHeight = 0.dp,
+                    title = {
+                        Text(
+                            previewExercise.name, modifier = Modifier.sharedBounds(
+                                sharedStateTitle,
+                                animatedVisibilityScope,
+                            )
+                        )
+                    },
+                    addSet = { },
+                    updateBottomBar = { _, _ -> },
+                    updateValues = { _, _, _, _ -> },
+                    updateTare = { },
+                    useImperialSystem = false,
+                    tare = 0f,
+                    toggleOtherEquipment = { },
+                    changeExercise = { _, _ -> },
+                    removeExercise = { },
+                    restCounter = null,
+                    workoutIntensity = workoutIntensity,
+                    updateExerciseProbability = { _ -> }
+                )
+            },
+            floatingActionButton = {},
+            bottomBar = { _, _ -> }
+        )
     } else if (viewModel.state.value.workoutId != 0L){
         // program is empty, prompt to add an exercise
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -695,11 +865,10 @@ fun Workout(
                                 programName = "Current and future workouts",  // FIXME: all workouts?
                                 workoutId = viewModel.state.value.workoutId,
                                 programId = programId
-                            ),
-                            onlyIfResumed = true
+                            )
                         )
                     }, Modifier.padding(bottom = 24.dp),
-                    containerColor = MaterialTheme.colorScheme.secondary) {
+                        containerColor = MaterialTheme.colorScheme.secondary) {
                         Icon(Icons.Default.Edit, "Add an exercise to current and future workouts of this program")
                     }
                     LargeFloatingActionButton(onClick = {
@@ -707,8 +876,7 @@ fun Workout(
                             ExercisesByMuscleDestination(
                                 programName = "Current workout",
                                 workoutId = viewModel.state.value.workoutId,
-                            ),
-                            onlyIfResumed = true
+                            )
                         )
                     }) {
                         Icon(
@@ -717,7 +885,7 @@ fun Workout(
                         )
                     }
                 }
-        }) { innerPadding ->
+            }) { innerPadding ->
             Column(
                 modifier = Modifier
                     .padding(innerPadding)

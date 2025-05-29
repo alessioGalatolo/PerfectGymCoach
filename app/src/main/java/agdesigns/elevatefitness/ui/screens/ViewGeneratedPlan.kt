@@ -12,13 +12,14 @@ import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanSplit
 import agdesigns.elevatefitness.ui.GeneratePlanGraph
+import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.viewmodels.GeneratePlanEvent
 import agdesigns.elevatefitness.viewmodels.GeneratePlanViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination<GeneratePlanGraph>
+@Destination<GeneratePlanGraph>(style = SlideTransition::class)
 @Composable
 fun ViewGeneratedPlan(
     navigator: DestinationsNavigator,

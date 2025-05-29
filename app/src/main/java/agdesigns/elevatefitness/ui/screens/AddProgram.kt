@@ -26,6 +26,7 @@ import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgramRename
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgramReorder
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.ui.components.InsertNameDialog
 import agdesigns.elevatefitness.ui.components.WorkoutCard
 import agdesigns.elevatefitness.viewmodels.ProgramsEvent
@@ -35,7 +36,7 @@ import com.ramcosta.composedestinations.generated.destinations.AddProgramExercis
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 
-@Destination<ChangePlanGraph>
+@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddProgram(
@@ -168,13 +169,12 @@ fun AddProgram(
                                 program = programEntry,
                                 viewModel.state.value.exercisesAndInfo[programEntry.programId]
                                     ?: emptyList(),
-                                onCardClick = {
+                                onCardClick = { _ -> // FIXME: unused arg because we need it to animate. Either use it or change function
                                     navigator.navigate(
                                         AddProgramExerciseDestination(
                                           programName = programEntry.name,
                                           programId = programEntry.programId
-                                        ),
-                                        onlyIfResumed = true
+                                        )
                                     )
                                 }, onRename = {
                                     viewModel.onEvent(

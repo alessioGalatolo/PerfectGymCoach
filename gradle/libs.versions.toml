@@ -8,7 +8,7 @@ accompanist_legacy = "0.34.0"  # when there was the pager indicator
 material3 = "1.3.2"
 coil = "3.2.0"
 # facilitators
-destinations = "2.0.0-beta01"
+destinations = "2.2.0"
 hilt = "2.56.2"
 hilt_navigation_compose = "1.2.0"
 lifecycle = "2.9.0"
@@ -87,10 +87,7 @@ compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = 
 wear-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "wear_compose_material_legacy" }
 wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wear_compose" }
 wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wear_compose" }
-wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "wear_compose" }
 wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wear_tooling_preview" }
 core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "core_splashscreen" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-junit-ext = { group = "androidx.test.ext", name = "junit", version.ref = "junit_ext" }
 test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest", version.ref = "compose" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }

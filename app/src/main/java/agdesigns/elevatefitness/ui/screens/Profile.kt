@@ -34,6 +34,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.Sex
 import agdesigns.elevatefitness.data.Theme
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
+import agdesigns.elevatefitness.ui.FadeTransition
 import agdesigns.elevatefitness.ui.components.InfoDialog
 import agdesigns.elevatefitness.ui.maybeKgToLb
 import agdesigns.elevatefitness.ui.maybeLbToKg
@@ -50,7 +51,7 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
 
-@Destination<BottomNavigationGraph>
+@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 fun Profile(

@@ -42,6 +42,7 @@ import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.ProgramExerciseReorder
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.viewmodels.ExercisesEvent
 import agdesigns.elevatefitness.viewmodels.ExercisesViewModel
 import androidx.compose.ui.platform.LocalDensity
@@ -56,7 +57,7 @@ import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialog
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination<ChangePlanGraph>
+@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddProgramExercise(
@@ -92,8 +93,7 @@ fun AddProgramExercise(
                         ExercisesByMuscleDestination(
                             programName = programName,
                             programId = programId
-                        ),
-                        onlyIfResumed = true
+                        )
                     )
                 },
             ) {
@@ -187,8 +187,7 @@ fun AddProgramExercise(
                                                 programId = exercise.extProgramId,
                                                 exerciseId = exercise.extExerciseId,
                                                 programExerciseId = exercise.programExerciseId
-                                            ),
-                                            onlyIfResumed = true
+                                            )
                                         )
                                     }
                                 )
@@ -279,8 +278,7 @@ fun AddProgramExercise(
                                                         programId = exercise.extProgramId,
                                                         exerciseId = exercise.extExerciseId,
                                                         programExerciseId = exercise.programExerciseId
-                                                    ),
-                                                    onlyIfResumed = true
+                                                    )
                                                 )
                                                 expanded = false
                                             },

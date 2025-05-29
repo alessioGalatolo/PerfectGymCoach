@@ -29,11 +29,12 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.SlideTransition
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ViewExercisesDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination<ChangePlanGraph>
+@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ExercisesByMuscle(
@@ -107,8 +108,7 @@ fun ExercisesByMuscle(
                                                 focusSearch = true,
                                                 programName = programName,
                                                 returnAfterAdding = returnAfterAdding
-                                            ),
-                                            onlyIfResumed = true
+                                            )
                                         )
                                     }
                                 ),
@@ -144,8 +144,7 @@ fun ExercisesByMuscle(
                                     muscleOrdinal = it.ordinal,
                                     programName = programName,
                                     returnAfterAdding = returnAfterAdding
-                                ),
-                                onlyIfResumed = true
+                                )
                             )
                         },
                         modifier = Modifier.fillMaxWidth()

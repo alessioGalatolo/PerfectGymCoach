@@ -220,8 +220,7 @@ fun ExercisePage(
                                         programName = "Current workout",
                                         workoutId = workoutId,
                                         returnAfterAdding = true
-                                    ),
-                                    onlyIfResumed = true
+                                    )
                                 )
                             }, removeExercise = {
                                 removeExercise(page)
@@ -231,8 +230,7 @@ fun ExercisePage(
                                         programName = "Current workout",
                                         workoutId = workoutId,
                                         returnAfterAdding = true
-                                    ),
-                                    onlyIfResumed = true
+                                    )
                                 )
                                 scope.launch { pagerState.animateScrollToPage(pagerState.pageCount-1) }
                             })
@@ -544,8 +542,7 @@ fun WorkoutFinishPage(
             ExercisesByMuscleDestination(
                 programName = "Current workout",
                 workoutId = workoutId,
-            ),
-            onlyIfResumed = true
+            )
         ) }, modifier = Modifier.align(CenterHorizontally)) {
             Text("Add exercise to workout")
         }

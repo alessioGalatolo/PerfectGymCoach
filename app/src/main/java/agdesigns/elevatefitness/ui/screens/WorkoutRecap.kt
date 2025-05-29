@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat.startActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.Exercise
+import agdesigns.elevatefitness.ui.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.barbellFromWeight
 import agdesigns.elevatefitness.ui.components.InfoDialog
 import agdesigns.elevatefitness.ui.maybeKgToLb
@@ -71,7 +72,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 
-@Destination<WorkoutOnlyGraph>
+@Destination<WorkoutOnlyGraph>(style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutRecap(
@@ -124,8 +125,7 @@ fun WorkoutRecap(
                     navigator.navigateUp()
                     navigator.navigateUp()
                     navigator.navigate(
-                        HistoryDestination(),
-                        onlyIfResumed = true
+                        HistoryDestination()
                     )
                 }) {
                     Icon(Icons.Default.Close, "Close")

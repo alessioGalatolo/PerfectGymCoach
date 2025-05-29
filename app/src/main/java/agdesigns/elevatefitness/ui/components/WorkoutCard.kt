@@ -29,6 +29,8 @@ import agdesigns.elevatefitness.data.exercise.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import coil3.compose.AsyncImage
@@ -42,27 +44,32 @@ fun WorkoutCard(
     navigator: DestinationsNavigator,
     program: WorkoutProgram,
     exercises: List<ProgramExerciseAndInfo>,
-    onCardClick: () -> Unit,
+    onCardClick: (ProgramExerciseAndInfo) -> Unit,
     modifier: Modifier = Modifier,
+    imageModifier: Modifier = Modifier,
+    exerciseModifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
     onRename: (() -> Unit)? = null
 ){
     val haptic = LocalHapticFeedback.current
     var expanded by remember { mutableStateOf(false) }
+    val pagerState = rememberPagerState(pageCount = { exercises.size })
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(),
-                onClick = onCardClick,
+                onClick = {
+                    onCardClick(
+                        exercises[pagerState.currentPage]
+                    ) },
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     expanded = true
                 }))
     {
         Column {
-            val pagerState = rememberPagerState(pageCount = { exercises.size })
             if (exercises.isNotEmpty()) {
                 Box(
                     Modifier.wrapContentHeight(Alignment.Top),
@@ -71,9 +78,12 @@ fun WorkoutCard(
                     val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } // - 32.dp // 2*padding
                     val imageHeight = imageWidth/3*2
 
+                    val roundedCornersShape = CardDefaults.shape
                     HorizontalPager(state = pagerState,
-                        modifier = Modifier
-                        .clip(AbsoluteRoundedCornerShape(12.dp))) { page ->
+                        modifier = imageModifier.graphicsLayer {
+                            shape = roundedCornersShape
+                            clip = true // <- this ensures clipping is applied during transition
+                        }) { page ->
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
                                 model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
@@ -104,8 +114,12 @@ fun WorkoutCard(
             }
             Spacer(modifier = Modifier.height(4.dp))
             exercises.forEach {
-                Text(text = it.name + it.variation,
-                    modifier = Modifier.padding(horizontal = 8.dp))
+                val modifier = if (it.name == exercises[pagerState.currentPage].name)
+                    exerciseModifier
+                else Modifier
+                val exerciseText = it.name + it.variation
+                Text(text = exerciseText,
+                    modifier = modifier.padding(horizontal = 8.dp))
                 Text(text = buildAnnotatedString {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                         append("Sets: ")
@@ -143,8 +157,7 @@ fun WorkoutCard(
                                 WorkoutDestination(
                                     programId = program.programId,
                                     quickStart = true
-                                ),
-                                onlyIfResumed = true
+                                )
                             )
                         },
                         modifier = Modifier
@@ -166,8 +179,7 @@ fun WorkoutCard(
                                 AddProgramExerciseDestination(
                                     programName = program.name,
                                     programId = program.programId
-                                ),
-                                onlyIfResumed = true
+                                )
                             )
                         }) {
                             Icon(Icons.Outlined.Edit, "Edit program")
@@ -177,8 +189,7 @@ fun WorkoutCard(
                             navigator.navigate(
                                 WorkoutDestination(
                                     programId = program.programId
-                                ),
-                                onlyIfResumed = true
+                                )
                             )
                         }) {
                             Icon(Icons.Outlined.PlayCircle, "Start workout")
@@ -220,8 +231,7 @@ fun WorkoutCard(
                                             AddProgramExerciseDestination(
                                                 programName = program.name,
                                                 programId = program.programId
-                                            ),
-                                            onlyIfResumed = true
+                                            )
                                         )
                                         expanded = false
                                     },

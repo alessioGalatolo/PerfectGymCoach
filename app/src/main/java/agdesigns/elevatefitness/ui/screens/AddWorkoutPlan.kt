@@ -53,6 +53,7 @@ import agdesigns.elevatefitness.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.ui.components.InsertNameDialog
 import agdesigns.elevatefitness.viewmodels.PlansEvent
 import agdesigns.elevatefitness.viewmodels.PlansViewModel
@@ -66,7 +67,7 @@ import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 
-@Destination<ChangePlanGraph>(start=true)
+@Destination<ChangePlanGraph>(start=true, style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddWorkoutPlan(
@@ -318,8 +319,7 @@ fun LazyItemScope.PlanCard(
                         AddProgramDestination(
                             planName = plan.name,
                             planId = plan.planId
-                        ),
-                        onlyIfResumed = true
+                        )
                     )
                 }) {
             Row(
@@ -383,7 +383,7 @@ fun LazyItemScope.PlanCard(
 fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
     FilledTonalButton(
         onClick = {
-            navigator.navigate(CustomizePlanGenerationDestination(), onlyIfResumed = true)
+            navigator.navigate(CustomizePlanGenerationDestination())
         },
         modifier = Modifier.align(Alignment.CenterHorizontally))
     {

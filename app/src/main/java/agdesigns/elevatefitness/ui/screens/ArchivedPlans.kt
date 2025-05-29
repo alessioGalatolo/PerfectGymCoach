@@ -43,6 +43,7 @@ import agdesigns.elevatefitness.data.workout_plan.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.viewmodels.PlansEvent
 import agdesigns.elevatefitness.viewmodels.PlansViewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -50,7 +51,7 @@ import com.ramcosta.composedestinations.generated.destinations.AddProgramDestina
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@Destination<ChangePlanGraph>
+@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArchivedPlans(
@@ -211,8 +212,7 @@ fun LazyItemScope.ArchivedPlanCard(
                         AddProgramDestination(
                             planName = plan.name,
                             planId = plan.planId
-                        ),
-                        onlyIfResumed = true
+                        )
                     )
                 }) {
             Row(

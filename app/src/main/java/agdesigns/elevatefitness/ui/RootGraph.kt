@@ -28,10 +28,10 @@ import com.ramcosta.composedestinations.generated.destinations.HistoryDestinatio
 import com.ramcosta.composedestinations.generated.destinations.HomeDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileDestination
 import com.ramcosta.composedestinations.generated.destinations.StatisticsDestination
-import com.ramcosta.composedestinations.navigation.popBackStack
-import com.ramcosta.composedestinations.navigation.popUpTo
+import com.ramcosta.composedestinations.navigation.dependency
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
+import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import com.ramcosta.composedestinations.utils.startDestination
 
 enum class BottomBarDestination(
@@ -47,8 +47,10 @@ enum class BottomBarDestination(
 }
 
 
-@Destination<RootGraph>(start=true)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+@Destination<RootGraph>(start=true, style = FadeTransition::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
 fun RootDestinationGraph(){
     // scroll behaviour for top bar
@@ -57,6 +59,7 @@ fun RootDestinationGraph(){
     )
 
     val navController = rememberNavController()
+    val navigator = navController.rememberDestinationsNavigator()
     val currentDestination = navController.currentDestinationAsState().value
         ?: NavGraphs.root.startDestination
 
@@ -91,11 +94,16 @@ fun RootDestinationGraph(){
                     innerPadding.calculateBottomPadding()
                 else 0.dp, label = ""
             )
-            DestinationsNavHost(
-                navGraph = NavGraphs.bottomNavigation,
-                navController = navController,
-                modifier = Modifier.padding(top = topPadding, bottom = bottomPadding)
-            )
+            SharedTransitionLayout {
+                DestinationsNavHost(
+                    navGraph = NavGraphs.bottomNavigation,
+                    navController = navController,
+                    modifier = Modifier.padding(top = topPadding, bottom = bottomPadding),
+                    dependenciesContainerBuilder = {
+                        dependency(this@SharedTransitionLayout)
+                    }
+                )
+            }
         }, bottomBar = {
             AnimatedVisibility(
                 enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
@@ -125,10 +133,14 @@ fun RootDestinationGraph(){
                                 if (selected) {
                                     // When we click again on a bottom bar item and it was already selected
                                     // we want to pop the back stack until the initial destination of this bottom bar item
-                                    navController.popBackStack(destination.direction, false)
+                                    navigator.popBackStack(
+                                        destination.direction,
+                                        false  // FIXME: double check the meaning of this did not change between versions
+                                        // FIXME: now it is "inclusive: false" make sure this is the desired behaviour
+                                    )
                                     return@NavigationBarItem
                                 }
-                                navController.navigate(destination.direction.route) {
+                                navigator.navigate(destination.direction) {
                                     // Pop up to the root of the graph to
                                     // avoid building up a large stack of destinations
                                     // on the back stack as users select items

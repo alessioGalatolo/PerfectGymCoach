@@ -21,13 +21,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.FullscreenDialogTransition
 import agdesigns.elevatefitness.viewmodels.CreateExerciseEvent
 import agdesigns.elevatefitness.viewmodels.CreateExerciseViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@Destination<ChangePlanGraph>
+@Destination<ChangePlanGraph>(style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CreateExerciseDialog(

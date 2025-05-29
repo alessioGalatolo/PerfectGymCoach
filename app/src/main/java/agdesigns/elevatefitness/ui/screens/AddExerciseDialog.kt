@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.ui.ChangePlanGraph
+import agdesigns.elevatefitness.ui.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.components.InfoDialog
 import agdesigns.elevatefitness.ui.components.ResetExerciseProbabilityDialog
 import agdesigns.elevatefitness.ui.components.TextFieldWithButtons
@@ -36,10 +37,11 @@ import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.spec.DestinationStyle
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
-@Destination<ChangePlanGraph>
+@Destination<ChangePlanGraph>(style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddExerciseDialog(

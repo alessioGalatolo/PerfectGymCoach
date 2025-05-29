@@ -7,10 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
+import agdesigns.elevatefitness.ui.FadeTransition
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination<BottomNavigationGraph>
+@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun Statistics(
     destinationsNavigator: DestinationsNavigator

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.ui.FadeTransition
 import agdesigns.elevatefitness.ui.components.ResumeWorkout
 import agdesigns.elevatefitness.ui.components.WorkoutCard
 import agdesigns.elevatefitness.viewmodels.HomeEvent
@@ -30,6 +31,9 @@ import agdesigns.elevatefitness.viewmodels.HomeViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
@@ -40,10 +44,11 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 
 
-@Destination<BottomNavigationGraph>(start = true)
+@Destination<BottomNavigationGraph>(start = true, style = FadeTransition::class)
 @Composable
-@OptIn(ExperimentalFoundationApi::class)
-fun Home(
+@OptIn(ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class)
+fun SharedTransitionScope.Home(
+    animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -62,8 +67,7 @@ fun Home(
             WorkoutDestination(
                 programId = 0L,
                 resumeWorkout = true
-            ),
-            onlyIfResumed = true
+            )
         )
     }
 
@@ -78,8 +82,7 @@ fun Home(
             floatingActionButton = {
                 LargeFloatingActionButton(
                     onClick = { navigator.navigate(
-                        AddWorkoutPlanDestination(openDialogNow = true),
-                        onlyIfResumed = true
+                        AddWorkoutPlanDestination(openDialogNow = true)
                     ) }
                 ) {
                     Icon(
@@ -114,8 +117,7 @@ fun Home(
                         planName = "", // FIXME: empty plan name
                         planId = viewModel.state.value.currentPlan!!,
                         openDialogNow = true
-                    ),
-                    onlyIfResumed = true
+                    )
                 )
             }) {
                 Text(stringResource(id = R.string.add_program))
@@ -123,8 +125,7 @@ fun Home(
             TextButton(
                 onClick = {
                     navigator.navigate(
-                        AddWorkoutPlanDestination(),
-                        onlyIfResumed = true
+                        AddWorkoutPlanDestination()
                     ) },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) { Text(stringResource(R.string.change_workout_plan)) }
@@ -144,19 +145,43 @@ fun Home(
                 // Coming next
                 Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
+                // animate card, image and text separately
+                val cardKey = rememberSharedContentState("card_${currentProgram.programId}")
+                val imageKey = rememberSharedContentState("img_${currentProgram.programId}")
+                val exerciseNameKey = rememberSharedContentState("exName_${currentProgram.programId}")
+                val roundedCornersShape = CardDefaults.shape
                 WorkoutCard(
                     program = currentProgram,
                     exercises = currentExercises,
                     // TODO: add message when no exercises in the program
-                    onCardClick = {
+                    onCardClick = { previewExercise ->
                         navigator.navigate(
                             WorkoutDestination(
-                                programId = currentProgram.programId
+                                programId = currentProgram.programId,
+                                previewExercise = previewExercise
                             ),
-                            onlyIfResumed = true
                         )
                     },
-                    navigator = navigator
+                    navigator = navigator,
+                    // FIXME: suboptimal solution
+                    modifier = Modifier
+                        .sharedBounds(
+                            sharedContentState = cardKey,
+                            animatedVisibilityScope = animatedVisibilityScope,
+//                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                        )
+                    ,
+                    imageModifier = Modifier
+                        .sharedBounds(
+                            sharedContentState = imageKey,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                        ),
+                    exerciseModifier = Modifier
+                        .sharedBounds(
+                            sharedContentState = exerciseNameKey,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 if (viewModel.state.value.programs!!.size > 1) {
@@ -168,8 +193,17 @@ fun Home(
                 }
             }
             items(items = viewModel.state.value.programs!!.minus(currentProgram), key = { it }){
+                val exs =
+                    viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
+                        it.programExerciseId
+                    } ?: emptyList()
+                val pagerState = rememberPagerState(pageCount = { exs.size })
                 Card(
                     modifier = Modifier
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState("card_${it.programId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
                         .fillMaxWidth()
                         .padding(vertical = dimensionResource(R.dimen.card_space_between) / 2)
                         .combinedClickable(onLongClick = {
@@ -178,39 +212,38 @@ fun Home(
                                 AddProgramExerciseDestination(
                                     programName = it.name,
                                     programId = it.programId
-                                ),
-                                onlyIfResumed = true
+                                )
                             )
                         }) {
                             navigator.navigate(
                                 WorkoutDestination(
-                                    programId = it.programId
-                                ),
-                                onlyIfResumed = true
+                                    programId = it.programId,
+                                    previewExercise = exs[pagerState.currentPage]
+                                )
                             )
                         }
                 ){
-                    val exs =
-                        viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
-                            it.programExerciseId
-                        } ?: emptyList()
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(dimensionResource(R.dimen.card_inner_padding))
                     ) {
-                        val pagerState = rememberPagerState(pageCount = { exs.size })
                         Column(
                             Modifier
                                 .weight(1.6f)
                                 .fillMaxHeight()) {
                             Text(
                                 text = it.name,
-                                style = MaterialTheme.typography.titleLarge
+                                style = MaterialTheme.typography.titleLarge,
                             )
-                            exs.forEach { // TODO: mark supersets
-                                Text(text = it.name + it.variation)
+                            exs.forEach { exercise -> // TODO: mark supersets
+                                val exerciseName = exercise.name + exercise.variation
+                                val modifier = if (exercise.orderInProgram == pagerState.currentPage) Modifier.sharedBounds(
+                                        sharedContentState = rememberSharedContentState("exName_${it.programId}"),
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                    ) else Modifier
+                                Text(text = exerciseName, modifier = modifier)
                             }
                         }
                         Column (verticalArrangement = Arrangement.SpaceBetween,
@@ -223,6 +256,10 @@ fun Home(
                                     state = pagerState,
                                     userScrollEnabled = false,
                                     modifier = Modifier
+                                        .sharedBounds(
+                                            sharedContentState = rememberSharedContentState("img_${it.programId}"),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                        )
                                         .width(150.dp)
                                         .height(150.dp / 3 * 2)
                                         .clip(AbsoluteRoundedCornerShape(12.dp))
@@ -240,10 +277,12 @@ fun Home(
                                     }
                                 }
                                 LaunchedEffect(viewModel.state.value.animationTick){
-                                    pagerState.animateScrollToPage(
-                                        (pagerState.currentPage + 1) %
-                                                exs.size
-                                    )
+                                    if (!animatedVisibilityScope.transition.isRunning) {
+                                        pagerState.animateScrollToPage(
+                                            (pagerState.currentPage + 1) %
+                                                    exs.size
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -258,9 +297,9 @@ fun Home(
                                     navigator.navigate(
                                         WorkoutDestination(
                                             programId = it.programId,
+                                            previewExercise = exs[pagerState.currentPage],
                                             quickStart = true
-                                        ),
-                                        onlyIfResumed = true
+                                        )
                                     )
                                 }) {
                                 Icon(Icons.Default.RocketLaunch, "Quick start workout")
@@ -272,8 +311,7 @@ fun Home(
                                     AddProgramExerciseDestination(
                                         programName = it.name,
                                         programId = it.programId
-                                    ),
-                                    onlyIfResumed = true
+                                    )
                                 )
                             }) {
                             Icon(Icons.Outlined.Edit, "Edit program")
@@ -288,8 +326,7 @@ fun Home(
                     TextButton(
                         onClick = {
                             navigator.navigate(
-                                AddWorkoutPlanDestination(),
-                                onlyIfResumed = true
+                                AddWorkoutPlanDestination()
                             )
                         }, modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) { Text(stringResource(R.string.change_workout_plan)) }
@@ -298,8 +335,7 @@ fun Home(
                             AddProgramDestination(
                                 planName = "", // FIXME: empty plan name
                                 planId = viewModel.state.value.currentPlan!!
-                            ),
-                            onlyIfResumed = true
+                            )
                         )
                     }) {
                         Text("Change programs")
