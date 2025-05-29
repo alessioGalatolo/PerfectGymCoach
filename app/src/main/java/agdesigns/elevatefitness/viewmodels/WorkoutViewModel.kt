@@ -32,6 +32,7 @@ import kotlin.math.max
 import androidx.compose.runtime.snapshotFlow
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
+import kotlinx.coroutines.Dispatchers
 import java.time.Duration
 import java.time.ZonedDateTime
 
@@ -572,7 +573,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private fun sendWorkout2Wear(
         sendImage: Boolean = false
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             if (state.value.currentPage < state.value.workoutExercises.size) {
                 val exercise = state.value.workoutExercises[state.value.currentPage]
                 val nextExercise = if (state.value.currentPage < state.value.workoutExercises.size - 1)

@@ -328,14 +328,40 @@ class Repository @Inject constructor(
     /*
      * Utils
      */
-    fun getBitmapFromResId(@DrawableRes imageId: Int): Bitmap {
-        return BitmapFactory.decodeResource(context.resources, imageId)
+    fun getBitmapFromResId(@DrawableRes resId: Int): Bitmap {
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeResource(context.resources, resId, options)
+
+        // FIXME: is this enough res?
+        options.inSampleSize = calculateInSampleSize(options, reqWidth = 200, reqHeight = 200)
+        options.inJustDecodeBounds = false
+
+        return BitmapFactory.decodeResource(context.resources, resId, options)
+    }
+
+    fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+
+            while ((halfHeight / inSampleSize) >= reqHeight &&
+                (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        return inSampleSize
     }
 
     fun getAssetFromResId(@DrawableRes imageId: Int): Asset {
         val bitmap = getBitmapFromResId(imageId)
         return ByteArrayOutputStream().let { byteStream ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 5, byteStream)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, byteStream)
             Asset.createFromBytes(byteStream.toByteArray())
         }
     }
