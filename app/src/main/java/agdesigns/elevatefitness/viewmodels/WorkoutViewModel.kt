@@ -225,18 +225,16 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 if (retrieveExercises == null) { // only retrieve once
                     _state.value = state.value.copy(programId = event.programId)
                     retrieveExercises = viewModelScope.launch {
+                        // get workout id
                         _state.value = state.value.copy(
                             workoutId = repository.addWorkoutRecord(
                                 WorkoutRecord(extProgramId = event.programId)
                             )
                         )
-                        viewModelScope.launch {
-                            onEvent(WorkoutEvent.StartRetrievingExercises)
-                        }
-                    }
-                    viewModelScope.launch {
+                        // once we have workout id, retrieve program exercises
                         val exercises = repository.getProgramExercisesAndInfo(event.programId)
                             .first().sortedBy { it.orderInProgram }
+                        // and create the relative workout exercises
                         val workoutExercises = exercises.map {
                             WorkoutExercise(
                                 extExerciseId = it.extExerciseId,
@@ -254,7 +252,10 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 supersetExercise = it.supersetExercise
                             )
                         }
+                        // add workout exercises to db
                         repository.addWorkoutExercises(workoutExercises)
+                        // and start retrieving them
+                        onEvent(WorkoutEvent.StartRetrievingExercises)
                     }
                 }
             }
@@ -456,6 +457,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 programId = workout.extProgramId
                             )
                             startTimer()
+                        } else {
+                            // TODO: what if it is null?
                         }
                     }
                 }
