@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
-import java.time.ZonedDateTime
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
@@ -74,7 +73,7 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 _state.value = state.value.copy(imageBitmap = it)
             }
         }
-        _state.value = state.value.copy(timeDec = ZonedDateTime.now() .timeInMillis / 100)
+        _state.value = state.value.copy(timeDec = ZonedDateTime.now().toInstant().toEpochMilli() / 100)
         startTimer()
         startSyncTimer()
     }

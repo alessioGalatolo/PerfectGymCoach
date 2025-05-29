@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "38c65cb29b832a6fd0cf2123f70c12fd",
+    "identityHash": "810b323fc639336401523eb5d245eb76",
     "entities": [
       {
         "tableName": "plan",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`planId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `currentProgram` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`planId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `creationDate` INTEGER NOT NULL, `currentProgram` INTEGER NOT NULL, `archived` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "planId",
@@ -21,8 +21,20 @@
             "notNull": true
           },
           {
+            "fieldPath": "creationDate",
+            "columnName": "creationDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
             "fieldPath": "currentProgram",
             "columnName": "currentProgram",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -32,13 +44,11 @@
           "columnNames": [
             "planId"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "program",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`programId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extPlanId` INTEGER NOT NULL, `orderInWorkoutPlan` INTEGER NOT NULL, `name` TEXT NOT NULL, FOREIGN KEY(`extPlanId`) REFERENCES `plan`(`planId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`programId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extPlanId` INTEGER, `orderInWorkoutPlan` INTEGER NOT NULL, `name` TEXT NOT NULL, FOREIGN KEY(`extPlanId`) REFERENCES `plan`(`planId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "programId",
@@ -49,8 +59,7 @@
           {
             "fieldPath": "extPlanId",
             "columnName": "extPlanId",
-            "affinity": "INTEGER",
-            "notNull": true
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "orderInWorkoutPlan",
@@ -71,7 +80,17 @@
             "programId"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_program_extPlanId",
+            "unique": false,
+            "columnNames": [
+              "extPlanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_program_extPlanId` ON `${TABLE_NAME}` (`extPlanId`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "plan",
@@ -141,8 +160,7 @@
           {
             "fieldPath": "supersetExercise",
             "columnName": "supersetExercise",
-            "affinity": "INTEGER",
-            "notNull": false
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -151,7 +169,35 @@
             "programExerciseId"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_ProgramExercise_extProgramId",
+            "unique": false,
+            "columnNames": [
+              "extProgramId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProgramExercise_extProgramId` ON `${TABLE_NAME}` (`extProgramId`)"
+          },
+          {
+            "name": "index_ProgramExercise_extExerciseId",
+            "unique": false,
+            "columnNames": [
+              "extExerciseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProgramExercise_extExerciseId` ON `${TABLE_NAME}` (`extExerciseId`)"
+          },
+          {
+            "name": "index_ProgramExercise_supersetExercise",
+            "unique": false,
+            "columnNames": [
+              "supersetExercise"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProgramExercise_supersetExercise` ON `${TABLE_NAME}` (`supersetExercise`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "program",
@@ -259,7 +305,26 @@
             "recordId"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_ExerciseRecord_extWorkoutId",
+            "unique": false,
+            "columnNames": [
+              "extWorkoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ExerciseRecord_extWorkoutId` ON `${TABLE_NAME}` (`extWorkoutId`)"
+          },
+          {
+            "name": "index_ExerciseRecord_extExerciseId",
+            "unique": false,
+            "columnNames": [
+              "extExerciseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ExerciseRecord_extExerciseId` ON `${TABLE_NAME}` (`extExerciseId`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "WorkoutRecord",
@@ -304,8 +369,7 @@
           {
             "fieldPath": "startDate",
             "columnName": "startDate",
-            "affinity": "INTEGER",
-            "notNull": false
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "intensity",
@@ -344,7 +408,17 @@
             "workoutId"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_WorkoutRecord_extProgramId",
+            "unique": false,
+            "columnNames": [
+              "extProgramId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_WorkoutRecord_extProgramId` ON `${TABLE_NAME}` (`extProgramId`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "program",
@@ -361,7 +435,7 @@
       },
       {
         "tableName": "WorkoutExercise",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extProgramExerciseId` INTEGER, `extExerciseId` INTEGER NOT NULL, `name` TEXT NOT NULL, `image` INTEGER NOT NULL, `equipment` TEXT NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` TEXT NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutExerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extProgramExerciseId` INTEGER, `extExerciseId` INTEGER NOT NULL, `name` TEXT NOT NULL, `image` INTEGER NOT NULL, `description` TEXT NOT NULL, `equipment` TEXT NOT NULL, `orderInProgram` INTEGER NOT NULL, `reps` TEXT NOT NULL, `rest` TEXT NOT NULL, `note` TEXT NOT NULL, `variation` TEXT NOT NULL, `supersetExercise` INTEGER, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`supersetExercise`) REFERENCES `ProgramExercise`(`programExerciseId`) ON UPDATE NO ACTION ON DELETE SET DEFAULT )",
         "fields": [
           {
             "fieldPath": "workoutExerciseId",
@@ -378,8 +452,7 @@
           {
             "fieldPath": "extProgramExerciseId",
             "columnName": "extProgramExerciseId",
-            "affinity": "INTEGER",
-            "notNull": false
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "extExerciseId",
@@ -397,6 +470,12 @@
             "fieldPath": "image",
             "columnName": "image",
             "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -438,8 +517,7 @@
           {
             "fieldPath": "supersetExercise",
             "columnName": "supersetExercise",
-            "affinity": "INTEGER",
-            "notNull": false
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -448,7 +526,35 @@
             "workoutExerciseId"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_WorkoutExercise_extWorkoutId",
+            "unique": false,
+            "columnNames": [
+              "extWorkoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_WorkoutExercise_extWorkoutId` ON `${TABLE_NAME}` (`extWorkoutId`)"
+          },
+          {
+            "name": "index_WorkoutExercise_extExerciseId",
+            "unique": false,
+            "columnNames": [
+              "extExerciseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_WorkoutExercise_extExerciseId` ON `${TABLE_NAME}` (`extExerciseId`)"
+          },
+          {
+            "name": "index_WorkoutExercise_supersetExercise",
+            "unique": false,
+            "columnNames": [
+              "supersetExercise"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_WorkoutExercise_supersetExercise` ON `${TABLE_NAME}` (`supersetExercise`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "WorkoutRecord",
@@ -487,7 +593,7 @@
       },
       {
         "tableName": "Exercise",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`exerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `equipment` TEXT NOT NULL, `primaryMuscle` TEXT NOT NULL, `secondaryMuscles` TEXT NOT NULL, `image` INTEGER NOT NULL, `difficulty` TEXT NOT NULL, `variations` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`exerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `equipment` TEXT NOT NULL, `primaryMuscle` TEXT NOT NULL, `secondaryMuscles` TEXT NOT NULL, `image` INTEGER NOT NULL, `description` TEXT NOT NULL, `difficulty` TEXT NOT NULL, `probability` REAL NOT NULL, `variations` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "exerciseId",
@@ -526,9 +632,21 @@
             "notNull": true
           },
           {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
             "fieldPath": "difficulty",
             "columnName": "difficulty",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "probability",
+            "columnName": "probability",
+            "affinity": "REAL",
             "notNull": true
           },
           {
@@ -543,15 +661,12 @@
           "columnNames": [
             "exerciseId"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       }
     ],
-    "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '38c65cb29b832a6fd0cf2123f70c12fd')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '810b323fc639336401523eb5d245eb76')"
     ]
   }
 }
