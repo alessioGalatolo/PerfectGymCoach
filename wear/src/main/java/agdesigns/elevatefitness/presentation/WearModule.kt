@@ -13,12 +13,16 @@ import javax.inject.Singleton
 object WearModule {
 
     @Provides
-    fun provideHandler(@ApplicationContext context: Context): WearDataHandler =
+    fun provideDataHandler(@ApplicationContext context: Context): WearDataHandler =
         WearDataHandler(context)
+
+    @Provides
+    fun provideMessageHandler(@ApplicationContext context: Context): WearMessageHandler =
+        WearMessageHandler(context)
 
     @Singleton
     @Provides
-    fun provideRepository(handler: WearDataHandler, @ApplicationContext context: Context): WearRepository =
-        WearRepository.getInstance(handler, context)
+    fun provideRepository(dataHandler: WearDataHandler, messageHandler: WearMessageHandler, @ApplicationContext context: Context): WearRepository =
+        WearRepository.getInstance(dataHandler, messageHandler, context)
 
 }

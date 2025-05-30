@@ -15,23 +15,34 @@ import javax.inject.Singleton
 
 
 @Singleton
-class WearMessagesReceiver @Inject constructor(
+class WatchMessageReceiver @Inject constructor(
     @ApplicationContext private val context: Context
 ) : MessageClient.OnMessageReceivedListener {
 
-    private val _messages = MutableSharedFlow<JSONObject>(
+    // set completion requests
+    private val _setCompletionInfo = MutableSharedFlow<JSONObject>(
         replay = 0,
         extraBufferCapacity = 64,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    val messages: SharedFlow<JSONObject> = _messages.asSharedFlow()
+    val setCompletionInfo: SharedFlow<JSONObject> = _setCompletionInfo.asSharedFlow()
 
+    // watch has requested to sync
     private val _syncRequest = MutableSharedFlow<Boolean>(
         replay = 0,
         extraBufferCapacity = 64,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val syncRequest: SharedFlow<Boolean> = _syncRequest.asSharedFlow()
+
+    // keep track of watch to avoid sending useless data
+    private val _watchHeartbeat = MutableSharedFlow<Long>(
+        replay = 0,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val watchHeartbeat: SharedFlow<Long> = _watchHeartbeat.asSharedFlow()
+
 
     init {
         Wearable.getMessageClient(context).addListener(this)
@@ -41,9 +52,13 @@ class WearMessagesReceiver @Inject constructor(
         if (messageEvent.path == "/watch2phone") {
             val msg = String(messageEvent.data, Charsets.UTF_8)
             val json = JSONObject(msg)
-            _messages.tryEmit(json)
+            _setCompletionInfo.tryEmit(json)
         } else if (messageEvent.path == "/request_sync") {
             _syncRequest.tryEmit(true)
+        } else if (messageEvent.path == "/heartbeat") {
+            _watchHeartbeat.tryEmit(System.currentTimeMillis())
+            // watch replies to phone heartbeats but phone should avoid that
+            // to avoid overloading the connection
         }
     }
 

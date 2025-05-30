@@ -17,7 +17,6 @@ import agdesigns.elevatefitness.data.workout_program.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
@@ -26,8 +25,15 @@ import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
@@ -38,7 +44,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 @Singleton
 class Repository @Inject constructor(
     private val db: WorkoutDatabase,
-    private val wearMessagesReceiver: WearMessagesReceiver,
+    private val watchMessageReceiver: WatchMessageReceiver,
     @ApplicationContext  private val context: Context
 ) {
     private val dataStore = context.dataStore
@@ -61,7 +67,61 @@ class Repository @Inject constructor(
     /*
      * Wear connection
      */
-    fun sendWorkout2Wear(message: PutDataMapRequest) {
+    private val _watchIsAlive = MutableStateFlow(true)
+    private var lastHeartbeat = System.currentTimeMillis()
+    private var listenHeartbeatJob: Job? = null
+    private var checkWatchHealthJob: Job? = null
+
+    fun startListeningForWatch() {
+        if (checkWatchHealthJob == null) {
+            lastHeartbeat = System.currentTimeMillis()
+            checkWatchHealthJob = CoroutineScope(Dispatchers.Default).launch {
+                while (true) {
+                    // send phone heartbeat, then check watch's
+                    val nodes = Wearable.getNodeClient(context).connectedNodes
+                    nodes.addOnSuccessListener {
+                        for (node in it) {
+                            Wearable.getMessageClient(context)
+                                .sendMessage(node.id, "/heartbeat", "ping".toByteArray())
+                        }
+                    }
+                    val alive = System.currentTimeMillis() - lastHeartbeat < 2000
+                    _watchIsAlive.tryEmit(alive)
+                    delay(1000)
+                }
+            }
+        }
+        if (listenHeartbeatJob == null) {
+            listenHeartbeatJob = CoroutineScope(Dispatchers.Default).launch {
+                watchMessageReceiver.watchHeartbeat.collect {
+                    lastHeartbeat = System.currentTimeMillis()
+                }
+            }
+        }
+    }
+
+    fun stopWearWorkout() {
+        val message = PutDataMapRequest.create("/stop_workout")
+        message.dataMap.putLong("message_timestamp", System.currentTimeMillis())
+        val putReq = message.asPutDataRequest().setUrgent()
+        Wearable.getDataClient(context)
+            .putDataItem(putReq)
+            .addOnSuccessListener { dataItem ->
+                Log.d("WearSender", "Stop workout sent: $dataItem")
+            }
+        checkWatchHealthJob?.cancel()
+        listenHeartbeatJob?.cancel()
+        checkWatchHealthJob = null
+        listenHeartbeatJob = null
+    }
+
+    fun sendWorkout2Wear(message: PutDataMapRequest, overrideDeadWatch: Boolean = false) {
+        startListeningForWatch()  // This should actually be called first by the view model
+        if (!_watchIsAlive.value && !overrideDeadWatch) {
+            Log.d("Repository", "Skipping sending workout to wear as it is dead")
+            return
+        }
+        // FIXME: it should work even without a timestamp but it doesn't ><
         message.dataMap.putLong("message_timestamp", System.currentTimeMillis())
         val putReq = message.asPutDataRequest().setUrgent()
 
@@ -75,9 +135,9 @@ class Repository @Inject constructor(
             }
     }
 
-    fun getWatchSetCompletion(): Flow<JSONObject> = wearMessagesReceiver.messages
+    fun getWatchSetCompletion(): Flow<JSONObject> = watchMessageReceiver.setCompletionInfo
 
-    fun getSyncRequest(): Flow<Boolean> = wearMessagesReceiver.syncRequest
+    fun getSyncRequest(): Flow<Boolean> = watchMessageReceiver.syncRequest
 
     /*
      * WORKOUT PLAN
@@ -371,9 +431,9 @@ class Repository @Inject constructor(
         // For Singleton instantiation
         @Volatile private var instance: Repository? = null
 
-        fun getInstance(workoutDatabase: WorkoutDatabase, wearMessagesReceiver: WearMessagesReceiver, context: Context) =
+        fun getInstance(workoutDatabase: WorkoutDatabase, watchMessageReceiver: WatchMessageReceiver, context: Context) =
             instance ?: synchronized(this) {
-                instance ?: Repository(workoutDatabase, wearMessagesReceiver, context).also { instance = it }
+                instance ?: Repository(workoutDatabase, watchMessageReceiver, context).also { instance = it }
             }
     }
 }

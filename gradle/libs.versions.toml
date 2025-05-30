@@ -19,6 +19,7 @@ datastore = "1.1.7"
 core_ktx = "1.16.0"
 # wear os integration
 wearable_play_services = "19.0.0"
+wear_remote_interactions = "1.1.0"
 # compose wear os
 wear_compose_material_legacy = "1.4.1"
 wear_compose = "1.5.0-beta02"
@@ -84,6 +85,7 @@ compose-destinations-wear = { group = "io.github.raamcosta.compose-destinations"
 graphs = { group = "com.github.jaikeerthick", name = "Composable-Graphs", version.ref = "graphs" }
 wearable-play-services = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "wearable_play_services" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose_bom" }
+wear-remote-interactions = { group = "androidx.wear", name = "wear-remote-interactions", version.ref = "wear_remote_interactions" }
 wear-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "wear_compose_material_legacy" }
 wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wear_compose" }
 wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wear_compose" }

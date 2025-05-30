@@ -3,12 +3,15 @@ package agdesigns.elevatefitness.presentation
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataItemBuffer
+import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,23 +22,23 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.core.net.toUri
 
 @Singleton
 class WearDataHandler @Inject constructor(
     @ApplicationContext private val context: Context
 ) : DataClient.OnDataChangedListener {
 
-    private val _messages = MutableSharedFlow<WearWorkout>(
+    // messages receives and emits workout data
+    private val _workoutData = MutableSharedFlow<WearWorkout>(
         replay = 0,
         extraBufferCapacity = 64,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    val messages: SharedFlow<WearWorkout> = _messages.asSharedFlow()
+    val workoutData: SharedFlow<WearWorkout> = _workoutData.asSharedFlow()
 
+    // image receives and emits image of workout exercise
     private val _image = MutableSharedFlow<Bitmap>(
         replay = 0,
         extraBufferCapacity = 64,
@@ -43,14 +46,42 @@ class WearDataHandler @Inject constructor(
     )
     val image: SharedFlow<Bitmap> = _image.asSharedFlow()
 
+    private val _workoutInterrupted: MutableSharedFlow<Boolean> = MutableSharedFlow(
+        replay = 0,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val workoutInterrupted: SharedFlow<Boolean> = _workoutInterrupted.asSharedFlow()
+
     init {
         Wearable.getDataClient(context)
             .addListener(this)
         // TODO get all queued items on start, remove timestamp
-//        Wearable.getDataClient(context).getDataItems("/image2watch".toUri()).addOnSuccessListener {
-//            it.forEach { item ->
-//                ...
-//        }
+        Wearable.getDataClient(context).getDataItems("/image2watch".toUri()).addOnSuccessListener {
+            var queuedAsset: Asset? = null
+
+            it.forEach { item ->
+                val dataMap = DataMapItem.fromDataItem(item).dataMap
+                if (dataMap.containsKey("image")) {
+                    val asset = dataMap.getAsset("image")
+                    if (asset != null) {
+                        queuedAsset = asset
+                    }
+                }
+            }
+            if (queuedAsset != null) {
+                Log.d("WearDataHandler", "Found some queued image on init")
+                decodeImageAndEmit(queuedAsset)
+            }
+        }
+        Wearable.getDataClient(context).getDataItems("/phone2watch".toUri()).addOnSuccessListener {
+            var queuedWorkout = WearWorkout()
+            it.forEach { item ->
+                val dataMap = DataMapItem.fromDataItem(item).dataMap
+                queuedWorkout = updateWorkout(dataMap, queuedWorkout)
+            }
+            _workoutData.tryEmit(queuedWorkout)
+        }
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -61,70 +92,62 @@ class WearDataHandler @Inject constructor(
                 if (item.uri.path == "/phone2watch") {
                     val dataMap = DataMapItem.fromDataItem(item).dataMap
                     var wearWorkout = WearWorkout()
-                    if (dataMap.containsKey("setsDone"))
-                        wearWorkout = wearWorkout.copy(setsDone = dataMap.getInt("setsDone"))
-                    if (dataMap.containsKey("exerciseName"))
-                        wearWorkout = wearWorkout.copy(exerciseName = dataMap.getString("exerciseName"))
-                    if (dataMap.containsKey("rest"))
-                        wearWorkout = wearWorkout.copy(rest = dataMap.getIntegerArrayList("rest"))
-                    if (dataMap.containsKey("reps"))
-                        wearWorkout = wearWorkout.copy(reps = dataMap.getIntegerArrayList("reps"))
-                    if (dataMap.containsKey("weight"))
-                        wearWorkout = wearWorkout.copy(weight = dataMap.getFloat("weight"))
-                    if (dataMap.containsKey("note"))
-                        wearWorkout = wearWorkout.copy(note = dataMap.getString("note"))
-                    if (dataMap.containsKey("restTimestamp"))
-                        wearWorkout = wearWorkout.copy(restTimestamp = dataMap.getLong("restTimestamp"))
-                    if (dataMap.containsKey("exerciseIncrement"))
-                        wearWorkout = wearWorkout.copy(exerciseIncrement = dataMap.getFloat("exerciseIncrement"))
-                    if (dataMap.containsKey("nextExerciseName"))
-                        wearWorkout = wearWorkout.copy(nextExerciseName = dataMap.getString("nextExerciseName"))
-                    // image should be last check
-                    if (dataMap.containsKey("image")) {
-                        Log.d("WearDataHandler", "onDataChanged: received image")
-                        val imageAsset = dataMap.getAsset("image")
+                    wearWorkout = updateWorkout(dataMap, wearWorkout)
 
-                        imageAsset?.let { asset ->
-                            CoroutineScope(Dispatchers.IO).launch {
-                                try {
-                                    val assetFd = Tasks.await(Wearable.getDataClient(context).getFdForAsset(asset))
-                                    val inputStream = assetFd?.inputStream
-                                    val imageBitmap = inputStream?.use { BitmapFactory.decodeStream(it) }
-
-                                    if (imageBitmap != null) {
-                                        _image.tryEmit(imageBitmap)
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("WearDataHandler", "Failed to load asset", e)
-                                }
-                            }
-                            return@forEach // emit will happen inside coroutine
-                        }
-                    } else {
-                        Log.d("WearDataHandler", "emitting $wearWorkout")
-                        _messages.tryEmit(wearWorkout)
-                    }
+                    _workoutData.tryEmit(wearWorkout)
                 } else if (item.uri.path == "/image2watch") {
                     Log.d("WearDataHandler", "onDataChanged: received image on new uri ")
                     DataMapItem.fromDataItem(item).dataMap.getAsset("image")?.let { asset ->
-                        CoroutineScope(Dispatchers.IO).launch {
-                            try {
-                                val assetFd = Tasks.await(Wearable.getDataClient(context).getFdForAsset(asset))
-                                val inputStream = assetFd?.inputStream
-                                val imageBitmap = inputStream?.use { BitmapFactory.decodeStream(it) }
-
-                                if (imageBitmap != null) {
-                                    Log.d("WearDataHandler", "emitting image")
-                                    _image.tryEmit(imageBitmap)
-                                }
-                            } catch (e: Exception) {
-                                Log.e("WearDataHandler", "Failed to load asset", e)
-                            }
-                        }
+                        decodeImageAndEmit(asset)
                     }
+                } else if (item.uri.path == "/stop_workout") {
+                    _workoutInterrupted.tryEmit(true)
                 }
             }
         }
+    }
+
+    fun decodeImageAndEmit(asset: Asset) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val assetFd = Tasks.await(Wearable.getDataClient(context).getFdForAsset(asset))
+                val inputStream = assetFd?.inputStream
+                val imageBitmap = inputStream?.use { BitmapFactory.decodeStream(it) }
+
+                if (imageBitmap != null) {
+                    Log.d("WearDataHandler", "emitting image")
+                    _image.tryEmit(imageBitmap)
+                }
+            } catch (e: Exception) {
+                Log.e("WearDataHandler", "Failed to load asset", e)
+            }
+        }
+    }
+
+    // updates workout with non-null values in dataMap
+    fun updateWorkout(dataMap: DataMap, workout: WearWorkout): WearWorkout {
+        var updatedWorkout = workout
+        // we are checking all the keys individually because not all of them give
+        // null when not present e.g., getInt returns 0 if not present
+        if (dataMap.containsKey("setsDone"))
+            updatedWorkout = updatedWorkout.copy(setsDone = dataMap.getInt("setsDone"))
+        if (dataMap.containsKey("exerciseName"))
+            updatedWorkout = updatedWorkout.copy(exerciseName = dataMap.getString("exerciseName"))
+        if (dataMap.containsKey("rest"))
+            updatedWorkout = updatedWorkout.copy(rest = dataMap.getIntegerArrayList("rest"))
+        if (dataMap.containsKey("reps"))
+            updatedWorkout = updatedWorkout.copy(reps = dataMap.getIntegerArrayList("reps"))
+        if (dataMap.containsKey("weight"))
+            updatedWorkout = updatedWorkout.copy(weight = dataMap.getFloat("weight"))
+        if (dataMap.containsKey("note"))
+            updatedWorkout = updatedWorkout.copy(note = dataMap.getString("note"))
+        if (dataMap.containsKey("restTimestamp"))
+            updatedWorkout = updatedWorkout.copy(restTimestamp = dataMap.getLong("restTimestamp"))
+        if (dataMap.containsKey("exerciseIncrement"))
+            updatedWorkout = updatedWorkout.copy(exerciseIncrement = dataMap.getFloat("exerciseIncrement"))
+        if (dataMap.containsKey("nextExerciseName"))
+            updatedWorkout = updatedWorkout.copy(nextExerciseName = dataMap.getString("nextExerciseName"))
+        return updatedWorkout
     }
 
     fun cleanup() {

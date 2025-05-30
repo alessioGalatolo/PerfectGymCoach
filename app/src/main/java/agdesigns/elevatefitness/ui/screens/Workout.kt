@@ -93,6 +93,13 @@ fun SharedTransitionScope.Workout(
     resumeWorkout: Boolean = false,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
+    // when exiting the screen, stop wear workout
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.onEvent(WorkoutEvent.InterruptWearWorkout)
+        }
+    }
+
     // for container transform animation
     val sharedStateCard = rememberSharedContentState("card_$programId")
     val sharedStateImg = rememberSharedContentState("img_$programId")

@@ -121,7 +121,10 @@ sealed class WorkoutEvent{
     ): WorkoutEvent()
 
     data class UpdateCurrentPage(val currentPage: Int) : WorkoutEvent()
+
     data class UpdateSetsDone(val value: Int) : WorkoutEvent()
+
+    data object InterruptWearWorkout : WorkoutEvent()
 
 }
 
@@ -134,6 +137,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private var resumeWorkoutJob: Job? = null
     private var retrieveExercisesRecords: Job? = null
     private var timerJob: Job? = null
+
+    override fun onCleared() {
+        super.onCleared()
+        repository.stopWearWorkout()
+    }
 
     init {
         viewModelScope.launch {
@@ -200,7 +208,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             // check for sync requests
             repository.getSyncRequest().collect {
                 Log.d("WorkoutViewModel", "Sync request received")
-                sendWorkout2Wear(sendImage = true)
+                // watch sent a sync request, can't be dead
+                sendWorkout2Wear(sendImage = true, overrideDeadWatch = true)
             }
         }
     }
@@ -313,6 +322,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         it.extWorkoutId == state.value.workoutId && it.exerciseInWorkout == event.exerciseInWorkout
                     }  // FIXME: same find is repeated elsewhere
 
+                    // FIXME: null pointer if try complete from watch when workout has not started
                     _state.value = state.value.copy(
                         restTimestamp = state.value.workoutTime!!+event.exerciseRest,
                         wearRestTimestamp = ZonedDateTime.now().toInstant().toEpochMilli() + event.exerciseRest * 1000
@@ -566,12 +576,17 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 _state.value = state.value.copy(setsDone = event.value)
                 sendWorkout2Wear()
             }
+
+            is WorkoutEvent.InterruptWearWorkout -> {
+                repository.stopWearWorkout()
+            }
         }
         return true
     }
 
     private fun sendWorkout2Wear(
-        sendImage: Boolean = false
+        sendImage: Boolean = false,
+        overrideDeadWatch: Boolean = false
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             if (state.value.currentPage < state.value.workoutExercises.size) {
@@ -607,14 +622,16 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp!!)
 
                 repository.sendWorkout2Wear(
-                    dataMapReq
+                    dataMapReq,
+                    overrideDeadWatch
                 )
                 if (sendImage) {
                     val imageAsset = repository.getAssetFromResId(exercise.image)
                     val imageReq = PutDataMapRequest.create("/image2watch")
                     imageReq.dataMap.putAsset("image", imageAsset)
                     repository.sendWorkout2Wear(
-                        imageReq
+                        imageReq,
+                        overrideDeadWatch
                     )
                 }
 

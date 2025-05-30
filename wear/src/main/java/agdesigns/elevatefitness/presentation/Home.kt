@@ -1,5 +1,8 @@
 package agdesigns.elevatefitness.presentation
 
+import android.content.ComponentName
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
@@ -22,11 +25,15 @@ import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -42,6 +49,7 @@ import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.MaterialTheme
@@ -52,6 +60,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.pager.HorizontalPager
@@ -60,16 +69,21 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material3.AnimatedPage
 import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
 import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.FilledTonalIconButton
 import androidx.wear.compose.material3.HorizontalPagerScaffold
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButton
+import androidx.wear.compose.material3.OpenOnPhoneDialog
+import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.OutlinedIconButton
 import androidx.wear.compose.material3.PagerScaffoldDefaults
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.TextButton
+import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
+import androidx.wear.remote.interactions.RemoteActivityHelper
 import kotlin.math.max
 
 @Destination<RootGraph>(start = true)
@@ -77,7 +91,6 @@ import kotlin.math.max
 fun Home(
     viewModel: HomeViewModel = hiltViewModel()
 ){
-    // TODO: if mobile app closes, stuff should disappear
     // FIXME: nullpointerexception
     Box(
         modifier = Modifier
@@ -171,11 +184,41 @@ fun Home(
                 }
             } else {
                 if (viewModel.state.value.exerciseName.isEmpty()) {
+                    val context = LocalContext.current
+                    val remoteActivityHelper = RemoteActivityHelper(context)
+                    // TODO: this is nice but would be nicer if it opened next workout on phone
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        addCategory(Intent.CATEGORY_BROWSABLE)
+                        data = "myapp://openapp".toUri()
+                    }
+                    var showConfirmation by remember { mutableStateOf(false) }
+                    val text = OpenOnPhoneDialogDefaults.text
+                    val style = OpenOnPhoneDialogDefaults.curvedTextStyle
+                    OpenOnPhoneDialog(
+                        visible = showConfirmation,
+                        onDismissRequest = { showConfirmation = false },
+                        curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
+                    )
                     Column (Modifier.fillMaxSize().background(Color.Transparent), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        // TODO: replace with swipe to refresh
+                        IconButton({
+                            viewModel.onEvent(HomeEvent.ForceSync)
+                        }) {
+                            Icon(Icons.Default.Sync, "Force sync")
+                        }
                         Text(
                             text = "Please start a workout on your phone to begin",
                             textAlign = TextAlign.Center
                         )
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = {
+                            val result = remoteActivityHelper.startRemoteActivity(intent)
+                            Log.d("Home", "Result: $result")
+                            showConfirmation = true
+                        }) {
+                            Icon(Icons.Default.PhoneAndroid, "Phone")
+                            Text("Open Phone App")
+                        }
                     }
                 } else {
                     ScreenScaffold(
@@ -213,7 +256,7 @@ fun Home(
                         ) {
                             item {
                                 Text(
-                                    text = viewModel.state.value.exerciseName + "(${viewModel.state.value.setsDone+1}/${viewModel.state.value.rest.size})",
+                                    text = viewModel.state.value.exerciseName + " (${viewModel.state.value.setsDone+1}/${viewModel.state.value.rest.size})",
                                     style = MaterialTheme.typography.labelLarge,
                                     textAlign = TextAlign.Center
                                 )

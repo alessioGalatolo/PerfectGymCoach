@@ -5,8 +5,15 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable.isActive
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,42 +21,35 @@ import javax.inject.Singleton
 
 @Singleton
 class WearRepository @Inject constructor(
-    private val handler: WearDataHandler,
+    private val dataHandler: WearDataHandler,
+    private val messageHandler: WearMessageHandler,
     @ApplicationContext private val context: Context
 ) {
+    private var lastHeartbeat = System.currentTimeMillis()
+    private val _isPhoneAlive = MutableStateFlow(true)
 
-    private var oldMessages: WearWorkout = WearWorkout()
-
-    fun observeWearWorkout(): Flow<WearWorkout> =
-        callbackFlow {
-            // collect handler.messages
-            // do not propagate null values instead recycle old ones
-            // fixme: needs to be changed every time WearWorkout changes...
-            handler.messages.collect {
-                val newWearWorkout = WearWorkout(
-                    exerciseName = it.exerciseName ?: oldMessages.exerciseName,
-                    rest = it.rest ?: oldMessages.rest,
-                    reps = it.reps ?: oldMessages.reps,
-                    setsDone = it.setsDone ?: oldMessages.setsDone,
-                    note = it.note ?: oldMessages.note,
-                    weight = it.weight ?: oldMessages.weight,
-                    restTimestamp = it.restTimestamp ?: oldMessages.restTimestamp,
-                    exerciseIncrement = it.exerciseIncrement ?: oldMessages.exerciseIncrement,
-                    nextExerciseName = it.nextExerciseName ?: oldMessages.nextExerciseName,
-                )
-                oldMessages = newWearWorkout
-                trySend(newWearWorkout)
+    init {
+        CoroutineScope(Dispatchers.Default).launch {
+            while (true) {
+                val alive = System.currentTimeMillis() - lastHeartbeat < 2000
+                _isPhoneAlive.tryEmit(alive)
+                delay(1000)
             }
         }
-
-    fun observeWearImage(): Flow<Bitmap> =
-        callbackFlow {
-            // collect handler.messages
-            // do not propagate null values instead recycle old ones
-            handler.image.collect {
-                trySend(it)
+        CoroutineScope(Dispatchers.Default).launch {
+            messageHandler.phoneHeartbeat.collect {
+                lastHeartbeat = System.currentTimeMillis()
             }
         }
+    }
+
+    fun observeWearWorkout(): Flow<WearWorkout> = dataHandler.workoutData
+
+    fun observeWearImage(): Flow<Bitmap> = dataHandler.image
+
+    fun observeWorkoutInterrupted(): Flow<Boolean> = dataHandler.workoutInterrupted
+
+    fun isPhoneAlive(): Flow<Boolean> = _isPhoneAlive.asStateFlow()
 
     fun completeSet(exerciseName: String, reps: Int, weight: Float) {
         // from a view model
@@ -68,6 +68,7 @@ class WearRepository @Inject constructor(
     }
 
     fun forceSync() {
+        // TODO: move to message handler
         val nodes = Wearable.getNodeClient(context).connectedNodes
         nodes.addOnSuccessListener {
             for (node in it) {
@@ -82,11 +83,23 @@ class WearRepository @Inject constructor(
 
 
     fun close() {
-        handler.cleanup()
+        dataHandler.cleanup()
+        messageHandler.cleanup()
     }
 
     fun reopen() {
-        handler.reopen()
+        dataHandler.reopen()
+        messageHandler.reopen()
+    }
+
+    init {
+        CoroutineScope(Dispatchers.Default).launch {
+            while (true) {
+                val alive = System.currentTimeMillis() - lastHeartbeat < 2000
+                _isPhoneAlive.tryEmit(alive)
+                delay(1000)
+            }
+        }
     }
 
     companion object {
@@ -94,9 +107,9 @@ class WearRepository @Inject constructor(
         // For Singleton instantiation
         @Volatile private var instance: WearRepository? = null
 
-        fun getInstance(handler: WearDataHandler, context: Context) =
+        fun getInstance(dataHandler: WearDataHandler, messageHandler: WearMessageHandler, context: Context) =
             instance ?: synchronized(this) {
-                instance ?: WearRepository(handler, context).also { instance = it }
+                instance ?: WearRepository(dataHandler, messageHandler, context).also { instance = it }
             }
     }
 }

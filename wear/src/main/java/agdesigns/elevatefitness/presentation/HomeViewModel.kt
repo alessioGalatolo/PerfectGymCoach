@@ -37,6 +37,7 @@ sealed class HomeEvent {
     data class ChangeReps(val change: Int): HomeEvent()
     data class ChangeWeight(val change: Int): HomeEvent()
     data object CompleteSet: HomeEvent()
+    data object ForceSync: HomeEvent()
 }
 
 
@@ -73,9 +74,24 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 _state.value = state.value.copy(imageBitmap = it)
             }
         }
+        viewModelScope.launch {
+            repository.isPhoneAlive().collect {
+                // reset state
+                if (!it) {
+                    _state.value = HomeState()
+                }
+            }
+        }
+        viewModelScope.launch {
+            repository.observeWorkoutInterrupted().collect {
+                if (it) {
+                    _state.value = HomeState()
+                }
+            }
+        }
         _state.value = state.value.copy(timeDec = ZonedDateTime.now().toInstant().toEpochMilli() / 100)
         startTimer()
-        startSyncTimer()
+        onEvent(HomeEvent.ForceSync) // request sync once
     }
 
     fun onEvent(event: HomeEvent){
@@ -102,6 +118,11 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 }
 
             }
+            is HomeEvent.ForceSync -> {
+                viewModelScope.launch {
+                    repository.forceSync()
+                }
+            }
 
         }
 
@@ -119,22 +140,6 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
         }.onEach {
             // FIXME: perhaps store ZonedDateTime instead of time millis
             _state.value = state.value.copy(timeDec = ZonedDateTime.now().toInstant().toEpochMilli() / 100)
-        }.launchIn(viewModelScope)
-    }
-
-    // timer to force sync
-    private fun startSyncTimer(){
-        syncTimerJob?.cancel(CancellationException("Duplicate call"))
-        syncTimerJob = flow {
-            var counter = 0
-            while (true) {
-                emit(counter++)
-                delay(1000)
-            }
-        }.onEach {
-            if (state.value.exerciseName.isBlank()) {
-                repository.forceSync()
-            }
         }.launchIn(viewModelScope)
     }
 }
