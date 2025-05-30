@@ -47,8 +47,8 @@ class WearMessageHandler @Inject constructor(
             for (node in it) {
                 Wearable.getMessageClient(context)
                     .sendMessage(node.id, path, message.toByteArray())
-                    .addOnSuccessListener {
-                        Log.d("WearMessageHandler", "Successfully sent message '$message' to ${node.displayName}")
+                    .addOnFailureListener {
+                        Log.d("WearMessageHandler", "Failed to send message '$message' to ${node.displayName}")
                     }
             }
         }

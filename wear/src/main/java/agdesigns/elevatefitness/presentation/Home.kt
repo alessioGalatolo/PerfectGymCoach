@@ -1,8 +1,6 @@
 package agdesigns.elevatefitness.presentation
 
-import android.content.ComponentName
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
@@ -13,7 +11,6 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,17 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.RadialGradientShader
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,28 +49,21 @@ import androidx.wear.compose.material3.TimeText
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.foundation.pager.HorizontalPager
-import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
-import androidx.wear.compose.material3.AnimatedPage
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
 import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.FilledTonalIconButton
-import androidx.wear.compose.material3.HorizontalPagerScaffold
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButton
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
-import androidx.wear.compose.material3.OutlinedIconButton
-import androidx.wear.compose.material3.PagerScaffoldDefaults
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
@@ -98,44 +82,35 @@ fun Home(
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-
-
-        // Declare just one [AppScaffold] per app such as in the activity.
-        // [AppScaffold] allows static screen elements (i.e. [TimeText]) to remain visible
-        // during in-app transitions such as swipe-to-dismiss.
         AppScaffold(Modifier.background(Color.Transparent)) {
-            // Define the navigation hierarchy within the AppScaffold,
-            // such as using SwipeDismissableNavHost.
-            // For this sample, we will define a single screen inline.
             val listState = rememberScalingLazyListState()
 
-            val currentRest by remember {
-                derivedStateOf {
-                    if (viewModel.state.value.restTimestampDec != null && viewModel.state.value.timeDec != null)
-                        max(
-                            0L,
-                            viewModel.state.value.restTimestampDec!! - viewModel.state.value.timeDec!!
-                        )
-                    else
-                        null
-                }
-            }
+            val currentRestMillis: Long? by remember { derivedStateOf {
+                if (viewModel.state.value.restTimestamp != null)
+                    max(0L,
+                        viewModel.state.value.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
+                            viewModel.state.value.currentTime.toInstant().toEpochMilli()
+                        ) ?: 0L
+                    )
+                else null
+            }}
+            // FIXME: if exercise is changed then rests change then progression is weird
             val restProgression by remember {
                 derivedStateOf {
-                    if (viewModel.state.value.setsDone < viewModel.state.value.rest.size)
-                        currentRest?.toFloat()
-                            ?.div(viewModel.state.value.rest[viewModel.state.value.setsDone] * 10)
+                    if (viewModel.state.value.setsDone <= viewModel.state.value.rest.size)
+                        currentRestMillis?.toFloat()
+                            ?.div(viewModel.state.value.rest[max(0, viewModel.state.value.setsDone-1)] * 1000)
                     else
                         null
                 }
             }
             if (viewModel.state.value.imageBitmap != null) {
-                ColorBackground(viewModel.state.value.imageBitmap!!.asImageBitmap())
+                VignetteImage(viewModel.state.value.imageBitmap!!.asImageBitmap())
                 Vignette(
                     vignettePosition = VignettePosition.TopAndBottom
                 )
             }
-            if (restProgression != null && restProgression!! > 0) {
+            if ((restProgression ?: 0f) > 0f) {
                 // TODO: add vibration on counter finish
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
@@ -150,30 +125,35 @@ fun Home(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // FIXME: text goes out of bounds
-                    Text(
-                        // FIXME: if more sets should say current exercise
-                        text = "Next up:",
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        textAlign = TextAlign.Center
-                    )
                     val nextUp by remember {
                         derivedStateOf {
-                            if (viewModel.state.value.setsDone <= viewModel.state.value.rest.size)
+                            if (viewModel.state.value.setsDone < viewModel.state.value.rest.size)
                                 viewModel.state.value.exerciseName
                             else
                                 viewModel.state.value.nextExerciseName
                         }
                     }
+                    if (nextUp.isNotBlank()) {
+                        Text(
+                            text = "Next up:",
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = nextUp,
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 4.dp,
+                                bottom = 16.dp
+                            )
+                        )
+                    }
                     Text(
-                        text = nextUp,
-                        style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp)
-                    )
-                    Text(
-                        text = (currentRest!! / 10).toInt().toString(),
+                        text = ((currentRestMillis ?: 0L) / 1000).toInt().toString(),
                         style = MaterialTheme.typography.displayLarge
                     )
                     TextButton({
@@ -217,7 +197,7 @@ fun Home(
                             showConfirmation = true
                         }) {
                             Icon(Icons.Default.PhoneAndroid, "Phone")
-                            Text("Open Phone App")
+                            Text("Open phone app")
                         }
                     }
                 } else {
@@ -346,15 +326,21 @@ fun Home(
                                 }
                             }
                             // TODO: if barbell should show selection
-                            item {
-                                Text(
-                                    "Next exercise: ",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                            item {
-                                Text(viewModel.state.value.nextExerciseName, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+                            if (viewModel.state.value.nextExerciseName.isNotBlank()) {
+                                item {
+                                    Text(
+                                        "Next exercise: ",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                item {
+                                    Text(
+                                        viewModel.state.value.nextExerciseName,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                         }
                     }
@@ -368,12 +354,13 @@ fun Home(
 
 // Credits: Horologist library
 @Composable
-fun ColorBackground(
+fun VignetteImage(
     imageBitmap: ImageBitmap,
     modifier: Modifier = Modifier,
     color: Color = Color.Transparent,
     background: Color = MaterialTheme.colorScheme.background,
 ) {
+    // Image with radial gradient
     val animatedBackgroundColor = animateColorAsState(
         targetValue = color,
         animationSpec = tween(450, 0, LinearEasing),

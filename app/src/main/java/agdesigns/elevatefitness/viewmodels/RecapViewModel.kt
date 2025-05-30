@@ -60,7 +60,7 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
                             retrieveRecordsJob.add(this.launch {
                                 repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{
                                     _state.value = state.value.copy(
-                                        olderRecords = it.filter { it1 -> it1.duration > 0 }
+                                        olderRecords = it.filter { it1 -> it1.durationSeconds > 0 }
                                             .sortedBy { it1 -> it1.startDate }
                                     )
                                 }

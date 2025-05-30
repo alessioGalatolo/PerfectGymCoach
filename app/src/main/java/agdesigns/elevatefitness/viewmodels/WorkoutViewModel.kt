@@ -16,9 +16,6 @@ import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
 import agdesigns.elevatefitness.ui.maybeLbToKg
-import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -30,10 +27,8 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.math.max
 import androidx.compose.runtime.snapshotFlow
-import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import kotlinx.coroutines.Dispatchers
-import java.time.Duration
 import java.time.ZonedDateTime
 
 data class WorkoutState(
@@ -44,9 +39,9 @@ data class WorkoutState(
     val programId: Long = 0L,
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecordAndEquipment>> = emptyMap(), // old records
-    val workoutTime: Long? = null, // in seconds
-    val restTimestamp: Long? = null, // workout time of end of rest
-    val wearRestTimestamp: Long? = null, // same as above but as used in the wear os companion app
+    val restTimestamp: ZonedDateTime? = null, // workout time of end of rest // FIXME: sometimes timer shows negative e.g., resume workout
+    val startDate: ZonedDateTime? = null,
+    val currentTime: ZonedDateTime = ZonedDateTime.now(),
     val workoutId: Long = 0L,
     val tare: Float = 0f,
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
@@ -190,14 +185,20 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 val exerciseName = it.getString("exerciseName")
                 val weight = it.getDouble("weight").toFloat()
                 val reps = it.getInt("reps")
-                val exercise = state.value.workoutExercises[state.value.currentPage]
+                var exercise = state.value.workoutExercises[state.value.currentPage]
                 // FIXME: should find another way of checking this, strings may be slightly different
                 if (!exercise.name.startsWith(exerciseName))
                     Log.e("WorkoutViewModel", "Exercise name does not match, $exerciseName != ${exercise.name}")
+                // Need to store these in state otherwise TryCompleteSet may fail
                 _state.value = state.value.copy(
                     repsBottomBar = reps.toString(),
                     weightBottomBar = weight.toString()
                 )
+                if (state.value.setsDone >= exercise.rest.size) {
+                    // user has done all sets and is adding another one from watch
+                    onEvent(WorkoutEvent.AddSetToExercise(state.value.currentPage))
+                    exercise = state.value.workoutExercises[state.value.currentPage]
+                }
                 onEvent(WorkoutEvent.TryCompleteSet(
                     state.value.currentPage,
                     exercise.rest[state.value.setsDone].toLong())
@@ -212,6 +213,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 sendWorkout2Wear(sendImage = true, overrideDeadWatch = true)
             }
         }
+        startTimer()
     }
 
     fun onEvent(event: WorkoutEvent): Boolean{
@@ -295,18 +297,18 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 }
             }
             is WorkoutEvent.StartWorkout -> {
-                if (state.value.workoutTime == null) {
+                if (state.value.startDate == null) {
                     viewModelScope.launch {
                         retrieveExercises!!.join()
-                        _state.value = state.value.copy(workoutTime = 0)
+                        val currentDateTime = ZonedDateTime.now()
+                        _state.value = state.value.copy(startDate = currentDateTime)
                         repository.startWorkout(
                             WorkoutRecordStart(
                                 state.value.workoutId,
-                                startDate = ZonedDateTime.now()
+                                startDate = currentDateTime
                             )
                         )
                         repository.setCurrentWorkout(state.value.workoutId)
-                        startTimer()
                     }
                 }
             }
@@ -324,8 +326,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
                     // FIXME: null pointer if try complete from watch when workout has not started
                     _state.value = state.value.copy(
-                        restTimestamp = state.value.workoutTime!!+event.exerciseRest,
-                        wearRestTimestamp = ZonedDateTime.now().toInstant().toEpochMilli() + event.exerciseRest * 1000
+                        restTimestamp = ZonedDateTime.now().plusSeconds(event.exerciseRest)
                     )
                     sendWorkout2Wear()
                     if (record == null) {
@@ -370,20 +371,22 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.FinishWorkout -> {
                 viewModelScope.launch {
                     val exercises = repository.getWorkoutExerciseRecordsAndInfo(state.value.workoutId).first().distinct()
+                    val workoutTimeMillis = state.value.currentTime.toInstant().toEpochMilli() - state.value.startDate!!.toInstant().toEpochMilli()
+                    val workoutTimeSeconds = workoutTimeMillis / 1000
                     repository.completeWorkoutRecord(
                         WorkoutRecordFinish(
-                            state.value.workoutId,
-                            event.workoutIntensity,
-                            state.value.workoutTime!!,
+                            workoutId = state.value.workoutId,
+                            intensity = event.workoutIntensity,
+                            durationSeconds = workoutTimeSeconds,
                             volume = exercises.sumOf {
                                 (it.tare * it.reps.size +
                                         it.weights.mapIndexed { index, i -> i * it.reps[index] }.sum()).toDouble()
                             },
-                            activeTime = max(0L, state.value.workoutTime!! -
+                            activeTimeSeconds = max(0L, workoutTimeSeconds -
                                     exercises.sumOf { it.rest.sum() }),
                             calories = event.workoutIntensity.metValue *
                                     repository.getUserWeight().first() *
-                                    state.value.workoutTime!! / 3600
+                                    workoutTimeSeconds / 3600
                         )
                     )
                     val planPrograms = repository.getPlanMapPrograms().first().entries.find {
@@ -464,10 +467,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             val workout = repository.getWorkoutRecord(state.value.workoutId).first()
                             onEvent(WorkoutEvent.StartRetrievingExercises)
                             _state.value = state.value.copy(
-                                workoutTime = Duration.between(ZonedDateTime.now(), workout.startDate!!).seconds,
+                                startDate = workout.startDate,
                                 programId = workout.extProgramId
                             )
-                            startTimer()
                         } else {
                             // TODO: what if it is null?
                         }
@@ -619,7 +621,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 dataMapReq.dataMap.putString("note", exercise.note)
                 dataMapReq.dataMap.putFloat("weight", state.value.weightBottomBar.toFloat())
                 if (state.value.restTimestamp != null)
-                    dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp!!)
+                    dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
 
                 repository.sendWorkout2Wear(
                     dataMapReq,
@@ -657,8 +659,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 delay(1000)
             }
         }.onEach {
-            // fixme: it would be better to fetch from calendar
-            _state.value = state.value.copy(workoutTime = state.value.workoutTime!!+1)
+            _state.value = state.value.copy(currentTime = ZonedDateTime.now())
         }
             .launchIn(viewModelScope)
     }

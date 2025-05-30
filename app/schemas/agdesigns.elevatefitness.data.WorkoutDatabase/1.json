@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "810b323fc639336401523eb5d245eb76",
+    "identityHash": "2f15a3b6f7ba1bc7c01c3abc60a757aa",
     "entities": [
       {
         "tableName": "plan",
@@ -352,7 +352,7 @@
       },
       {
         "tableName": "WorkoutRecord",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `startDate` INTEGER, `intensity` TEXT NOT NULL, `duration` INTEGER NOT NULL, `volume` REAL NOT NULL, `activeTime` INTEGER NOT NULL, `calories` REAL NOT NULL, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extProgramId` INTEGER NOT NULL, `startDate` INTEGER, `intensity` TEXT NOT NULL, `durationSeconds` INTEGER NOT NULL, `volume` REAL NOT NULL, `activeTimeSeconds` INTEGER NOT NULL, `calories` REAL NOT NULL, FOREIGN KEY(`extProgramId`) REFERENCES `program`(`programId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "workoutId",
@@ -378,8 +378,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "duration",
-            "columnName": "duration",
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -390,8 +390,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "activeTime",
-            "columnName": "activeTime",
+            "fieldPath": "activeTimeSeconds",
+            "columnName": "activeTimeSeconds",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -666,7 +666,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '810b323fc639336401523eb5d245eb76')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2f15a3b6f7ba1bc7c01c3abc60a757aa')"
     ]
   }
 }

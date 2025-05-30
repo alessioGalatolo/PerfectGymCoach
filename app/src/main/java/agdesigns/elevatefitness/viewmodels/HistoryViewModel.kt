@@ -34,7 +34,7 @@ class HistoryViewModel @Inject constructor(private val repository: Repository): 
         }
         viewModelScope.launch {
             repository.getWorkoutHistoryAndName().collect { records ->
-                val filteredRecords = records.filter { it.duration > 0 }
+                val filteredRecords = records.filter { it.durationSeconds > 0 }
                 val groupByYear = filteredRecords.groupBy { record -> record.startDate!!.year }
                 val weekField = WeekFields.of(Locale.getDefault()).weekOfYear()
                 val yearToWeekToRecord = groupByYear.mapValues {

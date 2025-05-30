@@ -116,7 +116,7 @@ suspend fun generatePlan(
     workoutSplit: WorkoutPlanSplit
 ): Long {
     // FIXME: bug when no plans -> empty abs program when goal = build, exp = adv, split = 1 muscle per day
-
+    // FIXME: bug triceps, biceps program contains only bench dip
     // TODO: ideally it might also take into consideration profile values e.g. sex, age, weight, etc.
     val muscle2Exercises = emptyMap<Exercise.Muscle, Array<Exercise>>().toMutableMap()
     val currentTime = ZonedDateTime.now()

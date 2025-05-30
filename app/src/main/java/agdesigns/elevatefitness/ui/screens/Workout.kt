@@ -227,7 +227,7 @@ fun SharedTransitionScope.Workout(
     val pagerState = rememberPagerState(
         initialPage = previewExercise?.orderInProgram ?: 0,
         pageCount = {
-        if (viewModel.state.value.workoutTime != null)
+        if (viewModel.state.value.startDate != null)
             viewModel.state.value.workoutExercises.size+1
         else
             viewModel.state.value.workoutExercises.size
@@ -247,9 +247,14 @@ fun SharedTransitionScope.Workout(
         }
     }
 
-    val timer = {
-        " " + (viewModel.state.value.workoutTime?.let { DateUtils.formatElapsedTime(it) } ?: "")
+    val workoutTimeMillis by remember {
+        derivedStateOf {
+            viewModel.state.value.startDate?.toInstant()?.toEpochMilli()?.let {
+                viewModel.state.value.currentTime.toInstant().toEpochMilli() - it
+            } ?: 0L
+        }
     }
+    val timer = {" " + if (workoutTimeMillis > 0L) DateUtils.formatElapsedTime(workoutTimeMillis / 1000) else "" }
 
 
     val title = @Composable { Text(
@@ -340,13 +345,14 @@ fun SharedTransitionScope.Workout(
     }
 
     val onClose = {
-        if (viewModel.state.value.workoutTime == null)
+        if (viewModel.state.value.startDate == null)
             navigator.navigateUp()
         else
             viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
         Unit
     }
 
+    // TODO: instead of having the use select the intensity in the last page, have a slider in a dialog that pops up
     val workoutIntensity = rememberSaveable { mutableStateOf(WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY) }
 
     val completeWorkout: () -> Unit = {
@@ -354,7 +360,7 @@ fun SharedTransitionScope.Workout(
     }
 
     val pagerPageCount by remember { derivedStateOf {
-        if (viewModel.state.value.workoutTime != null)
+        if (viewModel.state.value.startDate != null)
             viewModel.state.value.workoutExercises.size+1
         else
             viewModel.state.value.workoutExercises.size
@@ -400,7 +406,7 @@ fun SharedTransitionScope.Workout(
                             (appBarShown && !useDarkTheme)
                     Text(timer(), style = MaterialTheme.typography.titleLarge,
                         color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
-                    if (viewModel.state.value.workoutTime != null) {
+                    if (viewModel.state.value.startDate != null) {
                         TextButton(onClick = {
                         if (pagerState.currentPage == pagerPageCount-1)
                             completeWorkout()
@@ -461,15 +467,18 @@ fun SharedTransitionScope.Workout(
             brightImage = brightImage.value,
             darkTheme = useDarkTheme,
             content = {
-                val restCounter: Long? by remember { derivedStateOf {
+                val restCounterMillis: Long? by remember { derivedStateOf {
                     if (viewModel.state.value.restTimestamp != null && currentExercise != null)
                         max(0L,
-                            viewModel.state.value.restTimestamp!! - viewModel.state.value.workoutTime!!)
+                            viewModel.state.value.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
+                                viewModel.state.value.currentTime.toInstant().toEpochMilli()
+                            ) ?: 0L
+                        )
                     else null
                 }}
                 ExercisePage(
                     pagerState = pagerState,
-                    workoutTime = viewModel.state.value.workoutTime,
+                    workoutTimeMillis = workoutTimeMillis,
                     workoutExercises = viewModel.state.value.workoutExercises,
                     workoutId = viewModel.state.value.workoutId,
                     navigator = navigator,
@@ -480,7 +489,7 @@ fun SharedTransitionScope.Workout(
                     fabHeight = fabHeight,
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
-                    restCounter = restCounter,
+                    restCounterMillis = restCounterMillis,
                     workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { probability ->
                         scope.launch {
@@ -631,7 +640,7 @@ fun SharedTransitionScope.Workout(
                     bottomBarSurface {
                         WorkoutBottomBar(
                             contentPadding = padding,
-                            workoutStarted = viewModel.state.value.workoutTime == null,
+                            workoutStarted = viewModel.state.value.startDate != null,
                             startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
                             currentExercise = currentExercise,
                             completeWorkout = completeWorkout,
@@ -807,7 +816,7 @@ fun SharedTransitionScope.Workout(
                 )
                 ExercisePage(
                     pagerState = rememberPagerState(pageCount = { 2 }),
-                    workoutTime = null,
+                    workoutTimeMillis = 0L,
                     workoutExercises = workoutExercisesExample,
                     workoutId = 0L,
                     navigator = navigator,
@@ -833,7 +842,7 @@ fun SharedTransitionScope.Workout(
                     toggleOtherEquipment = { },
                     changeExercise = { _, _ -> },
                     removeExercise = { },
-                    restCounter = null,
+                    restCounterMillis = null,
                     workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { _ -> }
                 )

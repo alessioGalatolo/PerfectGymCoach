@@ -1,14 +1,11 @@
 package agdesigns.elevatefitness.ui.screens
 
-import android.content.Intent
-import android.net.Uri
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -20,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -32,7 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.startActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.Exercise
@@ -62,14 +57,11 @@ import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphVisibi
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import java.text.SimpleDateFormat
 import kotlin.math.ceil
-import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 
 @Destination<WorkoutOnlyGraph>(style = FullscreenDialogTransition::class)
@@ -154,8 +146,8 @@ fun WorkoutRecap(
                             maybeKgToLb(it.volume.toFloat(), viewModel.state.value.imperialSystem)
                         }),
                     Pair(Pair("Calories", "kcal"), records.map { it.calories }),
-                    Pair(Pair("Workout time", "s"), records.map { it.duration }),
-                    Pair(Pair("Workout active time", "s"), records.map { it.activeTime })
+                    Pair(Pair("Workout time", "s"), records.map { it.durationSeconds }),
+                    Pair(Pair("Workout active time", "s"), records.map { it.activeTimeSeconds })
                 )
                 item{
                     val pagerState = rememberPagerState(pageCount = { graphsYaxis.size })
@@ -320,7 +312,7 @@ fun WorkoutRecap(
                                     Text(
                                         "Total time: " +
                                                 DateUtils.formatElapsedTime(
-                                                    viewModel.state.value.workoutRecord!!.duration
+                                                    viewModel.state.value.workoutRecord!!.durationSeconds
                                                 )
                                     )
                                 }
@@ -338,7 +330,7 @@ fun WorkoutRecap(
                                     Text(
                                         "Active time: " +
                                                 DateUtils.formatElapsedTime(
-                                                    viewModel.state.value.workoutRecord!!.activeTime
+                                                    viewModel.state.value.workoutRecord!!.activeTimeSeconds
                                                 )
                                     )
                                 }

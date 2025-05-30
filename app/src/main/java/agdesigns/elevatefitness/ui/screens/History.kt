@@ -255,7 +255,7 @@ fun History(
                                             fontStyle = FontStyle.Italic
                                         )
                                         Text(
-                                            "${(workout.duration / 60).toInt()}m",
+                                            "${(workout.durationSeconds / 60).toInt()}m",
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                     }

@@ -40,7 +40,7 @@ fun WorkoutBottomBar(
             .padding(contentPadding)
             .padding(horizontal = 16.dp)
     ) {
-        if (workoutStarted) {
+        if (!workoutStarted) {
             // workout has not started
             Button(
                 onClick = startWorkout,

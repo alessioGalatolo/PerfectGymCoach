@@ -37,12 +37,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.ui.platform.LocalDensity
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
 import kotlin.math.min
 
@@ -53,7 +51,7 @@ import kotlin.math.min
 @Composable
 fun ExercisePage(
     pagerState: PagerState,
-    workoutTime: Long?,
+    workoutTimeMillis: Long,  // is 0L when workout has not started
     workoutExercises: List<WorkoutExercise>,
     workoutId: Long,
     navigator: DestinationsNavigator,
@@ -65,7 +63,7 @@ fun ExercisePage(
     updateBottomBar: (Int?, Float?) -> Unit,
     currentExerciseRecords: List<ExerciseRecordAndEquipment>,
     ongoingRecord: ExerciseRecordAndEquipment?,
-    restCounter: Long?,
+    restCounterMillis: Long?,
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     useImperialSystem: Boolean,
     tare: Float,
@@ -118,7 +116,7 @@ fun ExercisePage(
             }
             IconButton(
                 onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage+1) }},
-                enabled = pagerState.currentPage < if (workoutTime != null) workoutExercises.size else workoutExercises.size-1,
+                enabled = pagerState.currentPage < if (workoutTimeMillis > 0L) workoutExercises.size else workoutExercises.size-1,
                 modifier = Modifier
                     .wrapContentSize()
                     .weight(1f, false)
@@ -133,7 +131,7 @@ fun ExercisePage(
         ) { page ->
             if (page == workoutExercises.size) {
                 // page for finishing the workout
-                WorkoutFinishPage(workoutTime!!, workoutIntensity, workoutId, fabHeight, navigator)
+                WorkoutFinishPage(workoutTimeMillis, workoutIntensity, workoutId, fabHeight, navigator)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
                     if (workoutExercises[page].note.isNotBlank()) {
@@ -191,12 +189,14 @@ fun ExercisePage(
                         }
                     }
                     // content
-                    if (restCounter != null){
+                    if (restCounterMillis != null){
                         Text("Time before next set: ", Modifier.align(CenterHorizontally))
-                        Text("$restCounter", Modifier.align(CenterHorizontally),
+                        Text("${restCounterMillis / 1000}", Modifier.align(CenterHorizontally),
                             style = MaterialTheme.typography.headlineMedium)
-                        if (restCounter == 1L || restCounter == 2L || restCounter == 3L) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        LaunchedEffect(restCounterMillis / 1000) {
+                            if (restCounterMillis / 1000 == 1L || restCounterMillis / 1000 == 2L || restCounterMillis / 1000 == 3L) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
                         }
                     }
 
@@ -209,7 +209,7 @@ fun ExercisePage(
                         )
 
                         AnimatedVisibility(
-                            visible = workoutTime != null,
+                            visible = workoutTimeMillis > 0L,
                             enter = fadeIn(),
                             exit = fadeOut()
                         ) {
@@ -248,7 +248,7 @@ fun ExercisePage(
 
                             // if barbell, allow to add barbell weight (used for volume)
                             AnimatedVisibility(
-                                visible = workoutTime != null &&
+                                visible = workoutTimeMillis > 0L &&
                                         workoutExercises[page].equipment == Exercise.Equipment.BARBELL,
                                 enter = slideInVertically() + fadeIn(),
                                 exit = slideOutVertically() + fadeOut()
@@ -376,7 +376,7 @@ fun ExercisePage(
                                 }
                             }
                             AnimatedVisibility(
-                                visible = workoutTime != null,
+                                visible = workoutTimeMillis > 0L,
                                 enter = slideInVertically() + fadeIn(),
                                 exit = slideOutVertically() + fadeOut()
                             ) {
@@ -466,7 +466,7 @@ fun ExercisePage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutFinishPage(
-    workoutTime: Long,
+    workoutTimeMillis: Long,
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     workoutId: Long,
     fabHeight: Dp,
@@ -476,7 +476,7 @@ fun WorkoutFinishPage(
         Modifier
             .padding(horizontal = 8.dp)
             .padding(top = 8.dp)){
-        Text("Total workout time: ${DateUtils.formatElapsedTime(workoutTime)}", style = MaterialTheme.typography.titleLarge)
+        Text("Total workout time: ${DateUtils.formatElapsedTime(workoutTimeMillis / 1000)}", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(32.dp))
         Text("Don't forget to stretch after you finish!", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))

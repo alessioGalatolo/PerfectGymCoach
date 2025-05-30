@@ -8,7 +8,6 @@ import androidx.room.PrimaryKey
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import kotlinx.parcelize.Parcelize
 import java.time.ZonedDateTime
-import java.util.*
 
 @Entity(
     foreignKeys = [ForeignKey(
@@ -25,9 +24,9 @@ data class WorkoutRecord(
     val extProgramId: Long,
     val startDate: ZonedDateTime? = null,
     val intensity: WorkoutIntensity = WorkoutIntensity.NORMAL_INTENSITY,
-    val duration: Long = 0L, // seconds
+    val durationSeconds: Long = 0L, // seconds
     val volume: Double = 0.0,
-    val activeTime: Long = 0L,
+    val activeTimeSeconds: Long = 0L,
     val calories: Float = 0f // MET value * weight_kg / 60 * n_minutes // MET value 3-6 based on intensity
 ) : Parcelable {
     enum class WorkoutIntensity(val description: String, val metValue: Float) {
@@ -47,9 +46,9 @@ data class WorkoutRecordStart(
 data class WorkoutRecordFinish(
     val workoutId: Long,
     val intensity: WorkoutRecord.WorkoutIntensity,
-    val duration: Long,
+    val durationSeconds: Long,
     val volume: Double,
-    val activeTime: Long,
+    val activeTimeSeconds: Long,
     val calories: Float
 ): Parcelable
 
@@ -59,9 +58,9 @@ data class WorkoutRecordAndName(
     val extProgramId: Long,
     val startDate: ZonedDateTime?,
     val intensity: WorkoutRecord.WorkoutIntensity,
-    val duration: Long = 0L, // seconds
+    val durationSeconds: Long = 0L, // seconds
     val volume: Float = 0f,
-    val activeTime: Long = 0L,
+    val activeTimeSeconds: Long = 0L,
     val calories: Float = 0f,
     val name: String
 ) : Parcelable

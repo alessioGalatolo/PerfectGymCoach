@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.presentation
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -13,6 +14,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -23,11 +26,11 @@ data class HomeState(
     val reps: List<Int> = emptyList(),
     val weight: Float = 0f,
     val rest: List<Int> = emptyList(),
-    val restTimestampDec: Long? = null,  // This is different from restTimestamp in the app
+    val restTimestamp: ZonedDateTime? = null,
     val note: String = "",
-    val timeDec: Long? = null,
+    val currentTime: ZonedDateTime = ZonedDateTime.now(),
     val currentReps: Int = 0,
-    val exerciseIncrement: Float = 0f,
+    val exerciseIncrement: Float = 0.5f,
     val nextExerciseName: String = "",
     val imageBitmap: Bitmap? = null
 )
@@ -46,26 +49,30 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
     private val _state = mutableStateOf(HomeState())
     val state: State<HomeState> = _state
     private var timerJob: Job? = null
-    private var syncTimerJob: Job? = null
 
     init {
         viewModelScope.launch {
-            repository.observeWearWorkout().collect {
-                val setsDone = (it.setsDone ?: state.value.setsDone)
-                val reps = it.reps ?: state.value.reps
+            repository.observeWearWorkout().collect { workout ->
+                val setsDone = (workout.setsDone ?: state.value.setsDone)
+                val reps = workout.reps ?: state.value.reps
                 val currentReps = reps.getOrNull(setsDone) ?: state.value.currentReps
 
+                Log.d("HomeViewModel", "got wear workout: $workout")
                 _state.value = state.value.copy(
-                    exerciseName = it.exerciseName ?: state.value.exerciseName,
-                    setsDone = it.setsDone ?: state.value.setsDone,
+                    exerciseName = workout.exerciseName ?: state.value.exerciseName,
+                    setsDone = workout.setsDone ?: state.value.setsDone,
                     reps = reps,
-                    weight = it.weight ?: state.value.weight,
-                    rest = it.rest ?: state.value.rest,
-                    note = it.note ?: state.value.note,
-                    restTimestampDec = it.restTimestamp?.div(100) ?: state.value.restTimestampDec,
+                    weight = workout.weight ?: state.value.weight,
+                    rest = workout.rest ?: state.value.rest,
+                    note = workout.note ?: state.value.note,
+                    restTimestamp = workout.restTimestamp?.let {
+                        ZonedDateTime.ofInstant(
+                            Instant.ofEpochMilli(it),
+                            ZoneId.systemDefault()
+                        ) } ?: state.value.restTimestamp,
                     currentReps = currentReps,
-                    exerciseIncrement = it.exerciseIncrement ?: state.value.exerciseIncrement,
-                    nextExerciseName = it.nextExerciseName ?: state.value.nextExerciseName, // FIXME: if no more exercises, this is null
+                    exerciseIncrement = workout.exerciseIncrement ?: state.value.exerciseIncrement, // FIXME: sometimes does not arrive
+                    nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName, // FIXME: if no more exercises, this is null
                 )
             }
         }
@@ -89,7 +96,6 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 }
             }
         }
-        _state.value = state.value.copy(timeDec = ZonedDateTime.now().toInstant().toEpochMilli() / 100)
         startTimer()
         onEvent(HomeEvent.ForceSync) // request sync once
     }
@@ -98,7 +104,7 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
         when (event) {
             is HomeEvent.ResetRest -> {
                 viewModelScope.launch {
-                    _state.value = state.value.copy(restTimestampDec = 0L)
+                    _state.value = state.value.copy(restTimestamp = ZonedDateTime.now())
                 }
             }
             is HomeEvent.ChangeReps -> {
@@ -138,8 +144,7 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 delay(100)
             }
         }.onEach {
-            // FIXME: perhaps store ZonedDateTime instead of time millis
-            _state.value = state.value.copy(timeDec = ZonedDateTime.now().toInstant().toEpochMilli() / 100)
+            _state.value = state.value.copy(currentTime = ZonedDateTime.now())
         }.launchIn(viewModelScope)
     }
 }
