@@ -44,7 +44,7 @@ fun WorkoutCard(
     navigator: DestinationsNavigator,
     program: WorkoutProgram,
     exercises: List<ProgramExerciseAndInfo>,
-    onCardClick: (ProgramExerciseAndInfo) -> Unit,
+    onCardClick: (ProgramExerciseAndInfo?) -> Unit,
     modifier: Modifier = Modifier,
     imageModifier: Modifier = Modifier,
     exerciseModifier: Modifier = Modifier,
@@ -62,7 +62,7 @@ fun WorkoutCard(
                 indication = ripple(),
                 onClick = {
                     onCardClick(
-                        exercises[pagerState.currentPage]
+                        exercises.getOrNull(pagerState.currentPage)
                     ) },
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
