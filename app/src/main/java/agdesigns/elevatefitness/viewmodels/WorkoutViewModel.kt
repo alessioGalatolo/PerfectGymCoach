@@ -132,6 +132,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     private var resumeWorkoutJob: Job? = null
     private var retrieveExercisesRecords: Job? = null
     private var timerJob: Job? = null
+    private var startWorkoutJob: Job? = null
 
     override fun onCleared() {
         super.onCleared()
@@ -189,6 +190,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 // FIXME: should find another way of checking this, strings may be slightly different
                 if (!exercise.name.startsWith(exerciseName))
                     Log.e("WorkoutViewModel", "Exercise name does not match, $exerciseName != ${exercise.name}")
+                if (state.value.startDate == null) {
+                    // user completed set from watch before starting workout
+                    onEvent(WorkoutEvent.StartWorkout)
+                    // StartWorkout is async, need to wait for it to finish
+                    startWorkoutJob?.join()
+                }
                 // Need to store these in state otherwise TryCompleteSet may fail
                 _state.value = state.value.copy(
                     repsBottomBar = reps.toString(),
@@ -298,7 +305,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.StartWorkout -> {
                 if (state.value.startDate == null) {
-                    viewModelScope.launch {
+                    startWorkoutJob = viewModelScope.launch {
                         retrieveExercises!!.join()
                         val currentDateTime = ZonedDateTime.now()
                         _state.value = state.value.copy(startDate = currentDateTime)

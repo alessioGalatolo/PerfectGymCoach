@@ -56,7 +56,10 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 val setsDone = (workout.setsDone ?: state.value.setsDone)
                 val reps = workout.reps ?: state.value.reps
                 val currentReps = reps.getOrNull(setsDone) ?: state.value.currentReps
-
+                var exerciseIncrement = workout.exerciseIncrement ?: state.value.exerciseIncrement
+                if (exerciseIncrement == 0f) {
+                    exerciseIncrement = state.value.exerciseIncrement  // FIXME: sometimes arrives 0, why?
+                }
                 Log.d("HomeViewModel", "got wear workout: $workout")
                 _state.value = state.value.copy(
                     exerciseName = workout.exerciseName ?: state.value.exerciseName,
@@ -71,8 +74,8 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                             ZoneId.systemDefault()
                         ) } ?: state.value.restTimestamp,
                     currentReps = currentReps,
-                    exerciseIncrement = workout.exerciseIncrement ?: state.value.exerciseIncrement, // FIXME: sometimes does not arrive
-                    nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName, // FIXME: if no more exercises, this is null
+                    exerciseIncrement = exerciseIncrement,
+                    nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName
                 )
             }
         }
