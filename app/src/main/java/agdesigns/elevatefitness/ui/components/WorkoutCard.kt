@@ -5,20 +5,16 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -45,7 +41,7 @@ fun WorkoutCard(
     program: WorkoutProgram,
     exercises: List<ProgramExerciseAndInfo>,
     onCardClick: (ProgramExerciseAndInfo?) -> Unit,
-    modifier: Modifier = Modifier,
+    cardModifier: Modifier = Modifier,
     imageModifier: Modifier = Modifier,
     exerciseModifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
@@ -55,7 +51,7 @@ fun WorkoutCard(
     var expanded by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(pageCount = { exercises.size })
     ElevatedCard(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -67,7 +63,10 @@ fun WorkoutCard(
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     expanded = true
-                }))
+                })
+            // could probably go before but better be safe
+            .then(cardModifier)
+    )
     {
         Column {
             if (exercises.isNotEmpty()) {
@@ -80,10 +79,10 @@ fun WorkoutCard(
 
                     val roundedCornersShape = CardDefaults.shape
                     HorizontalPager(state = pagerState,
-                        modifier = imageModifier.graphicsLayer {
+                        modifier = Modifier.graphicsLayer {
                             shape = roundedCornersShape
                             clip = true // <- this ensures clipping is applied during transition
-                        }) { page ->
+                        }.then(imageModifier)) { page ->
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
                                 model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
@@ -119,7 +118,8 @@ fun WorkoutCard(
                 else Modifier
                 val exerciseText = it.name + it.variation
                 Text(text = exerciseText,
-                    modifier = modifier.padding(horizontal = 8.dp))
+                    // exerciseModifier needs to go after because we're adding padding
+                    modifier = Modifier.padding(horizontal = 8.dp).then(modifier))
                 Text(text = buildAnnotatedString {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                         append("Sets: ")

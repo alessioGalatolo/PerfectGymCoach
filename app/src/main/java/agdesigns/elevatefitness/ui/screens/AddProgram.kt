@@ -187,7 +187,7 @@ fun AddProgram(
                                 }, onDelete = {
                                     viewModel.onEvent(ProgramsEvent.DeleteProgram(programEntry.programId))
                                 },
-                                modifier = Modifier.padding(end = 16.dp)
+                                cardModifier = Modifier.padding(end = 16.dp)
                             )
                         }
                     }

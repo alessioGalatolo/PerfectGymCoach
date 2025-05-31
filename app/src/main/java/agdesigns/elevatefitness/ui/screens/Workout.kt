@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.content.ContextCompat.getSystemService
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
@@ -427,7 +428,7 @@ fun SharedTransitionScope.Workout(
                     ), contentAlignment = TopCenter) { // TODO: add swipe
                     AsyncImage(
                         ImageRequest.Builder(context)
-                            .allowHardware(false)
+                            .allowHardware(false) // pixel access is not supported on Config#HARDWARE bitmaps
                             .data(currentImageId)
                             .crossfade(true)
                             .listener { _, result ->
@@ -751,7 +752,7 @@ fun SharedTransitionScope.Workout(
                         sharedStateImg,
                         animatedVisibilityScope,
                         clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
-                    ), contentAlignment = TopCenter) { // TODO: add swipe
+                    ), contentAlignment = TopCenter) {
                     AsyncImage(
                         ImageRequest.Builder(context)
                             .allowHardware(false)

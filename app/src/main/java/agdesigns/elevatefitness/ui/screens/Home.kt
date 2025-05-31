@@ -165,7 +165,7 @@ fun SharedTransitionScope.Home(
                     },
                     navigator = navigator,
                     // FIXME: suboptimal solution
-                    modifier = Modifier
+                    cardModifier = Modifier
                         .sharedBounds(
                             sharedContentState = cardKey,
                             animatedVisibilityScope = animatedVisibilityScope,
