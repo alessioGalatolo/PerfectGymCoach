@@ -93,6 +93,7 @@ fun SharedTransitionScope.Workout(
     resumeWorkout: Boolean = false,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
+    val workoutState by viewModel.state.collectAsState()
     // when exiting the screen, stop wear workout
     DisposableEffect(Unit) {
         onDispose {
@@ -118,22 +119,13 @@ fun SharedTransitionScope.Workout(
 
     // request to have notification access to show music playing
     var alreadyRequestedPermission by rememberSaveable { mutableStateOf(false) }
-    val shouldOpenRequest by remember { derivedStateOf {
-        !viewModel.state.value.cantRequestNotificationAccess
+    // Show media card and ask user if they want it with actual content
+    val shouldTeaseMediaAccess by remember { derivedStateOf {
+        !workoutState.cantRequestNotificationAccess
         && !hasNotificationAccess(context)
-        && !viewModel.state.value.requestNotificationAccessDialogOpen
         && !alreadyRequestedPermission
     } }
-    // FIXME: for some reason this only becomes true when a workout has started??
-    // I don't know why but it is an acceptable behaviour for now
-    LaunchedEffect(shouldOpenRequest) {
-        if (
-            shouldOpenRequest
-        ) {
-            viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog)
-            alreadyRequestedPermission = true
-        }
-    }
+
     var retrieveMediaJob: Job? by remember {
         mutableStateOf(null)
     }
@@ -144,6 +136,7 @@ fun SharedTransitionScope.Workout(
     var artworkBitmap: Bitmap? by remember { mutableStateOf(null) }
     DisposableEffect(context) {
         // FIXME: this looks like it belongs in a viewModel but the problem is the context
+        // TODO: perhaps move mediaTitle/Author to viewModel and job to repository?
         retrieveMediaJob = scope.launch {
             while (true) {
                 if (hasNotificationAccess(context) && session == null) {
@@ -190,17 +183,17 @@ fun SharedTransitionScope.Workout(
         }
     }
 
-    LaunchedEffect (viewModel.state.value.shutDown){
-        if (viewModel.state.value.shutDown) {
+    LaunchedEffect (workoutState.shutDown){
+        if (workoutState.shutDown) {
             navigator.navigateUp()
             navigator.navigate(
-                WorkoutRecapDestination(workoutId = viewModel.state.value.workoutId)
+                WorkoutRecapDestination(workoutId = workoutState.workoutId)
             )
         }
     }
 
     RequestNotificationAccessDialog(
-        dialogIsOpen = viewModel.state.value.requestNotificationAccessDialogOpen,
+        dialogIsOpen = workoutState.requestNotificationAccessDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog) },
         openPermissionRequest = {
             val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
@@ -211,36 +204,36 @@ fun SharedTransitionScope.Workout(
         }
     )
     CancelWorkoutDialog(
-        dialogueIsOpen = viewModel.state.value.cancelWorkoutDialogOpen,
+        dialogueIsOpen = workoutState.cancelWorkoutDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog) },
         cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navigator.navigateUp() },
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) },
-        hasRecords = viewModel.state.value.hasRecordedExercise
+        hasRecords = workoutState.hasRecordedExercise
     )
     InputOtherEquipmentDialog(
-        dialogIsOpen = viewModel.state.value.otherEquipmentDialogOpen,
+        dialogIsOpen = workoutState.otherEquipmentDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
-        weightUnit = if (viewModel.state.value.imperialSystem) "lb" else "kg",
-        updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, viewModel.state.value.imperialSystem))) }
+        weightUnit = if (workoutState.imperialSystem) "lb" else "kg",
+        updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, workoutState.imperialSystem))) }
     )
 
     val pagerState = rememberPagerState(
         initialPage = previewExercise?.orderInProgram ?: 0,
         pageCount = {
-        if (viewModel.state.value.startDate != null)
-            viewModel.state.value.workoutExercises.size+1
+        if (workoutState.startDate != null)
+            workoutState.workoutExercises.size+1
         else
-            viewModel.state.value.workoutExercises.size
+            workoutState.workoutExercises.size
     })
     // communicate with viewModel so that it know current exercise
     // FIXME: wouldn't it be easier to use currentExercise?
-    LaunchedEffect(pagerState.currentPage, viewModel.state.value.workoutExercises) {
+    LaunchedEffect(pagerState.currentPage, workoutState.workoutExercises) {
         viewModel.onEvent(WorkoutEvent.UpdateCurrentPage(pagerState.currentPage))
     }
     val currentExercise: WorkoutExercise? by remember {
         derivedStateOf {
-            if (pagerState.currentPage < viewModel.state.value.workoutExercises.size) {
-                viewModel.state.value.workoutExercises[pagerState.currentPage]
+            if (pagerState.currentPage < workoutState.workoutExercises.size) {
+                workoutState.workoutExercises[pagerState.currentPage]
             } else {
                 null
             }
@@ -249,8 +242,8 @@ fun SharedTransitionScope.Workout(
 
     val workoutTimeMillis by remember {
         derivedStateOf {
-            viewModel.state.value.startDate?.toInstant()?.toEpochMilli()?.let {
-                viewModel.state.value.currentTime.toInstant().toEpochMilli() - it
+            workoutState.startDate?.toInstant()?.toEpochMilli()?.let {
+                workoutState.currentTime.toInstant().toEpochMilli() - it
             } ?: 0L
         }
     }
@@ -264,9 +257,9 @@ fun SharedTransitionScope.Workout(
     ) }
 
     val currentExerciseRecord by remember { derivedStateOf {
-        if (pagerState.currentPage < viewModel.state.value.workoutExercises.size)
-            viewModel.state.value.allRecords[
-                    viewModel.state.value.workoutExercises[pagerState.currentPage].extExerciseId
+        if (pagerState.currentPage < workoutState.workoutExercises.size)
+            workoutState.allRecords[
+                    workoutState.workoutExercises[pagerState.currentPage].extExerciseId
             ] ?: emptyList()
         else
             emptyList()
@@ -275,7 +268,7 @@ fun SharedTransitionScope.Workout(
     // record being set right now for current exercise
     val ongoingRecord by remember { derivedStateOf {
         currentExerciseRecord.find {
-            it.extWorkoutId == viewModel.state.value.workoutId && it.exerciseInWorkout == pagerState.currentPage
+            it.extWorkoutId == workoutState.workoutId && it.exerciseInWorkout == pagerState.currentPage
         }
     }}
 
@@ -305,7 +298,7 @@ fun SharedTransitionScope.Workout(
         }
     }
 
-    LaunchedEffect(viewModel.state.value.allRecords, pagerState.currentPage, setsDone){
+    LaunchedEffect(workoutState.allRecords, pagerState.currentPage, setsDone){
         val currentRecord = recordsToDisplay.firstOrNull()
 
         if (currentRecord != null) {
@@ -314,7 +307,7 @@ fun SharedTransitionScope.Workout(
                     WorkoutEvent.UpdateWeight(
                         maybeKgToLb(
                             ongoingRecord!!.weights[setsDone.value - 1],
-                            viewModel.state.value.imperialSystem
+                            workoutState.imperialSystem
                         ).toString()
                     )
                 )
@@ -329,7 +322,7 @@ fun SharedTransitionScope.Workout(
                     WorkoutEvent.UpdateWeight(
                         maybeKgToLb(
                             currentRecord.weights[0],
-                            viewModel.state.value.imperialSystem
+                            workoutState.imperialSystem
                         ).toString()
                     )
                 )
@@ -345,7 +338,7 @@ fun SharedTransitionScope.Workout(
     }
 
     val onClose = {
-        if (viewModel.state.value.startDate == null)
+        if (workoutState.startDate == null)
             navigator.navigateUp()
         else
             viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
@@ -360,10 +353,10 @@ fun SharedTransitionScope.Workout(
     }
 
     val pagerPageCount by remember { derivedStateOf {
-        if (viewModel.state.value.startDate != null)
-            viewModel.state.value.workoutExercises.size+1
+        if (workoutState.startDate != null)
+            workoutState.workoutExercises.size+1
         else
-            viewModel.state.value.workoutExercises.size
+            workoutState.workoutExercises.size
     }}
 
     var fabHeight by remember { mutableStateOf(0.dp) }
@@ -373,16 +366,16 @@ fun SharedTransitionScope.Workout(
     val imageHeight = imageWidth/3*2
     val systemTheme = isSystemInDarkTheme()
     val useDarkTheme by remember { derivedStateOf {
-        when (viewModel.state.value.userTheme) {
+        when (workoutState.userTheme) {
             Theme.SYSTEM -> systemTheme
             Theme.LIGHT -> false
             Theme.DARK -> true
         }
     }}
-    if (viewModel.state.value.workoutExercises.isNotEmpty() && !animatedVisibilityScope.transition.isRunning) {
+    if (workoutState.workoutExercises.isNotEmpty() && !animatedVisibilityScope.transition.isRunning) {
         BackHandler(onBack = onClose)
         val currentImageId by remember { derivedStateOf {
-            if (pagerState.currentPage == viewModel.state.value.workoutExercises.size)
+            if (pagerState.currentPage == workoutState.workoutExercises.size)
                 R.drawable.finish_workout
             else currentExercise!!.image
         }}
@@ -406,7 +399,7 @@ fun SharedTransitionScope.Workout(
                             (appBarShown && !useDarkTheme)
                     Text(timer(), style = MaterialTheme.typography.titleLarge,
                         color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
-                    if (viewModel.state.value.startDate != null) {
+                    if (workoutState.startDate != null) {
                         TextButton(onClick = {
                         if (pagerState.currentPage == pagerPageCount-1)
                             completeWorkout()
@@ -468,10 +461,10 @@ fun SharedTransitionScope.Workout(
             darkTheme = useDarkTheme,
             content = {
                 val restCounterMillis: Long? by remember { derivedStateOf {
-                    if (viewModel.state.value.restTimestamp != null && currentExercise != null)
+                    if (workoutState.restTimestamp != null && currentExercise != null)
                         max(0L,
-                            viewModel.state.value.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
-                                viewModel.state.value.currentTime.toInstant().toEpochMilli()
+                            workoutState.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
+                                workoutState.currentTime.toInstant().toEpochMilli()
                             ) ?: 0L
                         )
                     else null
@@ -479,8 +472,8 @@ fun SharedTransitionScope.Workout(
                 ExercisePage(
                     pagerState = pagerState,
                     workoutTimeMillis = workoutTimeMillis,
-                    workoutExercises = viewModel.state.value.workoutExercises,
-                    workoutId = viewModel.state.value.workoutId,
+                    workoutExercises = workoutState.workoutExercises,
+                    workoutId = workoutState.workoutId,
                     navigator = navigator,
                     setsDone = setsDone,
                     ongoingRecord = ongoingRecord,
@@ -513,8 +506,8 @@ fun SharedTransitionScope.Workout(
                     },
                     updateValues = { a, b, c, d -> viewModel.onEvent(WorkoutEvent.EditSetRecord(a, b, c, d)) },
                     updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare))},
-                    useImperialSystem = viewModel.state.value.imperialSystem,
-                    tare = viewModel.state.value.tare,
+                    useImperialSystem = workoutState.imperialSystem,
+                    tare = workoutState.tare,
                     toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
                     changeExercise = { exerciseInWorkout, originalSize ->
                         scope.launch {
@@ -530,9 +523,22 @@ fun SharedTransitionScope.Workout(
                 )
             },
             floatingActionButton = {
+                if (mediaTitle == null && shouldTeaseMediaAccess) {
+                    mediaTitle = "Do you want your playing songs here?"
+                    mediaAuthor = "Tap to learn more or swipe to dismiss"
+                }
                 if (mediaTitle != null) {
                     fabHeight = 8.dp + 8.dp + 48.dp + 8.dp + 16.dp
-                    val darkColors = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicDarkColorScheme(LocalContext.current) else darkColorScheme()
+                    // swap color scheme i.e., if in dark use light colors, otherwise dark colors
+                    var colors: ColorScheme = if (useDarkTheme) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicLightColorScheme(
+                            LocalContext.current
+                        ) else lightColorScheme()
+                    } else {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicDarkColorScheme(
+                            LocalContext.current
+                        ) else darkColorScheme()
+                    }
                     SwipeToDismissBox(
                         state = rememberSwipeToDismissBoxState(),
                         backgroundContent = {}
@@ -543,11 +549,13 @@ fun SharedTransitionScope.Workout(
                             exit = fadeOut()
                         ) {
                             ElevatedCard(
-                                colors = CardDefaults.elevatedCardColors(containerColor = darkColors.surface),
+                                colors = CardDefaults.elevatedCardColors(containerColor = colors.surface),
                                 modifier = Modifier
                                     .padding(start = 32.dp)
                                     .clickable {  // weird padding as it pretends to be a fab
-                                        if (session?.packageName != null) {
+                                        if (shouldTeaseMediaAccess) {
+                                            viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog)
+                                        } else if (session?.packageName != null) {
                                             val intent =
                                                 context.packageManager.getLaunchIntentForPackage(
                                                     session!!.packageName!!
@@ -584,43 +592,48 @@ fun SharedTransitionScope.Workout(
                                         Text(
                                             mediaTitle!!,
                                             maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.labelMedium,
-                                            color = Color.White
+                                            color = colors.onSurface
                                         )
                                         Text(
                                             mediaAuthor,
                                             maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = darkColors.secondary
+                                            color = colors.secondary
                                         )
                                     }
-                                    Spacer(Modifier.width(8.dp))
-                                    IconButton(
-                                        colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
-                                        onClick = {
-                                            if (session != null) {
-                                                if (session!!.playbackState?.state == STATE_PLAYING)
-                                                    session!!.transportControls.pause()
-                                                else
-                                                    session!!.transportControls.play()
+                                    // if we are just teasing, gain space by removing buttons
+                                    if (!shouldTeaseMediaAccess) {
+                                        Spacer(Modifier.width(8.dp))
+                                        IconButton(
+                                            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onSurface),
+                                            onClick = {
+                                                if (session != null) {
+                                                    if (session!!.playbackState?.state == STATE_PLAYING)
+                                                        session!!.transportControls.pause()
+                                                    else
+                                                        session!!.transportControls.play()
+                                                }
+                                            }
+                                        ) {
+                                            if (isPlaying) {
+                                                Icon(Icons.Default.Pause, "Pause")
+                                            } else {
+                                                Icon(Icons.Default.PlayArrow, "Play")
                                             }
                                         }
-                                    ) {
-                                        if (isPlaying) {
-                                            Icon(Icons.Default.Pause, "Pause")
-                                        } else {
-                                            Icon(Icons.Default.PlayArrow, "Play")
-                                        }
-                                    }
-                                    IconButton(
-                                        colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
-                                        onClick = {
-                                            if (session != null) {
-                                                session!!.transportControls.skipToNext()
+                                        IconButton(
+                                            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onSurface),
+                                            onClick = {
+                                                if (session != null) {
+                                                    session!!.transportControls.skipToNext()
+                                                }
                                             }
+                                        ) {
+                                            Icon(Icons.Default.SkipNext, "Next track")
                                         }
-                                    ) {
-                                        Icon(Icons.Default.SkipNext, "Next track")
                                     }
                                 }
                                 Spacer(Modifier.height(8.dp))
@@ -640,7 +653,7 @@ fun SharedTransitionScope.Workout(
                     bottomBarSurface {
                         WorkoutBottomBar(
                             contentPadding = padding,
-                            workoutStarted = viewModel.state.value.startDate != null,
+                            workoutStarted = workoutState.startDate != null,
                             startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
                             currentExercise = currentExercise,
                             completeWorkout = completeWorkout,
@@ -658,14 +671,14 @@ fun SharedTransitionScope.Workout(
                                     }
                                 } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
                                     val superExercise =
-                                        viewModel.state.value.workoutExercises.find {
+                                        workoutState.workoutExercises.find {
                                             it.extProgramExerciseId == currentExercise!!.supersetExercise
                                         }
                                     if (superExercise != null) {
-                                        if (viewModel.state.value.workoutExercises.indexOf(
+                                        if (workoutState.workoutExercises.indexOf(
                                                 superExercise
                                             ) >
-                                            viewModel.state.value.workoutExercises.indexOf(
+                                            workoutState.workoutExercises.indexOf(
                                                 currentExercise
                                             )
                                         ) {
@@ -688,9 +701,9 @@ fun SharedTransitionScope.Workout(
                                     )
                                 }
                             },
-                            repsToDisplay = viewModel.state.value.repsBottomBar,
+                            repsToDisplay = workoutState.repsBottomBar,
                             updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
-                            weightToDisplay = viewModel.state.value.weightBottomBar,
+                            weightToDisplay = workoutState.weightBottomBar,
                             updateWeight = { value ->
                                 viewModel.onEvent(
                                     WorkoutEvent.UpdateWeight(
@@ -850,7 +863,7 @@ fun SharedTransitionScope.Workout(
             floatingActionButton = {},
             bottomBar = { _, _ -> }
         )
-    } else if (viewModel.state.value.workoutId != 0L){
+    } else if (workoutState.workoutId != 0L){
         // program is empty, prompt to add an exercise
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
         Scaffold(
@@ -879,7 +892,7 @@ fun SharedTransitionScope.Workout(
                         navigator.navigate(
                             ExercisesByMuscleDestination(
                                 programName = "Current and future workouts",  // FIXME: all workouts?
-                                workoutId = viewModel.state.value.workoutId,
+                                workoutId = workoutState.workoutId,
                                 programId = programId
                             )
                         )
@@ -891,7 +904,7 @@ fun SharedTransitionScope.Workout(
                         navigator.navigate(
                             ExercisesByMuscleDestination(
                                 programName = "Current workout",
-                                workoutId = viewModel.state.value.workoutId,
+                                workoutId = workoutState.workoutId,
                             )
                         )
                     }) {

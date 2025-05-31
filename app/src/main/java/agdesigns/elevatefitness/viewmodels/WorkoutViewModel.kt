@@ -125,8 +125,8 @@ sealed class WorkoutEvent{
 
 @HiltViewModel
 class WorkoutViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(WorkoutState())
-    val state: State<WorkoutState> = _state
+    private val _state = MutableStateFlow(WorkoutState())
+    val state: StateFlow<WorkoutState> = _state.asStateFlow()
 
     private var retrieveExercises: Job? = null
     private var resumeWorkoutJob: Job? = null
@@ -141,45 +141,31 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
     init {
         viewModelScope.launch {
-            repository.getTheme().collect {
-                _state.value = state.value.copy(userTheme = it)
-            }
+            combine(
+                repository.getTheme(),
+                repository.getImperialSystem(),
+                repository.getBodyweightIncrement(),
+                repository.getBarbellIncrement(),
+                repository.getDumbbellIncrement(),
+                repository.getMachineIncrement(),
+                repository.getCableIncrement(),
+                repository.getDontWantNotificationAccess()
+            ) { values: Array<Any?> ->
+                _state.update {
+                    it.copy(
+                        userTheme = values[0] as Theme,
+                        imperialSystem = values[1] as Boolean,
+                        incrementBodyweight = values[2] as Float,
+                        incrementBarbell = values[3] as Float,
+                        incrementDumbbell = values[4] as Float,
+                        incrementMachine = values[5] as Float,
+                        incrementCable = values[6] as Float,
+                        cantRequestNotificationAccess = values[7] as Boolean
+                    )
+                }
+            }.collect()
         }
-        viewModelScope.launch {
-            repository.getImperialSystem().collect {
-                _state.value = state.value.copy(imperialSystem = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getBodyweightIncrement().collect {
-                _state.value = state.value.copy(incrementBodyweight = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getBarbellIncrement().collect {
-                _state.value = state.value.copy(incrementBarbell = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getDumbbellIncrement().collect {
-                _state.value = state.value.copy(incrementDumbbell = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getMachineIncrement().collect {
-                _state.value = state.value.copy(incrementMachine = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getCableIncrement().collect {
-                _state.value = state.value.copy(incrementCable = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getDontWantNotificationAccess().collect {
-                _state.value = state.value.copy(cantRequestNotificationAccess = it)
-            }
-        }
+
         viewModelScope.launch {
             // check if user complete set from watch
             repository.getWatchSetCompletion().collect {
@@ -197,10 +183,10 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     startWorkoutJob?.join()
                 }
                 // Need to store these in state otherwise TryCompleteSet may fail
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     repsBottomBar = reps.toString(),
                     weightBottomBar = weight.toString()
-                )
+                )}
                 if (state.value.setsDone >= exercise.rest.size) {
                     // user has done all sets and is adding another one from watch
                     onEvent(WorkoutEvent.AddSetToExercise(state.value.currentPage))
@@ -226,14 +212,18 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     fun onEvent(event: WorkoutEvent): Boolean{
         when (event) {
             is WorkoutEvent.ToggleCancelWorkoutDialog -> {
-                _state.value = state.value.copy(
-                    cancelWorkoutDialogOpen = !state.value.cancelWorkoutDialogOpen
-                )
+                _state.update {
+                    it.copy(
+                        cancelWorkoutDialogOpen = !state.value.cancelWorkoutDialogOpen
+                    )
+                }
             }
             is WorkoutEvent.ToggleRequestNotificationAccessDialog -> {
-                _state.value = state.value.copy(
-                    requestNotificationAccessDialogOpen = !state.value.requestNotificationAccessDialogOpen
-                )
+                _state.update {
+                    it.copy(
+                        requestNotificationAccessDialogOpen = !state.value.requestNotificationAccessDialogOpen
+                    )
+                }
             }
             is WorkoutEvent.DontRequestNotificationAgain -> {
                 viewModelScope.launch {
@@ -242,14 +232,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.InitWorkout -> {
                 if (retrieveExercises == null) { // only retrieve once
-                    _state.value = state.value.copy(programId = event.programId)
+                    _state.update { it.copy(programId = event.programId) }
                     retrieveExercises = viewModelScope.launch {
                         // get workout id
-                        _state.value = state.value.copy(
+                        _state.update { it.copy(
                             workoutId = repository.addWorkoutRecord(
                                 WorkoutRecord(extProgramId = event.programId)
                             )
-                        )
+                        ) }
                         // once we have workout id, retrieve program exercises
                         val exercises = repository.getProgramExercisesAndInfo(event.programId)
                             .first().sortedBy { it.orderInProgram }
@@ -282,7 +272,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 viewModelScope.launch {
                     repository.getWorkoutExercises(state.value.workoutId).collect{ exs ->
                         val sortedExs = exs.sortedBy { it.orderInProgram }
-                        _state.value = state.value.copy(workoutExercises = sortedExs)
+                        _state.update { it.copy(workoutExercises = sortedExs) }
                         retrieveExercisesRecords?.cancel()
                         retrieveExercisesRecords = this.launch {
                             repository.getExerciseRecordsAndEquipment(
@@ -290,16 +280,16 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             ).collect { records ->
                                 val allRecords = records.groupBy { it.extExerciseId }
                                 // TODO: sort by date before putting in
-                                _state.value = state.value.copy(
+                                _state.update { it.copy(
                                     allRecords = allRecords
-                                )
+                                ) }
                             }
                         }
                     }
                 }
                 viewModelScope.launch {
-                    repository.getWorkoutExerciseRecordsAndInfo(state.value.workoutId).collect {
-                        _state.value = state.value.copy(hasRecordedExercise = it.isNotEmpty())
+                    repository.getWorkoutExerciseRecordsAndInfo(state.value.workoutId).collect { exs ->
+                        _state.update { it.copy(hasRecordedExercise = exs.isNotEmpty()) }
                     }
                 }
             }
@@ -308,7 +298,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     startWorkoutJob = viewModelScope.launch {
                         retrieveExercises!!.join()
                         val currentDateTime = ZonedDateTime.now()
-                        _state.value = state.value.copy(startDate = currentDateTime)
+                        _state.update { it.copy(startDate = currentDateTime) }
                         repository.startWorkout(
                             WorkoutRecordStart(
                                 state.value.workoutId,
@@ -332,14 +322,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     }  // FIXME: same find is repeated elsewhere
 
                     // FIXME: null pointer if try complete from watch when workout has not started
-                    _state.value = state.value.copy(
+                    _state.update { it.copy(
                         restTimestamp = ZonedDateTime.now().plusSeconds(event.exerciseRest)
-                    )
+                    ) }
                     sendWorkout2Wear()
                     if (record == null) {
                         val exercise = state.value.workoutExercises[event.exerciseInWorkout]
                         if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT)
-                            _state.value = state.value.copy(tare = repository.getUserWeight().first())
+                            _state.update { it.copy(tare = repository.getUserWeight().first()) }
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 extWorkoutId = state.value.workoutId,
@@ -414,7 +404,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
                     ))
                     repository.setCurrentWorkout(null)
-                    _state.value = state.value.copy(shutDown = true)
+                    _state.update { it.copy(shutDown = true) }
                 }
             }
             is WorkoutEvent.CancelWorkout -> {
@@ -434,15 +424,15 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last()),
                     rest = newExs[event.exerciseInWorkout].rest.plus(newExs[event.exerciseInWorkout].rest.last())
                 )
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     workoutExercises = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }
-                )
+                ) }
             }
             is WorkoutEvent.UpdateReps -> {
-                _state.value = state.value.copy(repsBottomBar = event.newValue)
+                _state.update { it.copy(repsBottomBar = event.newValue) }
             }
             is WorkoutEvent.UpdateWeight -> {
-                _state.value = state.value.copy(weightBottomBar = event.newValue)
+                _state.update { it.copy(weightBottomBar = event.newValue) }
                 sendWorkout2Wear()
             }
             is WorkoutEvent.AutoStepWeight -> {
@@ -457,26 +447,26 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 if (event.subtract)
                     increment *= -1f
                 val newValue = (event.newValue.toFloatOrNull() ?: 0f) + increment
-                _state.value = state.value.copy(weightBottomBar = newValue.toString())
+                _state.update { it.copy(weightBottomBar = newValue.toString()) }
                 sendWorkout2Wear()
             }
             is WorkoutEvent.UpdateTare -> {
-                _state.value = state.value.copy(tare = event.newValue)
+                _state.update { it.copy(tare = event.newValue) }
             }
             is WorkoutEvent.ResumeWorkout -> {
                 if (resumeWorkoutJob == null) {
                     resumeWorkoutJob = viewModelScope.launch {
                         val workoutId = repository.getCurrentWorkout().first()
                         if (workoutId != null) {
-                            _state.value = state.value.copy(
+                            _state.update { it.copy(
                                 workoutId = workoutId
-                            )
+                            ) }
                             val workout = repository.getWorkoutRecord(state.value.workoutId).first()
                             onEvent(WorkoutEvent.StartRetrievingExercises)
-                            _state.value = state.value.copy(
+                            _state.update { it.copy(
                                 startDate = workout.startDate,
                                 programId = workout.extProgramId
-                            )
+                            ) }
                         } else {
                             // TODO: what if it is null?
                         }
@@ -550,9 +540,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 }
             }
             is WorkoutEvent.ToggleOtherEquipmentDialog -> {
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     otherEquipmentDialogOpen = !state.value.otherEquipmentDialogOpen
-                )
+                ) }
             }
 
             is WorkoutEvent.UpdateExerciseProbability -> {
@@ -577,12 +567,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
 
             is WorkoutEvent.UpdateCurrentPage -> {
-                _state.value = state.value.copy(currentPage = event.currentPage)
+                _state.update { it.copy(currentPage = event.currentPage) }
                 sendWorkout2Wear(sendImage = true)
             }
 
             is WorkoutEvent.UpdateSetsDone -> {
-                _state.value = state.value.copy(setsDone = event.value)
+                _state.update { it.copy(setsDone = event.value) }
                 sendWorkout2Wear()
             }
 
@@ -666,7 +656,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 delay(1000)
             }
         }.onEach {
-            _state.value = state.value.copy(currentTime = ZonedDateTime.now())
+            _state.update { it.copy(currentTime = ZonedDateTime.now()) }
         }
             .launchIn(viewModelScope)
     }
