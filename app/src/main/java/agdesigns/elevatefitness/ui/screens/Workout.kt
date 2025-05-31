@@ -177,6 +177,19 @@ fun SharedTransitionScope.Workout(
             retrieveMediaJob?.cancel()
         }
     }
+    val onClose = {
+        if (workoutState.startDate == null)
+            navigator.navigateUp()
+        else
+            viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
+        Unit
+    }
+    if (startWorkout.value)
+        BackHandler(onBack = onClose)
+    if (workoutState.startDate != null)
+        BackHandler(onBack = onClose)
+    if (resumeWorkout)
+        BackHandler(onBack = onClose)
     LaunchedEffect(startWorkout.value) {
         if (startWorkout.value) {
             viewModel.onEvent(WorkoutEvent.StartWorkout)
@@ -254,6 +267,10 @@ fun SharedTransitionScope.Workout(
     val title = @Composable { Text(
         currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
         overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.sharedBounds(
+            sharedStateTitle,
+            animatedVisibilityScope,
+        )
 //        maxLines = 1
     ) }
 
@@ -338,13 +355,6 @@ fun SharedTransitionScope.Workout(
         }
     }
 
-    val onClose = {
-        if (workoutState.startDate == null)
-            navigator.navigateUp()
-        else
-            viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
-        Unit
-    }
 
     // TODO: instead of having the use select the intensity in the last page, have a slider in a dialog that pops up
     val workoutIntensity = rememberSaveable { mutableStateOf(WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY) }
@@ -373,8 +383,9 @@ fun SharedTransitionScope.Workout(
             Theme.DARK -> true
         }
     }}
-    if (workoutState.workoutExercises.isNotEmpty() && !animatedVisibilityScope.transition.isRunning) {
-        BackHandler(onBack = onClose)
+    var animationHasFinished by remember { mutableStateOf(false) }
+    animationHasFinished = animationHasFinished || !animatedVisibilityScope.transition.isRunning
+    if (workoutState.workoutExercises.isNotEmpty() && animationHasFinished) {
         val currentImageId by remember { derivedStateOf {
             if (pagerState.currentPage == workoutState.workoutExercises.size)
                 R.drawable.finish_workout
