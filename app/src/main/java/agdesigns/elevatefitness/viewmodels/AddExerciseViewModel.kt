@@ -10,7 +10,11 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.workout_exercise.WorkoutExercise
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.lang.Integer.min
 import javax.inject.Inject
@@ -67,8 +71,8 @@ sealed class AddExerciseEvent{
 
 @HiltViewModel
 class AddExerciseViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(AddExerciseState())
-    val state: State<AddExerciseState> = _state
+    private val _state = MutableStateFlow(AddExerciseState())
+    val state: StateFlow<AddExerciseState> = _state.asStateFlow()
 
     private var getProgramJob: Job? = null
     private var getWorkoutJob: Job? = null
@@ -139,10 +143,10 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 }
             }
             is AddExerciseEvent.UpdateNotes -> {
-                _state.value = state.value.copy(note = event.newNote)
+                _state.update { it.copy(note = event.newNote) }
             }
             is AddExerciseEvent.UpdateVariation -> {
-                _state.value = state.value.copy(variation = event.newVariation)
+                _state.update { it.copy(variation = event.newVariation) }
             }
             is AddExerciseEvent.UpdateReps -> {
                 var repsArray = emptyList<String>()
@@ -153,17 +157,19 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 ){
                     repsArray = List(state.value.sets.toInt()) { event.newReps }
                 }
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     reps = event.newReps,
                     repsArray = repsArray
-                )
+                ) }
             }
             is AddExerciseEvent.UpdateRepsAtIndex -> {
-                _state.value = state.value.copy(
-                    reps = if (event.index == 0) event.newReps else state.value.reps,
-                    repsArray = state.value.repsArray.mapIndexed {
-                            index, s -> if (index == event.index) event.newReps else s
-                    })
+                _state.update {
+                    it.copy(
+                        reps = if (event.index == 0) event.newReps else state.value.reps,
+                        repsArray = state.value.repsArray.mapIndexed { index, s ->
+                            if (index == event.index) event.newReps else s
+                        })
+                }
             }
             is AddExerciseEvent.UpdateRest -> {
                 var restArray = emptyList<String>()
@@ -174,17 +180,19 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 ){
                     restArray = List(state.value.sets.toInt()) { event.newRest }
                 }
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     rest = event.newRest,
                     restArray = restArray
-                )
+                )}
             }
             is AddExerciseEvent.UpdateRestAtIndex -> {
-                _state.value = state.value.copy(
-                    rest = if (event.index == 0) event.newRest else state.value.rest,
-                    restArray = state.value.restArray.mapIndexed {
-                        index, s -> if (index == event.index) event.newRest else s
-                    })
+                _state.update {
+                    it.copy(
+                        rest = if (event.index == 0) event.newRest else state.value.rest,
+                        restArray = state.value.restArray.mapIndexed { index, s ->
+                            if (index == event.index) event.newRest else s
+                        })
+                }
             }
             is AddExerciseEvent.UpdateSets -> {
                 var restArray = emptyList<String>()
@@ -224,16 +232,20 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     }
                     repsArray = repsArrayMutable.toList()
                 }
-                _state.value = state.value.copy(
-                    sets = event.newSets,
-                    restArray = restArray,
-                    repsArray = repsArray
-                )
+                _state.update {
+                    it.copy(
+                        sets = event.newSets,
+                        restArray = restArray,
+                        repsArray = repsArray
+                    )
+                }
             }
             is AddExerciseEvent.ToggleAdvancedSets -> {
-                _state.value = state.value.copy(
-                    advancedSets = !state.value.advancedSets
-                )
+                _state.update {
+                    it.copy(
+                        advancedSets = !state.value.advancedSets
+                    )
+                }
             }
             is AddExerciseEvent.GetProgramAndExercise -> {
                 // is adding an exercise
@@ -242,15 +254,17 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         val programMapExercises =
                             repository.getProgramMapExercises(event.programId).first()
 
-                        _state.value = state.value.copy(
-                            programId = event.programId,
-                            programName = programMapExercises.keys.first().name,
-                            exercise = repository.getExercise(event.exerciseId).first(),
-                            exerciseNumber = programMapExercises.values.first().size
-                        )
+                        _state.update {
+                            it.copy(
+                                programId = event.programId,
+                                programName = programMapExercises.keys.first().name,
+                                exercise = repository.getExercise(event.exerciseId).first(),
+                                exerciseNumber = programMapExercises.values.first().size
+                            )
+                        }
 
-                        repository.getExercise(event.exerciseId).collect {
-                            _state.value = state.value.copy(exercise = it)
+                        repository.getExercise(event.exerciseId).collect { exercise ->
+                            _state.update { it.copy(exercise = exercise) }
                         }
                     }
                 }
@@ -258,11 +272,11 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
             is AddExerciseEvent.GetWorkoutAndExercise -> {
                 if (getWorkoutJob == null) {
                     getWorkoutJob = viewModelScope.launch {
-                        _state.value = state.value.copy(
+                        _state.update { it.copy(
                             workoutId = event.workoutId,
                             exercise = repository.getExercise(event.exerciseId).first(),
                             exerciseNumber = repository.getWorkoutExercises(event.workoutId).first().size
-                        )
+                        ) }
                         if (event.programId != 0L) {
                             onEvent(AddExerciseEvent.GetProgramAndExercise(event.programId, event.exerciseId))
                         }
@@ -278,7 +292,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
 
                         val ex = repository.getProgramExercise(event.programExerciseId).first()
 
-                        _state.value = state.value.copy(
+                        _state.update { it.copy(
                             programExerciseId = ex.programExerciseId,
                             sets = ex.reps.size.toString(),
                             variation = ex.variation.ifBlank { "No variation" }
@@ -298,11 +312,10 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                             exerciseNumber = programMapExercises.values.first().find {
                                 it.programExerciseId == ex.programExerciseId
                             }!!.orderInProgram
-                        )
+                        )}
                     }
                 }
             }
-
             is AddExerciseEvent.ResetProbability -> {
                 viewModelScope.launch {
                     if (event.exerciseId != null)

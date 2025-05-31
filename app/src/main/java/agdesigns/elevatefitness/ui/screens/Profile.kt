@@ -58,17 +58,18 @@ fun Profile(
     destinationsNavigator: DestinationsNavigator,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val profileState by viewModel.state.collectAsState()
     var editName by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
-    LaunchedEffect(viewModel.state.value.name){
-        name = viewModel.state.value.name
+    LaunchedEffect(profileState.name){
+        name = profileState.name
     }
     var userYear by remember { mutableStateOf("0") }
     val validUserYear by remember { derivedStateOf {
         userYear.toIntOrNull() != null && userYear.toInt() in 1900..ZonedDateTime.now().year
     }}
-    LaunchedEffect(viewModel.state.value.userYear){
-        userYear = viewModel.state.value.userYear.toString()
+    LaunchedEffect(profileState.userYear){
+        userYear = profileState.userYear.toString()
     }
     var editYear by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -92,7 +93,7 @@ fun Profile(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row (verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(2f)){
-                    Text("Hi, ${viewModel.state.value.name}",
+                    Text("Hi, ${profileState.name}",
                         style = MaterialTheme.typography.titleLarge,
                         textAlign = TextAlign.Start,
                         overflow = TextOverflow.Ellipsis,
@@ -144,7 +145,7 @@ fun Profile(
             ) {
                 val age by remember {
                     derivedStateOf {
-                        ZonedDateTime.now().year - viewModel.state.value.userYear
+                        ZonedDateTime.now().year - profileState.userYear
                     }
                 }
                 Text("Age: $age", Modifier.weight(1f))
@@ -156,7 +157,7 @@ fun Profile(
                             viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
                         else
                             // reset userYear
-                            userYear = viewModel.state.value.userYear.toString()
+                            userYear = profileState.userYear.toString()
                     }
                 }) {
                     if (editYear)
@@ -220,16 +221,16 @@ fun Profile(
                 val validWeight by remember { derivedStateOf { weightValue.toFloatOrNull() != null && weightValue.toFloat() > 0 }}
                 val focusRequester = remember { FocusRequester() }
 
-                LaunchedEffect(viewModel.state.value.weight, viewModel.state.value.imperialSystem){
+                LaunchedEffect(profileState.weight, profileState.imperialSystem){
                     weightValue = maybeKgToLb(
-                        viewModel.state.value.weight,
-                        viewModel.state.value.imperialSystem
+                        profileState.weight,
+                        profileState.imperialSystem
                     ).toString()
                 }
                 val updateWeight: (String) -> Unit = { newWeight ->
                     keyboardController?.hide()
                     viewModel.onEvent(ProfileEvent.UpdateWeight(
-                        maybeLbToKg(newWeight.toFloat(), viewModel.state.value.imperialSystem)
+                        maybeLbToKg(newWeight.toFloat(), profileState.imperialSystem)
                     ))
                     showUpdateWeightButton = false
                     focusManager.clearFocus()
@@ -239,7 +240,7 @@ fun Profile(
                     OutlinedTextField(value = weightValue,
                         onValueChange = { weightValue = it },
                         trailingIcon = {
-                            if (viewModel.state.value.imperialSystem)
+                            if (profileState.imperialSystem)
                                 Text("lb")
                             else
                                 Text("kg")
@@ -274,8 +275,8 @@ fun Profile(
                                 updateWeight(weightValue)
                             else
                                 weightValue = maybeKgToLb(
-                                    viewModel.state.value.weight,
-                                    viewModel.state.value.imperialSystem
+                                    profileState.weight,
+                                    profileState.imperialSystem
                                 ).toString()
                         }) {
                             if (validWeight)
@@ -296,18 +297,18 @@ fun Profile(
                 var showUpdateHeightButton by remember { mutableStateOf(false) }
                 var heightValue by remember { mutableStateOf("") }
                 val validHeight by remember { derivedStateOf { heightValue.toFloatOrNull() != null && heightValue.toFloat() > 0 } }
-                LaunchedEffect(viewModel.state.value.height, viewModel.state.value.imperialSystem) {
-                    heightValue = if (viewModel.state.value.imperialSystem)
-                        "${viewModel.state.value.height / 2.54f}"
+                LaunchedEffect(profileState.height, profileState.imperialSystem) {
+                    heightValue = if (profileState.imperialSystem)
+                        "${profileState.height / 2.54f}"
                     else
-                        viewModel.state.value.height.toString()
+                        profileState.height.toString()
                 }
                 val focusRequester = remember { FocusRequester() }
                 val updateHeight: (String) -> Unit = { newHeight ->
                     keyboardController?.hide()
                     viewModel.onEvent(
                         ProfileEvent.UpdateHeight(
-                            if (viewModel.state.value.imperialSystem)
+                            if (profileState.imperialSystem)
                                 newHeight.toFloat() * 2.54f
                             else
                                 newHeight.toFloat()
@@ -321,7 +322,7 @@ fun Profile(
                     OutlinedTextField(value = heightValue,
                         onValueChange = { heightValue = it },
                         trailingIcon = {
-                            if (viewModel.state.value.imperialSystem)
+                            if (profileState.imperialSystem)
                                 Text("in")
                             else
                                 Text("cm")
@@ -354,7 +355,7 @@ fun Profile(
                             if (validHeight)
                                 updateHeight(heightValue)
                             else
-                                heightValue = viewModel.state.value.height.toString()
+                                heightValue = profileState.height.toString()
                         }) {
                             if (validHeight)
                                 Icon(Icons.Default.Done, "Done editing")
@@ -382,7 +383,7 @@ fun Profile(
                 ) {
                     OutlinedTextField(
                         readOnly = true,
-                        value = viewModel.state.value.sex.sexName,
+                        value = profileState.sex.sexName,
                         onValueChange = {},
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.textFieldColors(
@@ -418,7 +419,7 @@ fun Profile(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 val bmi by remember { derivedStateOf {
-                    viewModel.state.value.weight / (viewModel.state.value.height/100).pow(2)
+                    profileState.weight / (profileState.height/100).pow(2)
                 }}
                 val body = if (bmi < 18.5f) "underweight" else
                     if (bmi > 30f) "obese" else
@@ -447,7 +448,7 @@ fun Profile(
                     modifier = Modifier.semantics {
                         contentDescription = "Switch to imperial system"
                     },
-                    checked = viewModel.state.value.imperialSystem,
+                    checked = profileState.imperialSystem,
                     onCheckedChange = { viewModel.onEvent(ProfileEvent.SwitchImperialSystem(it)) }
                 )
             }
@@ -469,7 +470,7 @@ fun Profile(
                 ) {
                     OutlinedTextField(
                         readOnly = true,
-                        value = viewModel.state.value.theme.themeName,
+                        value = profileState.theme.themeName,
                         onValueChange = {},
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.textFieldColors(
@@ -501,14 +502,14 @@ fun Profile(
         item {
             ChangeGenericWeight(
                 text = "Default barbell increment",
-                initialWeightValue = viewModel.state.value.incrementBarbell,
-                imperialSystem = viewModel.state.value.imperialSystem,
+                initialWeightValue = profileState.incrementBarbell,
+                imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementBarbell(
-                        maybeLbToKg(it.toFloat(), viewModel.state.value.imperialSystem)
+                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
                     )
                 )
             }
@@ -516,14 +517,14 @@ fun Profile(
         item {
             ChangeGenericWeight(
                 text = "Default bodyweight increment",
-                initialWeightValue = viewModel.state.value.incrementBodyweight,
-                imperialSystem = viewModel.state.value.imperialSystem,
+                initialWeightValue = profileState.incrementBodyweight,
+                imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementBodyweight(
-                        maybeLbToKg(it.toFloat(), viewModel.state.value.imperialSystem)
+                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
                     )
                 )
             }
@@ -531,14 +532,14 @@ fun Profile(
         item {
             ChangeGenericWeight(
                 text = "Default cable increment",
-                initialWeightValue = viewModel.state.value.incrementCable,
-                imperialSystem = viewModel.state.value.imperialSystem,
+                initialWeightValue = profileState.incrementCable,
+                imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementCable(
-                        maybeLbToKg(it.toFloat(), viewModel.state.value.imperialSystem)
+                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
                     )
                 )
             }
@@ -546,14 +547,14 @@ fun Profile(
         item {
             ChangeGenericWeight(
                 text = "Default dumbbell increment",
-                initialWeightValue = viewModel.state.value.incrementDumbbell,
-                imperialSystem = viewModel.state.value.imperialSystem,
+                initialWeightValue = profileState.incrementDumbbell,
+                imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementDumbbell(
-                        maybeLbToKg(it.toFloat(), viewModel.state.value.imperialSystem)
+                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
                     )
                 )
             }
@@ -561,14 +562,14 @@ fun Profile(
         item {
             ChangeGenericWeight(
                 text = "Default machine increment",
-                initialWeightValue = viewModel.state.value.incrementMachine,
-                imperialSystem = viewModel.state.value.imperialSystem,
+                initialWeightValue = profileState.incrementMachine,
+                imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementMachine(
-                        maybeLbToKg(it.toFloat(), viewModel.state.value.imperialSystem)
+                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
                     )
                 )
             }

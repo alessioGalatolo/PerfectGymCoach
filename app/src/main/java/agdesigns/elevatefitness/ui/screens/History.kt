@@ -34,6 +34,7 @@ import agdesigns.elevatefitness.ui.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.FadeTransition
 import agdesigns.elevatefitness.ui.maybeKgToLb
 import agdesigns.elevatefitness.viewmodels.HistoryViewModel
+import androidx.compose.runtime.*
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -146,7 +147,8 @@ fun History(
     navigator: DestinationsNavigator,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
-    val recordsMapMap = viewModel.state.value.workoutRecords
+    val historyState by viewModel.state.collectAsState()
+    val recordsMapMap = historyState.workoutRecords
     if (recordsMapMap.isEmpty())
         Column(
             modifier = Modifier
@@ -232,8 +234,8 @@ fun History(
                                         Text(
                                             "${maybeKgToLb(
                                                 workout.volume,
-                                                viewModel.state.value.useImperialSystem
-                                            )} ${if (viewModel.state.value.useImperialSystem) "lb" else "kg"}",
+                                                historyState.useImperialSystem
+                                            )} ${if (historyState.useImperialSystem) "lb" else "kg"}",
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                     }

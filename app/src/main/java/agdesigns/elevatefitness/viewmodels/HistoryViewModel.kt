@@ -7,6 +7,10 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordAndName
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.temporal.WeekFields
 import java.util.Locale
@@ -23,13 +27,13 @@ sealed class HistoryEvent{
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(HistoryState())
-    val state: State<HistoryState> = _state
+    private val _state = MutableStateFlow(HistoryState())
+    val state: StateFlow<HistoryState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            repository.getImperialSystem().collect {
-                _state.value = state.value.copy(useImperialSystem = it)
+            repository.getImperialSystem().collect { imperialSystem ->
+                _state.update { it.copy(useImperialSystem = imperialSystem) }
             }
         }
         viewModelScope.launch {
@@ -40,9 +44,9 @@ class HistoryViewModel @Inject constructor(private val repository: Repository): 
                 val yearToWeekToRecord = groupByYear.mapValues {
                     it.value.groupBy { record -> record.startDate!!.get(weekField) }
                 }
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     workoutRecords = yearToWeekToRecord
-                )
+                ) }
             }
         }
     }

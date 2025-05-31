@@ -7,6 +7,10 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.exercise.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -37,8 +41,8 @@ sealed class CreateExerciseEvent{
 
 @HiltViewModel
 class CreateExerciseViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(ExerciseState())
-    val state: State<ExerciseState> = _state
+    private val _state = MutableStateFlow(ExerciseState())
+    val state: StateFlow<ExerciseState> = _state.asStateFlow()
 
 
     fun onEvent(event: CreateExerciseEvent): Boolean {
@@ -65,26 +69,26 @@ class CreateExerciseViewModel @Inject constructor(private val repository: Reposi
                     return false
             }
             is CreateExerciseEvent.UpdateName -> {
-                _state.value = state.value.copy(name = event.newName)
+                _state.update { it.copy(name = event.newName) }
             }
             is CreateExerciseEvent.UpdateEquipment -> {
-                _state.value = state.value.copy(equipment = event.newEquipment)
+                _state.update { it.copy(equipment = event.newEquipment) }
             }
             is CreateExerciseEvent.UpdatePrimaryMuscle -> {
-                _state.value = state.value.copy(primaryMuscle = event.newMuscle)
+                _state.update { it.copy(primaryMuscle = event.newMuscle) }
             }
             is CreateExerciseEvent.UpdateSecondaryMuscle -> {
                 val mutable = state.value.secondaryMuscles.toMutableList()
                 mutable[event.index] = event.checkStatus
-                _state.value = state.value.copy(secondaryMuscles = mutable.toList())
+                _state.update { it.copy(secondaryMuscles = mutable.toList()) }
             }
             is CreateExerciseEvent.ToggleSecondaryMuscle -> {
                 val mutable = state.value.secondaryMuscles.toMutableList()
                 mutable[event.index] = !mutable[event.index]
-                _state.value = state.value.copy(secondaryMuscles = mutable.toList())
+                _state.update { it.copy(secondaryMuscles = mutable.toList()) }
             }
             is CreateExerciseEvent.UpdateDifficulty -> {
-                _state.value = state.value.copy(difficulty = event.newDifficulty)
+                _state.update { it.copy(difficulty = event.newDifficulty) }
             }
         }
         return true

@@ -28,6 +28,7 @@ fun ViewGeneratedPlan(
     workoutSplit: String,
     viewModel: GeneratePlanViewModel = hiltViewModel()
 ) {
+    val generationState by viewModel.state.collectAsState() 
     viewModel.onEvent(
         GeneratePlanEvent.GeneratePlan(
             // FIXME: should pass the enum class instead of string
@@ -37,7 +38,7 @@ fun ViewGeneratedPlan(
         )
     )
 
-    if (viewModel.state.value.generatedPlan == null) {
+    if (generationState.generatedPlan == null) {
         Column(Modifier.fillMaxSize(),
             Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -52,8 +53,8 @@ fun ViewGeneratedPlan(
         navigator.navigateUp()
         navigator.navigate(
             AddProgramDestination(
-                viewModel.state.value.generatedPlan!!.name,
-                viewModel.state.value.generatedPlan!!.planId
+                generationState.generatedPlan!!.name,
+                generationState.generatedPlan!!.planId
             )
         )
     }

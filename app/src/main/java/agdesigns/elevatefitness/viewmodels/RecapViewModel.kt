@@ -9,6 +9,10 @@ import agdesigns.elevatefitness.data.exercise.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,18 +30,18 @@ sealed class RecapEvent{
 
 @HiltViewModel
 class RecapViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(RecapState())
-    val state: State<RecapState> = _state
+    private val _state = MutableStateFlow(RecapState())
+    val state: StateFlow<RecapState> = _state.asStateFlow()
 
     private var retrieveWorkoutRecordJob: Job? = null
     private var retrieveRecordsJob: MutableList<Job> = mutableListOf()
 
     init {
         viewModelScope.launch {
-            repository.getImperialSystem().collect{
-                _state.value = state.value.copy(
-                    imperialSystem = it
-                )
+            repository.getImperialSystem().collect{ imperialSystem ->
+                _state.update { it.copy(
+                    imperialSystem = imperialSystem
+                ) }
             }
         }
     }
@@ -46,37 +50,37 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
         when (event) {
             is RecapEvent.SetWorkoutId -> {
                 if (event.workoutId != state.value.workoutId) {
-                    _state.value = state.value.copy(workoutId = event.workoutId)
+                    _state.update { it.copy(workoutId = event.workoutId) }
                     retrieveWorkoutRecordJob?.cancel()
                     retrieveWorkoutRecordJob = viewModelScope.launch {
                         repository.getWorkoutRecord(event.workoutId).collect{ workoutRecord ->
-                            _state.value = state.value.copy(
+                            _state.update { it.copy(
                                 workoutRecord = workoutRecord
-                            )
+                            ) }
                             for (job in retrieveRecordsJob) {
                                 job.cancel()
                             }
                             retrieveRecordsJob = mutableListOf()
                             retrieveRecordsJob.add(this.launch {
-                                repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{
-                                    _state.value = state.value.copy(
-                                        olderRecords = it.filter { it1 -> it1.durationSeconds > 0 }
+                                repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{ olderRecords ->
+                                    _state.update { it.copy(
+                                        olderRecords = olderRecords.filter { it1 -> it1.durationSeconds > 0 }
                                             .sortedBy { it1 -> it1.startDate }
-                                    )
+                                    ) }
                                 }
                             })
                             retrieveRecordsJob.add(this.launch {
-                                repository.getWorkoutRecord(event.workoutId).collect {
-                                    _state.value = state.value.copy(
-                                        workoutRecord = it
-                                    )
+                                repository.getWorkoutRecord(event.workoutId).collect { workoutRecord ->
+                                    _state.update { it.copy(
+                                        workoutRecord = workoutRecord
+                                    ) }
                                 }
                             })
                             retrieveRecordsJob.add(this.launch {
-                                repository.getWorkoutExerciseRecordsAndInfo(event.workoutId).collect{
-                                    _state.value = state.value.copy(
-                                        exerciseRecords = it.distinct().sortedBy { it1 -> it1.exerciseInWorkout }
-                                    )
+                                repository.getWorkoutExerciseRecordsAndInfo(event.workoutId).collect{ exerciseRecords ->
+                                    _state.update { it.copy(
+                                        exerciseRecords = exerciseRecords.distinct().sortedBy { it1 -> it1.exerciseInWorkout }
+                                    ) }
                                 }
                             })
                         }

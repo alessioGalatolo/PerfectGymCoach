@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.withLink
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jaikeerthick.composable_graphs.composables.line.LineGraph
 import com.jaikeerthick.composable_graphs.composables.line.model.LineData
 import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphColors
@@ -72,6 +73,7 @@ fun WorkoutRecap(
     workoutId: Long,
     viewModel: RecapViewModel = hiltViewModel()
 ) {
+    val recapState by viewModel.state.collectAsState()
     viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
     val volumeDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     val calorieDialogIsOpen = rememberSaveable { mutableStateOf(false) }
@@ -106,8 +108,8 @@ fun WorkoutRecap(
         Text(stringResource(R.string.calories_info))
     }
     if (
-        viewModel.state.value.workoutId != 0L &&
-        viewModel.state.value.workoutRecord != null
+        recapState.workoutId != 0L &&
+        recapState.workoutRecord != null
     ){
         Scaffold(topBar = {
             TopAppBar (title = {
@@ -139,11 +141,11 @@ fun WorkoutRecap(
                             .padding(horizontal = 16.dp)
                     )
                 }
-                val records = viewModel.state.value.olderRecords
+                val records = recapState.olderRecords
                 val graphsYaxis = listOf (
-                    Pair(Pair("Volume", if (viewModel.state.value.imperialSystem) "lb" else "kg"),
+                    Pair(Pair("Volume", if (recapState.imperialSystem) "lb" else "kg"),
                         records.map {
-                            maybeKgToLb(it.volume.toFloat(), viewModel.state.value.imperialSystem)
+                            maybeKgToLb(it.volume.toFloat(), recapState.imperialSystem)
                         }),
                     Pair(Pair("Calories", "kcal"), records.map { it.calories }),
                     Pair(Pair("Workout time", "s"), records.map { it.durationSeconds }),
@@ -159,9 +161,9 @@ fun WorkoutRecap(
                                     val clickedValue: MutableState<LineData> = remember {
                                         mutableStateOf(
                                             LineData(
-                                                viewModel.state.value.workoutRecord!!.startDate!!.format(formatter),
+                                                recapState.workoutRecord!!.startDate!!.format(formatter),
                                                 graphsYaxis[page].second.last()
-    //                                            viewModel.state.value.workoutRecord!!.volume
+    //                                            recapState.workoutRecord!!.volume
                                             )
                                         )
                                     }
@@ -237,7 +239,7 @@ fun WorkoutRecap(
                     }
                 }
                 item {
-                    if (viewModel.state.value.workoutRecord != null) {
+                    if (recapState.workoutRecord != null) {
                         ElevatedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                 Row(
@@ -256,7 +258,7 @@ fun WorkoutRecap(
                                         Spacer(Modifier.width(8.dp))
                                         Text(
                                             "Calorie consumption: " + // split for easier translation
-                                                    "${viewModel.state.value.workoutRecord!!.calories.toInt()} kcal"
+                                                    "${recapState.workoutRecord!!.calories.toInt()} kcal"
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     }
@@ -285,9 +287,9 @@ fun WorkoutRecap(
                                         Text(
                                             "Total volume: " +
                                                     "%.2f ".format(maybeKgToLb(
-                                                        viewModel.state.value.workoutRecord!!.volume.toFloat(),
-                                                        viewModel.state.value.imperialSystem
-                                                    )) + if (viewModel.state.value.imperialSystem) "lb" else "kg"
+                                                        recapState.workoutRecord!!.volume.toFloat(),
+                                                        recapState.imperialSystem
+                                                    )) + if (recapState.imperialSystem) "lb" else "kg"
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     }
@@ -312,7 +314,7 @@ fun WorkoutRecap(
                                     Text(
                                         "Total time: " +
                                                 DateUtils.formatElapsedTime(
-                                                    viewModel.state.value.workoutRecord!!.durationSeconds
+                                                    recapState.workoutRecord!!.durationSeconds
                                                 )
                                     )
                                 }
@@ -330,7 +332,7 @@ fun WorkoutRecap(
                                     Text(
                                         "Active time: " +
                                                 DateUtils.formatElapsedTime(
-                                                    viewModel.state.value.workoutRecord!!.activeTimeSeconds
+                                                    recapState.workoutRecord!!.activeTimeSeconds
                                                 )
                                     )
                                 }
@@ -343,7 +345,7 @@ fun WorkoutRecap(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp).padding(horizontal = 16.dp))
                 }
-                items (items = viewModel.state.value.exerciseRecords, key = { it.recordId }) { exercise ->
+                items (items = recapState.exerciseRecords, key = { it.recordId }) { exercise ->
                     Card (Modifier.fillMaxWidth().padding(horizontal = 16.dp)){
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
@@ -363,11 +365,11 @@ fun WorkoutRecap(
                             if (exercise.equipment == Exercise.Equipment.BARBELL) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text("Barbell used: " +
-                                        barbellFromWeight(exercise.tare, viewModel.state.value.imperialSystem, true)
+                                        barbellFromWeight(exercise.tare, recapState.imperialSystem, true)
                                 )
                             } else if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Bodyweight at the time: ${maybeKgToLb(exercise.tare, viewModel.state.value.imperialSystem)} " + if (viewModel.state.value.imperialSystem) "lb" else "kg")
+                                Text("Bodyweight at the time: ${maybeKgToLb(exercise.tare, recapState.imperialSystem)} " + if (recapState.imperialSystem) "lb" else "kg")
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             exercise.reps.forEachIndexed { index, rep ->
@@ -381,7 +383,7 @@ fun WorkoutRecap(
                                     }
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        "Reps: $rep Weight: ${maybeKgToLb(exercise.weights[index], viewModel.state.value.imperialSystem)} " + if (viewModel.state.value.imperialSystem) "lb" else "kg"
+                                        "Reps: $rep Weight: ${maybeKgToLb(exercise.weights[index], recapState.imperialSystem)} " + if (recapState.imperialSystem) "lb" else "kg"
                                     )
                                 }
                             }

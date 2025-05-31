@@ -58,6 +58,7 @@ fun ArchivedPlans(
     navigator: DestinationsNavigator,
     viewModel: PlansViewModel = hiltViewModel()
 ) {
+    val archiveState by viewModel.state.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -78,7 +79,7 @@ fun ArchivedPlans(
                 scrollBehavior = scrollBehavior
             )
         }) { innerPadding ->
-        if (viewModel.state.value.archivedPlans.isEmpty()) {
+        if (archiveState.archivedPlans.isEmpty()) {
             // if you have no archived plans (should never happen as navigating here assumes archived plans)
             Column(
                 modifier = Modifier
@@ -103,7 +104,7 @@ fun ArchivedPlans(
                 contentPadding = innerPadding,
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                itemsIndexed(items = viewModel.state.value.archivedPlans, key = { _, it -> it.first.planId })
+                itemsIndexed(items = archiveState.archivedPlans, key = { _, it -> it.first.planId })
                 { index, plan ->
                     // TODO: consider having only the first plan in card, the others are simple list items
                     Spacer(Modifier.height(4.dp))

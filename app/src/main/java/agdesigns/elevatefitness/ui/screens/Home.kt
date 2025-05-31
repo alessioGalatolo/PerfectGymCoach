@@ -52,6 +52,7 @@ fun SharedTransitionScope.Home(
     navigator: DestinationsNavigator,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val homeState by viewModel.state.collectAsState()
     val haptic = LocalHapticFeedback.current
 
     var resumeWorkoutDialogOpen by remember {
@@ -71,13 +72,13 @@ fun SharedTransitionScope.Home(
         )
     }
 
-    LaunchedEffect(viewModel.state.value.currentWorkout){
+    LaunchedEffect(homeState.currentWorkout){
         delay(200)  // FIXME: done in order to avoid double dialog showing
-        resumeWorkoutDialogOpen = viewModel.state.value.currentWorkout != null
+        resumeWorkoutDialogOpen = homeState.currentWorkout != null
     }
 
 
-    if (viewModel.state.value.currentPlan == null) {
+    if (homeState.currentPlan == null) {
         Scaffold(
             floatingActionButton = {
                 LargeFloatingActionButton(
@@ -100,7 +101,7 @@ fun SharedTransitionScope.Home(
                 GeneratePlanButton(navigator)
             }
         }
-    } else if (viewModel.state.value.programs?.isEmpty() == true) {
+    } else if (homeState.programs?.isEmpty() == true) {
         Column (horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = Icons.Outlined.Description,
@@ -115,7 +116,7 @@ fun SharedTransitionScope.Home(
                 navigator.navigate(
                     AddProgramDestination(
                         planName = "", // FIXME: empty plan name
-                        planId = viewModel.state.value.currentPlan!!,
+                        planId = homeState.currentPlan!!,
                         openDialogNow = true
                     )
                 )
@@ -132,13 +133,13 @@ fun SharedTransitionScope.Home(
             Spacer(modifier = Modifier.height(8.dp))
 
         }
-    } else if (viewModel.state.value.programs?.isNotEmpty() == true
-        && viewModel.state.value.currentProgram != null
+    } else if (homeState.programs?.isNotEmpty() == true
+        && homeState.currentProgram != null
     ) {
         LazyColumn(Modifier.padding(horizontal = 16.dp)){
-            val currentProgram = viewModel.state.value.programs!![viewModel.state.value.currentProgram!!]
+            val currentProgram = homeState.programs!![homeState.currentProgram!!]
             val currentExercises =
-                viewModel.state.value.exercisesAndInfo[currentProgram.programId]?.sortedBy {
+                homeState.exercisesAndInfo[currentProgram.programId]?.sortedBy {
                     it.programExerciseId
                 } ?: emptyList()
             item {
@@ -184,7 +185,7 @@ fun SharedTransitionScope.Home(
                         )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                if (viewModel.state.value.programs!!.size > 1) {
+                if (homeState.programs!!.size > 1) {
                     Text(
                         text = stringResource(id = R.string.other_programs),
                         fontWeight = FontWeight.Bold
@@ -192,9 +193,9 @@ fun SharedTransitionScope.Home(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
-            items(items = viewModel.state.value.programs!!.minus(currentProgram), key = { it }){
+            items(items = homeState.programs!!.minus(currentProgram), key = { it }){
                 val exs =
-                    viewModel.state.value.exercisesAndInfo[it.programId]?.sortedBy {
+                    homeState.exercisesAndInfo[it.programId]?.sortedBy {
                         it.programExerciseId
                     } ?: emptyList()
                 val pagerState = rememberPagerState(pageCount = { exs.size })
@@ -276,7 +277,7 @@ fun SharedTransitionScope.Home(
                                         )
                                     }
                                 }
-                                LaunchedEffect(viewModel.state.value.animationTick){
+                                LaunchedEffect(homeState.animationTick){
                                     if (!animatedVisibilityScope.transition.isRunning) {
                                         pagerState.animateScrollToPage(
                                             (pagerState.currentPage + 1) %
@@ -334,7 +335,7 @@ fun SharedTransitionScope.Home(
                         navigator.navigate(
                             AddProgramDestination(
                                 planName = "", // FIXME: empty plan name
-                                planId = viewModel.state.value.currentPlan!!
+                                planId = homeState.currentPlan!!
                             )
                         )
                     }) {

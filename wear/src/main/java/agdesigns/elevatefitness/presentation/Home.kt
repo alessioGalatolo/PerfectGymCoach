@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +76,7 @@ import kotlin.math.max
 fun Home(
     viewModel: HomeViewModel = hiltViewModel()
 ){
+    val homeState by viewModel.state.collectAsState()
     // FIXME: nullpointerexception
     Box(
         modifier = Modifier
@@ -86,10 +88,10 @@ fun Home(
             val listState = rememberScalingLazyListState()
 
             val currentRestMillis: Long? by remember { derivedStateOf {
-                if (viewModel.state.value.restTimestamp != null)
+                if (homeState.restTimestamp != null)
                     max(0L,
-                        viewModel.state.value.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
-                            viewModel.state.value.currentTime.toInstant().toEpochMilli()
+                        homeState.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
+                            homeState.currentTime.toInstant().toEpochMilli()
                         ) ?: 0L
                     )
                 else null
@@ -97,15 +99,15 @@ fun Home(
             // FIXME: if exercise is changed then rests change then progression is weird
             val restProgression by remember {
                 derivedStateOf {
-                    if (viewModel.state.value.setsDone <= viewModel.state.value.rest.size)
+                    if (homeState.setsDone <= homeState.rest.size)
                         currentRestMillis?.toFloat()
-                            ?.div(viewModel.state.value.rest[max(0, viewModel.state.value.setsDone-1)] * 1000)
+                            ?.div(homeState.rest[max(0, homeState.setsDone-1)] * 1000)
                     else
                         null
                 }
             }
-            if (viewModel.state.value.imageBitmap != null) {
-                VignetteImage(viewModel.state.value.imageBitmap!!.asImageBitmap())
+            if (homeState.imageBitmap != null) {
+                VignetteImage(homeState.imageBitmap!!.asImageBitmap())
                 Vignette(
                     vignettePosition = VignettePosition.TopAndBottom
                 )
@@ -127,10 +129,10 @@ fun Home(
                 ) {
                     val nextUp by remember {
                         derivedStateOf {
-                            if (viewModel.state.value.setsDone < viewModel.state.value.rest.size)
-                                viewModel.state.value.exerciseName
+                            if (homeState.setsDone < homeState.rest.size)
+                                homeState.exerciseName
                             else
-                                viewModel.state.value.nextExerciseName
+                                homeState.nextExerciseName
                         }
                     }
                     if (nextUp.isNotBlank()) {
@@ -163,7 +165,7 @@ fun Home(
                     }
                 }
             } else {
-                if (viewModel.state.value.exerciseName.isEmpty()) {
+                if (homeState.exerciseName.isEmpty()) {
                     val context = LocalContext.current
                     val remoteActivityHelper = RemoteActivityHelper(context)
                     // TODO: this is nice but would be nicer if it opened next workout on phone
@@ -236,15 +238,15 @@ fun Home(
                         ) {
                             item {
                                 Text(
-                                    text = viewModel.state.value.exerciseName + " (${viewModel.state.value.setsDone+1}/${viewModel.state.value.rest.size})",
+                                    text = homeState.exerciseName + " (${homeState.setsDone+1}/${homeState.rest.size})",
                                     style = MaterialTheme.typography.labelLarge,
                                     textAlign = TextAlign.Center
                                 )
                             }
-                            if (viewModel.state.value.note.isNotEmpty()) {
+                            if (homeState.note.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = viewModel.state.value.note,
+                                        text = homeState.note,
                                         style = MaterialTheme.typography.labelMedium,
                                         textAlign = TextAlign.Center,
                                     )
@@ -275,7 +277,7 @@ fun Home(
                                         )
                                     }
                                     Text(
-                                        text = viewModel.state.value.currentReps.toString(),
+                                        text = homeState.currentReps.toString(),
                                         textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.titleLarge
                                     )
@@ -311,7 +313,7 @@ fun Home(
                                         )
                                     }
                                     Text(
-                                        text = viewModel.state.value.weight.toString(),
+                                        text = homeState.weight.toString(),
                                         textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.titleLarge
                                     )
@@ -326,7 +328,7 @@ fun Home(
                                 }
                             }
                             // TODO: if barbell should show selection
-                            if (viewModel.state.value.nextExerciseName.isNotBlank()) {
+                            if (homeState.nextExerciseName.isNotBlank()) {
                                 item {
                                     Text(
                                         "Next exercise: ",
@@ -336,7 +338,7 @@ fun Home(
                                 }
                                 item {
                                     Text(
-                                        viewModel.state.value.nextExerciseName,
+                                        homeState.nextExerciseName,
                                         style = MaterialTheme.typography.titleLarge,
                                         textAlign = TextAlign.Center
                                     )

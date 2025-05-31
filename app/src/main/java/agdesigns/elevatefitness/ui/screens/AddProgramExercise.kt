@@ -66,6 +66,7 @@ fun AddProgramExercise(
     programId: Long,
     viewModel: ExercisesViewModel = hiltViewModel()
 ) {
+    val addProgramState by viewModel.state.collectAsState()
     viewModel.onEvent(ExercisesEvent.GetProgramExercises(programId))
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
@@ -104,7 +105,7 @@ fun AddProgramExercise(
                 )
             }
         }, content = { innerPadding ->
-            if (viewModel.state.value.programExercisesAndInfo.isEmpty()) {
+            if (addProgramState.programExercisesAndInfo.isEmpty()) {
                 // if you have no exercises
                 Column(
                     modifier = Modifier
@@ -128,7 +129,7 @@ fun AddProgramExercise(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = innerPadding
                 ) {
-                    itemsIndexed(items = viewModel.state.value.programExercisesAndInfo,
+                    itemsIndexed(items = addProgramState.programExercisesAndInfo,
                         key = { _, it -> it.programExerciseId }) { index, exercise ->
                         val brightImage = remember { mutableStateOf(false) }
                         var expanded by remember { mutableStateOf(false) }
@@ -148,7 +149,7 @@ fun AddProgramExercise(
                                     .wrapContentHeight()
                                     .fillMaxWidth()
                             ){
-                                val linked = exercise.supersetExercise == viewModel.state.value.programExercisesAndInfo[index-1].programExerciseId
+                                val linked = exercise.supersetExercise == addProgramState.programExercisesAndInfo[index-1].programExerciseId
                                 val orientation = remember { Animatable(0f) }
                                 val scale = remember { Animatable(1f) }
                                 LaunchedEffect(linked) {
@@ -243,7 +244,7 @@ fun AddProgramExercise(
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
                                                     ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram-1),
-                                                    ProgramExerciseReorder(viewModel.state.value.programExercisesAndInfo[index-1].programExerciseId, exercise.orderInProgram)
+                                                    ProgramExerciseReorder(addProgramState.programExercisesAndInfo[index-1].programExerciseId, exercise.orderInProgram)
                                                 )))
                                                 expanded = false
                                             },
@@ -259,11 +260,11 @@ fun AddProgramExercise(
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
                                                     ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram+1),
-                                                    ProgramExerciseReorder(viewModel.state.value.programExercisesAndInfo[index+1].programExerciseId, exercise.orderInProgram)
+                                                    ProgramExerciseReorder(addProgramState.programExercisesAndInfo[index+1].programExerciseId, exercise.orderInProgram)
                                                 )))
                                                 expanded = false
                                             },
-                                            enabled = index+1 < viewModel.state.value.programExercisesAndInfo.size,
+                                            enabled = index+1 < addProgramState.programExercisesAndInfo.size,
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.ArrowDownward,

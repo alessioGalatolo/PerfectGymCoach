@@ -13,7 +13,11 @@ import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import agdesigns.elevatefitness.ui.generatePlan
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,9 +39,11 @@ sealed class GeneratePlanEvent{
 
 @HiltViewModel
 class GeneratePlanViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(GeneratePlanState())
-    val state: State<GeneratePlanState> = _state
+    private val _state = MutableStateFlow(GeneratePlanState())
+    val state: StateFlow<GeneratePlanState> = _state.asStateFlow()
+
     private var generatePlanJob: Job? = null
+
     private fun updatePlans(
         currentPlanId: Long? = state.value.currentPlanId,
         workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = state.value.workoutPlanMapPrograms
@@ -48,10 +54,10 @@ class GeneratePlanViewModel @Inject constructor(private val repository: Reposito
                 if (plan.first.planId == currentPlanId) 1 else 0
             }
         }
-        _state.value = state.value.copy(
+        _state.update { it.copy(
             workoutPlanMapPrograms = plans,
             currentPlanId = currentPlanId
-        )
+        )}
     }
 
     init {
@@ -81,9 +87,9 @@ class GeneratePlanViewModel @Inject constructor(private val repository: Reposito
                         )
                         repository.setCurrentPlan(planId, true)  // FIXME: I don't remember why I would need override
 
-                        _state.value = state.value.copy(
+                        _state.update { it.copy(
                             generatedPlan = repository.getPlan(planId).first()
-                        )
+                        ) }
                         // todo: set planId as currentPlan
                     }
                 }

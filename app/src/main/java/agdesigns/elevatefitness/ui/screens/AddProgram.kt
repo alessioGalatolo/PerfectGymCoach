@@ -31,6 +31,7 @@ import agdesigns.elevatefitness.ui.components.InsertNameDialog
 import agdesigns.elevatefitness.ui.components.WorkoutCard
 import agdesigns.elevatefitness.viewmodels.ProgramsEvent
 import agdesigns.elevatefitness.viewmodels.ProgramsViewModel
+import androidx.compose.runtime.*
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -46,25 +47,26 @@ fun AddProgram(
     openDialogNow: Boolean = false,
     viewModel: ProgramsViewModel = hiltViewModel()
 ) {
+    val addProgramState by viewModel.state.collectAsState()
     viewModel.onEvent(ProgramsEvent.GetPrograms(planId))
     InsertNameDialog(
         prompt = "Name of the new program",
-        dialogueIsOpen = viewModel.state.value.openAddProgramDialog,
+        dialogueIsOpen = addProgramState.openAddProgramDialog,
         toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog) },
         insertName = { programName ->
             viewModel.onEvent(ProgramsEvent.AddProgram(WorkoutProgram(
                 extPlanId = planId,
                 name = programName,
-                orderInWorkoutPlan = viewModel.state.value.programs.size
+                orderInWorkoutPlan = addProgramState.programs.size
             ))) }
     )
     InsertNameDialog(
         prompt = "New name of the program",
-        dialogueIsOpen = viewModel.state.value.openChangeNameDialog,
+        dialogueIsOpen = addProgramState.openChangeNameDialog,
         toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
         insertName = { viewModel.onEvent(ProgramsEvent.RenameProgram(
             WorkoutProgramRename(
-                programId = viewModel.state.value.programToBeChanged,
+                programId = addProgramState.programToBeChanged,
                 name = it
             )
         )) }
@@ -110,7 +112,7 @@ fun AddProgram(
                 )
             }
         }, content = { innerPadding ->
-            if (viewModel.state.value.programs.isEmpty()) {
+            if (addProgramState.programs.isEmpty()) {
                 // if you have no programs
                 Column(
                     modifier = Modifier
@@ -136,7 +138,7 @@ fun AddProgram(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = innerPadding
                 ) {
-                    itemsIndexed(items = viewModel.state.value.programs, key = { _, it -> it.programId }) { index, programEntry ->
+                    itemsIndexed(items = addProgramState.programs, key = { _, it -> it.programId }) { index, programEntry ->
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -148,7 +150,7 @@ fun AddProgram(
                                 IconButton(onClick = {
                                     viewModel.onEvent(ProgramsEvent.ReorderProgram(listOf(
                                         WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan-1),
-                                        WorkoutProgramReorder(viewModel.state.value.programs[index-1].programId, programEntry.orderInWorkoutPlan)
+                                        WorkoutProgramReorder(addProgramState.programs[index-1].programId, programEntry.orderInWorkoutPlan)
                                     )))
                                 }, enabled = index > 0) {
                                     Icon(Icons.Default.ArrowUpward, "Move program up (changing its order in the plan)")
@@ -159,15 +161,15 @@ fun AddProgram(
                                 IconButton(onClick = {
                                     viewModel.onEvent(ProgramsEvent.ReorderProgram(listOf(
                                         WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan+1),
-                                        WorkoutProgramReorder(viewModel.state.value.programs[index+1].programId, programEntry.orderInWorkoutPlan)
-                                    ))) }, enabled = index+1 < viewModel.state.value.programs.size) {
+                                        WorkoutProgramReorder(addProgramState.programs[index+1].programId, programEntry.orderInWorkoutPlan)
+                                    ))) }, enabled = index+1 < addProgramState.programs.size) {
                                     Icon(Icons.Default.ArrowDownward, "Move program down (changing its order in the plan)")
                                 }
                             }
                             WorkoutCard(
                                 navigator = navigator,
                                 program = programEntry,
-                                viewModel.state.value.exercisesAndInfo[programEntry.programId]
+                                addProgramState.exercisesAndInfo[programEntry.programId]
                                     ?: emptyList(),
                                 onCardClick = { _ -> // FIXME: unused arg because we need it to animate. Either use it or change function
                                     navigator.navigate(

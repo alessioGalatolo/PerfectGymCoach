@@ -11,6 +11,10 @@ import agdesigns.elevatefitness.data.workout_program.WorkoutProgramRename
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgramReorder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -41,8 +45,8 @@ sealed class ProgramsEvent{
 
 @HiltViewModel
 class ProgramsViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(ProgramsState())
-    val state: State<ProgramsState> = _state
+    private val _state = MutableStateFlow(ProgramsState())
+    val state: StateFlow<ProgramsState> = _state.asStateFlow()
 
     private var getProgramsJob: Job? = null
     private var getProgramExercisesJob: Job? = null
@@ -52,16 +56,16 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
             is ProgramsEvent.GetPrograms -> {
                 getProgramsJob?.cancel()
                 getProgramsJob = viewModelScope.launch {
-                    repository.getPrograms(event.planId).collect {
-                        _state.value = state.value.copy(
-                            programs = it.sortedBy { prog -> prog.orderInWorkoutPlan }
-                        )
+                    repository.getPrograms(event.planId).collect { programs ->
+                        _state.update { it.copy(
+                            programs = programs.sortedBy { prog -> prog.orderInWorkoutPlan }
+                        ) }
                         getProgramExercisesJob?.cancel()
                         getProgramExercisesJob = this.launch {
-                            repository.getProgramExercisesAndInfo(it.map { prg -> prg.programId }).collect{ exList ->
-                                _state.value = state.value.copy(
+                            repository.getProgramExercisesAndInfo(programs.map { prg -> prg.programId }).collect{ exList ->
+                                _state.update { it.copy(
                                     exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }  // FIXME: should sort each list
-                                )
+                                ) }
                             }
                         }
                     }
@@ -73,15 +77,15 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                 }
             }
             is ProgramsEvent.ToggleAddProgramDialog -> {
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     openAddProgramDialog = !state.value.openAddProgramDialog
-                )
+                ) }
             }
             is ProgramsEvent.ToggleChangeNameDialog -> {
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     openChangeNameDialog = !state.value.openChangeNameDialog,
                     programToBeChanged = event.programId
-                )
+                ) }
 
             }
             is ProgramsEvent.RenameProgram -> {

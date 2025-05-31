@@ -75,9 +75,10 @@ fun AddWorkoutPlan(
     openDialogNow: Boolean = false,
     viewModel: PlansViewModel = hiltViewModel()
 ) {
+    val addWorkoutState by viewModel.state.collectAsState()
     InsertNameDialog(
         prompt = "Name of the new plan",
-        dialogueIsOpen = viewModel.state.value.openAddPlanDialogue,
+        dialogueIsOpen = addWorkoutState.openAddPlanDialogue,
         toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
         insertName = {
             planName -> viewModel.onEvent(
@@ -129,7 +130,7 @@ fun AddWorkoutPlan(
                 )
             }
         }) { innerPadding ->
-        if (viewModel.state.value.workoutPlanMapPrograms.isEmpty()) {
+        if (addWorkoutState.workoutPlanMapPrograms.isEmpty()) {
             // if you have no plans
             Column(
                 modifier = Modifier
@@ -155,7 +156,7 @@ fun AddWorkoutPlan(
                 contentPadding = innerPadding,
                 modifier = Modifier.padding(horizontal=16.dp)
             ) {
-                itemsIndexed(items = viewModel.state.value.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
+                itemsIndexed(items = addWorkoutState.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
                 { index, plan ->
                     if (index == 0){
                         Text("Current plan", fontWeight = FontWeight.Bold)
@@ -169,7 +170,7 @@ fun AddWorkoutPlan(
                         navigator = navigator,
                         plan = plan.first,
                         programs = plan.second,
-                        currentPlanId = viewModel.state.value.currentPlanId,
+                        currentPlanId = addWorkoutState.currentPlanId,
                         setAsCurrent = {
                             viewModel.onEvent(PlansEvent.SetCurrentPlan(it))
                             scope.launch {
@@ -201,9 +202,9 @@ fun AddWorkoutPlan(
                         }
                     }
                 }
-                if (viewModel.state.value.archivedPlans.isNotEmpty()) {
+                if (addWorkoutState.archivedPlans.isNotEmpty()) {
                     item {
-                        if (viewModel.state.value.workoutPlanMapPrograms.size <= 1) {
+                        if (addWorkoutState.workoutPlanMapPrograms.size <= 1) {
                             Column (Modifier.fillMaxWidth()){
                                 Text("Other plans", fontWeight = FontWeight.Bold)
                             }

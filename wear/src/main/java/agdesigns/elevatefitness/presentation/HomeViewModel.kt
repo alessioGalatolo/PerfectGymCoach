@@ -10,9 +10,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -46,8 +50,8 @@ sealed class HomeEvent {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(private val repository: WearRepository): ViewModel() {
-    private val _state = mutableStateOf(HomeState())
-    val state: State<HomeState> = _state
+    private val _state = MutableStateFlow(HomeState())
+    val state: StateFlow<HomeState> = _state.asStateFlow()
     private var timerJob: Job? = null
 
     init {
@@ -61,27 +65,30 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                     exerciseIncrement = state.value.exerciseIncrement  // FIXME: sometimes arrives 0, why?
                 }
                 Log.d("HomeViewModel", "got wear workout: $workout")
-                _state.value = state.value.copy(
-                    exerciseName = workout.exerciseName ?: state.value.exerciseName,
-                    setsDone = workout.setsDone ?: state.value.setsDone,
-                    reps = reps,
-                    weight = workout.weight ?: state.value.weight,
-                    rest = workout.rest ?: state.value.rest,
-                    note = workout.note ?: state.value.note,
-                    restTimestamp = workout.restTimestamp?.let {
-                        ZonedDateTime.ofInstant(
-                            Instant.ofEpochMilli(it),
-                            ZoneId.systemDefault()
-                        ) } ?: state.value.restTimestamp,
-                    currentReps = currentReps,
-                    exerciseIncrement = exerciseIncrement,
-                    nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName
-                )
+                _state.update {
+                    it.copy(
+                        exerciseName = workout.exerciseName ?: state.value.exerciseName,
+                        setsDone = workout.setsDone ?: state.value.setsDone,
+                        reps = reps,
+                        weight = workout.weight ?: state.value.weight,
+                        rest = workout.rest ?: state.value.rest,
+                        note = workout.note ?: state.value.note,
+                        restTimestamp = workout.restTimestamp?.let {
+                            ZonedDateTime.ofInstant(
+                                Instant.ofEpochMilli(it),
+                                ZoneId.systemDefault()
+                            )
+                        } ?: state.value.restTimestamp,
+                        currentReps = currentReps,
+                        exerciseIncrement = exerciseIncrement,
+                        nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName
+                    )
+                }
             }
         }
         viewModelScope.launch {
-            repository.observeWearImage().collect {
-                _state.value = state.value.copy(imageBitmap = it)
+            repository.observeWearImage().collect { image ->
+                _state.update { it.copy(imageBitmap = image) }
             }
         }
         viewModelScope.launch {
@@ -107,15 +114,15 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
         when (event) {
             is HomeEvent.ResetRest -> {
                 viewModelScope.launch {
-                    _state.value = state.value.copy(restTimestamp = ZonedDateTime.now())
+                    _state.update { it.copy(restTimestamp = ZonedDateTime.now()) }
                 }
             }
             is HomeEvent.ChangeReps -> {
-                _state.value = state.value.copy(currentReps = state.value.currentReps + event.change)
+                _state.update { it.copy(currentReps = state.value.currentReps + event.change) }
             }
             is HomeEvent.ChangeWeight -> {
                 val deincrement = state.value.exerciseIncrement * event.change
-                _state.value = state.value.copy(weight = state.value.weight + deincrement)
+                _state.update { it.copy(weight = state.value.weight + deincrement) }
             }
             is HomeEvent.CompleteSet -> {
                 viewModelScope.launch {
@@ -147,7 +154,7 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 delay(100)
             }
         }.onEach {
-            _state.value = state.value.copy(currentTime = ZonedDateTime.now())
+            _state.update { it.copy(currentTime = ZonedDateTime.now()) }
         }.launchIn(viewModelScope)
     }
 }

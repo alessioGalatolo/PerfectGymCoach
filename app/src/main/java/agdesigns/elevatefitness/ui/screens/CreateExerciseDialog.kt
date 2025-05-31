@@ -35,6 +35,7 @@ fun CreateExerciseDialog(
     navigator: DestinationsNavigator,
     viewModel: CreateExerciseViewModel = hiltViewModel()
 ) {
+    val exerciseState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -79,7 +80,7 @@ fun CreateExerciseDialog(
                     .fillMaxWidth()){
                 item {
                     OutlinedTextField(
-                        value = viewModel.state.value.name,
+                        value = exerciseState.name,
                         onValueChange = { viewModel.onEvent(CreateExerciseEvent.UpdateName(it)) },
                         label = { Text("Enter exercise name")},
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
@@ -98,7 +99,7 @@ fun CreateExerciseDialog(
                                     .fillMaxWidth()
                                     .height(56.dp)
                                     .selectable(
-                                        selected = (text == viewModel.state.value.equipment.equipmentName),
+                                        selected = (text == exerciseState.equipment.equipmentName),
                                         onClick = { viewModel.onEvent(CreateExerciseEvent.UpdateEquipment(
                                             Exercise.Equipment.entries[index+1]
                                         )) },
@@ -108,7 +109,7 @@ fun CreateExerciseDialog(
                                 verticalAlignment = CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = (text == viewModel.state.value.equipment.equipmentName),
+                                    selected = (text == exerciseState.equipment.equipmentName),
                                     onClick = null // null recommended for accessibility with screenreaders
                                 )
                                 Text(
@@ -130,7 +131,7 @@ fun CreateExerciseDialog(
                                         .fillMaxWidth()
                                         .height(56.dp)
                                         .selectable(
-                                            selected = (text == viewModel.state.value.difficulty.difficulty),
+                                            selected = (text == exerciseState.difficulty.difficulty),
                                             onClick = { viewModel.onEvent(CreateExerciseEvent.UpdateDifficulty(
                                                 Exercise.ExerciseDifficulty.entries[index]
                                             )) },
@@ -140,7 +141,7 @@ fun CreateExerciseDialog(
                                     verticalAlignment = CenterVertically
                                 ) {
                                     RadioButton(
-                                        selected = (text == viewModel.state.value.difficulty.difficulty),
+                                        selected = (text == exerciseState.difficulty.difficulty),
                                         onClick = null // null recommended for accessibility with screenreaders
                                     )
                                     Text(
@@ -163,7 +164,7 @@ fun CreateExerciseDialog(
                                         .fillMaxWidth()
                                         .height(56.dp)
                                         .selectable(
-                                            selected = (text == viewModel.state.value.primaryMuscle.muscleName),
+                                            selected = (text == exerciseState.primaryMuscle.muscleName),
                                             onClick = { viewModel.onEvent(CreateExerciseEvent.UpdatePrimaryMuscle(
                                                 Exercise.Muscle.entries[index+1]
                                             )) },
@@ -173,7 +174,7 @@ fun CreateExerciseDialog(
                                     verticalAlignment = CenterVertically
                                 ) {
                                     RadioButton(
-                                        selected = (text == viewModel.state.value.primaryMuscle.muscleName),
+                                        selected = (text == exerciseState.primaryMuscle.muscleName),
                                         onClick = null // null recommended for accessibility with screenreaders
                                     )
                                     Text(
@@ -196,7 +197,7 @@ fun CreateExerciseDialog(
                                         .fillMaxWidth()
                                         .height(56.dp)
                                         .selectable(
-                                            selected = viewModel.state.value.secondaryMuscles[index],
+                                            selected = exerciseState.secondaryMuscles[index],
                                             onClick = { viewModel.onEvent(CreateExerciseEvent.ToggleSecondaryMuscle(index)) },
                                             role = Role.RadioButton
                                         )
@@ -204,7 +205,7 @@ fun CreateExerciseDialog(
                                     verticalAlignment = CenterVertically
                                 ) {
                                     Checkbox (
-                                        checked = viewModel.state.value.secondaryMuscles[index],
+                                        checked = exerciseState.secondaryMuscles[index],
                                         onCheckedChange = {
                                             viewModel.onEvent(
                                                 CreateExerciseEvent.UpdateSecondaryMuscle(it, index)

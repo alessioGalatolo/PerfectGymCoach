@@ -55,7 +55,7 @@ fun AddExerciseDialog(
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
-
+    val addExerciseState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -77,7 +77,7 @@ fun AddExerciseDialog(
     ResetExerciseProbabilityDialog(
         dialogIsOpen = resetProbabilityDialogOpen,
         toggleDialog = { resetProbabilityDialogOpen = !resetProbabilityDialogOpen },
-        resetExercise = { viewModel.onEvent(AddExerciseEvent.ResetProbability(viewModel.state.value.exercise!!.exerciseId)) },
+        resetExercise = { viewModel.onEvent(AddExerciseEvent.ResetProbability(addExerciseState.exercise!!.exerciseId)) },
         resetAllExercises = { viewModel.onEvent(AddExerciseEvent.ResetProbability()) }
     )
 
@@ -87,7 +87,7 @@ fun AddExerciseDialog(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            TopAppBar(title = { Text(viewModel.state.value.exercise?.name ?: "") },
+            TopAppBar(title = { Text(addExerciseState.exercise?.name ?: "") },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
@@ -125,7 +125,7 @@ fun AddExerciseDialog(
                     }
                 })
         }, content = { innerPadding ->
-            if (viewModel.state.value.exercise != null) {
+            if (addExerciseState.exercise != null) {
                 LazyColumn(
                     contentPadding = innerPadding,
                     modifier = Modifier
@@ -134,7 +134,7 @@ fun AddExerciseDialog(
                 ) {
                     item {
                         AsyncImage(
-                            viewModel.state.value.exercise!!.image,
+                            addExerciseState.exercise!!.image,
                             "Exercise image",
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -152,7 +152,7 @@ fun AddExerciseDialog(
                         ) {
                             Icon(Icons.Default.AutoAwesome, "Magic generation")
                             Spacer(Modifier.width(8.dp))
-                            val currentProbability = viewModel.state.value.exercise!!.probability
+                            val currentProbability = addExerciseState.exercise!!.probability
                             Text("Current probability: %.2f".format(currentProbability))
                             TextButton(onClick = { resetProbabilityDialogOpen = true }) {
                                 Text("Reset")
@@ -165,7 +165,7 @@ fun AddExerciseDialog(
                     }
                     item {
                         OutlinedTextField(
-                            value = viewModel.state.value.note,
+                            value = addExerciseState.note,
                             onValueChange = { viewModel.onEvent(AddExerciseEvent.UpdateNotes(it)) },
                             label = { Text("Notes (optional)") },
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
@@ -174,7 +174,7 @@ fun AddExerciseDialog(
                                 .padding(horizontal = 16.dp)
                         )
                     }
-                    if (viewModel.state.value.exercise!!.variations.isNotEmpty()) {
+                    if (addExerciseState.exercise!!.variations.isNotEmpty()) {
                         item {
                             Row(
                                 modifier = Modifier
@@ -192,7 +192,7 @@ fun AddExerciseDialog(
                                 ) {
                                     OutlinedTextField(
                                         readOnly = true,
-                                        value = viewModel.state.value.variation,
+                                        value = addExerciseState.variation,
                                         singleLine = true,
                                         onValueChange = {
                                             viewModel.onEvent(
@@ -217,7 +217,7 @@ fun AddExerciseDialog(
                                         onDismissRequest = { expanded.value = false },
                                     ) {
                                         // TODO: add "add variation" to create a variation of the exercise
-                                        viewModel.state.value.exercise!!.variations.plus("No variation")
+                                        addExerciseState.exercise!!.variations.plus("No variation")
                                             .forEach { selectionOption ->
                                                 DropdownMenuItem(
                                                     text = { Text(selectionOption) },
@@ -251,16 +251,16 @@ fun AddExerciseDialog(
                             ) {
                                 TextFieldWithButtons(
                                     prompt = "Sets",
-                                    text = { viewModel.state.value.sets },
+                                    text = { addExerciseState.sets },
                                     onNewText = { viewModel.onEvent(AddExerciseEvent.UpdateSets(it)) },
                                     onIncrement = {
                                         viewModel.onEvent(AddExerciseEvent.UpdateSets(
-                                            viewModel.state.value.sets.toIntOrNull()?.plus(1).toString()
+                                            addExerciseState.sets.toIntOrNull()?.plus(1).toString()
                                         ))
                                     },
                                     onDecrement = {
                                         viewModel.onEvent(AddExerciseEvent.UpdateSets(
-                                            viewModel.state.value.sets.toIntOrNull()?.minus(1).toString()
+                                            addExerciseState.sets.toIntOrNull()?.minus(1).toString()
                                         ))
                                     },
                                     contentDescription = "Sets"
@@ -273,13 +273,13 @@ fun AddExerciseDialog(
                                 Text("Advanced sets")
                                 Spacer(Modifier.width(8.dp))
                                 Switch(
-                                    checked = viewModel.state.value.advancedSets,
+                                    checked = addExerciseState.advancedSets,
                                     onCheckedChange = { viewModel.onEvent(AddExerciseEvent.ToggleAdvancedSets) }
                                 )
                             }
                         }
                     }
-                    if (!viewModel.state.value.advancedSets) {
+                    if (!addExerciseState.advancedSets) {
                         item {
                             Row(
                                 modifier = Modifier
@@ -295,7 +295,7 @@ fun AddExerciseDialog(
                                     MyDropdownMenu(
                                         prompt = "Reps" + "*",  // FIXME: why is there a star?
                                         options = (1..12).map { "$it" },
-                                        text = viewModel.state.value.reps,
+                                        text = addExerciseState.reps,
                                         onTextChange = { if (it.toIntOrNull() != null) viewModel.onEvent(AddExerciseEvent.UpdateReps(it)) },
                                         keyboardType = KeyboardType.Number
                                     )
@@ -312,7 +312,7 @@ fun AddExerciseDialog(
                                     MyDropdownMenu(
                                         prompt = "Rest" + "*",
                                         options = (15..120 step 15).map { "$it" },
-                                        text = viewModel.state.value.rest,
+                                        text = addExerciseState.rest,
                                         onTextChange = { if (it.toIntOrNull() != null) viewModel.onEvent(AddExerciseEvent.UpdateRest(it)) },
                                         keyboardType = KeyboardType.Number
                                     ) {
@@ -328,7 +328,7 @@ fun AddExerciseDialog(
                         item {
                             Spacer(Modifier.height(16.dp))
                         }
-                        itemsIndexed(items = viewModel.state.value.repsArray, { i, _ -> i }) { index, reps ->
+                        itemsIndexed(items = addExerciseState.repsArray, { i, _ -> i }) { index, reps ->
                             Row(
                                 verticalAlignment = CenterVertically,
                                 modifier = Modifier
@@ -366,7 +366,7 @@ fun AddExerciseDialog(
                                     MyDropdownMenu(
                                         prompt = "Rest" + "*" + " ${index+1}",
                                         options = (15..120 step 15).map { "$it" },
-                                        text = viewModel.state.value.restArray[index],
+                                        text = addExerciseState.restArray[index],
                                         onTextChange = {
                                             viewModel.onEvent(AddExerciseEvent.UpdateRestAtIndex(
                                                 it,

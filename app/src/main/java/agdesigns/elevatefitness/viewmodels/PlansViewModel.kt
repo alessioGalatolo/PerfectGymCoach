@@ -8,6 +8,10 @@ import agdesigns.elevatefitness.data.workout_plan.WorkoutPlan
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,8 +38,8 @@ sealed class PlansEvent{
 
 @HiltViewModel
 class PlansViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(PlansState())
-    val state: State<PlansState> = _state
+    private val _state = MutableStateFlow(PlansState())
+    val state: StateFlow<PlansState> = _state.asStateFlow()
 
     private fun updatePlans(
         currentPlanId: Long? = state.value.currentPlanId,
@@ -53,11 +57,11 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
                 if (plan.first.planId == currentPlanId) 1 else 0
             }
         }
-        _state.value = state.value.copy(
+        _state.update { it.copy(
             workoutPlanMapPrograms = plans,
             archivedPlans = archivedPlans,
             currentPlanId = currentPlanId
-        )
+        ) }
     }
 
     init {
@@ -81,9 +85,9 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
                 }
             }
             is PlansEvent.TogglePlanDialogue -> {
-                _state.value = state.value.copy(
+                _state.update { it.copy(
                     openAddPlanDialogue = !state.value.openAddPlanDialogue
-                )
+                ) }
             }
             is PlansEvent.SetCurrentPlan -> {
                 viewModelScope.launch{

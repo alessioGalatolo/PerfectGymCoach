@@ -9,9 +9,13 @@ import agdesigns.elevatefitness.data.exercise.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
@@ -31,8 +35,8 @@ sealed class HomeEvent{
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(HomeState())
-    val state: State<HomeState> = _state
+    private val _state = MutableStateFlow(HomeState())
+    val state: StateFlow<HomeState> = _state.asStateFlow()
 
     private var collectProgramsJob: Job? = null
     private var collectCurrentProgram: Job? = null
@@ -42,27 +46,27 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
     init {
         viewModelScope.launch {
             repository.getCurrentPlan().collect { currentPlan ->
-                _state.value = state.value.copy(currentPlan = currentPlan)
+                _state.update { it.copy(currentPlan = currentPlan) }
                 if (currentPlan != null) {
                     collectCurrentProgram?.cancel()
                     collectCurrentProgram = this.launch {
-                        repository.getPlan(currentPlan).collect {
-                            _state.value = state.value.copy(currentProgram = it.currentProgram)
+                        repository.getPlan(currentPlan).collect { currentPlan ->
+                            _state.update { it.copy(currentProgram = currentPlan.currentProgram) }
                         }
                     }
                     collectProgramsJob?.cancel()
                     collectProgramsJob = this.launch {
-                        repository.getPrograms(currentPlan).collect {
-                            _state.value = state.value.copy(
-                                programs = it.sortedBy { it1 -> it1.orderInWorkoutPlan }
-                            )
+                        repository.getPrograms(currentPlan).collect { programs ->
+                            _state.update { it.copy(
+                                programs = programs.sortedBy { it1 -> it1.orderInWorkoutPlan }
+                            ) }
                             getProgramExercisesJob?.cancel()
                             getProgramExercisesJob = this.launch {
-                                repository.getProgramExercisesAndInfo(it.map { prg -> prg.programId })
+                                repository.getProgramExercisesAndInfo(programs.map { prg -> prg.programId })
                                     .collect { exList ->
-                                        _state.value = state.value.copy(
+                                        _state.update { it.copy(
                                             exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }
-                                        )
+                                        ) }
                                     }
                             }
                         }
@@ -72,10 +76,10 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
             }
         }
         viewModelScope.launch {
-            repository.getCurrentWorkout().collect{
-                _state.value = state.value.copy(
-                    currentWorkout = it
-                )
+            repository.getCurrentWorkout().collect{ workout ->
+                _state.update { it.copy(
+                    currentWorkout = workout
+                ) }
             }
         }
         animateJob?.cancel(CancellationException("Duplicate call"))
@@ -85,7 +89,7 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
                 emit(counter++)
                 delay(2000)
             }
-        }.onEach {_state.value = state.value.copy(animationTick = state.value.animationTick+1)}
+        }.onEach {_state.update { it.copy(animationTick = it.animationTick+1)} }
             .launchIn(viewModelScope)
     }
 

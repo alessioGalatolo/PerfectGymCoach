@@ -8,6 +8,7 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.Sex
 import agdesigns.elevatefitness.data.Theme
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -54,69 +55,42 @@ sealed class ProfileEvent{
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(private val repository: Repository): ViewModel() {
-    private val _state = mutableStateOf(ProfileState())
-    val state: State<ProfileState> = _state
+    private val _state = MutableStateFlow(ProfileState())
+    val state: StateFlow<ProfileState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            repository.getUserWeight().collect {
-                _state.value = state.value.copy(weight = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getUserHeight().collect {
-                _state.value = state.value.copy(height = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getUserSex().collect {
-                _state.value = state.value.copy(sex = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getUserName().collect {
-                _state.value = state.value.copy(name = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getUserYear().collect {
-                _state.value = state.value.copy(userYear = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getImperialSystem().collect {
-                _state.value = state.value.copy(imperialSystem = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getTheme().collect {
-                _state.value = state.value.copy(theme = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getBodyweightIncrement().collect {
-                _state.value = state.value.copy(incrementBodyweight = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getBarbellIncrement().collect {
-                _state.value = state.value.copy(incrementBarbell = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getDumbbellIncrement().collect {
-                _state.value = state.value.copy(incrementDumbbell = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getMachineIncrement().collect {
-                _state.value = state.value.copy(incrementMachine = it)
-            }
-        }
-        viewModelScope.launch {
-            repository.getCableIncrement().collect {
-                _state.value = state.value.copy(incrementCable = it)
-            }
+            combine(
+                repository.getUserWeight(),
+                repository.getUserHeight(),
+                repository.getUserSex(),
+                repository.getUserName(),
+                repository.getUserYear(),
+                repository.getImperialSystem(),
+                repository.getTheme(),
+                repository.getBodyweightIncrement(),
+                repository.getBarbellIncrement(),
+                repository.getDumbbellIncrement(),
+                repository.getMachineIncrement(),
+                repository.getCableIncrement()
+            ) { values: Array<Any?> ->
+                _state.update {
+                    it.copy(
+                        weight = values[0] as Float,
+                        height = values[1] as Float,
+                        sex = values[2] as Sex,
+                        name = values[3] as String,
+                        userYear = values[4] as Int,
+                        imperialSystem = values[5] as Boolean,
+                        theme = values[6] as Theme,
+                        incrementBodyweight = values[7] as Float,
+                        incrementBarbell = values[8] as Float,
+                        incrementDumbbell = values[9] as Float,
+                        incrementMachine = values[10] as Float,
+                        incrementCable = values[11] as Float
+                    )
+                }
+            }.collect()
         }
     }
 
