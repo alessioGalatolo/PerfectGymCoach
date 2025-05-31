@@ -82,7 +82,7 @@ fun WorkoutCard(
                         modifier = Modifier.graphicsLayer {
                             shape = roundedCornersShape
                             clip = true // <- this ensures clipping is applied during transition
-                        }.then(imageModifier)) { page ->
+                        }) { page ->
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
                                 model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
@@ -92,6 +92,7 @@ fun WorkoutCard(
                                     .fillMaxWidth()
                                     .height(imageHeight)
                                     .align(Alignment.TopCenter)
+                                    .then(imageModifier)
                             )
                         }
                     }

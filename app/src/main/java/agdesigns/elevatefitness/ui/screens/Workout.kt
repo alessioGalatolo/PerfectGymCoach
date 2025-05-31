@@ -416,16 +416,7 @@ fun SharedTransitionScope.Workout(
             image = {
                 val roundedCornersShape = CardDefaults.shape
                 Box(Modifier
-                    .wrapContentHeight(Top)
-                    .graphicsLayer {
-                        shape = roundedCornersShape
-                        clip = true // <- this ensures clipping is applied during transition
-                    }
-                    .sharedElement(
-                        sharedStateImg,
-                        animatedVisibilityScope,
-                        clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
-                    ), contentAlignment = TopCenter) { // TODO: add swipe
+                    .wrapContentHeight(Top), contentAlignment = TopCenter) { // TODO: add swipe
                     AsyncImage(
                         ImageRequest.Builder(context)
                             .allowHardware(false) // pixel access is not supported on Config#HARDWARE bitmaps
@@ -444,7 +435,16 @@ fun SharedTransitionScope.Workout(
                         "Exercise image",
                         Modifier
                             .fillMaxWidth()
-                            .height(imageHeight),
+                            .height(imageHeight)
+                            .sharedBounds(
+                                sharedStateImg,
+                                animatedVisibilityScope,
+                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                            )
+                            .graphicsLayer(
+                                shape = roundedCornersShape,
+                                clip = true
+                            ),
                         contentScale = ContentScale.Crop
                     )
 
@@ -743,16 +743,7 @@ fun SharedTransitionScope.Workout(
             image = {
                 val roundedCornersShape = CardDefaults.shape
                 Box(Modifier
-                    .wrapContentHeight(Top)
-                    .graphicsLayer(
-                        shape = roundedCornersShape,
-                        clip = true // <- this ensures clipping is applied during transition
-                    )
-                    .sharedElement(
-                        sharedStateImg,
-                        animatedVisibilityScope,
-                        clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
-                    ), contentAlignment = TopCenter) {
+                    .wrapContentHeight(Top), contentAlignment = TopCenter) {
                     AsyncImage(
                         ImageRequest.Builder(context)
                             .allowHardware(false)
@@ -771,7 +762,16 @@ fun SharedTransitionScope.Workout(
                         "Exercise image",
                         Modifier
                             .fillMaxWidth()
-                            .height(imageHeight),
+                            .height(imageHeight)
+                            .sharedBounds(
+                                sharedStateImg,
+                                animatedVisibilityScope,
+                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                            )
+                            .graphicsLayer(
+                                shape = roundedCornersShape,
+                                clip = true // <- this ensures clipping is applied during transition
+                            ),
                         contentScale = ContentScale.Crop
                     )
                 }

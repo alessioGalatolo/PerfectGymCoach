@@ -176,7 +176,9 @@ fun SharedTransitionScope.Home(
                         .sharedBounds(
                             sharedContentState = imageKey,
                             animatedVisibilityScope = animatedVisibilityScope,
-                            clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                            clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
+                            // need false otherwise image is not clipped with rounded corners during transition
+                            renderInOverlayDuringTransition = false
                         ),
                     exerciseModifier = Modifier
                         .sharedBounds(
