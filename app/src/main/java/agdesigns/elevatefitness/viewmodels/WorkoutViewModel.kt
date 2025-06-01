@@ -15,6 +15,7 @@ import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
+import agdesigns.elevatefitness.ui.barbellFromWeight
 import agdesigns.elevatefitness.ui.maybeLbToKg
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -172,6 +173,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 val exerciseName = it.getString("exerciseName")
                 val weight = it.getDouble("weight").toFloat()
                 val reps = it.getInt("reps")
+                val tare = it.getDouble("tare").toFloat()
                 var exercise = state.value.workoutExercises[state.value.currentPage]
                 // FIXME: should find another way of checking this, strings may be slightly different
                 if (!exercise.name.startsWith(exerciseName))
@@ -182,10 +184,13 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     // StartWorkout is async, need to wait for it to finish
                     startWorkoutJob?.join()
                 }
+                // tare on watch is either lb or kg, but we store in kg
+                val tareKg = maybeLbToKg(tare, state.value.imperialSystem)
                 // Need to store these in state otherwise TryCompleteSet may fail
                 _state.update { it.copy(
                     repsBottomBar = reps.toString(),
-                    weightBottomBar = weight.toString()
+                    weightBottomBar = weight.toString(),
+                    tare = tareKg
                 )}
                 if (state.value.setsDone >= exercise.rest.size) {
                     // user has done all sets and is adding another one from watch
@@ -452,6 +457,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.UpdateTare -> {
                 _state.update { it.copy(tare = event.newValue) }
+                sendWorkout2Wear()
             }
             is WorkoutEvent.ResumeWorkout -> {
                 if (resumeWorkoutJob == null) {
@@ -617,9 +623,22 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 dataMapReq.dataMap.putIntegerArrayList("reps", exercise.reps as ArrayList<Int>)
                 dataMapReq.dataMap.putString("note", exercise.note)
                 dataMapReq.dataMap.putFloat("weight", state.value.weightBottomBar.toFloatOrNull() ?: 0f)
+                // is either barbell name or other (x kg/lb)
+                val tare = barbellFromWeight(state.value.tare, state.value.imperialSystem, isRecord = false, noWeight = true)
+                dataMapReq.dataMap.putString("tareBarbellName", tare)
+                dataMapReq.dataMap.putString("equipment", exercise.equipment.equipmentName)
+                // not necessary but can help verify exercise needs barbell choice
+                dataMapReq.dataMap.putBoolean("imperialSystem", state.value.imperialSystem)
                 if (state.value.restTimestamp != null)
                     dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
-
+                if (exercise.equipment == Exercise.Equipment.BARBELL) {
+                    // need to pass in the various barbell sizes
+                    val barbells = ExerciseRecord.BarbellType.entries.map { Pair(it.barbellName, it.weight[state.value.imperialSystem]) }
+                    val barbellNames = Array<String>(barbells.size) { barbells[it].first }
+                    val barbellSizes = FloatArray(barbells.size) { barbells[it].second!! }
+                    dataMapReq.dataMap.putFloatArray("barbellSizes", barbellSizes)
+                    dataMapReq.dataMap.putStringArray("barbellNames", barbellNames)
+                }
                 repository.sendWorkout2Wear(
                     dataMapReq,
                     overrideDeadWatch

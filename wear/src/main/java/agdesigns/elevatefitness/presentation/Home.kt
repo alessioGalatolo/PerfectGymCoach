@@ -2,13 +2,23 @@ package agdesigns.elevatefitness.presentation
 
 import android.content.Intent
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.with
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +30,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -54,15 +66,14 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material.Vignette
-import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.ButtonGroup
 import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
 import androidx.wear.compose.material3.EdgeButton
-import androidx.wear.compose.material3.FilledTonalIconButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButton
+import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.ScreenScaffold
@@ -99,22 +110,19 @@ fun Home(
             // FIXME: if exercise is changed then rests change then progression is weird
             val restProgression by remember {
                 derivedStateOf {
-                    if (homeState.setsDone <= homeState.rest.size)
+                    if (homeState.setsDone <= homeState.rest.size && homeState.rest.isNotEmpty()) {
                         // rest can be 0, avoid div by 0
-                        if (homeState.rest[max(0, homeState.setsDone-1)] > 0) {
+                        if (homeState.rest[max(0, homeState.setsDone - 1)] > 0) {
                             currentRestMillis?.toFloat()
                                 ?.div(homeState.rest[max(0, homeState.setsDone - 1)] * 1000)
                         } else
                             null
-                    else
+                    } else
                         null
                 }
             }
             if (homeState.imageBitmap != null) {
                 VignetteImage(homeState.imageBitmap!!.asImageBitmap())
-                Vignette(
-                    vignettePosition = VignettePosition.TopAndBottom
-                )
             }
             if ((restProgression ?: 0f) > 0f) {
                 // TODO: add vibration on counter finish
@@ -257,88 +265,125 @@ fun Home(
                                 }
                             }
                             item {
-                                Spacer(modifier = Modifier.height(12.dp))
+                                ListHeader {
+                                    Text("Reps")
+                                }
                             }
                             item {
-                                Text(
-                                    "Reps",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                            item {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    FilledTonalIconButton({
-                                        viewModel.onEvent(HomeEvent.ChangeReps(-1))
-                                    }) {
-                                        Icon(
-                                            Icons.Filled.Remove,
-                                            contentDescription = "Remove"
-                                        )
-                                    }
-                                    Text(
-                                        text = homeState.currentReps.toString(),
-                                        textAlign = TextAlign.Center,
-                                        style = MaterialTheme.typography.titleLarge
-                                    )
-                                    FilledTonalIconButton({
-                                        viewModel.onEvent(HomeEvent.ChangeReps(1))
-                                    }) {
-                                        Icon(
-                                            Icons.Filled.Add,
-                                            contentDescription = "Add"
-                                        )
+                                val interactionSource1 = remember { MutableInteractionSource() }
+                                val interactionSource3 = remember { MutableInteractionSource() }
+                                Box(contentAlignment = Alignment.Center) {
+                                    ButtonGroup(Modifier.fillMaxWidth()) {
+                                        Button(
+                                            onClick = { viewModel.onEvent(HomeEvent.ChangeReps(-1)) },
+                                            modifier = Modifier.animateWidth(interactionSource1),
+                                            interactionSource = interactionSource1
+                                        ) {
+                                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    Icons.Default.Remove,
+                                                    contentDescription = "Decrease reps"
+                                                )
+                                            }
+                                        }
+                                        Box(
+                                            Modifier.fillMaxWidth().weight(1.5f), contentAlignment = Alignment.Center
+                                        ){
+                                            Text(
+                                                homeState.currentReps.toString(),
+                                            )}
+                                        Button(
+                                            onClick = {
+                                                viewModel.onEvent(HomeEvent.ChangeReps(1))
+                                            },
+                                            modifier = Modifier.animateWidth(interactionSource3),
+                                            interactionSource = interactionSource3
+                                        ) {
+                                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = "Increase reps"
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
                             item {
-                                Text(
-                                    "Weight",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    textAlign = TextAlign.Center
-                                )
+                                ListHeader {
+                                    Text("Weight")
+                                }
                             }
                             item {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    FilledTonalIconButton({
-                                        viewModel.onEvent(HomeEvent.ChangeWeight(-1))
-                                    }) {
-                                        Icon(
-                                            Icons.Filled.Remove,
-                                            contentDescription = "Remove"
-                                        )
-                                    }
-                                    Text(
-                                        text = homeState.weight.toString(),
-                                        textAlign = TextAlign.Center,
-                                        style = MaterialTheme.typography.titleLarge
-                                    )
-                                    FilledTonalIconButton({
-                                        viewModel.onEvent(HomeEvent.ChangeWeight(1))
-                                    }) {
-                                        Icon(
-                                            Icons.Filled.Add,
-                                            contentDescription = "Add"
-                                        )
+                                val interactionSource1 = remember { MutableInteractionSource() }
+                                val interactionSource3 = remember { MutableInteractionSource() }
+                                Box(contentAlignment = Alignment.Center) {
+                                    ButtonGroup {
+                                        Button(
+                                            onClick = { viewModel.onEvent(HomeEvent.ChangeWeight(-1)) },
+                                            modifier = Modifier.animateWidth(interactionSource1),
+                                            interactionSource = interactionSource1
+                                        ) {
+                                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    Icons.Default.Remove,
+                                                    contentDescription = "Decrease weight"
+                                                )
+                                            }
+                                        }
+                                        Box(
+                                            Modifier.fillMaxWidth().weight(1.5f), contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                homeState.weight.toString(),
+                                            )
+                                        }
+                                        Button(
+                                            onClick = {
+                                                viewModel.onEvent(HomeEvent.ChangeWeight(1))
+                                            },
+                                            modifier = Modifier.animateWidth(interactionSource3),
+                                            interactionSource = interactionSource3
+                                        ) {
+                                            Box(
+                                                Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = "Increase weight"
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
-                            // TODO: if barbell should show selection
+                            if (homeState.equipment.lowercase().contains("barbell")) {
+                                item {
+                                    ListHeader {
+                                        Text("Barbell")
+                                    }
+                                }
+                                item {
+                                    ArrowSwitcher(
+                                        // FIXME: should get imperial system
+                                        items = List(homeState.barbellNames.size) { i -> "${homeState.barbellNames[i]} (${homeState.barbellSizes[i]} ${if (homeState.imperialSystem) "lb" else "kg"})"},
+                                        currentIndex = homeState.tareIndex,
+                                        onIndexChanged = { index ->
+                                            viewModel.onEvent(HomeEvent.ChangeTare(index))
+                                        }
+                                    )
+                                }
+                            }
                             if (homeState.nextExerciseName.isNotBlank()) {
                                 item {
-                                    Text(
-                                        "Next exercise: ",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        textAlign = TextAlign.Center
-                                    )
+                                    ListHeader {
+                                        Text(
+                                            "Next exercise: ",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 }
                                 item {
                                     Text(
@@ -398,5 +443,72 @@ fun VignetteImage(
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop
         )
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun ArrowSwitcher(
+//    modifier: Modifier = Modifier,
+    items: List<String>,
+    onIndexChanged: (Int) -> Unit,
+    currentIndex: Int
+) {
+    val currentItem = items[currentIndex]
+
+    Box (contentAlignment = Alignment.Center) {
+        ButtonGroup {
+            IconButton(onClick = {
+                onIndexChanged((currentIndex - 1 + items.size) % items.size)
+            }
+                ) {
+                Box(
+                    Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Previous"
+                    )
+                }
+            }
+
+            AnimatedContent(
+                targetState = currentItem,
+                transitionSpec = {
+                    if (targetState != initialState) {
+                        slideInHorizontally(initialOffsetX = { it }) + fadeIn() with
+                                slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+                    } else {
+                        EnterTransition.None with ExitTransition.None
+                    }
+                },
+                label = "Text Switch"
+            ) { text ->
+                Box(
+                    Modifier.fillMaxWidth().weight(1.5f), contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            IconButton(onClick = {
+                onIndexChanged((currentIndex + 1) % items.size)
+            }) {
+                Box(
+                    Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Next"
+                    )
+                }
+            }
+        }
     }
 }

@@ -147,6 +147,17 @@ class WearDataHandler @Inject constructor(
             updatedWorkout = updatedWorkout.copy(exerciseIncrement = dataMap.getFloat("exerciseIncrement"))
         if (dataMap.containsKey("nextExerciseName"))
             updatedWorkout = updatedWorkout.copy(nextExerciseName = dataMap.getString("nextExerciseName"))
+        if (dataMap.containsKey("equipment"))
+            updatedWorkout = updatedWorkout.copy(equipment = dataMap.getString("equipment"))
+        if (dataMap.containsKey("barbellNames"))
+            updatedWorkout = updatedWorkout.copy(barbellNames = dataMap.getStringArray("barbellNames")!!.toList())
+        if (dataMap.containsKey("barbellSizes"))
+            updatedWorkout = updatedWorkout.copy(barbellSizes = dataMap.getFloatArray("barbellSizes")!!.toList())
+        if (dataMap.containsKey("imperialSystem"))
+            updatedWorkout = updatedWorkout.copy(imperialSystem = dataMap.getBoolean("imperialSystem"))
+        if (dataMap.containsKey("tareBarbellName"))
+            updatedWorkout = updatedWorkout.copy(tareBarbellName = dataMap.getString("tareBarbellName"))
+
         return updatedWorkout
     }
 

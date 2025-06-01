@@ -51,12 +51,13 @@ class WearRepository @Inject constructor(
 
     fun isPhoneAlive(): Flow<Boolean> = _isPhoneAlive.asStateFlow()
 
-    fun completeSet(exerciseName: String, reps: Int, weight: Float) {
+    fun completeSet(exerciseName: String, reps: Int, weight: Float, tare: Float) {
         // from a view model
         val message = JSONObject()
         message.put("exerciseName", exerciseName)
         message.put("reps", reps)
         message.put("weight", weight.toDouble())
+        message.put("tare", tare.toDouble())
 
         val nodes = Wearable.getNodeClient(context).connectedNodes
         nodes.addOnSuccessListener {

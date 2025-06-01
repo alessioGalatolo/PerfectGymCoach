@@ -60,13 +60,24 @@ fun maybeLbToKg(weight: Float, useImperial: Boolean): Float {
     return weight / 2.20462f
 }
 
-fun barbellFromWeight(weight: Float, useImperial: Boolean, isRecord: Boolean): String {
+fun barbellFromWeight(
+    weight: Float,
+    useImperial: Boolean,
+    isRecord: Boolean,
+    noWeight: Boolean = false  // will skip (20.0 kg) unless custom value
+): String {
     if (weight == 0f && !isRecord)
         return ExerciseRecord.BarbellType.OTHER.barbellName + "..."
-    return (ExerciseRecord.BarbellType.entries.find {
+    var barbellName = ExerciseRecord.BarbellType.entries.find {
         it.weight[false] == weight ||
                 it.weight[true] == maybeKgToLb(weight, true)
     }?.barbellName
-        ?: ExerciseRecord.BarbellType.OTHER.barbellName) +
-            " (${maybeKgToLb(weight, useImperial)} ${if (useImperial) "lb" else "kg"})"
+    if (barbellName == null) {
+        // return weight in any case
+        barbellName = ExerciseRecord.BarbellType.OTHER.barbellName
+        return barbellName + " (${maybeKgToLb(weight, useImperial)} ${if (useImperial) "lb" else "kg"})"
+    }
+    if (noWeight)
+        return barbellName
+    return barbellName + " (${maybeKgToLb(weight, useImperial)} ${if (useImperial) "lb" else "kg"})"
 }

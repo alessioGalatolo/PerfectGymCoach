@@ -36,7 +36,12 @@ data class HomeState(
     val currentReps: Int = 0,
     val exerciseIncrement: Float = 0.5f,
     val nextExerciseName: String = "",
-    val imageBitmap: Bitmap? = null
+    val imageBitmap: Bitmap? = null,
+    val equipment: String = "",
+    val barbellNames: List<String> = emptyList(),
+    val barbellSizes: List<Float> = emptyList(),
+    val tareIndex: Int = 0,
+    val imperialSystem: Boolean = false
 )
 
 sealed class HomeEvent {
@@ -45,6 +50,7 @@ sealed class HomeEvent {
     data class ChangeWeight(val change: Int): HomeEvent()
     data object CompleteSet: HomeEvent()
     data object ForceSync: HomeEvent()
+    data class ChangeTare(val newIndex: Int): HomeEvent()
 }
 
 
@@ -64,6 +70,19 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 if (exerciseIncrement == 0f) {
                     exerciseIncrement = state.value.exerciseIncrement  // FIXME: sometimes arrives 0, why?
                 }
+                var tareIndex: Int? = null
+                var barbellSizes: List<Float>? = workout.barbellSizes
+                if (workout.tareBarbellName != null && workout.barbellNames != null) {
+                    tareIndex = workout.barbellNames.indexOf(workout.tareBarbellName)
+                    if (tareIndex == -1) {
+                        // is other, format is "Other (number kg/lb)" extract number
+                        val regex = Regex("""Other \((\d+(\.\d+)?)""")
+                        val match = regex.find(workout.tareBarbellName)
+                        val number = match?.groupValues?.get(1)?.toFloatOrNull() ?: 0f
+                        barbellSizes = barbellSizes!!.dropLast(1).plus(number)
+                        tareIndex = barbellSizes!!.indexOf(number)
+                    }
+                }
                 Log.d("HomeViewModel", "got wear workout: $workout")
                 _state.update {
                     it.copy(
@@ -81,7 +100,12 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                         } ?: state.value.restTimestamp,
                         currentReps = currentReps,
                         exerciseIncrement = exerciseIncrement,
-                        nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName
+                        nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName,
+                        equipment = workout.equipment ?: state.value.equipment,
+                        barbellNames = workout.barbellNames ?: state.value.barbellNames,
+                        barbellSizes = barbellSizes ?: state.value.barbellSizes,
+                        tareIndex = tareIndex ?: state.value.tareIndex,
+                        imperialSystem = workout.imperialSystem ?: state.value.imperialSystem
                     )
                 }
             }
@@ -126,10 +150,14 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
             }
             is HomeEvent.CompleteSet -> {
                 viewModelScope.launch {
+                    val tare = if (state.value.equipment.lowercase().contains("barbell"))
+                        state.value.barbellSizes[state.value.tareIndex]
+                    else 0f
                     repository.completeSet(
                         state.value.exerciseName,
                         state.value.currentReps,
-                        state.value.weight
+                        state.value.weight,
+                        tare
                     )
                 }
 
@@ -138,6 +166,9 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 viewModelScope.launch {
                     repository.forceSync()
                 }
+            }
+            is HomeEvent.ChangeTare -> {
+                _state.update { it.copy(tareIndex = event.newIndex) }
             }
 
         }

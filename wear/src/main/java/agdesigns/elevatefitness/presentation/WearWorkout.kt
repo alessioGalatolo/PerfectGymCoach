@@ -12,4 +12,9 @@ data class WearWorkout(
     val restTimestamp: Long? = null,
     val exerciseIncrement: Float? = null,
     val nextExerciseName: String? = null,
+    val equipment: String? = null,
+    val barbellNames: List<String>? = null,
+    val barbellSizes: List<Float>? = null,
+    val imperialSystem: Boolean? = null,
+    val tareBarbellName: String? = null
 )
