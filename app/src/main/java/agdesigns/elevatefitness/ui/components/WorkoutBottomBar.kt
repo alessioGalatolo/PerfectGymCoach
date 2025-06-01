@@ -83,7 +83,8 @@ fun WorkoutBottomBar(
                     onNewText = { new -> updateReps(new) },
                     onIncrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) + 1).toString()) },
                     onDecrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) - 1).toString()) },
-                    contentDescription = "reps"
+                    contentDescription = "reps",
+                    textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true}
                 )
                 Spacer(Modifier.width(8.dp))
                 TextFieldWithButtons(
@@ -100,7 +101,8 @@ fun WorkoutBottomBar(
                         currentExercise.equipment,
                         true
                     )},
-                    contentDescription = "weight"
+                    contentDescription = "weight",
+                    textIsValid = { it.toFloatOrNull() != null }
                 )
             }
 
@@ -132,6 +134,7 @@ fun RowScope.TextFieldWithButtons(
     onNewText: (String) -> Unit,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
+    textIsValid: (String) -> Boolean = { true },
     contentDescription: String = ""
 ) {
     Row(verticalAlignment = Alignment.CenterVertically,
@@ -148,6 +151,7 @@ fun RowScope.TextFieldWithButtons(
             singleLine = true,
             label = { Text(prompt) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = !textIsValid(text()),
             modifier = Modifier
                 .widthIn(1.dp, Dp.Infinity)
                 .heightIn(1.dp, Dp.Infinity)

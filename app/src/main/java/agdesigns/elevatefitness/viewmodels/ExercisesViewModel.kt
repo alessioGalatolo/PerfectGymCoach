@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.exercise.*
+import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,9 @@ import javax.inject.Inject
 data class ExercisesState(
     val programExercisesAndInfo: List<ProgramExerciseAndInfo> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
+    val equipToFiler: Exercise.Equipment = Exercise.Equipment.EVERYTHING,  // store request to filter
     val exercisesFilterEquip: List<Exercise>? = null,
+    val searchQuery: String = "",  // store request to search
     val exercisesToDisplay: List<Exercise>? = null,
 )
 
@@ -49,8 +52,6 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
 
     private var getExercisesJob: Job? = null
     private var getProgramExercisesJob: Job? = null
-    private var searchJob: Job? = null
-    private var filterJob: Job? = null
 
     fun onEvent(event: ExercisesEvent){
         when (event) {
@@ -60,6 +61,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                 }
             }
             is ExercisesEvent.GetProgramExercises -> {
+                // FIXME: It is very confusing to have a viewmodel for multiple screens, should really split these...
                 getProgramExercisesJob?.cancel()
                 getProgramExercisesJob = viewModelScope.launch {
                     repository.getProgramExercisesAndInfo(event.programId).collect { programExercisesAndInfo ->
@@ -75,32 +77,36 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                     repository.getExercises(event.muscle).collect {
                         val sorted = it.sortedBy { ex -> ex.name }
                         _state.update { it.copy(
-                            exercises = sorted,
-                            exercisesFilterEquip = state.value.exercisesFilterEquip ?: sorted,
-                            exercisesToDisplay = state.value.exercisesToDisplay ?: sorted
+                            exercises = sorted
                         ) }
+                        // got new exercises, now re-apply equip filter
+                        onEvent(ExercisesEvent.FilterExerciseEquipment(state.value.equipToFiler))
+                        onEvent(ExercisesEvent.FilterExercise(state.value.searchQuery))
                     }
                 }
             }
-            is ExercisesEvent.FilterExercise -> {
-                searchJob?.cancel()
-                searchJob = viewModelScope.launch {  // TODO: improve search
-                    _state.update { it.copy(exercisesToDisplay = it.exercisesFilterEquip!!.filter { ex ->
-                        ex.name.contains(event.query, ignoreCase = true)
-                                || ex.primaryMuscle.muscleName.contains(event.query, ignoreCase = true)
-                                || ex.variations.any { it1 -> it1.contains(event.query, ignoreCase = true) }
-                                || ex.equipment.equipmentName.contains(event.query, ignoreCase = true)
-                                || ex.secondaryMuscles.any { it1 -> it1.muscleName.contains(event.query, ignoreCase = true) }
-                    }) }
-                }
-            }
             is ExercisesEvent.FilterExerciseEquipment -> {
-                // FIXME: if search, than change equipment, initial search is lost
                 val filtered = state.value.exercises.filter {
                     event.query == Exercise.Equipment.EVERYTHING || it.equipment == event.query
                 }
-                _state.update { it.copy(exercisesFilterEquip = filtered,
-                    exercisesToDisplay = filtered) }
+                _state.update { it.copy(
+                    exercisesFilterEquip = filtered,
+                    exercisesToDisplay = filtered,
+                    equipToFiler = event.query
+                ) }
+                onEvent(ExercisesEvent.FilterExercise(state.value.searchQuery))
+
+            }
+            is ExercisesEvent.FilterExercise -> {
+                _state.update { it.copy(
+                    searchQuery = event.query,
+                    exercisesToDisplay = it.exercisesFilterEquip?.filter { ex ->
+                    ex.name.contains(event.query, ignoreCase = true)
+                            || ex.primaryMuscle.muscleName.contains(event.query, ignoreCase = true)
+                            || ex.variations.any { it1 -> it1.contains(event.query, ignoreCase = true) }
+                            || ex.equipment.equipmentName.contains(event.query, ignoreCase = true)
+                            || ex.secondaryMuscles.any { it1 -> it1.muscleName.contains(event.query, ignoreCase = true) }
+                })}
             }
             is ExercisesEvent.ReorderExercises -> {
                 // TODO: check that doesn't break supersets (probably does)

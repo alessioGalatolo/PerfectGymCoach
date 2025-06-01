@@ -19,7 +19,6 @@ data class Exercise(
     val difficulty: ExerciseDifficulty = ExerciseDifficulty.INTERMEDIATE,
     val probability: Double = 1.0, // weight used when randomly selecting exercises
     val variations: List<String> = emptyList()
-
 ) : Parcelable {
     enum class Muscle (val muscleName: String, val image: Int){
         EVERYTHING("See all", R.drawable.full_body), // Used when filtering by muscle to get everything

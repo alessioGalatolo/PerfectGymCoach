@@ -137,7 +137,11 @@ fun SharedTransitionScope.Home(
         && homeState.currentProgram != null
     ) {
         LazyColumn(Modifier.padding(horizontal = 16.dp)){
-            val currentProgram = homeState.programs!![homeState.currentProgram!!]
+            var currentProgram = homeState.programs?.getOrNull(homeState.currentProgram!!)
+            // the check below should not be necessary anymore, the bug was fixed elsewhere
+            if (currentProgram == null) {
+                currentProgram = homeState.programs?.get(0)!!
+            }
             val currentExercises =
                 homeState.exercisesAndInfo[currentProgram.programId]?.sortedBy {
                     it.programExerciseId

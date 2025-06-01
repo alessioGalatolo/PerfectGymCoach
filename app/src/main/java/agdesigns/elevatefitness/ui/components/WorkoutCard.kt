@@ -113,8 +113,9 @@ fun WorkoutCard(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            exercises.forEach {
-                val modifier = if (it.name == exercises[pagerState.currentPage].name)
+            exercises.forEachIndexed { index, it ->
+                // breaks if more than one exercise has the same name
+                val modifier = if (index == pagerState.currentPage)
                     exerciseModifier
                 else Modifier
                 val exerciseText = it.name + it.variation

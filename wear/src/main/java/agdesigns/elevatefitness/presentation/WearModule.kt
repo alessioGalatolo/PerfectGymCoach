@@ -12,10 +12,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object WearModule {
 
+    @Singleton
     @Provides
     fun provideDataHandler(@ApplicationContext context: Context): WearDataHandler =
         WearDataHandler(context)
 
+    @Singleton
     @Provides
     fun provideMessageHandler(@ApplicationContext context: Context): WearMessageHandler =
         WearMessageHandler(context)

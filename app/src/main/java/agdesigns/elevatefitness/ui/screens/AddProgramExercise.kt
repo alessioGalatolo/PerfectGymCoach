@@ -187,7 +187,8 @@ fun AddProgramExercise(
                                             AddExerciseDialogDestination(
                                                 programId = exercise.extProgramId,
                                                 exerciseId = exercise.extExerciseId,
-                                                programExerciseId = exercise.programExerciseId
+                                                programExerciseId = exercise.programExerciseId,
+                                                continueAdding = false
                                             )
                                         )
                                     }
@@ -278,7 +279,8 @@ fun AddProgramExercise(
                                                     AddExerciseDialogDestination(
                                                         programId = exercise.extProgramId,
                                                         exerciseId = exercise.extExerciseId,
-                                                        programExerciseId = exercise.programExerciseId
+                                                        programExerciseId = exercise.programExerciseId,
+                                                        continueAdding = false
                                                     )
                                                 )
                                                 expanded = false

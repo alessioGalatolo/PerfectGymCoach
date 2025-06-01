@@ -35,6 +35,7 @@ fun CreateExerciseDialog(
     navigator: DestinationsNavigator,
     viewModel: CreateExerciseViewModel = hiltViewModel()
 ) {
+    // FIXME: bad ime reaction
     val exerciseState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -45,7 +46,6 @@ fun CreateExerciseDialog(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            // FIXME: goes back a second time cause the list of exercises isn't updated
             TopAppBar(title = { Text("Create a new Exercise") },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
@@ -64,8 +64,6 @@ fun CreateExerciseDialog(
                                 snackbarHostState.showSnackbar(fillString)
                             }
                         else {
-                            navigator.navigateUp()
-                            // FIXME: goes back a second time cause the list of exercises isn't updated
                             navigator.navigateUp()
                         }
                     }, modifier = Modifier.align(CenterVertically)) {

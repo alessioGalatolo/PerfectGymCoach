@@ -100,8 +100,12 @@ fun Home(
             val restProgression by remember {
                 derivedStateOf {
                     if (homeState.setsDone <= homeState.rest.size)
-                        currentRestMillis?.toFloat()
-                            ?.div(homeState.rest[max(0, homeState.setsDone-1)] * 1000)
+                        // rest can be 0, avoid div by 0
+                        if (homeState.rest[max(0, homeState.setsDone-1)] > 0) {
+                            currentRestMillis?.toFloat()
+                                ?.div(homeState.rest[max(0, homeState.setsDone - 1)] * 1000)
+                        } else
+                            null
                     else
                         null
                 }

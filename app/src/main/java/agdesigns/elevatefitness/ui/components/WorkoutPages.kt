@@ -318,7 +318,6 @@ fun ExercisePage(
                                 val toBeDone = setsDone.value <= setCount
                                 val repsInRow: String
                                 val weightInRow: String
-                                // FIXME: ongoingRecord null pointer when completing set from watch
                                 if (toBeDone || setCount >= (ongoingRecord?.reps?.size ?: 0)) {
                                     repsInRow = repsCount.toString()
                                     val currentRecord = currentExerciseRecords.firstOrNull()
@@ -408,7 +407,7 @@ fun ExercisePage(
                                     Text("Barbell used: " + barbellFromWeight(record.tare, useImperialSystem, true)
                                     )
                                 } else if (record.equipment == Exercise.Equipment.BODY_WEIGHT) {
-                                    // FIXME: bug where bodyweight = 0?
+                                    // FIXME: bug where bodyweight = 0? <- this may have been fixed with the new state update
                                     Text("Bodyweight at the time: ${maybeKgToLb(record.tare, useImperialSystem)} " + if(useImperialSystem) "lb" else "kg")
                                 }
                                 record.reps.forEachIndexed { index, rep ->

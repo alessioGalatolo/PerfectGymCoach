@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.exercise.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.data.workout_plan.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgramRename
 import agdesigns.elevatefitness.data.workout_program.WorkoutProgramReorder
@@ -14,6 +15,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -100,6 +103,20 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
             }
             is ProgramsEvent.DeleteProgram -> {
                 viewModelScope.launch {
+                    // check that currentProgram in plan is not the one we are eliminating
+                    val plan = repository.getPlan(state.value.programs[0].extPlanId!!).first()
+                    val program = state.value.programs.first { it.programId == event.programId }
+                    if (plan.currentProgram == program.orderInWorkoutPlan ){
+                        // it is, need to change it
+                        var newCurrentProgram = if (state.value.programs.size == 1)
+                            0
+                        else
+                            (plan.currentProgram+1) % (state.value.programs.size-1)
+                        repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
+                            planId = plan.planId,
+                            currentProgram = newCurrentProgram
+                        ))
+                    }
                     repository.removeProgramFromPlan(event.programId)
                 }
             }

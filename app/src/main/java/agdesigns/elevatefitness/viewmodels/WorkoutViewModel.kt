@@ -616,7 +616,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 dataMapReq.dataMap.putIntegerArrayList("rest", exercise.rest as ArrayList<Int>)
                 dataMapReq.dataMap.putIntegerArrayList("reps", exercise.reps as ArrayList<Int>)
                 dataMapReq.dataMap.putString("note", exercise.note)
-                dataMapReq.dataMap.putFloat("weight", state.value.weightBottomBar.toFloat())
+                dataMapReq.dataMap.putFloat("weight", state.value.weightBottomBar.toFloatOrNull() ?: 0f)
                 if (state.value.restTimestamp != null)
                     dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
 

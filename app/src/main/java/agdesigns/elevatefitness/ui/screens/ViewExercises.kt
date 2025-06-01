@@ -54,6 +54,8 @@ import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.viewmodels.ExercisesEvent
 import agdesigns.elevatefitness.viewmodels.ExercisesViewModel
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.content.ContextCompat.startActivity
@@ -81,6 +83,13 @@ fun ViewExercises(
     returnAfterAdding: Boolean = false,
     viewModel: ExercisesViewModel = hiltViewModel()
 ) {
+    val exercisesState by viewModel.state.collectAsState()
+    var searchText by rememberSaveable { mutableStateOf("") }
+    // TODO: it would be really nice to have this as the predictivebackhandler
+    BackHandler (exercisesState.searchQuery.isNotBlank()) {
+        viewModel.onEvent(ExercisesEvent.FilterExercise(""))
+        searchText = ""
+    }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -121,6 +130,7 @@ fun ViewExercises(
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surface,
+                            // FIXME: doesn't look good right now
                             tonalElevation = NavigationBarDefaults.Elevation,  // should use card elevation but it is private
                             modifier = Modifier
                                 .padding(vertical = 8.dp)
@@ -134,7 +144,6 @@ fun ViewExercises(
                                     modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
                                     tint = MaterialTheme.colorScheme.outline
                                 )
-                                var searchText by rememberSaveable { mutableStateOf("") }
                                 TextField(
                                     value = searchText,
                                     onValueChange = {
@@ -181,6 +190,7 @@ fun ViewExercises(
                             }
                             if (toFocus.value){
                                 LaunchedEffect(focusRequester) {
+                                    // FIXME
                                     awaitFrame()
                                     awaitFrame()
                                     awaitFrame()
@@ -192,25 +202,22 @@ fun ViewExercises(
                         }
                     }
                     item {
-                        var selectedFilter by remember { mutableIntStateOf(-1) }
                         LazyRow (horizontalArrangement = Arrangement.spacedBy(8.dp)){
                             item{
                                 Spacer(Modifier.width(8.dp))
                             }
                             itemsIndexed(items = Exercise.Equipment.entries.drop(1), { _, it -> it.ordinal }){ index, equipment ->
                                 FilterChip(
-                                    selected = selectedFilter == index,
+                                    selected = equipment == exercisesState.equipToFiler,
                                     onClick = {
-                                        if (selectedFilter != index) {
-                                            selectedFilter = index
+                                        if (equipment != exercisesState.equipToFiler) {
                                             viewModel.onEvent(ExercisesEvent.FilterExerciseEquipment(equipment))
                                         } else {
-                                            selectedFilter = -1
                                             viewModel.onEvent(ExercisesEvent.FilterExerciseEquipment(Exercise.Equipment.EVERYTHING))
                                         }
                                     },
                                     label = { Text(equipment.equipmentName) },
-                                    leadingIcon = if (selectedFilter == index) {
+                                    leadingIcon = if (equipment == exercisesState.equipToFiler) {
                                         {
                                             Icon(
                                                 imageVector = Icons.Default.Done,
@@ -228,7 +235,7 @@ fun ViewExercises(
                             }
                         }
                     }
-                    items(viewModel.state.value.exercisesToDisplay ?: emptyList(),
+                    items(exercisesState.exercisesToDisplay ?: emptyList(),
                         key = { it.name }
                     ) { exercise ->
                         val interactionSource = remember { MutableInteractionSource() }

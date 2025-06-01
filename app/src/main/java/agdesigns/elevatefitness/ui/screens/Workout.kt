@@ -184,12 +184,10 @@ fun SharedTransitionScope.Workout(
             viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
         Unit
     }
-    if (startWorkout.value)
-        BackHandler(onBack = onClose)
-    if (workoutState.startDate != null)
-        BackHandler(onBack = onClose)
-    if (resumeWorkout)
-        BackHandler(onBack = onClose)
+    BackHandler(
+        enabled = startWorkout.value || workoutState.startDate != null || resumeWorkout,
+        onBack = onClose
+    )
     LaunchedEffect(startWorkout.value) {
         if (startWorkout.value) {
             viewModel.onEvent(WorkoutEvent.StartWorkout)
@@ -264,6 +262,13 @@ fun SharedTransitionScope.Workout(
     val timer = {" " + if (workoutTimeMillis > 0L) DateUtils.formatElapsedTime(workoutTimeMillis / 1000) else "" }
 
 
+    // title for top app bar, do not share bounds
+    val titleTopBar = @Composable { Text(
+        currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
+        overflow = TextOverflow.Ellipsis,
+//        maxLines = 1
+    ) }
+    // title for below image, share bounds
     val title = @Composable { Text(
         currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
         overflow = TextOverflow.Ellipsis,
@@ -316,43 +321,38 @@ fun SharedTransitionScope.Workout(
         }
     }
 
-    LaunchedEffect(workoutState.allRecords, pagerState.currentPage, setsDone){
-        val currentRecord = recordsToDisplay.firstOrNull()
+    LaunchedEffect(recordsToDisplay, ongoingRecord, setsDone){
+        // this is the record of the last record before current workout
+        val lastOldRecord = recordsToDisplay.firstOrNull()
 
-        if (currentRecord != null) {
-            if (setsDone.value > 0) {
-                viewModel.onEvent(
-                    WorkoutEvent.UpdateWeight(
-                        maybeKgToLb(
-                            ongoingRecord!!.weights[setsDone.value - 1],
-                            workoutState.imperialSystem
-                        ).toString()
-                    )
+        var weightCandidate: Float? = null
+        var tareCandidate: Float? = null
+        // for the weight, try to copy from last old record
+        if (lastOldRecord != null) {
+            if (lastOldRecord.weights.getOrNull(setsDone.value) != null) {
+                Log.d("Workout", "Weight: ${lastOldRecord.weights[setsDone.value]} set from last old record")
+                weightCandidate = maybeKgToLb(
+                    lastOldRecord.weights[setsDone.value],
+                    workoutState.imperialSystem
                 )
-                viewModel.onEvent(
-                    WorkoutEvent.UpdateTare(
-                        ongoingRecord!!.tare
-                    )
-                )
-            } else {
-//            val index = min(setsDone.value, currentRecord.weights.size - 1)
-                viewModel.onEvent(
-                    WorkoutEvent.UpdateWeight(
-                        maybeKgToLb(
-                            currentRecord.weights[0],
-                            workoutState.imperialSystem
-                        ).toString()
-                    )
-                )
-                viewModel.onEvent(WorkoutEvent.UpdateTare(
-                    currentRecord.tare
-                ))
             }
-        } else {
-            viewModel.onEvent(WorkoutEvent.UpdateTare(
-                0f
-            ))
+            tareCandidate = lastOldRecord.tare
         }
+        if (ongoingRecord != null) {
+            if (lastOldRecord == null || weightCandidate == null) {
+                // failed to retrieve weight from last old record, try to retrieve from ongoing record
+                if (ongoingRecord!!.weights.getOrNull(setsDone.value) != null) {
+                    Log.d("Workout", "Weight: ${ongoingRecord!!.weights[setsDone.value]} set from ongoing record")
+                    weightCandidate = maybeKgToLb(
+                        ongoingRecord!!.weights[setsDone.value - 1], // get from previous set
+                        workoutState.imperialSystem
+                    )
+                }
+            }
+            tareCandidate = ongoingRecord!!.tare
+        }
+        viewModel.onEvent(WorkoutEvent.UpdateWeight(weightCandidate?.toString() ?: "0.0"))
+        viewModel.onEvent(WorkoutEvent.UpdateTare(tareCandidate ?: 0f))
     }
 
 
@@ -423,7 +423,7 @@ fun SharedTransitionScope.Workout(
                     }
                 }
             },
-            title = title,
+            title = titleTopBar,
             image = {
                 val roundedCornersShape = CardDefaults.shape
                 Box(Modifier

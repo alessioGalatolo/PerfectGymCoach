@@ -43,7 +43,7 @@ fun ExercisesByMuscle(
     programId: Long = 0,
     workoutId: Long = 0,
     successfulAddExercise: Boolean = false,
-    returnAfterAdding: Boolean = false
+    returnAfterAdding: Boolean = false // if adding a single exercise to workout, return to workout instead of program
 ) {
     // scroll behaviour for top bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -86,6 +86,7 @@ fun ExercisesByMuscle(
                 modifier = Modifier.padding(horizontal = 16.dp)) {
                 item {
                     // search bar
+                    // FIXME: doesn't look right. Also, this component should be isolated and reused
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface,

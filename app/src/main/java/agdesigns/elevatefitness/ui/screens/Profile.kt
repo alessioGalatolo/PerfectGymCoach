@@ -506,10 +506,11 @@ fun Profile(
                 imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
+                doNotConvert = true // the increment do not change with system
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementBarbell(
-                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
+                        it.toFloat()
                     )
                 )
             }
@@ -521,10 +522,11 @@ fun Profile(
                 imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
+                doNotConvert = true
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementBodyweight(
-                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
+                        it.toFloat()
                     )
                 )
             }
@@ -536,10 +538,11 @@ fun Profile(
                 imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
+                doNotConvert = true
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementCable(
-                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
+                        it.toFloat()
                     )
                 )
             }
@@ -551,10 +554,11 @@ fun Profile(
                 imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
+                doNotConvert = true
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementDumbbell(
-                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
+                        it.toFloat()
                     )
                 )
             }
@@ -566,10 +570,11 @@ fun Profile(
                 imperialSystem = profileState.imperialSystem,
                 keyboardController = keyboardController,
                 focusManager = focusManager,
+                doNotConvert = true
             ) {
                 viewModel.onEvent(
                     ProfileEvent.UpdateIncrementMachine(
-                        maybeLbToKg(it.toFloat(), profileState.imperialSystem)
+                        it.toFloat()
                     )
                 )
             }
@@ -585,6 +590,7 @@ fun LazyItemScope.ChangeGenericWeight(
     imperialSystem: Boolean,
     keyboardController: SoftwareKeyboardController?,
     focusManager: FocusManager,
+    doNotConvert: Boolean = false, // only show lb/kg without converting
     updateWeight: (String) -> Unit
 ) {
     Row (
@@ -595,10 +601,13 @@ fun LazyItemScope.ChangeGenericWeight(
         var showUpdateWeightButton by remember { mutableStateOf(false) }
         var weightValue by remember { mutableStateOf("") }
         LaunchedEffect(initialWeightValue, imperialSystem){
-            weightValue = maybeKgToLb(
-                initialWeightValue,
-                imperialSystem
-            ).toString()
+            weightValue = if (doNotConvert)
+                initialWeightValue.toString()
+            else
+                maybeKgToLb(
+                    initialWeightValue,
+                    imperialSystem
+                ).toString()
         }
         val validWeight by remember { derivedStateOf { weightValue.toFloatOrNull() != null && weightValue.toFloat() > 0 }}
         val focusRequester = remember { FocusRequester() }

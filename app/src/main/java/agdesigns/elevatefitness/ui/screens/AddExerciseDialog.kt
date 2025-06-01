@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -32,7 +31,10 @@ import agdesigns.elevatefitness.ui.components.TextFieldWithButtons
 import agdesigns.elevatefitness.viewmodels.AddExerciseEvent
 import agdesigns.elevatefitness.viewmodels.AddExerciseViewModel
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.ui.Alignment
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
@@ -40,38 +42,43 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.DestinationStyle
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
+import kotlin.math.max
 
 @Destination<ChangePlanGraph>(style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddExerciseDialog(
     navigator: DestinationsNavigator,
-    programId: Long = 0L, // programId and workoutId are mutually exclusive
-    workoutId: Long = 0L, // workoutId can only happen with exercise Id
-    exerciseId: Long = 0L,
-    programExerciseId: Long = 0L,
+    programId: Long = 0L, // programId != 0L means we are adding an exercise to a program (and maybe a current workout)
+    workoutId: Long = 0L, // workoutId != 0L we're adding to a ongoing workout (and maybe a program)
+    exerciseId: Long = 0L,  // should never be 0L
+    programExerciseId: Long = 0L,  // != 0L if we are changing an existing exercise
     programName: String = "",
-    returnAfterAdding: Boolean = false,
+    returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
+    continueAdding: Boolean = true,  // if true, expects user to continue adding exercise,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
+    // FIXME: I don't like how ui reacts to ime
     assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
     val addExerciseState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    if (workoutId != 0L) {
-        viewModel.onEvent(AddExerciseEvent.GetWorkoutAndExercise(workoutId, programId, exerciseId))
-    } else if (programExerciseId != 0L)  // FIXME: sometimes the reps/rest counter doesn't follow the exercise
-        viewModel.onEvent(AddExerciseEvent.GetProgramAndProgramExercise(programId, programExerciseId, exerciseId))
-    else if (exerciseId != 0L)
-        viewModel.onEvent(AddExerciseEvent.GetProgramAndExercise(programId, exerciseId))
+    viewModel.onEvent(
+        AddExerciseEvent.StartRetrievingData(
+            exerciseId,
+            programId,
+            workoutId,
+            programExerciseId
+        )
+    )
 
     var awesomeDialogOpen by rememberSaveable { mutableStateOf(false) }
     InfoDialog(
         dialogueIsOpen = awesomeDialogOpen,
         toggleDialogue = { awesomeDialogOpen = !awesomeDialogOpen }) {
-        Text("This number is used to generate new plans. A number higher than 1 means a higher probability of being included in workouts. A number lower than 1 means a lower probability. 1 is default.")
+        Text("This number is used to generate new plans. A number higher than 1 means a higher probability of being included in new workouts. A number lower than 1 means a lower probability. 1 is default.")
     }
     var resetProbabilityDialogOpen by rememberSaveable { mutableStateOf(false) }
     ResetExerciseProbabilityDialog(
@@ -103,24 +110,31 @@ fun AddExerciseDialog(
                         if (!viewModel.onEvent(AddExerciseEvent.TryAddExercise))
                             scope.launch {
                                 keyboardController?.hide()
+                                snackbarHostState.currentSnackbarData?.dismiss()
                                 snackbarHostState.showSnackbar(fillString)
                             }
                         else {
                             // FIXME:
-                            navigator.navigateUp()
-                            navigator.navigateUp()
-                            navigator.navigateUp()
-                            navigator.navigate(
-                                ExercisesByMuscleDestination(
-                                    programName = programName,
-                                    programId = programId,
-                                    workoutId = workoutId,
-                                    successfulAddExercise = true,
-                                    returnAfterAdding = returnAfterAdding
+                            if (continueAdding) {
+                                navigator.navigateUp()
+                                navigator.navigateUp()
+                                navigator.navigateUp()
+                                navigator.navigate(
+                                    ExercisesByMuscleDestination(
+                                        programName = programName,
+                                        programId = programId,
+                                        workoutId = workoutId,
+                                        successfulAddExercise = true,
+                                        returnAfterAdding = returnAfterAdding
+                                    )
                                 )
-                            )
+                            } else {
+                                // simply go back
+                                navigator.navigateUp()
+                            }
                         }
-                    }, modifier = Modifier.align(CenterVertically)) {
+                    }, enabled = addExerciseState.exercise != null,
+                    modifier = Modifier.align(CenterVertically)) {
                         Text(text = stringResource(R.string.save))
                     }
                 })
@@ -249,22 +263,35 @@ fun AddExerciseDialog(
                                 verticalAlignment = CenterVertically,
                                 modifier = Modifier.weight(0.5f)
                             ) {
-                                TextFieldWithButtons(
-                                    prompt = "Sets",
-                                    text = { addExerciseState.sets },
-                                    onNewText = { viewModel.onEvent(AddExerciseEvent.UpdateSets(it)) },
-                                    onIncrement = {
-                                        viewModel.onEvent(AddExerciseEvent.UpdateSets(
-                                            addExerciseState.sets.toIntOrNull()?.plus(1).toString()
-                                        ))
-                                    },
-                                    onDecrement = {
-                                        viewModel.onEvent(AddExerciseEvent.UpdateSets(
-                                            addExerciseState.sets.toIntOrNull()?.minus(1).toString()
-                                        ))
-                                    },
-                                    contentDescription = "Sets"
-                                )
+                                IconButton({
+                                    viewModel.onEvent(
+                                        AddExerciseEvent.UpdateSets(
+                                            max(1, addExerciseState.repsArray.size-1).toUInt()
+                                        )
+                                    )
+                                }
+                                ) {
+                                    Icon(Icons.Default.Remove, "Decrease sets")
+                                }
+                                Column {
+                                    Text("Sets:", style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(
+                                        Alignment.CenterHorizontally
+                                    ))
+                                    Text(addExerciseState.repsArray.size.toString(), modifier = Modifier.align(
+                                        Alignment.CenterHorizontally
+                                    ))
+                                }
+                                IconButton({
+                                    viewModel.onEvent(
+                                        AddExerciseEvent.UpdateSets(
+                                            (addExerciseState.repsArray.size + 1).toUInt()
+                                        )
+                                    )
+                                }
+
+                                ) {
+                                    Icon(Icons.Default.Add, "Increase sets")
+                                }
                             }
                             Row(
                                 verticalAlignment = CenterVertically,
@@ -292,12 +319,19 @@ fun AddExerciseDialog(
                                     verticalAlignment = CenterVertically,
                                     modifier = Modifier.weight(0.5f)
                                 ) {
+                                    var repsText by remember { mutableStateOf(addExerciseState.repsArray.first().toString()) }
                                     MyDropdownMenu(
-                                        prompt = "Reps" + "*",  // FIXME: why is there a star?
+                                        prompt = "Reps",
                                         options = (1..12).map { "$it" },
-                                        text = addExerciseState.reps,
-                                        onTextChange = { if (it.toIntOrNull() != null) viewModel.onEvent(AddExerciseEvent.UpdateReps(it)) },
-                                        keyboardType = KeyboardType.Number
+                                        text = repsText,
+                                        onTextChange = {
+                                            repsText = it
+                                            if (it.toUIntOrNull() != null && it.toUInt() > 0U) {
+                                                viewModel.onEvent(AddExerciseEvent.UpdateReps(it.toUInt()))
+                                            }
+                                        }, keyboardType = KeyboardType.Number,
+                                        textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true }
+
                                     )
                                 }
                                 Spacer(
@@ -309,12 +343,18 @@ fun AddExerciseDialog(
                                     verticalAlignment = CenterVertically,
                                     modifier = Modifier.weight(0.5f)
                                 ) {
+                                    var restText by remember { mutableStateOf(addExerciseState.restArray.first().toString()) }
                                     MyDropdownMenu(
-                                        prompt = "Rest" + "*",
+                                        prompt = "Rest",
                                         options = (15..120 step 15).map { "$it" },
-                                        text = addExerciseState.rest,
-                                        onTextChange = { if (it.toIntOrNull() != null) viewModel.onEvent(AddExerciseEvent.UpdateRest(it)) },
-                                        keyboardType = KeyboardType.Number
+                                        text = restText,
+                                        onTextChange = {
+                                            restText = it
+                                            // try to update but don't mind an error
+                                            if (it.toUIntOrNull() != null) {
+                                                viewModel.onEvent(AddExerciseEvent.UpdateRest(it.toUInt()))
+                                            }
+                                        }, keyboardType = KeyboardType.Number
                                     ) {
                                         Text("sec")
                                     }
@@ -329,6 +369,7 @@ fun AddExerciseDialog(
                             Spacer(Modifier.height(16.dp))
                         }
                         itemsIndexed(items = addExerciseState.repsArray, { i, _ -> i }) { index, reps ->
+                            var repsText by remember { mutableStateOf(reps.toString()) }
                             Row(
                                 verticalAlignment = CenterVertically,
                                 modifier = Modifier
@@ -344,36 +385,67 @@ fun AddExerciseDialog(
                                     Spacer(Modifier.width(8.dp))
                                     TextFieldWithButtons(
                                         prompt = "Reps",
-                                        text = { reps },
-                                        onNewText = { viewModel.onEvent(AddExerciseEvent.UpdateRepsAtIndex(it, index)) },
+                                        text = { repsText },
+                                        onNewText = {
+                                            repsText = it
+                                            if (it.toUIntOrNull() != null && it.toUInt() > 0U) {
+                                                viewModel.onEvent(
+                                                    AddExerciseEvent.UpdateRepsAtIndex(
+                                                        it.toUInt(),
+                                                        index
+                                                    )
+                                                )
+                                            }
+                                        },
                                         onIncrement = {
-                                            viewModel.onEvent(AddExerciseEvent.UpdateRepsAtIndex(
-                                                reps.toIntOrNull()?.plus(1).toString(),
-                                                index
-                                            ))
+                                            val reps = (repsText.toUIntOrNull() ?: 0U) + 1U
+                                            repsText = reps.toString()
+                                            viewModel.onEvent(
+                                                AddExerciseEvent.UpdateRepsAtIndex(
+                                                    repsText.toUInt(),
+                                                    index
+                                                )
+                                            )
                                         },
                                         onDecrement = {
-                                            viewModel.onEvent(AddExerciseEvent.UpdateRepsAtIndex(
-                                                reps.toIntOrNull()?.minus(1).toString(),
-                                                index
-                                            ))
+                                            var reps = repsText.toUIntOrNull() ?: 0U
+                                            if (reps < 2U)
+                                                reps = 1U
+                                            else
+                                                reps -= 1U
+
+                                            repsText = reps.toString()
+                                            viewModel.onEvent(
+                                                AddExerciseEvent.UpdateRepsAtIndex(
+                                                    repsText.toUInt(),
+                                                    index
+                                                )
+                                            )
                                         },
+                                        textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true },
                                         contentDescription = "Reps for set ${index+1}"
                                     )
                                     Spacer(Modifier.width(8.dp))
                                 }
                                 Row(Modifier.weight(1f)) {
+                                    var restText by remember { mutableStateOf(addExerciseState.restArray[index].toString()) }
                                     MyDropdownMenu(
-                                        prompt = "Rest" + "*" + " ${index+1}",
+                                        prompt = "Rest" + " ${index+1}",
                                         options = (15..120 step 15).map { "$it" },
-                                        text = addExerciseState.restArray[index],
+                                        text = restText,
                                         onTextChange = {
-                                            viewModel.onEvent(AddExerciseEvent.UpdateRestAtIndex(
-                                                it,
-                                                index)
-                                            )
+                                            restText = it
+                                            if (it.toUIntOrNull() != null) {
+                                                viewModel.onEvent(
+                                                    AddExerciseEvent.UpdateRestAtIndex(
+                                                        it.toUInt(),
+                                                        index
+                                                    )
+                                                )
+                                            }
                                         },
-                                        keyboardType = KeyboardType.Number
+                                        keyboardType = KeyboardType.Number,
+                                        textIsValid = { it.toUIntOrNull() != null }
                                     ) {
                                         Text("sec")
                                     }
@@ -396,6 +468,7 @@ fun MyDropdownMenu(
     onTextChange: (String) -> Unit,
     expanded: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) },
     keyboardType: KeyboardType = KeyboardType.Text,
+    textIsValid: (String) -> Boolean = { true },
     trailingIcon: (@Composable () -> Unit)? = null
 ){
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -442,6 +515,7 @@ fun MyDropdownMenu(
             keyboardActions = KeyboardActions(onDone = {
                 keyboardController?.hide()
             }),
+            isError = !textIsValid(text),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             modifier = Modifier
                 .widthIn(1.dp, Dp.Infinity)

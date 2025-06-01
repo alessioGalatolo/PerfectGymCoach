@@ -65,6 +65,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                     Spacer(Modifier.width(8.dp))  // FIXME: centralize the value
                 }
                 for (week in currentWeek downTo 1) {
+                    // FIXME: what if it's the beginning of the year?
                     item {
                         val weekRecords = recordsMap[week] ?: emptyList()
                         if (weekRecords.isEmpty()) {
@@ -205,7 +206,8 @@ fun History(
                                 weekIteration = record.key
                             }
                             var isFirst = true
-                            for (workout in record.value) {
+                            val sortedRecords = record.value.sortedByDescending { it.startDate }
+                            for (workout in sortedRecords) {
                                 if (isFirst)
                                     isFirst = false
                                 else
