@@ -1,6 +1,9 @@
 # ElevateFitness (previously PerfectGymCoach)
 A gym workout app born from the frustration of using badly designed apps with terrible UX and infinite number of paywalls.
 
+### Wear OS companion
+![Screen_recording_20250604_225657-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/08acae06-e532-4d8a-ba43-6ac733827260)
+
 ### Smart workouts and statistics
 <p align="center">
   <img src="https://user-images.githubusercontent.com/10598113/211208421-e3444346-5a1e-4189-bdc9-f6fc3b058b77.png" />
@@ -20,14 +23,13 @@ A gym workout app born from the frustration of using badly designed apps with te
 1. Improvements to plan generation
 2. Integration of Gemini Nano (on-device) into plan generation (this is as soon as Google makes the sdk available) 
 3. Persistent notification during workout
-4. Watch OS support
+4. ~~Wear OS support~~
 
 ## Known issues
 1. Plan generation is very bad
-2. There is a bug where system bar icon colours are sometimes not correct (also the API I use is deprecated)
-3. The dialog with the description of exercises in the workout is not the prettiest, it would be nice to have a different one with more info and e.g. stats
-4. Missing stats tab (I don't know what to put there)
-5. History scroll-down to week has wrong offset
+2. The dialog with the description of exercises in the workout is not the prettiest, it would be nice to have a different one with more info and e.g. stats
+3. Missing stats tab (I don't know what to put there)
+4. History scroll-down to week has wrong offset
 
 ## "Useful" elements and patterns
 Despite my disclaimer below, this repo has seen some interest from the open source community so following are some elements that might be of interest to a developer looking at this app:
