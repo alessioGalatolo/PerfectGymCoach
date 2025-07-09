@@ -16,6 +16,7 @@ import agdesigns.elevatefitness.data.workout_record.WorkoutRecord
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.workout_record.WorkoutRecordStart
 import agdesigns.elevatefitness.ui.barbellFromWeight
+import agdesigns.elevatefitness.ui.computeVolume
 import agdesigns.elevatefitness.ui.maybeLbToKg
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -380,10 +381,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             workoutId = state.value.workoutId,
                             intensity = event.workoutIntensity,
                             durationSeconds = workoutTimeSeconds,
-                            volume = exercises.sumOf {
-                                (it.tare * it.reps.size +
-                                        it.weights.mapIndexed { index, i -> i * it.reps[index] }.sum()).toDouble()
-                            },
+                            volume = exercises.sumOf { computeVolume(it.weights, it.reps, it.tare).toDouble() },
                             activeTimeSeconds = max(0L, workoutTimeSeconds -
                                     exercises.sumOf { it.rest.sum() }),
                             calories = event.workoutIntensity.metValue *

@@ -12,7 +12,6 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -42,6 +41,8 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.ui.WorkoutOnlyGraph
+import agdesigns.elevatefitness.ui.components.ExerciseRecordsList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -62,6 +63,7 @@ import kotlin.math.ceil
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import java.time.format.DateTimeFormatter
 
 
@@ -84,7 +86,7 @@ fun WorkoutRecap(
 
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = LocalContentColor.current)) {
-                append("Volume info: ")
+                append("Volume info: " + stringResource(R.string.volume_info))
             }
             withLink(
                 LinkAnnotation.Url(
@@ -153,17 +155,19 @@ fun WorkoutRecap(
                 )
                 item{
                     val pagerState = rememberPagerState(pageCount = { graphsYaxis.size })
-                    ElevatedCard (Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
-                        if (records.size > 1){
-                            HorizontalPager(state = pagerState) { page ->
+                    if (records.size > 1){
+                        HorizontalPager(state = pagerState) { page ->
+                            ElevatedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                                 val formatter = DateTimeFormatter.ofPattern("d MMM")
                                 Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                     val clickedValue: MutableState<LineData> = remember {
                                         mutableStateOf(
                                             LineData(
-                                                recapState.workoutRecord!!.startDate!!.format(formatter),
+                                                recapState.workoutRecord!!.startDate!!.format(
+                                                    formatter
+                                                ),
                                                 graphsYaxis[page].second.last()
-    //                                            recapState.workoutRecord!!.volume
+                                                //                                            recapState.workoutRecord!!.volume
                                             )
                                         )
                                     }
@@ -185,7 +189,8 @@ fun WorkoutRecap(
                                         )
                                     }
                                     val maxDatesInXAxis = 6
-                                    val interval = ceil(records.size.toDouble() / maxDatesInXAxis).toInt()
+                                    val interval =
+                                        ceil(records.size.toDouble() / maxDatesInXAxis).toInt()
 
                                     val data = records.mapIndexed { index, record ->
                                         val xLabel = if (index % interval == 0)
@@ -194,6 +199,9 @@ fun WorkoutRecap(
                                             ""
                                         LineData(x = xLabel, y = graphsYaxis[page].second[index])
                                     }
+                                    // FIXME: sometimes plot goes out of bounds
+                                    // example values that go out of bounds:
+                                    // 0.25, 0.0625, 0.0625, 1... (out), 2... (out)
                                     LineGraph(
                                         data = data,
                                         onPointClick = { point ->
@@ -224,24 +232,26 @@ fun WorkoutRecap(
                                     )
                                 }
                             }
+                        }
+                        Column(Modifier.fillMaxWidth()) {
                             HorizontalPagerIndicator(
                                 pagerState = pagerState,
                                 pageCount = graphsYaxis.size,
-                                modifier = Modifier.align(Alignment.CenterHorizontally).padding(8.dp)
-                            )
-                        } else {
-                            Text(
-                                stringResource(R.string.no_analytics),
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 128.dp),
-                                color = MaterialTheme.colorScheme.outline
+                                modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
                             )
                         }
+                    } else {
+                        Text(
+                            stringResource(R.string.no_analytics),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 128.dp),
+                            color = MaterialTheme.colorScheme.outline
+                        )
                     }
                 }
-                item {
-                    if (recapState.workoutRecord != null) {
-                        ElevatedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
-                            Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
+                if (recapState.workoutRecord != null) {
+                    item {
+                        OutlinedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
+                            Column(Modifier.padding(dimensionResource(R.dimen.card_outside_padding))) {
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -269,7 +279,7 @@ fun WorkoutRecap(
                                         Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/Info")
                                     }
                                 }
-                                HorizontalDivider()
+//                                HorizontalDivider()
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -300,7 +310,7 @@ fun WorkoutRecap(
                                         Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/Info")
                                     }
                                 }
-                                HorizontalDivider()
+//                                HorizontalDivider()
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -318,7 +328,7 @@ fun WorkoutRecap(
                                                 )
                                     )
                                 }
-                                HorizontalDivider()
+//                                HorizontalDivider()
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -345,52 +355,18 @@ fun WorkoutRecap(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp).padding(horizontal = 16.dp))
                 }
-                items (items = recapState.exerciseRecords, key = { it.recordId }) { exercise ->
-                    Card (Modifier.fillMaxWidth().padding(horizontal = 16.dp)){
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(exercise.image)
-                                .crossfade(true)
-                                .build(),
-                            contentScale = ContentScale.Crop,
-                            contentDescription = "Exercise image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4 )
-                                .align(Alignment.CenterHorizontally)
-                                .clip(RoundedCornerShape(12.dp))
-                        )
-                        Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                            Text(text = exercise.name + exercise.variation, style = MaterialTheme.typography.titleLarge)
-                            if (exercise.equipment == Exercise.Equipment.BARBELL) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Barbell used: " +
-                                        barbellFromWeight(exercise.tare, recapState.imperialSystem, true)
-                                )
-                            } else if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Bodyweight at the time: ${maybeKgToLb(exercise.tare, recapState.imperialSystem)} " + if (recapState.imperialSystem) "lb" else "kg")
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            exercise.reps.forEachIndexed { index, rep ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    FilledIconToggleButton(checked = false, // FIXME: can use different component?
-                                        onCheckedChange = { }) {
-                                        Text((index + 1).toString())
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        "Reps: $rep Weight: ${maybeKgToLb(exercise.weights[index], recapState.imperialSystem)} " + if (recapState.imperialSystem) "lb" else "kg"
-                                    )
-                                }
-                            }
-
+                ExerciseRecordsList(
+                    recapState.imperialSystem,
+                    exerciseRecordsWithImage = recapState.exerciseRecords,
+                    onRecordClick = { recordId ->
+                        val exerciseId = recapState.exerciseRecords.find { it.recordId == recordId }?.extExerciseId
+                        if (exerciseId != null) {
+                            navigator.navigate(
+                                ExerciseStatsDestination(exerciseId = exerciseId)
+                            )
                         }
                     }
-                }
+                )
             }
         }
     }

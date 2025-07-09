@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
+import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -178,7 +179,6 @@ class Repository @Inject constructor(
     suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) =
         db.workoutProgramDao.updateOrder(workoutProgramReorder)
 
-    // FIXME: should check that the 'plan.currentProgram' is updated as well
     suspend fun removeProgramFromPlan(programId: Long) = db.workoutProgramDao.removeFromPlan(
         RemovePlan(programId = programId)
     )
@@ -233,7 +233,13 @@ class Repository @Inject constructor(
 
     fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
 
+    fun getExerciseRecordsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) = db.exerciseRecordDao.getRecordsInRange(startDate, endDate)
+
     fun getExerciseRecordsAndEquipment(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecordsWithEquipment(exerciseIds)
+
+    fun getExerciseRecordsAndEquipment(exerciseId: Long) = db.exerciseRecordDao.getRecordsWithEquipment(exerciseId)
+
+    fun getAllExerciseRecordsAndEquipment() = db.exerciseRecordDao.getAllRecordsWithEquipment()
 
     fun getWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.getByWorkout(workoutId)
 
@@ -263,6 +269,7 @@ class Repository @Inject constructor(
 
     suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 
+    suspend fun getWorkoutsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) = db.workoutRecordDao.getWorkoutsBetween(startDate, endDate)
 
     /*
      * EXERCISE

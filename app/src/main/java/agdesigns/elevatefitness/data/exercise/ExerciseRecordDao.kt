@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import java.time.ZonedDateTime
 
 @Dao
 interface ExerciseRecordDao {
@@ -38,10 +39,32 @@ interface ExerciseRecordDao {
 
     @Query(
         "SELECT exerciserecord.*, exercise.equipment " +
-        "FROM exerciserecord " +
-        "INNER JOIN exercise ON exerciserecord.extExerciseId = exercise.exerciseId " +
-        "WHERE exerciserecord.extExerciseId IN (:exerciseIds)")
+                "FROM exerciserecord " +
+                "INNER JOIN exercise ON exerciserecord.extExerciseId = exercise.exerciseId " +
+                "WHERE exerciserecord.extExerciseId IN (:exerciseIds)")
     fun getRecordsWithEquipment(exerciseIds: List<Long>): Flow<List<ExerciseRecordAndEquipment>>
+
+    @Query(
+        "SELECT exerciserecord.*, exercise.equipment " +
+                "FROM exerciserecord " +
+                "INNER JOIN exercise ON exerciserecord.extExerciseId = exercise.exerciseId " +
+                "WHERE exerciserecord.extExerciseId LIKE :exerciseId")
+    fun getRecordsWithEquipment(exerciseId: Long): Flow<List<ExerciseRecordAndEquipment>>
+
+
+    @Query(
+        "SELECT exerciserecord.*, exercise.equipment " +
+        "FROM exerciserecord " +
+        "INNER JOIN exercise ON exerciserecord.extExerciseId = exercise.exerciseId ")
+    fun getAllRecordsWithEquipment(): Flow<List<ExerciseRecordAndEquipment>>
+
+    @Query(
+        """
+        SELECT * FROM exerciserecord
+        WHERE date >= :startDate AND date <= :endDate"""
+    )
+    fun getRecordsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime): Flow<List<ExerciseRecord>>
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(plan: ExerciseRecord): Long

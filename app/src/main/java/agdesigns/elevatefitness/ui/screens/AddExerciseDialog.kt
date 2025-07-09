@@ -31,12 +31,15 @@ import agdesigns.elevatefitness.ui.components.TextFieldWithButtons
 import agdesigns.elevatefitness.viewmodels.AddExerciseEvent
 import agdesigns.elevatefitness.viewmodels.AddExerciseViewModel
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.ui.Alignment
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.DestinationStyle
@@ -58,6 +61,7 @@ fun AddExerciseDialog(
     continueAdding: Boolean = true,  // if true, expects user to continue adding exercise,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
+    // TODO: if user changed a value and goes back without saving, show an alert
     // FIXME: I don't like how ui reacts to ime
     assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
     val addExerciseState by viewModel.state.collectAsState()
@@ -361,9 +365,6 @@ fun AddExerciseDialog(
                                 }
                             }
                         }
-                        item {
-                            Spacer(Modifier.height(160.dp))
-                        }
                     } else {
                         item {
                             Spacer(Modifier.height(16.dp))
@@ -450,6 +451,20 @@ fun AddExerciseDialog(
                                         Text("sec")
                                     }
                                 }
+                            }
+                        }
+                    }
+                    item {
+                        FilledTonalButton({
+                            navigator.navigate(ExerciseStatsDestination(exerciseId))
+                        }, modifier = Modifier.padding(16.dp)) {
+                            Row {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ShowChart,
+                                    "Chart icon",
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("View exercise history and stats")
                             }
                         }
                     }

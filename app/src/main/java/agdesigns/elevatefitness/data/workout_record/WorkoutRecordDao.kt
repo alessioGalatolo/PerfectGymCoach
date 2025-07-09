@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import java.time.ZonedDateTime
 
 @Dao
 interface WorkoutRecordDao {
@@ -32,6 +33,15 @@ interface WorkoutRecordDao {
         "LEFT JOIN `program` ON workoutrecord.extProgramId = `program`.programId "
     )
     fun getRecordsAndName(): Flow<List<WorkoutRecordAndName>>
+
+    @Query("""
+    SELECT * FROM WorkoutRecord 
+    WHERE startDate >= :startDate AND startDate <= :endDate
+""")
+    fun getWorkoutsBetween(
+        startDate: ZonedDateTime,
+        endDate: ZonedDateTime
+    ): Flow<List<WorkoutRecord>>
 
     @Insert
     suspend fun insert(workoutRecord: WorkoutRecord): Long
