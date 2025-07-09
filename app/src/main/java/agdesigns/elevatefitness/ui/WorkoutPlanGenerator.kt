@@ -118,6 +118,7 @@ suspend fun generatePlan(
     // FIXME: bug when no plans -> empty abs program when goal = build, exp = adv, split = 1 muscle per day
     // FIXME: bug triceps, biceps program contains only bench dip
     // TODO: ideally it might also take into consideration profile values e.g. sex, age, weight, etc.
+    // TODO: manipulate probabilities -> decrease prob of selected exs. and increase prob of older ones
     val muscle2Exercises = emptyMap<Exercise.Muscle, Array<Exercise>>().toMutableMap()
     val currentTime = ZonedDateTime.now()
     val random = Random(currentTime.toInstant().toEpochMilli())

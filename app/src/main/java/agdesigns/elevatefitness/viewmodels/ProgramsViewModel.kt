@@ -67,7 +67,8 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                         getProgramExercisesJob = this.launch {
                             repository.getProgramExercisesAndInfo(programs.map { prg -> prg.programId }).collect{ exList ->
                                 _state.update { it.copy(
-                                    exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }  // FIXME: should sort each list
+                                    exercisesAndInfo = exList.groupBy { ex -> ex.extProgramId }
+                                        .mapValues { entry -> entry.value.sortedBy { ex -> ex.orderInProgram } }
                                 ) }
                             }
                         }

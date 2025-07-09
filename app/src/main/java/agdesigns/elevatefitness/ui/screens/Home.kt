@@ -144,7 +144,7 @@ fun SharedTransitionScope.Home(
             }
             val currentExercises =
                 homeState.exercisesAndInfo[currentProgram.programId]?.sortedBy {
-                    it.programExerciseId
+                    it.orderInProgram
                 } ?: emptyList()
             item {
                 // Coming next
@@ -202,7 +202,7 @@ fun SharedTransitionScope.Home(
             items(items = homeState.programs!!.minus(currentProgram), key = { it }){
                 val exs =
                     homeState.exercisesAndInfo[it.programId]?.sortedBy {
-                        it.programExerciseId
+                        it.orderInProgram
                     } ?: emptyList()
                 val pagerState = rememberPagerState(pageCount = { exs.size })
                 Card(

@@ -169,7 +169,7 @@ fun AddProgram(
                             WorkoutCard(
                                 navigator = navigator,
                                 program = programEntry,
-                                addProgramState.exercisesAndInfo[programEntry.programId]
+                                exercises = addProgramState.exercisesAndInfo[programEntry.programId]
                                     ?: emptyList(),
                                 onCardClick = { _ -> // FIXME: unused arg because we need it to animate. Either use it or change function
                                     navigator.navigate(
