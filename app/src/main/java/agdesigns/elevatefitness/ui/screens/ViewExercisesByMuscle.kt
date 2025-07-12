@@ -30,6 +30,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.ui.SlideTransition
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ViewExercisesDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -86,54 +87,43 @@ fun ExercisesByMuscle(
                 modifier = Modifier.padding(horizontal = 16.dp)) {
                 item {
                     // search bar
-                    // FIXME: doesn't look right. Also, this component should be isolated and reused
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = NavigationBarDefaults.Elevation,  // should use card elevation but it is private
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = ripple(),
-                                    onClick = {
-                                        navigator.navigate(
-                                            ViewExercisesDestination(
-                                                programId = programId,
-                                                workoutId = workoutId,
-                                                muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
-                                                focusSearch = true,
-                                                programName = programName,
-                                                returnAfterAdding = returnAfterAdding
-                                            )
-                                        )
-                                    }
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search",
-                                modifier = Modifier.padding(
-                                    start = 16.dp,
-                                    top = 8.dp,
-                                    bottom = 8.dp
-                                ),
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                            Text(
-                                text = "Search exercise",
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(16.dp),
-//                            style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
+                    val searchBarState = rememberSearchBarState()
+                    val textFieldState = rememberTextFieldState()
+                    LaunchedEffect(searchBarState.currentValue) {
+                        if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                            searchBarState.snapTo(0f)
+                            navigator.navigate(
+                                ViewExercisesDestination(
+                                    programId = programId,
+                                    workoutId = workoutId,
+                                    muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
+                                    focusSearch = true,
+                                    programName = programName,
+                                    returnAfterAdding = returnAfterAdding
+                                )
                             )
                         }
                     }
+                    SearchBarDefaults.InputField(
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        searchBarState = searchBarState,
+                        textFieldState = textFieldState,
+                        readOnly = true,
+                        onSearch = { navigator.navigate(
+                            ViewExercisesDestination(
+                                programId = programId,
+                                workoutId = workoutId,
+                                muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
+                                focusSearch = true,
+                                programName = programName,
+                                returnAfterAdding = returnAfterAdding
+                            )
+                        ) },
+                        placeholder = { Text("Search exercise...") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        }
+                    )
                 }
                 items(items = Exercise.Muscle.entries.toTypedArray(), key = { it.ordinal }) {
                     Card(

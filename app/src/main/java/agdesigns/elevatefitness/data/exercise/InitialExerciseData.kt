@@ -1051,13 +1051,4 @@ val INITIAL_EXERCISE_DATA = listOf(
         description = "Bend forward at the hips with a dumbbell in each hand, arms hanging straight down. Row the dumbbells towards your hips, keeping elbows out and squeezing your shoulder blades together, then lower back down.",
         image = R.drawable.generic_dumbbell
     ),
-
-    // Other
-    Exercise(
-        name = "Can you hear the silence?",
-        equipment = Exercise.Equipment.EVERYTHING,
-        primaryMuscle = Exercise.Muscle.EVERYTHING,
-        secondaryMuscles = emptyList(),
-        image = R.drawable.gigachad
-    ),
 )
