@@ -321,9 +321,10 @@ fun ExercisePage(
                                 if (toBeDone || setCount >= (ongoingRecord?.reps?.size ?: 0)) {
                                     repsInRow = repsCount.toString()
                                     val currentRecord = currentExerciseRecords.firstOrNull()
-                                    weightInRow = if (currentRecord != null) {
-                                        val index = min(setCount, currentRecord.weights.size-1)
-                                        maybeKgToLb(currentRecord.weights[index], useImperialSystem).toString()
+                                    weightInRow = if (currentRecord != null && setCount < currentRecord.weights.size) {
+                                        maybeKgToLb(currentRecord.weights[setCount], useImperialSystem).toString()
+                                    } else if (currentRecord != null && ongoingRecord != null) {
+                                        maybeKgToLb(ongoingRecord.weights.last(), useImperialSystem).toString()
                                     } else {
                                         "..."
                                     }

@@ -168,6 +168,9 @@ fun SharedTransitionScope.Workout(
                         artworkBitmap = session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                             ?: session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ART)
                         isPlaying = session!!.playbackState?.state == STATE_PLAYING
+                    } else {
+                        mediaTitle = "No music playing"
+                        mediaAuthor = "Play some music to see it here"
                     }
                 }
                 delay(100)
@@ -179,8 +182,10 @@ fun SharedTransitionScope.Workout(
     }
     val onClose = {
         if (workoutState.startDate == null)
+            // workout has not started, just go up
             navigator.navigateUp()
         else
+            // ask confirmation
             viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
         Unit
     }
@@ -262,13 +267,12 @@ fun SharedTransitionScope.Workout(
     val timer = {" " + if (workoutTimeMillis > 0L) DateUtils.formatElapsedTime(workoutTimeMillis / 1000) else "" }
 
 
-    // title for top app bar, do not share bounds
+    // title for top app bar, do not share bounds for animation
     val titleTopBar = @Composable { Text(
         currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
         overflow = TextOverflow.Ellipsis,
-//        maxLines = 1
     ) }
-    // title for below image, share bounds
+    // title below image, share bounds for animation
     val title = @Composable { Text(
         currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
         overflow = TextOverflow.Ellipsis,
@@ -276,7 +280,6 @@ fun SharedTransitionScope.Workout(
             sharedStateTitle,
             animatedVisibilityScope,
         )
-//        maxLines = 1
     ) }
 
     val currentExerciseRecord by remember { derivedStateOf {
@@ -311,6 +314,7 @@ fun SharedTransitionScope.Workout(
         // update viewModel so that it can be transmitted to wear os
         viewModel.onEvent(WorkoutEvent.UpdateSetsDone(setsDone.value))
     }
+    // once we change exercise or current set, update reps count for the upcoming set
     LaunchedEffect(currentExercise, setsDone){
         if (currentExercise != null && setsDone.value < currentExercise!!.reps.size) {
             viewModel.onEvent(
@@ -322,35 +326,51 @@ fun SharedTransitionScope.Workout(
     }
 
     LaunchedEffect(recordsToDisplay, ongoingRecord, setsDone){
+        // set predicted weight and tare
+        // heuristic: tare is taken from previous set if available, otherwise from previous record
+        /*
+         weight is taken in this order:
+         0. If first set, take from last record
+         1. If not first set, check last set weight:
+         1a. If == to the same set from last record, take from last record
+         2. Otherwise, check whether the weight also changed between sets in last record (e.g., pyramid)
+         2a. If not, keep weight from previous set
+         3. Otherwise, take last record increased/decreased by same amount as previous set
+         */
+        // FIXME: this heuristic is not transparent to the user that might question what these
+        // "random" changes in weight are. Perhaps it is better to always have ongoingRecord and
+        // have the rest as a suggestion
+
         // this is the record of the last record before current workout
         val lastOldRecord = recordsToDisplay.firstOrNull()
 
         var weightCandidate: Float? = null
+        var oldRecordWeightCurrentSet: Float? = null
+        var oldRecordWeightPreviousSet: Float? = null
+        var ongoingRecordWeightPreviousSet: Float? = null
         var tareCandidate: Float? = null
         // for the weight, try to copy from last old record
         if (lastOldRecord != null) {
-            if (lastOldRecord.weights.getOrNull(setsDone.value) != null) {
-                Log.d("Workout", "Weight: ${lastOldRecord.weights[setsDone.value]} set from last old record")
-                weightCandidate = maybeKgToLb(
-                    lastOldRecord.weights[setsDone.value],
-                    workoutState.imperialSystem
-                )
-            }
+            oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone.value)
+            oldRecordWeightPreviousSet = lastOldRecord.weights.getOrNull(setsDone.value-1)
             tareCandidate = lastOldRecord.tare
         }
         if (ongoingRecord != null) {
-            if (lastOldRecord == null || weightCandidate == null) {
-                // failed to retrieve weight from last old record, try to retrieve from ongoing record
-                if (ongoingRecord!!.weights.getOrNull(setsDone.value) != null) {
-                    Log.d("Workout", "Weight: ${ongoingRecord!!.weights[setsDone.value]} set from ongoing record")
-                    weightCandidate = maybeKgToLb(
-                        ongoingRecord!!.weights[setsDone.value - 1], // get from previous set
-                        workoutState.imperialSystem
-                    )
-                }
-            }
+            ongoingRecordWeightPreviousSet = ongoingRecord!!.weights.getOrNull(setsDone.value-1)
             tareCandidate = ongoingRecord!!.tare
         }
+        if (setsDone.value == 0) {
+            weightCandidate = oldRecordWeightCurrentSet
+        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet == ongoingRecordWeightPreviousSet) {
+            weightCandidate = oldRecordWeightCurrentSet
+        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet != oldRecordWeightCurrentSet) {
+            val delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
+            weightCandidate = oldRecordWeightCurrentSet.plus(delta ?: 0f)
+        } else {
+            weightCandidate = ongoingRecordWeightPreviousSet
+        }
+        weightCandidate = weightCandidate?.let { maybeKgToLb(it, workoutState.imperialSystem) }
+
         viewModel.onEvent(WorkoutEvent.UpdateWeight(weightCandidate?.toString() ?: "0.0"))
         viewModel.onEvent(WorkoutEvent.UpdateTare(tareCandidate ?: 0f))
     }
@@ -372,6 +392,7 @@ fun SharedTransitionScope.Workout(
 
     var fabHeight by remember { mutableStateOf(0.dp) }
 
+    // if bright image (i.e., white), change status bar icons to dark
     val brightImage = remember { mutableStateOf(false) }
     val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
     val imageHeight = imageWidth/3*2
@@ -383,6 +404,9 @@ fun SharedTransitionScope.Workout(
             Theme.DARK -> true
         }
     }}
+    // We are animating from the previous screen but do not have the data yet. Use placeholder screen
+    // to finish the animation, then show the actual screen. We need to record whether the animation
+    // has finished once as, depending on how do user is interacting, it may keep going
     var animationHasFinished by remember { mutableStateOf(false) }
     animationHasFinished = animationHasFinished || !animatedVisibilityScope.transition.isRunning
     if (workoutState.workoutExercises.isNotEmpty() && animationHasFinished) {
@@ -512,7 +536,7 @@ fun SharedTransitionScope.Workout(
                             viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
                         else
                             // this should never happen. Log it
-                            Log.w("Workout", "updateBottomBar called with null rep")
+                            Log.e("Workout", "updateBottomBar called with null rep")
                         if (weight != null)
                             viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
                     },
@@ -551,14 +575,14 @@ fun SharedTransitionScope.Workout(
                             LocalContext.current
                         ) else darkColorScheme()
                     }
-                    SwipeToDismissBox(
-                        state = rememberSwipeToDismissBoxState(),
-                        backgroundContent = {}
+                    AnimatedVisibility(
+                        visible = !pagerState.isScrollInProgress,
+                        enter = fadeIn(),
+                        exit = fadeOut()
                     ) {
-                        AnimatedVisibility(
-                            visible = !pagerState.isScrollInProgress,
-                            enter = fadeIn(),
-                            exit = fadeOut()
+                        SwipeToDismissBox(
+                            state = rememberSwipeToDismissBoxState(),
+                            backgroundContent = {}
                         ) {
                             ElevatedCard(
                                 colors = CardDefaults.elevatedCardColors(containerColor = colors.surface),

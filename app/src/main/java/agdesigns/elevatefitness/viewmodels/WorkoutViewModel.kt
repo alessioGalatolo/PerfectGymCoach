@@ -302,6 +302,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.StartWorkout -> {
                 if (state.value.startDate == null) {
                     startWorkoutJob = viewModelScope.launch {
+                        // FIXME: why do we need to wait for retrieveExercise?
+                        // Is it because it initialises the workout record?
                         retrieveExercises!!.join()
                         val currentDateTime = ZonedDateTime.now()
                         _state.update { it.copy(startDate = currentDateTime) }
@@ -332,6 +334,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         restTimestamp = ZonedDateTime.now().plusSeconds(event.exerciseRest)
                     ) }
                     sendWorkout2Wear()
+                    // when first set completed, we need to create the record
                     if (record == null) {
                         val exercise = state.value.workoutExercises[event.exerciseInWorkout]
                         if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT)
@@ -352,6 +355,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             )
                         )
                     } else {
+                        // update exercise record with new set
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 record.recordId,
@@ -422,14 +426,16 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.AddSetToExercise -> {
                 // FIXME: probably there is a better way of doing this
-                val newExs = state.value.workoutExercises
-                val newEx = newExs[event.exerciseInWorkout].copy(
-                    reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last()),
-                    rest = newExs[event.exerciseInWorkout].rest.plus(newExs[event.exerciseInWorkout].rest.last())
-                )
-                _state.update { it.copy(
-                    workoutExercises = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }
-                ) }
+                _state.update {
+                    val newExs = it.workoutExercises
+                    val newEx = newExs[event.exerciseInWorkout].copy(
+                        reps = newExs[event.exerciseInWorkout].reps.plus(newExs[event.exerciseInWorkout].reps.last()),
+                        rest = newExs[event.exerciseInWorkout].rest.plus(newExs[event.exerciseInWorkout].rest.last())
+                    )
+                    it.copy(
+                        workoutExercises = newExs.map { if (it.workoutExerciseId == newEx.workoutExerciseId) newEx else it }
+                    )
+                }
             }
             is WorkoutEvent.UpdateReps -> {
                 _state.update { it.copy(repsBottomBar = event.newValue) }
@@ -473,6 +479,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             ) }
                         } else {
                             // TODO: what if it is null?
+                            Log.e("WorkoutViewModel", "Tried to resume workout but current workout id is null.")
                         }
                     }
                 }
