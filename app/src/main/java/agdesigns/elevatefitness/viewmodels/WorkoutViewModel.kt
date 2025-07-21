@@ -42,6 +42,7 @@ data class WorkoutState(
     val workoutExercises: List<WorkoutExercise> = emptyList(),
     val allRecords: Map<Long, List<ExerciseRecordAndEquipment>> = emptyMap(), // old records
     val restTimestamp: ZonedDateTime? = null, // workout time of end of rest // FIXME: sometimes timer shows negative e.g., resume workout
+    val currentExerciseRest: Long? = null, // useful to compute progress of rest
     val startDate: ZonedDateTime? = null,
     val currentTime: ZonedDateTime = ZonedDateTime.now(),
     val workoutId: Long = 0L,
@@ -331,7 +332,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
                     // FIXME: null pointer if try complete from watch when workout has not started
                     _state.update { it.copy(
-                        restTimestamp = ZonedDateTime.now().plusSeconds(event.exerciseRest)
+                        restTimestamp = ZonedDateTime.now().plusSeconds(event.exerciseRest),
+                        currentExerciseRest = event.exerciseRest
                     ) }
                     sendWorkout2Wear()
                     // when first set completed, we need to create the record
@@ -677,7 +679,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             var counter = 0
             while (true) {
                 emit(counter++)
-                delay(1000)
+                delay(100)
             }
         }.onEach {
             _state.update { it.copy(currentTime = ZonedDateTime.now()) }

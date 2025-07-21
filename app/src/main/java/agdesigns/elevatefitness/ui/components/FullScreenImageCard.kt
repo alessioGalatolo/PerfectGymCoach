@@ -42,9 +42,9 @@ fun SharedTransitionScope.FullScreenImageCard(
     imageHeight: Dp,
     brightImage: Boolean,
     darkTheme: Boolean,
-    content: @Composable () -> Unit,
+    content: @Composable (Dp) -> Unit,
     floatingActionButton: @Composable () -> Unit,
-    bottomBar: @Composable (PaddingValues, @Composable (@Composable () -> Unit) -> Unit) -> Unit
+    bottomBar: @Composable (PaddingValues) -> Unit
 ) {
     val deviceCornerRadius = 12.dp
 
@@ -66,7 +66,7 @@ fun SharedTransitionScope.FullScreenImageCard(
     val transition by remember { derivedStateOf { 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
         minimumValue = s.heightOffsetLimit,
         maximumValue = 0f
-    ) / s.heightOffsetLimit) }}  // FIXME: transition is late
+    ) / s.heightOffsetLimit) }}
 
     // make status bar transparent to see image behind
     // This is an approximation of what happened in accompanist systemUiController
@@ -139,10 +139,14 @@ fun SharedTransitionScope.FullScreenImageCard(
 //                    modifier = Modifier.statusBarsPadding()
                 )
 
-            }, content = {
+            }, content = { innerPadding ->
+                // top padding can be applied here
+                val topPadding = innerPadding.calculateTopPadding()
+                // bottom padding should be applied by content
+                val bottomPadding = innerPadding.calculateBottomPadding()
                 Box(
                     Modifier
-                        .padding(it)
+                        .padding(top = topPadding)
                         .fillMaxSize()) {
 
                     // puts background in the whole screen
@@ -164,7 +168,7 @@ fun SharedTransitionScope.FullScreenImageCard(
                             shape = ReversedCornersShape(deviceCornerRadius),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            content()
+                            content(bottomPadding)
                         }
                     }
 
@@ -173,21 +177,10 @@ fun SharedTransitionScope.FullScreenImageCard(
                 }
             },
             floatingActionButton = { floatingActionButton() },
-            bottomBar = { bottomBar(
-                WindowInsets.navigationBars.asPaddingValues()
-            ) { bottomBarContent ->
-                // TODO: why are we defining a surface to pass to the bottom bar instead of creating it there?
-                Surface(
-                    tonalElevation = NavigationBarDefaults.Elevation,
-                    modifier = Modifier
-                        .background(NavigationBarDefaults.containerColor)
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .wrapContentHeight(Alignment.CenterVertically)
-                ) {
-                    bottomBarContent()
-                }
-            }
+            bottomBar = {
+                bottomBar(
+                    WindowInsets.navigationBars.asPaddingValues()
+                )
             }
         )
     }

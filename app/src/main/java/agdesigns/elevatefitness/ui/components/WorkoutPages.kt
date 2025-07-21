@@ -37,6 +37,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -57,6 +58,7 @@ fun ExercisePage(
     navigator: DestinationsNavigator,
     setsDone: State<Int>,
     fabHeight: Dp,
+    bottomPadding: Dp,
     title: @Composable () -> Unit,
     exerciseDescription: String,
     addSet: () -> Unit,
@@ -64,6 +66,7 @@ fun ExercisePage(
     currentExerciseRecords: List<ExerciseRecordAndEquipment>,
     ongoingRecord: ExerciseRecordAndEquipment?,
     restCounterMillis: Long?,
+    restCounterProgress: Float?,
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     useImperialSystem: Boolean,
     tare: Float,
@@ -131,7 +134,7 @@ fun ExercisePage(
         ) { page ->
             if (page == workoutExercises.size) {
                 // page for finishing the workout
-                WorkoutFinishPage(workoutTimeMillis, workoutIntensity, workoutId, fabHeight, navigator)
+                WorkoutFinishPage(workoutTimeMillis, workoutIntensity, workoutId, fabHeight, bottomPadding, navigator)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
                     if (workoutExercises[page].note.isNotBlank()) {
@@ -189,12 +192,14 @@ fun ExercisePage(
                         }
                     }
                     // content
-                    if (restCounterMillis != null){
-                        Text("Time before next set: ", Modifier.align(CenterHorizontally))
+                    if (restCounterMillis != null && restCounterProgress != null){
+                        Text("Time before next set (${(restCounterProgress*100).toInt()}%): ", Modifier.align(CenterHorizontally))
                         Text("${restCounterMillis / 1000}", Modifier.align(CenterHorizontally),
                             style = MaterialTheme.typography.headlineMedium)
                         LaunchedEffect(restCounterMillis / 1000) {
                             if (restCounterMillis / 1000 == 1L || restCounterMillis / 1000 == 2L || restCounterMillis / 1000 == 3L) {
+                                haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                            } else if (restCounterMillis / 1000 == 0L) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         }
@@ -345,6 +350,7 @@ fun ExercisePage(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .clip(CardDefaults.shape) // rounded bounds when clicking
                                         .combinedClickable(onLongClick = {
                                             if (!toBeDone) {
                                                 haptic.performHapticFeedback(
@@ -416,6 +422,7 @@ fun ExercisePage(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .clip(CardDefaults.shape) // rounded bounds when clicking
                                             .combinedClickable(onLongClick = {
 
                                             }, onClick = {
@@ -442,6 +449,8 @@ fun ExercisePage(
                         }
                         Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
                     }
+                    // FIXME: works initially, but at some point tapping it doesn't work
+                    // and no more records are shown. This happens if records are odd
                     if (recordsToShow < currentExerciseRecords.size) {
                         TextButton(
                             onClick = { recordsToShow += 2 },
@@ -454,11 +463,10 @@ fun ExercisePage(
                     if (fabHeight > 0.dp) {
                         Spacer(Modifier.height(fabHeight))
                     }
+                    // This is the padding for an eventual bottom bar
+                    Spacer(Modifier.height(bottomPadding))
                 }
             }
-            // Spacer for nav bar
-            val localDensity = LocalDensity.current
-            Spacer(Modifier.height(with(localDensity) { WindowInsets.navigationBars.getBottom(localDensity).toDp() }))
         }
     }
 }
@@ -470,6 +478,7 @@ fun WorkoutFinishPage(
     workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     workoutId: Long,
     fabHeight: Dp,
+    bottomPadding: Dp,
     navigator: DestinationsNavigator
 ) {
     Column(
@@ -550,6 +559,7 @@ fun WorkoutFinishPage(
         if (fabHeight > 0.dp) {
             Spacer(Modifier.height(fabHeight))
         }
+        Spacer(Modifier.height(bottomPadding))
     }
 }
 

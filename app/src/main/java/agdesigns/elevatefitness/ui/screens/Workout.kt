@@ -55,6 +55,7 @@ import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.os.Build
 import android.util.Log
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -309,6 +310,15 @@ fun SharedTransitionScope.Workout(
     val setsDone = remember { derivedStateOf{
         ongoingRecord?.reps?.size ?: 0
     }}
+    LaunchedEffect(setsDone.value, ongoingRecord){
+        // This is to fix the bug when user is resume a workout with added sets
+        // (before) on resume, only the original number of sets would be shown (instead of also the added ones)
+        if (setsDone.value > 0 && setsDone.value > (currentExercise?.reps?.size ?: Int.MAX_VALUE)) {
+            for (i in setsDone.value-1 downTo currentExercise!!.reps.size) {
+                viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage))
+            }
+        }
+    }
 
     LaunchedEffect(setsDone.value){
         // update viewModel so that it can be transmitted to wear os
@@ -325,8 +335,8 @@ fun SharedTransitionScope.Workout(
         }
     }
 
+    // set predicted weight and tare for bottom bar
     LaunchedEffect(recordsToDisplay, ongoingRecord, setsDone){
-        // set predicted weight and tare
         // heuristic: tare is taken from previous set if available, otherwise from previous record
         /*
          weight is taken in this order:
@@ -495,17 +505,25 @@ fun SharedTransitionScope.Workout(
             imageHeight = imageHeight,
             brightImage = brightImage.value,
             darkTheme = useDarkTheme,
-            content = {
-                val restCounterMillis: Long? by remember { derivedStateOf {
-                    if (workoutState.restTimestamp != null && currentExercise != null)
-                        max(0L,
-                            workoutState.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
-                                workoutState.currentTime.toInstant().toEpochMilli()
-                            ) ?: 0L
-                        )
-                    else null
-                }}
+            content = { bottomPadding ->
+                val restCounterMillis: Long? = if (workoutState.restTimestamp != null && currentExercise != null)
+                    max(0L,
+                        workoutState.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
+                            workoutState.currentTime.toInstant().toEpochMilli()
+                        ) ?: 0L
+                    )
+                else null
+                // 1 to 0
+                val plainRestCounterProgress: Float? = restCounterMillis?.let {
+                    it.toFloat() / (workoutState.currentExerciseRest ?: it).times(1000).toFloat()
+                }
+                val restCounterProgress by animateFloatAsState(
+                    targetValue = plainRestCounterProgress ?: 1f,
+                )
+
+
                 ExercisePage(
+                    bottomPadding = bottomPadding,
                     pagerState = pagerState,
                     workoutTimeMillis = workoutTimeMillis,
                     workoutExercises = workoutState.workoutExercises,
@@ -519,6 +537,7 @@ fun SharedTransitionScope.Workout(
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounterMillis = restCounterMillis,
+                    restCounterProgress = restCounterProgress,
                     workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { probability ->
                         scope.launch {
@@ -678,83 +697,80 @@ fun SharedTransitionScope.Workout(
                     }
                 }
             }
-        ) { padding, bottomBarSurface ->
-            // FIXME: column doesn't seem necessary here
-//            Column (modifier = Modifier.background(Color.Black)) {
-                AnimatedVisibility(
-                    visible = !pagerState.isScrollInProgress,
-                    enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
-                ) {
-                    bottomBarSurface {
-                        WorkoutBottomBar(
-                            contentPadding = padding,
-                            workoutStarted = workoutState.startDate != null,
-                            startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
-                            currentExercise = currentExercise,
-                            completeWorkout = completeWorkout,
-                            completeSet = {
-                                if (!viewModel.onEvent(
-                                        WorkoutEvent.TryCompleteSet(
-                                            pagerState.currentPage,
-                                            currentExercise!!.rest[setsDone.value].toLong()
-                                        )
+        ) { padding ->
+            // FIXME: when becoming invisible, causes bottomPadding to become 0, thus removing the bottom
+            // spacer in the exercises and a slight movement in the list
+            AnimatedVisibility(
+                visible = !pagerState.isScrollInProgress,
+                enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
+            ) {
+                WorkoutBottomBar(
+                    contentPadding = padding,
+                    workoutStarted = workoutState.startDate != null,
+                    startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
+                    currentExercise = currentExercise,
+                    completeWorkout = completeWorkout,
+                    completeSet = {
+                        if (!viewModel.onEvent(
+                                WorkoutEvent.TryCompleteSet(
+                                    pagerState.currentPage,
+                                    currentExercise!!.rest[setsDone.value].toLong()
+                                )
+                            )
+                        ) {
+                            scope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                snackbarHostState.showSnackbar("Please enter valid numbers")
+                            }
+                        } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
+                            val superExercise =
+                                workoutState.workoutExercises.find {
+                                    it.extProgramExerciseId == currentExercise!!.supersetExercise
+                                }
+                            if (superExercise != null) {
+                                if (workoutState.workoutExercises.indexOf(
+                                        superExercise
+                                    ) >
+                                    workoutState.workoutExercises.indexOf(
+                                        currentExercise
                                     )
                                 ) {
                                     scope.launch {
-                                        snackbarHostState.currentSnackbarData?.dismiss()
-                                        snackbarHostState.showSnackbar("Please enter valid numbers")
+                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
                                     }
-                                } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
-                                    val superExercise =
-                                        workoutState.workoutExercises.find {
-                                            it.extProgramExerciseId == currentExercise!!.supersetExercise
-                                        }
-                                    if (superExercise != null) {
-                                        if (workoutState.workoutExercises.indexOf(
-                                                superExercise
-                                            ) >
-                                            workoutState.workoutExercises.indexOf(
-                                                currentExercise
-                                            )
-                                        ) {
-                                            scope.launch {
-                                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                            }
-                                        } else {
-                                            scope.launch {
-                                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                            }
-                                        }
+                                } else {
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
                                     }
                                 }
-                            }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
-                            addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
-                            goToNextExercise = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(
-                                        pagerState.currentPage + 1
-                                    )
-                                }
-                            },
-                            repsToDisplay = workoutState.repsBottomBar,
-                            updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
-                            weightToDisplay = workoutState.weightBottomBar,
-                            updateWeight = { value ->
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateWeight(
-                                        value
-                                    )
-                                )
-                            },
-                            autoStepWeight = { newValue, equipment, decrement ->
-                                viewModel.onEvent(
-                                    WorkoutEvent.AutoStepWeight(newValue, equipment, decrement)
-                                )
                             }
+                        }
+                    }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
+                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
+                    goToNextExercise = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(
+                                pagerState.currentPage + 1
+                            )
+                        }
+                    },
+                    repsToDisplay = workoutState.repsBottomBar,
+                    updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
+                    weightToDisplay = workoutState.weightBottomBar,
+                    updateWeight = { value ->
+                        viewModel.onEvent(
+                            WorkoutEvent.UpdateWeight(
+                                value
+                            )
+                        )
+                    },
+                    autoStepWeight = { newValue, equipment, decrement ->
+                        viewModel.onEvent(
+                            WorkoutEvent.AutoStepWeight(newValue, equipment, decrement)
                         )
                     }
-//                }
+                )
             }
         }
     } else if (previewExercise != null) {
@@ -814,7 +830,7 @@ fun SharedTransitionScope.Workout(
             imageHeight = imageHeight,
             brightImage = brightImage.value,
             darkTheme = useDarkTheme,
-            content = {
+            content = { bottomPadding ->
                 val exampleRecord = ExerciseRecordAndEquipment(
                     recordId = 0L,
                     extExerciseId = 0L,
@@ -864,6 +880,7 @@ fun SharedTransitionScope.Workout(
 
                 )
                 ExercisePage(
+                    bottomPadding = bottomPadding,
                     pagerState = rememberPagerState(pageCount = { 2 }),
                     workoutTimeMillis = 0L,
                     workoutExercises = workoutExercisesExample,
@@ -892,12 +909,13 @@ fun SharedTransitionScope.Workout(
                     changeExercise = { _, _ -> },
                     removeExercise = { },
                     restCounterMillis = null,
+                    restCounterProgress = null,
                     workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { _ -> }
                 )
             },
             floatingActionButton = {},
-            bottomBar = { _, _ -> }
+            bottomBar = { _ -> }
         )
     } else if (workoutState.workoutId != 0L){
         // program is empty, prompt to add an exercise

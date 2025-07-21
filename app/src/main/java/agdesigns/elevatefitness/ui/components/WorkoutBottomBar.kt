@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.workout_exercise.WorkoutExercise
+import androidx.compose.foundation.background
 import androidx.compose.material3.minimumInteractiveComponentSize
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -37,6 +38,7 @@ fun WorkoutBottomBar(
     val imeVisible = WindowInsets.isImeVisible
     Column(
         Modifier
+            .background(NavigationBarDefaults.containerColor)
             .padding(contentPadding)
             .padding(horizontal = 16.dp)
     ) {
