@@ -66,6 +66,8 @@ fun LazyListScope.ExerciseRecordsList(
             )
         }
     }
+    // FIXME: maybe add date in card
+    exerciseRecordsToUse = exerciseRecordsToUse.sortedByDescending { it.date }
     items (items = exerciseRecordsToUse, key = { it.recordId }) { exercise ->
         Card (onClick = {
             onRecordClick(exercise.recordId)

@@ -73,7 +73,6 @@ enum class TimeFrame(val displayName: String) {
 
 sealed class StatisticsEvent {
     data class OnTimeFrameChanged(val timeFrame: TimeFrame) : StatisticsEvent()
-    object OnRefresh : StatisticsEvent()
 }
 
 @HiltViewModel
@@ -97,9 +96,6 @@ class StatisticsViewModel @Inject constructor(
                         selectedTimeFrame = event.timeFrame
                     )
                 }
-                computeStatistics()
-            }
-            is StatisticsEvent.OnRefresh -> {
                 computeStatistics()
             }
         }
@@ -126,100 +122,94 @@ class StatisticsViewModel @Inject constructor(
     private fun computeStatistics() {
         computeStatisticsJob?.cancel()
         computeStatisticsJob = viewModelScope.launch {
-            try {
-                _state.update { it.copy(isLoading = true) }
-                val timeFrame = _state.value.selectedTimeFrame
+            _state.update { it.copy(isLoading = true) }
+            val timeFrame = _state.value.selectedTimeFrame
 
-                // Calculate date range based on selected time frame
-                val endDate = ZonedDateTime.now()
-                val startDate = when (timeFrame) {
-                    TimeFrame.WEEK -> endDate.minusWeeks(1)
-                    TimeFrame.MONTH -> endDate.minusMonths(1)
-                    TimeFrame.YEAR -> endDate.minusYears(1)
-                    TimeFrame.ALL_TIME -> ZonedDateTime.of(
-                        2020,
-                        1,
-                        1,
-                        0,
-                        0,
-                        0,
-                        0,
-                        ZoneId.systemDefault()
-                    )
-                }
-                _state.update { it.copy(progressText = "Filtering by ${timeFrame.displayName}...") }
-                val nonEmptyWorkouts = state.value.allWorkouts.filter { it.startDate != null }
-                    .filter { it.durationSeconds > 0 }
-                val recordList = state.value.allExerciseRecords
-
-                val workoutsDateFiltered = nonEmptyWorkouts.filter {
-                    it.startDate!!.isAfter(startDate) && it.startDate.isBefore(endDate)
-                }
-                val recordsDateFiltered = recordList.filter {
-                    it.date.isAfter(startDate) && it.date.isBefore(endDate)
-                }
-
-                // Calculate basic metrics
-                _state.update { it.copy(progressText = "Computing stats...") }
-                val totalWorkouts = workoutsDateFiltered.size
-                val totalVolume = recordsDateFiltered.sumOf {
-                    computeVolume(
-                        it.weights,
-                        it.reps,
-                        it.tare
-                    ).toDouble()
-                }
-                val avgDuration = if (nonEmptyWorkouts.isNotEmpty()) {
-                    nonEmptyWorkouts.map { it.durationSeconds }.average().toLong()
-                } else 0L
-                val totalCalories = nonEmptyWorkouts.sumOf { it.calories.toDouble() }
-                val avgCalories = if (nonEmptyWorkouts.isNotEmpty()) {
-                    nonEmptyWorkouts.sumOf { it.calories.toDouble() } / nonEmptyWorkouts.size
-                } else 0.0
-
-                // Calculate streaks
-                _state.update { it.copy(progressText = "Calculating streaks...") }
-                val (currentStreak, longestStreak) = calculateStreaks(workoutsDateFiltered)
-
-                // Generate chart data
-                _state.update { it.copy(progressText = "Summing volumes...") }
-                val weeklyVolume = generateVolumeProgressionData(recordsDateFiltered)
-                _state.update { it.copy(progressText = "Counting workouts...") }
-                val monthlyWorkouts = generateMonthlyWorkoutData(nonEmptyWorkouts)
-                _state.update { it.copy(progressText = "Computing muscle distribution...") }
-                val muscleDistribution = generateMuscleDistribution(recordsDateFiltered)
-                _state.update { it.copy(progressText = "Deriving top exercises...") }
-                val topExercises = generateTopExercises(recordsDateFiltered)
-                _state.update { it.copy(progressText = "Getting recent PRs...") }
-                val recentPRs = generateRecentPRs(recordsDateFiltered)
-                _state.update { it.copy(progressText = "Computing equipment usage...") }
-                val equipmentUsage = generateEquipmentUsage(recordsDateFiltered)
-
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        totalWorkouts = totalWorkouts,
-                        totalVolume = totalVolume,
-                        avgWorkoutDuration = avgDuration,
-                        totalCalories = totalCalories,
-                        avgCalories = avgCalories,
-                        currentStreak = currentStreak,
-                        longestStreak = longestStreak,
-                        weeklyVolume = weeklyVolume,
-                        monthlyWorkouts = monthlyWorkouts,
-                        muscleGroupDistribution = muscleDistribution,
-                        topExercises = topExercises,
-                        recentPRs = recentPRs,
-                        equipmentUsage = equipmentUsage,
-                        progressText = "Done!"
-                    )
-                }
-                Log.d("StatisticsViewModel", "Statistics computed successfully")
-            } catch (e: Exception) {
-                Log.e("StatisticsViewModel", "Error computing statistics", e)
-            } finally {
-                _state.update { it.copy(isLoading = false) }
+            // Calculate date range based on selected time frame
+            val endDate = ZonedDateTime.now()
+            val startDate = when (timeFrame) {
+                TimeFrame.WEEK -> endDate.minusWeeks(1)
+                TimeFrame.MONTH -> endDate.minusMonths(1)
+                TimeFrame.YEAR -> endDate.minusYears(1)
+                TimeFrame.ALL_TIME -> ZonedDateTime.of(
+                    2020,
+                    1,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    ZoneId.systemDefault()
+                )
             }
+            _state.update { it.copy(progressText = "Filtering by ${timeFrame.displayName}...") }
+            val nonEmptyWorkouts = state.value.allWorkouts.filter { it.startDate != null }
+                .filter { it.durationSeconds > 0 }
+            val recordList = state.value.allExerciseRecords
+
+            val workoutsDateFiltered = nonEmptyWorkouts.filter {
+                it.startDate!!.isAfter(startDate) && it.startDate.isBefore(endDate)
+            }
+            val recordsDateFiltered = recordList.filter {
+                it.date.isAfter(startDate) && it.date.isBefore(endDate)
+            }
+
+            // Calculate basic metrics
+            _state.update { it.copy(progressText = "Computing stats...") }
+            val totalWorkouts = workoutsDateFiltered.size
+            val totalVolume = recordsDateFiltered.sumOf {
+                computeVolume(
+                    it.weights,
+                    it.reps,
+                    it.tare
+                ).toDouble()
+            }
+            val avgDuration = if (nonEmptyWorkouts.isNotEmpty()) {
+                nonEmptyWorkouts.map { it.durationSeconds }.average().toLong()
+            } else 0L
+            val totalCalories = nonEmptyWorkouts.sumOf { it.calories.toDouble() }
+            val avgCalories = if (nonEmptyWorkouts.isNotEmpty()) {
+                nonEmptyWorkouts.sumOf { it.calories.toDouble() } / nonEmptyWorkouts.size
+            } else 0.0
+
+            // Calculate streaks
+            _state.update { it.copy(progressText = "Calculating streaks...") }
+            val (currentStreak, longestStreak) = calculateStreaks(workoutsDateFiltered)
+
+            // Generate chart data
+            _state.update { it.copy(progressText = "Summing volumes...") }
+            val weeklyVolume = generateVolumeProgressionData(recordsDateFiltered)
+            _state.update { it.copy(progressText = "Counting workouts...") }
+            val monthlyWorkouts = generateMonthlyWorkoutData(nonEmptyWorkouts)
+            _state.update { it.copy(progressText = "Computing muscle distribution...") }
+            val muscleDistribution = generateMuscleDistribution(recordsDateFiltered)
+            _state.update { it.copy(progressText = "Deriving top exercises...") }
+            val topExercises = generateTopExercises(recordsDateFiltered)
+            _state.update { it.copy(progressText = "Getting recent PRs...") }
+            val recentPRs = generateRecentPRs(recordsDateFiltered)
+            _state.update { it.copy(progressText = "Computing equipment usage...") }
+            val equipmentUsage = generateEquipmentUsage(recordsDateFiltered)
+
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    totalWorkouts = totalWorkouts,
+                    totalVolume = totalVolume,
+                    avgWorkoutDuration = avgDuration,
+                    totalCalories = totalCalories,
+                    avgCalories = avgCalories,
+                    currentStreak = currentStreak,
+                    longestStreak = longestStreak,
+                    weeklyVolume = weeklyVolume,
+                    monthlyWorkouts = monthlyWorkouts,
+                    muscleGroupDistribution = muscleDistribution,
+                    topExercises = topExercises,
+                    recentPRs = recentPRs,
+                    equipmentUsage = equipmentUsage,
+                    progressText = "Done!"
+                )
+            }
+            Log.d("StatisticsViewModel", "Statistics computed successfully")
         }
     }
 

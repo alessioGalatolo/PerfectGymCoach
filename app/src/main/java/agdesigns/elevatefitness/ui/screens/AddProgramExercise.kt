@@ -45,6 +45,7 @@ import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.viewmodels.ExercisesEvent
 import agdesigns.elevatefitness.viewmodels.ExercisesViewModel
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import coil3.compose.AsyncImage
@@ -127,7 +128,8 @@ fun AddProgramExercise(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = innerPadding
+                    contentPadding = innerPadding,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     itemsIndexed(items = addProgramState.programExercisesAndInfo,
                         key = { _, it -> it.programExerciseId }) { index, exercise ->
@@ -138,16 +140,19 @@ fun AddProgramExercise(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
                                 modifier = Modifier
-                                    .clickable {
+                                    .clip(CardDefaults.shape)
+                                    .combinedClickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = {
                                         viewModel.onEvent(
                                             ExercisesEvent.UpdateSuperset(
                                                 index,
                                                 index - 1
                                             )
                                         )
-                                    }
+                                    }, onLongClick = {})
                                     .wrapContentHeight()
-                                    .fillMaxWidth()
                             ){
                                 val linked = exercise.supersetExercise == addProgramState.programExercisesAndInfo[index-1].programExerciseId
                                 val orientation = remember { Animatable(0f) }
