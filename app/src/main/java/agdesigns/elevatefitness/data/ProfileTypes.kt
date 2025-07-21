@@ -1,6 +1,6 @@
 package agdesigns.elevatefitness.data
 
-enum class Sex (val sexName: String){
+enum class Sex (val displayName: String){
         MALE("Male"),
         FEMALE("Female"),
         OTHER("Other");
@@ -8,7 +8,7 @@ enum class Sex (val sexName: String){
         companion object {
                 fun fromName(name: String?): Sex{
                         for (sex in entries){
-                                if (sex.sexName == name)
+                                if (sex.displayName == name)
                                         return sex
                         }
                         return OTHER
@@ -16,7 +16,7 @@ enum class Sex (val sexName: String){
         }
 }
 
-enum class Theme (val themeName: String){
+enum class Theme (val displayName: String){
         SYSTEM("Same as system"),
         LIGHT("Always light"),
         DARK("Always dark");
@@ -24,7 +24,7 @@ enum class Theme (val themeName: String){
         companion object {
                 fun fromName(name: String?): Theme{
                         for (theme in entries){
-                                if (theme.themeName == name)
+                                if (theme.displayName == name)
                                         return theme
                         }
                         return SYSTEM

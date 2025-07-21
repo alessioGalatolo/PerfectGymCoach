@@ -20,6 +20,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import agdesigns.elevatefitness.R
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -63,42 +66,19 @@ fun RootDestinationGraph(){
     val currentDestination = navController.currentDestinationAsState().value
         ?: NavGraphs.root.startDestination
 
-    Scaffold(modifier = Modifier
-        .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            AnimatedVisibility(
-                enter = fadeIn() + slideInVertically(),
-                exit = fadeOut() + slideOutVertically (),
-                visible = BottomBarDestination.entries.any { currentDestination == it.direction }
-            ) {
-                LargeTopAppBar(title = { Text(stringResource(R.string.default_quote)) },
-                    scrollBehavior = scrollBehavior,
-//                    actions = {
-//                        IconButton(onClick = { /* TODO */ }) {
-//                            Icon(
-//                                imageVector = Icons.Filled.Settings,
-//                                contentDescription = "App settings"
-//                            )
-//                        }
-//                    } // TODO: add when app needs settings
-                )
-            }
-        }, content = { innerPadding ->
-            val topPadding by animateDpAsState(
-                if (BottomBarDestination.entries.any { currentDestination == it.direction })
-                    innerPadding.calculateTopPadding()
-                else 0.dp, label = ""
-            )
+    Scaffold(
+        content = { innerPadding ->
+            // remove navigation bar padding, not needed as it will be applied inside content
             val bottomPadding by animateDpAsState(
                 if (BottomBarDestination.entries.any { currentDestination == it.direction })
-                    innerPadding.calculateBottomPadding()
+                    innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 else 0.dp, label = ""
             )
             SharedTransitionLayout {
                 DestinationsNavHost(
                     navGraph = NavGraphs.bottomNavigation,
                     navController = navController,
-                    modifier = Modifier.padding(top = topPadding, bottom = bottomPadding),
+                    modifier = Modifier.padding(bottom = bottomPadding),
                     dependenciesContainerBuilder = {
                         dependency(this@SharedTransitionLayout)
                     }

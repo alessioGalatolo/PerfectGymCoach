@@ -31,7 +31,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -326,12 +325,12 @@ class Repository @Inject constructor(
     // TODO: move default value outside
     fun getUserSex(): Flow<Sex> = dataStore.data.map{ Sex.fromName(it[userSex]) }
 
-    suspend fun setUserSex(newSex: Sex) = dataStore.edit { it[userSex] = newSex.sexName }
+    suspend fun setUserSex(newSex: Sex) = dataStore.edit { it[userSex] = newSex.displayName }
 
     // TODO: move default value outside
     fun getTheme(): Flow<Theme> = dataStore.data.map{ Theme.fromName(it[theme]) }
 
-    suspend fun setTheme(newTheme: Theme) = dataStore.edit { it[theme] = newTheme.themeName }
+    suspend fun setTheme(newTheme: Theme) = dataStore.edit { it[theme] = newTheme.displayName }
 
 
     // TODO: move default value outside

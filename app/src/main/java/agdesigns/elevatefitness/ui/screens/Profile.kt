@@ -1,10 +1,8 @@
 package agdesigns.elevatefitness.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
@@ -13,21 +11,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
@@ -42,7 +31,6 @@ import agdesigns.elevatefitness.viewmodels.ProfileEvent
 import agdesigns.elevatefitness.viewmodels.ProfileState
 import agdesigns.elevatefitness.viewmodels.ProfileViewModel
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import com.ramcosta.composedestinations.annotation.Destination
@@ -50,7 +38,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.time.ZonedDateTime
 import java.util.*
 import kotlin.math.pow
-import kotlin.math.round
 import kotlin.math.roundToInt
 
 @Destination<BottomNavigationGraph>(style = FadeTransition::class)
@@ -85,12 +72,15 @@ fun Profile(
     }
 
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 24.dp)
+        contentPadding = PaddingValues(vertical = 16.dp)
     ) {
+        item {
+            Spacer(Modifier.statusBarsPadding())
+        }
         // Header Section
         item {
             ProfileHeader(
@@ -139,8 +129,9 @@ fun Profile(
                             focusManager.clearFocus()
                         }
                     },
-                    keyboardController = keyboardController,
-                    focusManager = focusManager
+                    onEditSex = {
+                        viewModel.onEvent(ProfileEvent.UpdateSex(it))
+                    }
                 )
             }
         }
@@ -179,6 +170,11 @@ fun Profile(
                     focusManager = focusManager
                 )
             }
+        }
+        item {
+            // zero height because we have arrangement spaced by
+            // FIXME: may be bad compose patter to have zero height item
+            Spacer(Modifier.height(0.dp))
         }
     }
 }
@@ -290,8 +286,7 @@ fun PersonalInfoContent(
     onUserYearChange: (String) -> Unit,
     onEditYearToggle: () -> Unit,
     onYearSubmit: () -> Unit,
-    keyboardController: SoftwareKeyboardController?,
-    focusManager: FocusManager
+    onEditSex: (Sex) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -366,7 +361,7 @@ fun PersonalInfoContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Biological sex:",
+                text = "Sex:",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
@@ -379,7 +374,7 @@ fun PersonalInfoContent(
             ) {
                 OutlinedTextField(
                     readOnly = true,
-                    value = profileState.sex.sexName,
+                    value = profileState.sex.displayName,
                     onValueChange = {},
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
@@ -390,11 +385,10 @@ fun PersonalInfoContent(
                 ) {
                     Sex.entries.forEach { sex ->
                         DropdownMenuItem(
-                            text = { Text(sex.sexName) },
+                            text = { Text(sex.displayName) },
                             onClick = {
-                                // viewModel.onEvent(ProfileEvent.UpdateSex(sex))
+                                onEditSex(sex)
                                 expanded = false
-                                focusManager.clearFocus()
                             },
                             contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                         )
@@ -585,7 +579,7 @@ fun PreferencesContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Use imperial system",
+                text = "Use imperial system:",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
@@ -614,7 +608,7 @@ fun PreferencesContent(
             ) {
                 OutlinedTextField(
                     readOnly = true,
-                    value = profileState.theme.themeName,
+                    value = profileState.theme.displayName,
                     onValueChange = {},
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
@@ -625,7 +619,7 @@ fun PreferencesContent(
                 ) {
                     Theme.entries.forEach { theme ->
                         DropdownMenuItem(
-                            text = { Text(theme.themeName) },
+                            text = { Text(theme.displayName) },
                             onClick = {
                                 viewModel.onEvent(ProfileEvent.UpdateTheme(theme))
                                 expanded = false

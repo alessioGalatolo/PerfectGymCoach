@@ -66,6 +66,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
+                .statusBarsPadding()
         ) {
             // Section header with improved styling
             Row(
@@ -462,6 +463,9 @@ fun History(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }

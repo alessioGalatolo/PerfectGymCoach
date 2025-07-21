@@ -31,9 +31,15 @@ import agdesigns.elevatefitness.viewmodels.HomeViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
@@ -46,7 +52,9 @@ import kotlinx.coroutines.delay
 
 @Destination<BottomNavigationGraph>(start = true, style = FadeTransition::class)
 @Composable
-@OptIn(ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class,
+    ExperimentalMaterial3Api::class
+)
 fun SharedTransitionScope.Home(
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
@@ -77,12 +85,16 @@ fun SharedTransitionScope.Home(
         resumeWorkoutDialogOpen = homeState.currentWorkout != null
     }
 
-
-    if (homeState.currentPlan == null) {
-        Scaffold(
-            floatingActionButton = {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        rememberTopAppBarState()
+    )
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        floatingActionButton = {
+            if (homeState.currentPlan == null) {
                 LargeFloatingActionButton(
-                    onClick = { navigator.navigate(
+                    onClick = {
+                        navigator.navigate(
                         AddWorkoutPlanDestination(openDialogNow = true)
                     ) }
                 ) {
@@ -92,237 +104,152 @@ fun SharedTransitionScope.Home(
                         modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize)
                     )
                 }
-            }) {
-            Column(modifier = Modifier.padding(it)) {
+            }
+        },
+        topBar = {
+            LargeTopAppBar(
+                title = { Text(stringResource(R.string.default_quote)) },
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
+        if (homeState.currentPlan == null) {
+            Column(modifier = Modifier.padding(innerPadding)) {
                 Text(
                     stringResource(id = R.string.empty_home),
                     modifier = Modifier.padding(16.dp)
                 )
                 GeneratePlanButton(navigator)
             }
-        }
-    } else if (homeState.programs?.isEmpty() == true) {
-        Column (horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Outlined.Description,
-                contentDescription = "",
-                modifier = Modifier.size(160.dp)
-            )
-            Text(
-                stringResource(id = R.string.empty_home_program),
-                modifier = Modifier.padding(16.dp)
-            )
-            Button(onClick = {
-                navigator.navigate(
-                    AddProgramDestination(
-                        planName = "", // FIXME: empty plan name
-                        planId = homeState.currentPlan!!,
-                        openDialogNow = true
-                    )
+        } else if (homeState.programs?.isEmpty() == true) {
+            Column (horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(innerPadding)) {
+                Icon(
+                    imageVector = Icons.Outlined.Description,
+                    contentDescription = "",
+                    modifier = Modifier.size(160.dp)
                 )
-            }) {
-                Text(stringResource(id = R.string.add_program))
-            }
-            TextButton(
-                onClick = {
+                Text(
+                    stringResource(id = R.string.empty_home_program),
+                    modifier = Modifier.padding(16.dp)
+                )
+                Button(onClick = {
                     navigator.navigate(
-                        AddWorkoutPlanDestination()
-                    ) },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) { Text(stringResource(R.string.change_workout_plan)) }
-            Spacer(modifier = Modifier.height(8.dp))
-
-        }
-    } else if (homeState.programs?.isNotEmpty() == true
-        && homeState.currentProgram != null
-    ) {
-        LazyColumn(Modifier.padding(horizontal = 16.dp)){
-            var currentProgram = homeState.programs?.getOrNull(homeState.currentProgram!!)
-            // the check below should not be necessary anymore, the bug was fixed elsewhere
-            if (currentProgram == null) {
-                currentProgram = homeState.programs?.get(0)!!
-            }
-            val currentExercises =
-                homeState.exercisesAndInfo[currentProgram.programId]?.sortedBy {
-                    it.orderInProgram
-                } ?: emptyList()
-            // now that we got current program, roll homeState.programs so that currentProgram.orderInWorkoutPlan+1 is first
-            val otherPrograms by derivedStateOf {
-                homeState.programs!!.minus(currentProgram).sortedBy {
-                    (it.orderInWorkoutPlan - currentProgram.orderInWorkoutPlan).mod(homeState.programs!!.size)
+                        AddProgramDestination(
+                            planName = "", // FIXME: empty plan name
+                            planId = homeState.currentPlan!!,
+                            openDialogNow = true
+                        )
+                    )
+                }) {
+                    Text(stringResource(id = R.string.add_program))
                 }
-            }
-            item {
-                // Coming next
-                Text(text = stringResource(id = R.string.coming_next), fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                // animate card, image and text separately
-                val cardKey = rememberSharedContentState("card_${currentProgram.programId}")
-                val imageKey = rememberSharedContentState("img_${currentProgram.programId}")
-                val exerciseNameKey = rememberSharedContentState("exName_${currentProgram.programId}")
-                val roundedCornersShape = CardDefaults.shape
-                WorkoutCard(
-                    program = currentProgram,
-                    exercises = currentExercises,
-                    // TODO: add message when no exercises in the program
-                    onCardClick = { previewExercise ->
+                TextButton(
+                    onClick = {
                         navigator.navigate(
-                            WorkoutDestination(
-                                programId = currentProgram.programId,
-                                previewExercise = previewExercise
-                            ),
-                        )
-                    },
-                    navigator = navigator,
-                    // FIXME: suboptimal solution
-                    cardModifier = Modifier
-                        .sharedBounds(
-                            sharedContentState = cardKey,
-                            animatedVisibilityScope = animatedVisibilityScope,
-//                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                        )
-                    ,
-                    imageModifier = Modifier
-                        .sharedBounds(
-                            sharedContentState = imageKey,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
-                            // need false otherwise image is not clipped with rounded corners during transition
-                            renderInOverlayDuringTransition = false
-                        ),
-                    exerciseModifier = Modifier
-                        .sharedBounds(
-                            sharedContentState = exerciseNameKey,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
-                )
-            }
-            item {
+                            AddWorkoutPlanDestination()
+                        ) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) { Text(stringResource(R.string.change_workout_plan)) }
                 Spacer(modifier = Modifier.height(8.dp))
+
             }
-            if (otherPrograms.isNotEmpty()) {
+        } else if (homeState.programs?.isNotEmpty() == true
+            && homeState.currentProgram != null
+        ) {
+            LazyColumn(
+                Modifier.padding(horizontal = 16.dp).nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = innerPadding
+            ) {
+                var currentProgram = homeState.programs?.getOrNull(homeState.currentProgram!!)
+                // the check below should not be necessary anymore, the bug was fixed elsewhere
+                if (currentProgram == null) {
+                    currentProgram = homeState.programs?.get(0)!!
+                }
+                val currentExercises =
+                    homeState.exercisesAndInfo[currentProgram.programId]?.sortedBy {
+                        it.orderInProgram
+                    } ?: emptyList()
+                // now that we got current program, roll homeState.programs so that currentProgram.orderInWorkoutPlan+1 is first
+                val otherPrograms by derivedStateOf {
+                    homeState.programs!!.minus(currentProgram).sortedBy {
+                        (it.orderInWorkoutPlan - currentProgram.orderInWorkoutPlan).mod(homeState.programs!!.size)
+                    }
+                }
                 item {
+                    // Coming next
                     Text(
-                        text = stringResource(id = R.string.other_programs),
+                        text = stringResource(id = R.string.coming_next),
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                }
-                items(items = otherPrograms, key = { it }){
-                    val exs =
-                        homeState.exercisesAndInfo[it.programId]?.sortedBy {
-                            it.orderInProgram
-                        } ?: emptyList()
-                    val pagerState = rememberPagerState(pageCount = { exs.size })
-                    Card(
-                        modifier = Modifier
+                    // animate card, image and text separately
+                    val cardKey = rememberSharedContentState("card_${currentProgram.programId}")
+                    val imageKey = rememberSharedContentState("img_${currentProgram.programId}")
+                    val exerciseNameKey =
+                        rememberSharedContentState("exName_${currentProgram.programId}")
+                    val roundedCornersShape = CardDefaults.shape
+                    WorkoutCard(
+                        program = currentProgram,
+                        exercises = currentExercises,
+                        // TODO: add message when no exercises in the program
+                        onCardClick = { previewExercise ->
+                            navigator.navigate(
+                                WorkoutDestination(
+                                    programId = currentProgram.programId,
+                                    previewExercise = previewExercise
+                                ),
+                            )
+                        },
+                        navigator = navigator,
+                        // FIXME: suboptimal solution
+                        cardModifier = Modifier
                             .sharedBounds(
-                                sharedContentState = rememberSharedContentState("card_${it.programId}"),
+                                sharedContentState = cardKey,
+                                animatedVisibilityScope = animatedVisibilityScope,
+//                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                            ),
+                        imageModifier = Modifier
+                            .sharedBounds(
+                                sharedContentState = imageKey,
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
+                                // need false otherwise image is not clipped with rounded corners during transition
+                                renderInOverlayDuringTransition = false
+                            ),
+                        exerciseModifier = Modifier
+                            .sharedBounds(
+                                sharedContentState = exerciseNameKey,
                                 animatedVisibilityScope = animatedVisibilityScope,
                             )
-                            .fillMaxWidth()
-                            .padding(vertical = dimensionResource(R.dimen.card_space_between) / 2)
-                            .combinedClickable(onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                navigator.navigate(
-                                    AddProgramExerciseDestination(
-                                        programName = it.name,
-                                        programId = it.programId
-                                    )
-                                )
-                            }) {
-                                navigator.navigate(
-                                    WorkoutDestination(
-                                        programId = it.programId,
-                                        previewExercise = exs.getOrNull(pagerState.currentPage)
-                                    )
-                                )
-                            }
-                    ){
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (otherPrograms.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(id = R.string.other_programs),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    items(items = otherPrograms, key = { it }) {
+                        val exs =
+                            homeState.exercisesAndInfo[it.programId]?.sortedBy {
+                                it.orderInProgram
+                            } ?: emptyList()
+                        val pagerState = rememberPagerState(pageCount = { exs.size })
+                        Card(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(dimensionResource(R.dimen.card_inner_padding))
-                        ) {
-                            Column(
-                                Modifier
-                                    .weight(1.6f)
-                                    .fillMaxHeight()) {
-                                Text(
-                                    text = it.name,
-                                    style = MaterialTheme.typography.titleLarge,
+                                .sharedBounds(
+                                    sharedContentState = rememberSharedContentState("card_${it.programId}"),
+                                    animatedVisibilityScope = animatedVisibilityScope,
                                 )
-                                exs.forEach { exercise -> // TODO: mark supersets
-                                    val exerciseName = exercise.name + exercise.variation
-                                    val modifier = if (exercise.orderInProgram == pagerState.currentPage) Modifier.sharedBounds(
-                                            sharedContentState = rememberSharedContentState("exName_${it.programId}"),
-                                            animatedVisibilityScope = animatedVisibilityScope,
-                                        ) else Modifier
-                                    Text(text = exerciseName, modifier = modifier)
-                                }
-                            }
-                            Column (verticalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                            ){
-                                if (exs.isNotEmpty()) {
-                                    HorizontalPager(
-                                        state = pagerState,
-                                        userScrollEnabled = false,
-                                        modifier = Modifier
-                                            .sharedBounds(
-                                                sharedContentState = rememberSharedContentState("img_${it.programId}"),
-                                                animatedVisibilityScope = animatedVisibilityScope,
-                                            )
-                                            .width(150.dp)
-                                            .height(150.dp / 3 * 2)
-                                            .clip(AbsoluteRoundedCornerShape(12.dp))
-                                            .align(Alignment.End)
-                                    ) { page ->
-                                        Box(Modifier.wrapContentSize()) {
-                                            AsyncImage(
-                                                model = exs[page].image,
-                                                contentDescription = "Exercise image",
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier
-                                                    .height(150.dp / 3 * 2)
-                                                    .width(150.dp)
-                                            )
-                                        }
-                                    }
-                                    LaunchedEffect(homeState.animationTick){
-                                        if (!animatedVisibilityScope.transition.isRunning) {
-                                            pagerState.animateScrollToPage(
-                                                (pagerState.currentPage + 1) %
-                                                        exs.size
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Row (horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.Bottom,
-                            modifier = Modifier.fillMaxWidth()
-                        ){
-                            if (exs.isNotEmpty()) {
-                                IconButton(
-                                    onClick = {
-                                        navigator.navigate(
-                                            WorkoutDestination(
-                                                programId = it.programId,
-                                                previewExercise = exs[pagerState.currentPage],
-                                                quickStart = true
-                                            )
-                                        )
-                                    }) {
-                                    Icon(Icons.Default.RocketLaunch, "Quick start workout")
-                                }
-                            }
-                            IconButton(
-                                onClick = {
+                                .fillMaxWidth()
+                                .padding(vertical = dimensionResource(R.dimen.card_space_between) / 2)
+                                .combinedClickable(onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     navigator.navigate(
                                         AddProgramExerciseDestination(
                                             programName = it.name,
@@ -330,34 +257,142 @@ fun SharedTransitionScope.Home(
                                         )
                                     )
                                 }) {
-                                Icon(Icons.Outlined.Edit, "Edit program")
+                                    navigator.navigate(
+                                        WorkoutDestination(
+                                            programId = it.programId,
+                                            previewExercise = exs.getOrNull(pagerState.currentPage)
+                                        )
+                                    )
+                                }
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(dimensionResource(R.dimen.card_inner_padding))
+                            ) {
+                                Column(
+                                    Modifier
+                                        .weight(1.6f)
+                                        .fillMaxHeight()
+                                ) {
+                                    Text(
+                                        text = it.name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                    )
+                                    exs.forEach { exercise -> // TODO: mark supersets
+                                        val exerciseName = exercise.name + exercise.variation
+                                        val modifier =
+                                            if (exercise.orderInProgram == pagerState.currentPage) Modifier.sharedBounds(
+                                                sharedContentState = rememberSharedContentState("exName_${it.programId}"),
+                                                animatedVisibilityScope = animatedVisibilityScope,
+                                            ) else Modifier
+                                        Text(text = exerciseName, modifier = modifier)
+                                    }
+                                }
+                                Column(
+                                    verticalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                ) {
+                                    if (exs.isNotEmpty()) {
+                                        HorizontalPager(
+                                            state = pagerState,
+                                            userScrollEnabled = false,
+                                            modifier = Modifier
+                                                .sharedBounds(
+                                                    sharedContentState = rememberSharedContentState(
+                                                        "img_${it.programId}"
+                                                    ),
+                                                    animatedVisibilityScope = animatedVisibilityScope,
+                                                )
+                                                .width(150.dp)
+                                                .height(150.dp / 3 * 2)
+                                                .clip(AbsoluteRoundedCornerShape(12.dp))
+                                                .align(Alignment.End)
+                                        ) { page ->
+                                            Box(Modifier.wrapContentSize()) {
+                                                AsyncImage(
+                                                    model = exs[page].image,
+                                                    contentDescription = "Exercise image",
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier
+                                                        .height(150.dp / 3 * 2)
+                                                        .width(150.dp)
+                                                )
+                                            }
+                                        }
+                                        LaunchedEffect(homeState.animationTick) {
+                                            if (!animatedVisibilityScope.transition.isRunning) {
+                                                pagerState.animateScrollToPage(
+                                                    (pagerState.currentPage + 1) %
+                                                            exs.size
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.Bottom,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                if (exs.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = {
+                                            navigator.navigate(
+                                                WorkoutDestination(
+                                                    programId = it.programId,
+                                                    previewExercise = exs[pagerState.currentPage],
+                                                    quickStart = true
+                                                )
+                                            )
+                                        }) {
+                                        Icon(Icons.Default.RocketLaunch, "Quick start workout")
+                                    }
+                                }
+                                IconButton(
+                                    onClick = {
+                                        navigator.navigate(
+                                            AddProgramExerciseDestination(
+                                                programName = it.name,
+                                                programId = it.programId
+                                            )
+                                        )
+                                    }) {
+                                    Icon(Icons.Outlined.Edit, "Edit program")
+                                }
                             }
                         }
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
                 }
-            }
-            item {
-                Column (horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()){
-                    TextButton(
-                        onClick = {
+                item {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(
+                            onClick = {
+                                navigator.navigate(
+                                    AddWorkoutPlanDestination()
+                                )
+                            }, modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) { Text(stringResource(R.string.change_workout_plan)) }
+                        TextButton(onClick = {
                             navigator.navigate(
-                                AddWorkoutPlanDestination()
+                                AddProgramDestination(
+                                    planName = "", // FIXME: empty plan name
+                                    planId = homeState.currentPlan!!
+                                )
                             )
-                        }, modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) { Text(stringResource(R.string.change_workout_plan)) }
-                    TextButton(onClick = {
-                        navigator.navigate(
-                            AddProgramDestination(
-                                planName = "", // FIXME: empty plan name
-                                planId = homeState.currentPlan!!
-                            )
-                        )
-                    }) {
-                        Text("Change programs")
+                        }) {
+                            Text("Change programs")
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }

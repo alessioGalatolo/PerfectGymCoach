@@ -80,6 +80,7 @@ fun Statistics(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()  // TODO: remove and add topappbar
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Time Frame Selector
