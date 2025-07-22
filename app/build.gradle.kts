@@ -73,6 +73,7 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.compose.bom))
     implementation(libs.compose.destinations.core)
     implementation(libs.compose.destinations.bottom.sheet)
     ksp(libs.compose.destinations.ksp)
@@ -99,13 +100,11 @@ dependencies {
     implementation(libs.compose.icons)
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
-    implementation(libs.compose.material3.window)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
     androidTestImplementation(libs.espresso.core)
-    androidTestImplementation(libs.compose.ui.test.junit4)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.test.manifest)
