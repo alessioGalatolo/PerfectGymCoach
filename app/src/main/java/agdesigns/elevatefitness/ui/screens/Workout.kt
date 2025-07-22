@@ -591,16 +591,6 @@ fun SharedTransitionScope.Workout(
                 }
                 if (mediaTitle != null) {
                     fabHeight = 8.dp + 8.dp + 48.dp + 8.dp + 16.dp
-                    // swap color scheme i.e., if in dark use light colors, otherwise dark colors
-                    var colors: ColorScheme = if (useDarkTheme) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicLightColorScheme(
-                            LocalContext.current
-                        ) else lightColorScheme()
-                    } else {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicDarkColorScheme(
-                            LocalContext.current
-                        ) else darkColorScheme()
-                    }
                     AnimatedVisibility(
                         visible = !pagerState.isScrollInProgress,
                         enter = fadeIn(),
@@ -611,7 +601,9 @@ fun SharedTransitionScope.Workout(
                             backgroundContent = {}
                         ) {
                             ElevatedCard(
-                                colors = CardDefaults.elevatedCardColors(containerColor = colors.surface),
+                                colors = CardDefaults.elevatedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.inverseSurface
+                                ),
                                 modifier = Modifier
                                     .padding(start = 32.dp)
                                     .clickable {  // weird padding as it pretends to be a fab
@@ -656,21 +648,23 @@ fun SharedTransitionScope.Workout(
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.labelMedium,
-                                            color = colors.onSurface
+                                            color = MaterialTheme.colorScheme.inverseOnSurface
                                         )
                                         Text(
                                             mediaAuthor,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = colors.secondary
+                                            color = MaterialTheme.colorScheme.inverseOnSurface
                                         )
                                     }
                                     // if we are just teasing, gain space by removing buttons
                                     if (!shouldTeaseMediaAccess) {
                                         Spacer(Modifier.width(8.dp))
                                         IconButton(
-                                            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onSurface),
+                                            colors = IconButtonDefaults.iconButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                                            ),
                                             onClick = {
                                                 if (session != null) {
                                                     if (session!!.playbackState?.state == STATE_PLAYING)
@@ -687,7 +681,9 @@ fun SharedTransitionScope.Workout(
                                             }
                                         }
                                         IconButton(
-                                            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onSurface),
+                                            colors = IconButtonDefaults.iconButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                                            ),
                                             onClick = {
                                                 if (session != null) {
                                                     session!!.transportControls.skipToNext()
