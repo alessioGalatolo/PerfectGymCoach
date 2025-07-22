@@ -55,6 +55,7 @@ import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.os.Build
 import android.util.Log
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -513,13 +514,19 @@ fun SharedTransitionScope.Workout(
                         ) ?: 0L
                     )
                 else null
-                // 1 to 0
-                val plainRestCounterProgress: Float? = restCounterMillis?.let {
-                    it.toFloat() / (workoutState.currentExerciseRest ?: it).times(1000).toFloat()
+                // restCounterMillis is updated infrequently, animate between value to have smooth progress
+                val progressAnim = remember { Animatable(1f) }
+
+                val targetProgress = restCounterMillis?.let {
+                    it.toFloat() / (workoutState.currentExerciseRest?.times(1000L) ?: restCounterMillis).toFloat()
+                } ?: 1f
+
+                LaunchedEffect(targetProgress) {
+                    progressAnim.animateTo(
+                        targetValue = targetProgress,
+                        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+                    )
                 }
-                val restCounterProgress by animateFloatAsState(
-                    targetValue = plainRestCounterProgress ?: 1f,
-                )
 
 
                 ExercisePage(
@@ -537,7 +544,7 @@ fun SharedTransitionScope.Workout(
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounterMillis = restCounterMillis,
-                    restCounterProgress = restCounterProgress,
+                    restCounterProgress = progressAnim.value,
                     workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { probability ->
                         scope.launch {

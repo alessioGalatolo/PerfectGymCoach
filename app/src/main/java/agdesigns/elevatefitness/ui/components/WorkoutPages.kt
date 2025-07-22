@@ -193,9 +193,11 @@ fun ExercisePage(
                     }
                     // content
                     if (restCounterMillis != null && restCounterProgress != null){
-                        Text("Time before next set (${(restCounterProgress*100).toInt()}%): ", Modifier.align(CenterHorizontally))
-                        Text("${restCounterMillis / 1000}", Modifier.align(CenterHorizontally),
-                            style = MaterialTheme.typography.headlineMedium)
+                        AdaptiveCircularTimer(
+                            restCounterMillis,
+                            restCounterProgress,
+                            Modifier.align(CenterHorizontally)
+                        )
                         LaunchedEffect(restCounterMillis / 1000) {
                             if (restCounterMillis / 1000 == 1L || restCounterMillis / 1000 == 2L || restCounterMillis / 1000 == 3L) {
                                 haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
