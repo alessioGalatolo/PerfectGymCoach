@@ -33,6 +33,8 @@ import agdesigns.elevatefitness.viewmodels.ProfileViewModel
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.time.ZonedDateTime
@@ -190,9 +192,6 @@ fun ProfileHeader(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -276,7 +275,7 @@ fun ProfileSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PersonalInfoContent(
     profileState: ProfileState,
@@ -366,32 +365,27 @@ fun PersonalInfoContent(
                 modifier = Modifier.weight(1f)
             )
 
-            var expanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier.width(140.dp)
+            Row(
+                Modifier.padding(horizontal = 8.dp).weight(5f),
+                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = profileState.sex.displayName,
-                    onValueChange = {},
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    Sex.entries.forEach { sex ->
-                        DropdownMenuItem(
-                            text = { Text(sex.displayName) },
-                            onClick = {
-                                onEditSex(sex)
-                                expanded = false
+                Sex.entries.forEachIndexed { index, sex ->
+                    val modifier = if (sex == profileState.sex)
+                        Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
+                    else Modifier.weight(1f)
+
+                    ToggleButton(
+                        checked = sex == profileState.sex,
+                        onCheckedChange = { onEditSex(sex) },
+                        modifier = modifier,
+                        shapes =
+                            when (index) {
+                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                Sex.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                             },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                        )
+                    ) {
+                        Text(sex.displayName)
                     }
                 }
             }
@@ -563,7 +557,7 @@ fun MeasurementRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PreferencesContent(
     profileState: ProfileState,
@@ -600,32 +594,42 @@ fun PreferencesContent(
                 modifier = Modifier.weight(1f)
             )
 
-            var expanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier.width(140.dp).weight(2f)
+            Row(
+                Modifier.padding(horizontal = 8.dp).weight(5.8f),
+                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = profileState.theme.displayName,
-                    onValueChange = {},
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    Theme.entries.forEach { theme ->
-                        DropdownMenuItem(
-                            text = { Text(theme.displayName) },
-                            onClick = {
-                                viewModel.onEvent(ProfileEvent.UpdateTheme(theme))
-                                expanded = false
-                                focusManager.clearFocus()
+                // FIXME: "Same as system" overflows
+                Theme.entries.forEachIndexed { index, theme ->
+                    val modifier = if (theme == profileState.theme)
+                        Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
+                    else Modifier.weight(1f)
+
+                    var textAlign = when (index) {
+                        0 -> TextAlign.End
+                        Theme.entries.lastIndex -> TextAlign.Start
+                        else -> TextAlign.Center
+                    }
+                    if (theme == profileState.theme) {
+                        textAlign = TextAlign.Center
+                    }
+                    ToggleButton(
+                        checked = theme == profileState.theme,
+                        onCheckedChange = {
+                            viewModel.onEvent(ProfileEvent.UpdateTheme(theme))
+                        },
+                        modifier = modifier,
+                        shapes =
+                            when (index) {
+                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                Theme.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                             },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                    ) {
+                        Text(
+                            theme.displayName,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = textAlign,
                         )
                     }
                 }
