@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.FadeTransition
+import agdesigns.elevatefitness.ui.components.GroupedCard
 import agdesigns.elevatefitness.viewmodels.ExerciseStats
 import agdesigns.elevatefitness.viewmodels.PersonalRecord
 import agdesigns.elevatefitness.viewmodels.StatisticsEvent
@@ -64,7 +65,7 @@ import java.time.format.DateTimeFormatter
 @Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun Statistics(
-    destinationsNavigator: DestinationsNavigator,
+    navigator: DestinationsNavigator,
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -333,18 +334,25 @@ fun Statistics(
                             )
                         }
                         item {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            ) {
-                                state.topExercises.forEach { exercise ->
-                                    ExerciseStatItem(
-                                        navigator = destinationsNavigator,
-                                        exercise = exercise,
-                                        useImperial = state.useImperialSystem
-                                    )
+                            GroupedCard(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                onClicks = state.topExercises.map { exercise ->
+                                    {
+                                        navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
+                                    }
+                                },
+                                items = state.topExercises.map { exercise ->
+                                    {
+                                        ExerciseStatItem(
+                                            exercise = exercise,
+                                            useImperial = state.useImperialSystem
+                                        )
+                                    }
                                 }
-                            }
+                            )
                         }
                     }
 
@@ -361,18 +369,25 @@ fun Statistics(
                             )
                         }
                         item {
-                            Column(
+                            GroupedCard(
                                 modifier = Modifier.padding(horizontal = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                state.recentPRs.forEach { pr ->
-                                    PersonalRecordItem(
-                                        pr = pr,
-                                        useImperial = state.useImperialSystem,
-                                        navigator = destinationsNavigator
-                                    )
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                ),
+                                items = state.recentPRs.map { pr ->
+                                    {
+                                        PersonalRecordItem(
+                                            pr = pr,
+                                            useImperial = state.useImperialSystem
+                                        )
+                                    }
+                                },
+                                onClicks = state.recentPRs.map {
+                                    {
+                                        navigator.navigate(ExerciseStatsDestination(it.exerciseId))
+                                    }
                                 }
-                            }
+                            )
                         }
                     }
 
@@ -609,90 +624,66 @@ private fun MetricCard(
 
 @Composable
 private fun ExerciseStatItem(
-    navigator: DestinationsNavigator,
     exercise: ExerciseStats,
     useImperial: Boolean
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        onClick = {
-            navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = exercise.exerciseName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${exercise.timesPerformed} sets • ${exercise.totalVolume.toInt()} ${if (useImperial) "lbs" else "kg"} total",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "${exercise.maxWeight.toInt()} ${if (useImperial) "lbs" else "kg"}",
+                text = exercise.exerciseName,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "${exercise.timesPerformed} sets • ${exercise.totalVolume.toInt()} ${if (useImperial) "lbs" else "kg"} total",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        Text(
+            text = "${exercise.maxWeight.toInt()} ${if (useImperial) "lbs" else "kg"}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
 @Composable
 private fun PersonalRecordItem(
     pr: PersonalRecord,
-    useImperial: Boolean,
-    navigator: DestinationsNavigator
+    useImperial: Boolean
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        modifier = Modifier.fillMaxWidth(),
-        onClick = {
-            navigator.navigate(ExerciseStatsDestination(pr.exerciseId))
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = pr.exerciseName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = pr.date.format(DateTimeFormatter.ofPattern("MMM dd")),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "${pr.weight.toInt()} ${if (useImperial) "lbs" else "kg"} × ${pr.reps}",
+                text = pr.exerciseName,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = pr.date.format(DateTimeFormatter.ofPattern("MMM dd")),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        Text(
+            text = "${pr.weight.toInt()} ${if (useImperial) "lbs" else "kg"} × ${pr.reps}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }

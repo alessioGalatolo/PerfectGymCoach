@@ -24,6 +24,7 @@ import agdesigns.elevatefitness.data.Sex
 import agdesigns.elevatefitness.data.Theme
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.FadeTransition
+import agdesigns.elevatefitness.ui.components.GroupedCard
 import agdesigns.elevatefitness.ui.components.InfoDialog
 import agdesigns.elevatefitness.ui.maybeKgToLb
 import agdesigns.elevatefitness.ui.maybeLbToKg
@@ -156,22 +157,72 @@ fun Profile(
             ProfileSection(title = "Preferences") {
                 PreferencesContent(
                     profileState = profileState,
-                    viewModel = viewModel,
-                    focusManager = focusManager
+                    viewModel = viewModel
                 )
             }
         }
 
         // Equipment Increments Section
         item {
-            ProfileSection(title = "Equipment Increments") {
-                EquipmentIncrementsContent(
-                    profileState = profileState,
-                    viewModel = viewModel,
-                    keyboardController = keyboardController,
-                    focusManager = focusManager
+            Text(
+                "Equipment Increments",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            GroupedCard(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                items = listOf(
+                    {
+                        IncrementRow(
+                            label = "Barbell increment",
+                            value = profileState.incrementBarbell,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Bodyweight increment",
+                            value = profileState.incrementBodyweight,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Cable increment",
+                            value = profileState.incrementCable,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Dumbbell increment",
+                            value = profileState.incrementDumbbell,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Machine increment",
+                            value = profileState.incrementMachine,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
                 )
-            }
+            )
         }
         item {
             // zero height because we have arrangement spaced by
@@ -562,7 +613,6 @@ fun MeasurementRow(
 fun PreferencesContent(
     profileState: ProfileState,
     viewModel: ProfileViewModel,
-    focusManager: FocusManager
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -635,63 +685,6 @@ fun PreferencesContent(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun EquipmentIncrementsContent(
-    profileState: ProfileState,
-    viewModel: ProfileViewModel,
-    keyboardController: SoftwareKeyboardController?,
-    focusManager: FocusManager
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        IncrementRow(
-            label = "Barbell increment",
-            value = profileState.incrementBarbell,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Bodyweight increment",
-            value = profileState.incrementBodyweight,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Cable increment",
-            value = profileState.incrementCable,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Dumbbell increment",
-            value = profileState.incrementDumbbell,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Machine increment",
-            value = profileState.incrementMachine,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
     }
 }
 
