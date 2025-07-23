@@ -124,7 +124,7 @@ fun Statistics(
                     Pair("Equipment Usage", Int.MAX_VALUE - 7)
                 )
                 val id2StickyHeader = stickyHeaders2Id.entries.associate { (k, v) -> v to k }
-
+                var lastVisibleKey by remember { mutableIntStateOf(Int.MAX_VALUE) }
                 // Monitor visibility changes
                 LaunchedEffect(listState) {
                     snapshotFlow { listState.layoutInfo }
@@ -137,25 +137,23 @@ fun Statistics(
                             val itemsStartingToDisappear = visibleItems.filter {
                                 it.offset < 0 && (it.offset + it.size >= 0)
                             }
-//                            val itemsDisappeared = visibleItems.filter {
-//                                it.offset + it.size < 0
-//                            }
                             // completely visible
                             val itemsCompletelyVisible = visibleItems.filter {
                                 it.offset >= 0 && it.offset + it.size <= layoutInfo.viewportEndOffset
                             }
                             // items partially or completely visible
                             val itemsVisible =
-                                itemsCompletelyVisible.toSet() + itemsStartingToDisappear.toSet()
+                                itemsCompletelyVisible.toSet()
 
                             // find key relative to highest value in stickyHeaders2Id
                             val highestVisibleId: Int? =
                                 itemsVisible.maxByOrNull { it.key as Int }?.key as Int?
-                            val stickyHeader = id2StickyHeader[highestVisibleId?.plus(1) ?: 0]
-                            if (stickyHeader != null) {
-                                titleText = stickyHeader
+                            if (lastVisibleKey > (highestVisibleId ?: 0)) {
+                                titleText = id2StickyHeader[lastVisibleKey]!!
+                            } else if (highestVisibleId != null) {
+                                titleText = id2StickyHeader[highestVisibleId + 1]!!
                             }
-
+                            lastVisibleKey = highestVisibleId ?: lastVisibleKey
                         }
                 }
                 LazyColumn(
@@ -442,6 +440,9 @@ fun Statistics(
                                     }
                                 }
                             }
+                        }
+                        item {
+                            Spacer(Modifier.height(1200.dp))
                         }
                         item {
                             Spacer(Modifier.height(8.dp))
