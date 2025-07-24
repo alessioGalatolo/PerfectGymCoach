@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.data.exercise.Exercise
 import agdesigns.elevatefitness.data.exercise.ExerciseRecord
 import android.content.Context
 import android.provider.Settings
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import kotlin.math.round
 
 
@@ -80,4 +81,38 @@ fun barbellFromWeight(
     if (noWeight)
         return barbellName
     return barbellName + " (${maybeKgToLb(weight, useImperial)} ${if (useImperial) "lb" else "kg"})"
+}
+
+fun getStickyHeader(
+    layoutInfo: LazyListLayoutInfo,
+    id2StickyHeader: Map<Int, String>,
+    lastVisibleKey: Int
+): Pair<String?, Int> {
+
+    val visibleItems = layoutInfo.visibleItemsInfo.filter {
+        id2StickyHeader.contains(it.key)
+    }
+
+    // partially showing (TODO: this could come in handy when adding animations)
+    val itemsStartingToDisappear = visibleItems.filter {
+        it.offset < 0 && (it.offset + it.size >= 0)
+    }
+    // completely visible
+    val itemsCompletelyVisible = visibleItems.filter {
+        it.offset >= 0 && it.offset + it.size <= layoutInfo.viewportEndOffset
+    }
+    // items partially or completely visible
+    val itemsVisible =
+        itemsCompletelyVisible.toSet()
+
+    // find key relative to highest value in stickyHeaders2Id
+    val highestVisibleId: Int? =
+        itemsVisible.maxByOrNull { it.key as Int }?.key as Int?
+    val titleText = if (lastVisibleKey > (highestVisibleId ?: 0)) {
+        id2StickyHeader[lastVisibleKey]!!
+    } else if (highestVisibleId != null) {
+        id2StickyHeader[highestVisibleId + 1]!!
+    } else null
+    highestVisibleId ?: lastVisibleKey
+    return Pair(titleText, (highestVisibleId ?: lastVisibleKey))
 }

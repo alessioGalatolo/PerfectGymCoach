@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.FadeTransition
 import agdesigns.elevatefitness.ui.components.GroupedCard
+import agdesigns.elevatefitness.ui.getStickyHeader
 import agdesigns.elevatefitness.viewmodels.ExerciseStats
 import agdesigns.elevatefitness.viewmodels.PersonalRecord
 import agdesigns.elevatefitness.viewmodels.StatisticsEvent
@@ -71,6 +72,35 @@ fun Statistics(
     val state by viewModel.state.collectAsState()
     var titleText by remember { mutableStateOf("Highlights") }
 
+    // we want to have headers as top app bar titles, need listState
+    val listState = rememberLazyListState()
+    // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
+    val stickyHeaders2Id = mapOf(
+        Pair("Statistics", Int.MAX_VALUE),
+        Pair("Highlights", Int.MAX_VALUE - 1),
+        Pair("Volume Progress", Int.MAX_VALUE - 2),
+        Pair("Workout Frequency", Int.MAX_VALUE - 3),
+        Pair("Muscle Group Distribution", Int.MAX_VALUE - 4),
+        Pair("Top Exercises", Int.MAX_VALUE - 5),
+        Pair("Recent Personal Records", Int.MAX_VALUE - 6),
+        Pair("Equipment Usage", Int.MAX_VALUE - 7)
+    )
+    val id2StickyHeader = stickyHeaders2Id.entries.associate { (k, v) -> v to k }
+    var lastVisibleKey by remember { mutableIntStateOf(Int.MAX_VALUE) }
+    // Monitor visibility changes
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo }
+            .collect { layoutInfo ->
+                getStickyHeader(
+                    layoutInfo = layoutInfo,
+                    id2StickyHeader = id2StickyHeader,
+                    lastVisibleKey = lastVisibleKey
+                ).also {
+                    titleText = it.first ?: titleText
+                    lastVisibleKey = it.second
+                }
+            }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -110,52 +140,6 @@ fun Statistics(
                     Text(state.progressText)
                 }
             } else {
-                // we want to have headers as top app bar titles, need listState
-                val listState = rememberLazyListState()
-                // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
-                val stickyHeaders2Id = mapOf(
-                    Pair("Statistics", Int.MAX_VALUE),
-                    Pair("Highlights", Int.MAX_VALUE - 1),
-                    Pair("Volume Progress", Int.MAX_VALUE - 2),
-                    Pair("Workout Frequency", Int.MAX_VALUE - 3),
-                    Pair("Muscle Group Distribution", Int.MAX_VALUE - 4),
-                    Pair("Top Exercises", Int.MAX_VALUE - 5),
-                    Pair("Recent Personal Records", Int.MAX_VALUE - 6),
-                    Pair("Equipment Usage", Int.MAX_VALUE - 7)
-                )
-                val id2StickyHeader = stickyHeaders2Id.entries.associate { (k, v) -> v to k }
-                var lastVisibleKey by remember { mutableIntStateOf(Int.MAX_VALUE) }
-                // Monitor visibility changes
-                LaunchedEffect(listState) {
-                    snapshotFlow { listState.layoutInfo }
-                        .collect { layoutInfo ->
-                            val visibleItems = layoutInfo.visibleItemsInfo.filter {
-                                id2StickyHeader.contains(it.key)
-                            }
-
-                            // partially showing (TODO: this could come in handy when adding animations)
-                            val itemsStartingToDisappear = visibleItems.filter {
-                                it.offset < 0 && (it.offset + it.size >= 0)
-                            }
-                            // completely visible
-                            val itemsCompletelyVisible = visibleItems.filter {
-                                it.offset >= 0 && it.offset + it.size <= layoutInfo.viewportEndOffset
-                            }
-                            // items partially or completely visible
-                            val itemsVisible =
-                                itemsCompletelyVisible.toSet()
-
-                            // find key relative to highest value in stickyHeaders2Id
-                            val highestVisibleId: Int? =
-                                itemsVisible.maxByOrNull { it.key as Int }?.key as Int?
-                            if (lastVisibleKey > (highestVisibleId ?: 0)) {
-                                titleText = id2StickyHeader[lastVisibleKey]!!
-                            } else if (highestVisibleId != null) {
-                                titleText = id2StickyHeader[highestVisibleId + 1]!!
-                            }
-                            lastVisibleKey = highestVisibleId ?: lastVisibleKey
-                        }
-                }
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
@@ -440,9 +424,6 @@ fun Statistics(
                                     }
                                 }
                             }
-                        }
-                        item {
-                            Spacer(Modifier.height(1200.dp))
                         }
                         item {
                             Spacer(Modifier.height(8.dp))

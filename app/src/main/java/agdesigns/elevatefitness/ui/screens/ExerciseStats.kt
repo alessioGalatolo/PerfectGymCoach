@@ -15,11 +15,13 @@ import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.ui.OneRepMaxFormula
 import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.ui.components.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.getStickyHeader
 import agdesigns.elevatefitness.viewmodels.ExerciseStatsEvent
 import agdesigns.elevatefitness.viewmodels.ExerciseStatsEvent.ChangeOneRepMaxFormula
 import agdesigns.elevatefitness.viewmodels.ExerciseStatsViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
@@ -49,9 +51,15 @@ fun ExerciseStats(
         )
     )
 
+    var title by remember { mutableStateOf("") }
+    LaunchedEffect(state.exercise) {
+        if (state.exercise != null) {
+            title = state.exercise!!.name
+        }
+    }
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(state.exercise?.name ?: "") },
+            TopAppBar(title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
@@ -63,14 +71,40 @@ fun ExerciseStats(
             )
         }, content = { innerPadding ->
             if (state.exercise != null) {
-                // FIXME: currently ignoring innerPadding and using appbar height and statusbar
-                // as offset, otherwise stickyHeader goes behind status bar.
+                val listState = rememberLazyListState()
+
+                // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
+                val stickyHeaders2Id = mapOf(
+                    Pair(state.exercise!!.name, Int.MAX_VALUE),
+                    Pair("Volume Progression", Int.MAX_VALUE - 1),
+                    Pair("Max Weight Lifted", Int.MAX_VALUE - 2),
+                    Pair("Average Weight Lifted", Int.MAX_VALUE - 3),
+                    Pair("Max Reps Done", Int.MAX_VALUE - 4),
+                    Pair("Average Reps Done", Int.MAX_VALUE - 5),
+                    Pair("One Rep Max", Int.MAX_VALUE - 6),
+                    Pair("History", Int.MAX_VALUE - 7)
+                )
+                val id2StickyHeader = stickyHeaders2Id.entries.associate { (k, v) -> v to k }
+                var lastVisibleKey by remember { mutableIntStateOf(Int.MAX_VALUE) }
+                // Monitor visibility changes
+                LaunchedEffect(listState) {
+                    snapshotFlow { listState.layoutInfo }
+                        .collect { layoutInfo ->
+                            getStickyHeader(
+                                layoutInfo = layoutInfo,
+                                id2StickyHeader = id2StickyHeader,
+                                lastVisibleKey = lastVisibleKey
+                            ).also {
+                                title = it.first ?: title
+                                lastVisibleKey = it.second
+                            }
+                        }
+                }
                 LazyColumn(
-//                    contentPadding = innerPadding,
+                    state = listState,
+                    contentPadding = innerPadding,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = TopAppBarDefaults.MediumAppBarCollapsedHeight)
-                        .padding(WindowInsets.statusBars.asPaddingValues()),
+                        .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -85,9 +119,14 @@ fun ExerciseStats(
                         )
                     }
                     if (state.exerciseRecords.isNotEmpty()) {
-                        PlotStat("Volume Progression", state.volumeProgression)
+                        PlotStat(
+                            "Volume Progression",
+                            stickyHeaders2Id["Volume Progression"]!!,
+                            state.volumeProgression
+                        )
                         PlotStat(
                             "Max Weight Lifted",
+                            stickyHeaders2Id["Max Weight Lifted"]!!,
                             state.maxWeights.zip(state.volumeProgression) { maxWeight, lineData ->
                                 LineData(
                                     lineData.x,
@@ -96,6 +135,7 @@ fun ExerciseStats(
                             })
                         PlotStat(
                             "Average Weight Lifted",
+                            stickyHeaders2Id["Average Weight Lifted"]!!,
                             state.avgWeight.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
@@ -104,6 +144,7 @@ fun ExerciseStats(
                             })
                         PlotStat(
                             "Max Reps Done",
+                            stickyHeaders2Id["Max Reps Done"]!!,
                             state.maxReps.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
@@ -112,6 +153,7 @@ fun ExerciseStats(
                             })
                         PlotStat(
                             "Average Reps Done",
+                            stickyHeaders2Id["Average Reps Done"]!!,
                             state.avgReps.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
@@ -119,21 +161,15 @@ fun ExerciseStats(
                                 )
                             })
                         if (state.oneRepMaxs.isNotEmpty()) {
-                            stickyHeader {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxWidth().background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                                    )
-                                ) {
-                                    Text(
-                                        "One Rep Max",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(horizontal = 16.dp)
-                                    )
-                                }
+                            item (key = stickyHeaders2Id["One Rep Max"]!!) {
+                                Text(
+                                    "One Rep Max",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                )
                             }
                             item {
                                 var expanded by remember { mutableStateOf(false) }
@@ -223,20 +259,16 @@ fun ExerciseStats(
                                 }
                             }
                         }
-                        stickyHeader {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxWidth().background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                                )
-                            ) {
-                                Text(
-                                    "History",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.Medium,
-                                )
-                            }
+                        // FIXME: history does not stick
+                        item (key = stickyHeaders2Id["History"]!!) {
+                            Text(
+                                "History",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                            )
                         }
                         ExerciseRecordsList(state.imperialSystem, state.exerciseRecords)
                     } else {
@@ -248,29 +280,23 @@ fun ExerciseStats(
                             )
                         }
                     }
-                    // FIXME: remove once the stickyHeaders have been properly fixed and innerPadding is actually used
-                    item {
-                        Spacer(Modifier.padding(WindowInsets.navigationBars.asPaddingValues()))
-                    }
                 }
             }
         }
     )
 }
 
-fun LazyListScope.PlotStat(name: String, data: List<LineData>) {
+fun LazyListScope.PlotStat(name: String, stickyKey: Int, data: List<LineData>) {
     if (data.isNotEmpty()) {
-        stickyHeader {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-            )) {
-                Text(
-                    name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
+        item(key = stickyKey) {
+            Text(
+                name,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+            )
         }
         item {
             var selectedValue by remember { mutableStateOf("") }
