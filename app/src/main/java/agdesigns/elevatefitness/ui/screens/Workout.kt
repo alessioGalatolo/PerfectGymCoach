@@ -57,8 +57,10 @@ import android.os.Build
 import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -69,6 +71,7 @@ import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
+import coil3.request.transformations
 import coil3.toBitmap
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
@@ -84,7 +87,7 @@ import kotlin.math.max
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class,
-    ExperimentalSharedTransitionApi::class
+    ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
 fun SharedTransitionScope.Workout(
@@ -601,6 +604,7 @@ fun SharedTransitionScope.Workout(
                             backgroundContent = {}
                         ) {
                             ElevatedCard(
+                                shape = MaterialTheme.shapes.extraLarge,
                                 colors = CardDefaults.elevatedCardColors(
                                     containerColor = MaterialTheme.colorScheme.inverseSurface
                                 ),
@@ -618,83 +622,97 @@ fun SharedTransitionScope.Workout(
                                         }
                                     }
                             ) {
-                                Spacer(Modifier.height(8.dp))
-                                Row(
-                                    verticalAlignment = CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp)
+                                Box(
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     if (artworkBitmap != null) {
                                         AsyncImage(
-                                            artworkBitmap, "Song artwork",
-                                            Modifier
-                                                .size(48.dp)
-                                                .clip(
-                                                    RoundedCornerShape(8.dp)
+                                            artworkBitmap,
+                                            "Song artwork",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.matchParentSize().blur(16.dp)
+                                        )
+                                        // Dimming scrim (dark overlay)
+                                        Box(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .background(Color.Black.copy(alpha = 0.3f))
+                                        )
+                                    }
+                                    Column (Modifier.padding(16.dp)) {
+                                        Row(
+                                            verticalAlignment = CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        ) {
+                                            if (artworkBitmap != null) {
+                                                AsyncImage(
+                                                    artworkBitmap, "Song artwork",
+                                                    Modifier
+                                                        .size(48.dp)
+                                                        .clip(
+                                                            RoundedCornerShape(8.dp)
+                                                        )
                                                 )
-                                        )
-                                    } else {
-                                        Icon(
-                                            Icons.Default.MusicNote,
-                                            "No song artwork",
-                                            Modifier.size(48.dp)
-                                        )
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            mediaTitle!!,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.inverseOnSurface
-                                        )
-                                        Text(
-                                            mediaAuthor,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.inverseOnSurface
-                                        )
-                                    }
-                                    // if we are just teasing, gain space by removing buttons
-                                    if (!shouldTeaseMediaAccess) {
-                                        Spacer(Modifier.width(8.dp))
-                                        IconButton(
-                                            colors = IconButtonDefaults.iconButtonColors(
-                                                contentColor = MaterialTheme.colorScheme.inverseOnSurface
-                                            ),
-                                            onClick = {
-                                                if (session != null) {
-                                                    if (session!!.playbackState?.state == STATE_PLAYING)
-                                                        session!!.transportControls.pause()
-                                                    else
-                                                        session!!.transportControls.play()
-                                                }
-                                            }
-                                        ) {
-                                            if (isPlaying) {
-                                                Icon(Icons.Default.Pause, "Pause")
                                             } else {
-                                                Icon(Icons.Default.PlayArrow, "Play")
+                                                Icon(
+                                                    Icons.Default.MusicNote,
+                                                    "No song artwork",
+                                                    Modifier.size(48.dp)
+                                                )
                                             }
-                                        }
-                                        IconButton(
-                                            colors = IconButtonDefaults.iconButtonColors(
-                                                contentColor = MaterialTheme.colorScheme.inverseOnSurface
-                                            ),
-                                            onClick = {
-                                                if (session != null) {
-                                                    session!!.transportControls.skipToNext()
+                                            Spacer(Modifier.width(8.dp))
+                                            Column(Modifier.weight(1f)) {
+                                                Text(
+                                                    mediaTitle!!,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    style = MaterialTheme.typography.labelMedium
+                                                )
+                                                Text(
+                                                    mediaAuthor,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                            // if we are just teasing, gain space by removing buttons
+                                            if (!shouldTeaseMediaAccess) {
+                                                Spacer(Modifier.width(8.dp))
+                                                FilledIconToggleButton(
+                                                    checked = isPlaying,
+                                                    onCheckedChange = {
+                                                        if (session != null) {
+                                                            if (session!!.playbackState?.state == STATE_PLAYING)
+                                                                session!!.transportControls.pause()
+                                                            else
+                                                                session!!.transportControls.play()
+                                                        }
+                                                    },
+                                                    shapes = IconButtonDefaults.toggleableShapes(),
+                                                    modifier = Modifier.size(IconButtonDefaults.smallContainerSize(
+                                                        IconButtonDefaults.IconButtonWidthOption.Wide))
+                                                ) {
+                                                    if (isPlaying) {
+                                                        Icon(Icons.Default.Pause, "Pause")
+                                                    } else {
+                                                        Icon(Icons.Default.PlayArrow, "Play")
+                                                    }
+                                                }
+                                                FilledTonalIconButton(
+                                                    shapes = IconButtonDefaults.shapes(),
+                                                    onClick = {
+                                                        if (session != null) {
+                                                            session!!.transportControls.skipToNext()
+                                                        }
+                                                    }
+                                                ) {
+                                                    Icon(Icons.Default.SkipNext, "Next track")
                                                 }
                                             }
-                                        ) {
-                                            Icon(Icons.Default.SkipNext, "Next track")
                                         }
                                     }
                                 }
-                                Spacer(Modifier.height(8.dp))
                             }
                         }
                     }
