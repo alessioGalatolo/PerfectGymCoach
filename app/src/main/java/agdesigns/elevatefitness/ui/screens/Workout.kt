@@ -593,7 +593,10 @@ fun SharedTransitionScope.Workout(
                     mediaAuthor = "Tap to learn more or swipe to dismiss"
                 }
                 if (mediaTitle != null) {
-                    fabHeight = 8.dp + 8.dp + 48.dp + 8.dp + 16.dp
+                    fabHeight = 16.dp + // top inner padding
+                            16.dp + // bottom inner padding
+                            48.dp + // album art size
+                            16.dp // card bottom padding
                     AnimatedVisibility(
                         visible = !pagerState.isScrollInProgress,
                         enter = fadeIn(),

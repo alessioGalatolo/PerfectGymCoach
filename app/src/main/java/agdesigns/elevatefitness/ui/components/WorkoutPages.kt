@@ -463,7 +463,8 @@ fun ExercisePage(
                         Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
                     }
                     if (fabHeight > 0.dp) {
-                        Spacer(Modifier.height(fabHeight))
+                        // add some padding to the fabHeight
+                        Spacer(Modifier.height(fabHeight + 8.dp))
                     }
                     // This is the padding for an eventual bottom bar
                     Spacer(Modifier.height(bottomPadding))
