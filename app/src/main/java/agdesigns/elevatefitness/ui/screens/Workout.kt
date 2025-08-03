@@ -64,7 +64,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.content.ContextCompat.getSystemService
 import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
@@ -121,24 +120,35 @@ fun SharedTransitionScope.Workout(
 
     // request to have notification access to show music playing
     var alreadyRequestedPermission by rememberSaveable { mutableStateOf(false) }
-    // Show media card and ask user if they want it with actual content
-    val shouldTeaseMediaAccess by remember { derivedStateOf {
-        !workoutState.cantRequestNotificationAccess
-        && !hasNotificationAccess(context)
-        && !alreadyRequestedPermission
-    } }
 
     var retrieveMediaJob: Job? by remember {
         mutableStateOf(null)
     }
     var session: MediaController? by remember { mutableStateOf(null) }
     var mediaTitle: String? by remember { mutableStateOf(null) }
-    var mediaAuthor: String by remember { mutableStateOf("Author not available") }
+    var mediaArtist: String by remember { mutableStateOf("Artist not available") }
     var isPlaying: Boolean by remember { mutableStateOf(false) }
     var artworkBitmap: Bitmap? by remember { mutableStateOf(null) }
+    // Show media card and ask user if they want it with actual content
+    val shouldTeaseMediaAccess by remember { derivedStateOf {
+        !workoutState.cantRequestNotificationAccess
+                && !hasNotificationAccess(context)
+                && !alreadyRequestedPermission
+    } }
+    LaunchedEffect(shouldTeaseMediaAccess) {
+        if (mediaTitle == null && shouldTeaseMediaAccess) {
+            mediaTitle = "Do you want your playing songs here?"
+            mediaArtist = "Tap to learn more or swipe to dismiss"
+        } else if (!shouldTeaseMediaAccess && mediaTitle == "Do you want your playing songs here?") {
+            // reset if we should not tease anymore (e.g., user says "do not ask again")
+            // TODO: check that if user has not granted permission and says "do not ask again", music card disappears
+            mediaTitle = null
+            mediaArtist = "Artist not available"
+        }
+    }
     DisposableEffect(context) {
         // FIXME: this looks like it belongs in a viewModel but the problem is the context
-        // TODO: perhaps move mediaTitle/Author to viewModel and job to repository?
+        // TODO: perhaps move mediaTitle/Artist to viewModel and job to repository?
         retrieveMediaJob = scope.launch {
             while (true) {
                 if (hasNotificationAccess(context) && session == null) {
@@ -155,7 +165,7 @@ fun SharedTransitionScope.Workout(
 
                             override fun onMetadataChanged(metadata: MediaMetadata?) {
                                 mediaTitle = metadata?.description?.title?.toString()
-                                mediaAuthor = metadata?.description?.subtitle?.toString() ?: "Author not available"
+                                mediaArtist = metadata?.description?.subtitle?.toString() ?: "Artist not available"
                                 val newBitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                                     ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
                                 if (newBitmap != null && !newBitmap.sameAs(artworkBitmap)) {
@@ -165,13 +175,13 @@ fun SharedTransitionScope.Workout(
                         }
                         session!!.registerCallback(callback)
                         mediaTitle = session!!.metadata!!.description.title.toString()
-                        mediaAuthor = session!!.metadata!!.description.subtitle.toString()
+                        mediaArtist = session!!.metadata!!.description.subtitle.toString()
                         artworkBitmap = session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                             ?: session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ART)
                         isPlaying = session!!.playbackState?.state == STATE_PLAYING
                     } else {
                         mediaTitle = "No music playing"
-                        mediaAuthor = "Play some music to see it here"
+                        mediaArtist = "Play some music to see it here"
                     }
                 }
                 delay(100)
@@ -578,10 +588,6 @@ fun SharedTransitionScope.Workout(
                 )
             },
             floatingActionButton = {
-                if (mediaTitle == null && shouldTeaseMediaAccess) {
-                    mediaTitle = "Do you want your playing songs here?"
-                    mediaAuthor = "Tap to learn more or swipe to dismiss"
-                }
                 if (mediaTitle != null) {
                     fabHeight = 8.dp + 8.dp + 48.dp + 8.dp + 16.dp
                     // swap color scheme i.e., if in dark use light colors, otherwise dark colors
@@ -652,7 +658,7 @@ fun SharedTransitionScope.Workout(
                                             color = colors.onSurface
                                         )
                                         Text(
-                                            mediaAuthor,
+                                            mediaArtist,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.bodySmall,
