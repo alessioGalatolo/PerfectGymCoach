@@ -51,7 +51,7 @@ fun WorkoutCard(
     var expanded by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(pageCount = { exercises.size })
     ElevatedCard(
-        modifier = Modifier
+        modifier = cardModifier
             .fillMaxWidth()
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -64,8 +64,6 @@ fun WorkoutCard(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     expanded = true
                 })
-            // could probably go before but better be safe
-            .then(cardModifier)
     )
     {
         Column {
