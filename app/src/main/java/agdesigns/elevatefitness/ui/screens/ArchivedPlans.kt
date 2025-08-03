@@ -46,6 +46,10 @@ import agdesigns.elevatefitness.ui.ChangePlanGraph
 import agdesigns.elevatefitness.ui.SlideTransition
 import agdesigns.elevatefitness.viewmodels.PlansEvent
 import agdesigns.elevatefitness.viewmodels.PlansViewModel
+import androidx.compose.material3.SwipeToDismissBoxDefaults
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -146,20 +150,28 @@ fun LazyItemScope.ArchivedPlanCard(
     programs: List<WorkoutProgram>,
     unarchivePlan: (Long) -> Unit
 ){
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = {
-            when (it) {
-                SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.EndToStart -> {
-                    unarchivePlan(plan.planId)
-                    true
-                }
-
-                else -> false
-            }
-        }
-    )
+    val positionalThresholdFun = SwipeToDismissBoxDefaults.positionalThreshold
+    // NOTE: we need these two keys otherwise when undoing archivePlan, the state would be recycled
+    val dismissState = remember(plan.planId, plan.archived) {
+        SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            positionalThreshold = positionalThresholdFun
+        )
+    }
+    val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     SwipeToDismissBox(
         state = dismissState,
+        onDismiss = { direction ->
+            if (direction != SwipeToDismissBoxValue.Settled) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                unarchivePlan(plan.planId)
+            } else {
+                scope.launch {
+                    dismissState.reset()
+                }
+            }
+        },
         backgroundContent = {
             val direction = dismissState.dismissDirection
             val defaultColors = CardDefaults.cardColors()
@@ -204,10 +216,11 @@ fun LazyItemScope.ArchivedPlanCard(
                     )
                 }
             }
-        }, modifier = Modifier.animateItem()
+        }
     ) {
         ElevatedCard(
             modifier = Modifier
+                .animateItem()
                 .clickable {
                     navigator.navigate(
                         AddProgramDestination(

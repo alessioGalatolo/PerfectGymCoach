@@ -58,6 +58,8 @@ import agdesigns.elevatefitness.ui.components.InsertNameDialog
 import agdesigns.elevatefitness.viewmodels.PlansEvent
 import agdesigns.elevatefitness.viewmodels.PlansViewModel
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.SwipeToDismissBoxDefaults
+import androidx.compose.material3.SwipeToDismissBoxState
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.generated.destinations.ArchivedPlansDestination
@@ -176,8 +178,8 @@ fun AddWorkoutPlan(
                             scope.launch {
                                 snackbarHostState.showSnackbar("Plan set as current")
                             }
-                        }, archivePlan = {
-                            viewModel.onEvent(PlansEvent.ArchivePlan(it))
+                        }, archivePlan = { planId ->
+                            viewModel.onEvent(PlansEvent.ArchivePlan(planId))
                             scope.launch {
                                 val snackbarResult = snackbarHostState.showSnackbar(
                                     "Plan archived",
@@ -186,7 +188,7 @@ fun AddWorkoutPlan(
                                 )
                                 when (snackbarResult) {
                                     SnackbarResult.ActionPerformed -> {
-                                        viewModel.onEvent(PlansEvent.UnarchivePlan(it))
+                                        viewModel.onEvent(PlansEvent.UnarchivePlan(planId))
                                     }
                                     SnackbarResult.Dismissed -> {
                                         /* Handle snackbar dismissed */
@@ -250,23 +252,29 @@ fun LazyItemScope.PlanCard(
     canBeArchived: Boolean
 ){
     val haptics = LocalHapticFeedback.current
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = {
-            when (it) {
-                SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.EndToStart -> {
-                    archivePlan(plan.planId)
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    true
-                }
-
-                else -> false
-            }
-        }
-    )
+    val scope = rememberCoroutineScope()
+    val positionalThresholdFun = SwipeToDismissBoxDefaults.positionalThreshold
+    // NOTE: we need these two keys otherwise when undoing archivePlan, the state would be recycled
+    val dismissState = remember(plan.planId, plan.archived) {
+        SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            positionalThreshold = positionalThresholdFun
+        )
+    }
     SwipeToDismissBox(
         state = dismissState,
         enableDismissFromEndToStart = canBeArchived,
         enableDismissFromStartToEnd = canBeArchived,
+        onDismiss = { direction ->
+            if (direction != SwipeToDismissBoxValue.Settled) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                archivePlan(plan.planId)
+            } else {
+                scope.launch {
+                    dismissState.reset()
+                }
+            }
+        },
         backgroundContent = {
             val direction = dismissState.dismissDirection
             val defaultColors = CardDefaults.cardColors()
@@ -300,7 +308,10 @@ fun LazyItemScope.PlanCard(
                 modifier = Modifier.fillMaxSize(),
 //                contentAlignment = alignment
             ) {
-                Column(verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize()) {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     Icon(
                         icon,
                         contentDescription = "Archive plan",
@@ -311,10 +322,11 @@ fun LazyItemScope.PlanCard(
                     )
                 }
             }
-        }, modifier = Modifier.animateItem()
+        }
     ) {
         ElevatedCard(
             modifier = Modifier
+                .animateItem()
                 .clickable {
                     navigator.navigate(
                         AddProgramDestination(
