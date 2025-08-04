@@ -31,8 +31,15 @@ import agdesigns.elevatefitness.ui.maybeLbToKg
 import agdesigns.elevatefitness.viewmodels.ProfileEvent
 import agdesigns.elevatefitness.viewmodels.ProfileState
 import agdesigns.elevatefitness.viewmodels.ProfileViewModel
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -225,9 +232,21 @@ fun Profile(
             )
         }
         item {
-            // zero height because we have arrangement spaced by
-            // FIXME: may be bad compose patter to have zero height item
-            Spacer(Modifier.height(0.dp))
+            ProfileSection(title = "Feedback") {
+                FeedbackContent()
+            }
+        }
+        item {
+            ProfileSection(title = "Acknowledgements") {
+                Text("I do not own any of the images used in this app. They are copyright free and were collected mostly through pexels and unsplash. Many thanks to all the artist that made their images freely available: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+        item {
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
@@ -775,5 +794,73 @@ fun IncrementRow(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FeedbackContent() {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        ExternalLink(
+            title = "Bug report",
+            description = "Will open externally, once there tap on 'New issue'. Requires a GitHub account.",
+            url = "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
+            leadingIcon = Icons.Default.BugReport
+        )
+        ExternalLink(
+            title = "Feature requests",
+            description = "Will open externally, once there tap on 'New discussion'. Requires a GitHub account.",
+            url = "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
+            leadingIcon = Icons.Default.Feedback
+        )
+        ExternalLink(
+            title = "Source code",
+            description = "The entirety of this app is open source. Feel free to contribute or just look around.",
+            url = "https://github.com/alessioGalatolo/PerfectGymCoach",
+            leadingIcon = Icons.Default.Code
+        )
+    }
+}
+
+@Composable
+fun ExternalLink(title: String, description: String, url: String, leadingIcon: ImageVector? = null) {
+    val uriHandler = LocalUriHandler.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth()
+            .clip(CardDefaults.shape)
+            .combinedClickable(
+                indication = ripple(),
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = {
+                    uriHandler.openUri(url)
+                },
+                onLongClick = { }
+            )
+    ) {
+        if (leadingIcon != null) {
+            Icon(
+                leadingIcon,
+                title,
+            )
+            Spacer(Modifier.width(16.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Spacer(Modifier.width(16.dp))
+        Icon(
+            Icons.AutoMirrored.Filled.OpenInNew,
+            "Open in browser",
+        )
     }
 }
