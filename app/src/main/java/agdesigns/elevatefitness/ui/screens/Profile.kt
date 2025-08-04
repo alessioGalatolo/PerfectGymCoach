@@ -232,9 +232,41 @@ fun Profile(
             )
         }
         item {
-            ProfileSection(title = "Feedback") {
-                FeedbackContent()
-            }
+            val uriHandler = LocalUriHandler.current
+            val urls = listOf(
+                "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
+                "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
+                "https://github.com/alessioGalatolo/PerfectGymCoach"
+            )
+            Text(
+                "Feedback",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            GroupedCard(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                items = listOf(
+                    { ExternalLink(
+                        title = "Bug report",
+                        description = "Will open externally, once there tap on 'New issue'. Requires a GitHub account.",
+                        leadingIcon = Icons.Default.BugReport
+                    ) },
+                    { ExternalLink(
+                        title = "Feature requests",
+                        description = "Will open externally, once there tap on 'New discussion'. Requires a GitHub account.",
+                        leadingIcon = Icons.Default.Feedback
+                    ) },
+                    { ExternalLink(
+                        title = "Source code",
+                        description = "The entirety of this app is open source. Feel free to contribute or just look around.",
+                        leadingIcon = Icons.Default.Code
+                    ) }
+                ),
+                onClicks = urls.map { { uriHandler.openUri(it) } }
+            )
         }
         item {
             ProfileSection(title = "Acknowledgements") {
@@ -798,47 +830,12 @@ fun IncrementRow(
 }
 
 @Composable
-fun FeedbackContent() {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        ExternalLink(
-            title = "Bug report",
-            description = "Will open externally, once there tap on 'New issue'. Requires a GitHub account.",
-            url = "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
-            leadingIcon = Icons.Default.BugReport
-        )
-        ExternalLink(
-            title = "Feature requests",
-            description = "Will open externally, once there tap on 'New discussion'. Requires a GitHub account.",
-            url = "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
-            leadingIcon = Icons.Default.Feedback
-        )
-        ExternalLink(
-            title = "Source code",
-            description = "The entirety of this app is open source. Feel free to contribute or just look around.",
-            url = "https://github.com/alessioGalatolo/PerfectGymCoach",
-            leadingIcon = Icons.Default.Code
-        )
-    }
-}
-
-@Composable
-fun ExternalLink(title: String, description: String, url: String, leadingIcon: ImageVector? = null) {
-    val uriHandler = LocalUriHandler.current
+fun ExternalLink(title: String, description: String, leadingIcon: ImageVector? = null) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth()
             .clip(CardDefaults.shape)
-            .combinedClickable(
-                indication = ripple(),
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = {
-                    uriHandler.openUri(url)
-                },
-                onLongClick = { }
-            )
     ) {
         if (leadingIcon != null) {
             Icon(
