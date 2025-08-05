@@ -87,7 +87,7 @@ fun SharedTransitionScope.Home(
     }
     Scaffold(
         // use a primary container to put emphasis on upcoming workout in elevated card
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceDim,
         floatingActionButton = {
             if (homeState.currentPlan == null) {
                 LargeFloatingActionButton(
