@@ -55,9 +55,12 @@ import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.os.Build
 import android.util.Log
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -82,7 +85,8 @@ import kotlin.math.max
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class,
-    ExperimentalSharedTransitionApi::class
+    ExperimentalSharedTransitionApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
 fun SharedTransitionScope.Workout(
@@ -523,13 +527,19 @@ fun SharedTransitionScope.Workout(
                         ) ?: 0L
                     )
                 else null
-                // 1 to 0
-                val plainRestCounterProgress: Float? = restCounterMillis?.let {
-                    it.toFloat() / (workoutState.currentExerciseRest ?: it).times(1000).toFloat()
+                // restCounterMillis is updated infrequently, animate between value to have smooth progress
+                val progressAnim = remember { Animatable(1f) }
+
+                val targetProgress = restCounterMillis?.let {
+                    it.toFloat() / (workoutState.currentExerciseRest?.times(1000L) ?: restCounterMillis).toFloat()
+                } ?: 1f
+
+                LaunchedEffect(targetProgress) {
+                    progressAnim.animateTo(
+                        targetValue = targetProgress,
+                        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+                    )
                 }
-                val restCounterProgress by animateFloatAsState(
-                    targetValue = plainRestCounterProgress ?: 1f,
-                )
 
 
                 ExercisePage(
@@ -547,7 +557,7 @@ fun SharedTransitionScope.Workout(
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounterMillis = restCounterMillis,
-                    restCounterProgress = restCounterProgress,
+                    restCounterProgress = progressAnim.value,
                     workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { probability ->
                         scope.launch {
@@ -589,17 +599,10 @@ fun SharedTransitionScope.Workout(
             },
             floatingActionButton = {
                 if (mediaTitle != null) {
-                    fabHeight = 8.dp + 8.dp + 48.dp + 8.dp + 16.dp
-                    // swap color scheme i.e., if in dark use light colors, otherwise dark colors
-                    var colors: ColorScheme = if (useDarkTheme) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicLightColorScheme(
-                            LocalContext.current
-                        ) else lightColorScheme()
-                    } else {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicDarkColorScheme(
-                            LocalContext.current
-                        ) else darkColorScheme()
-                    }
+                    fabHeight = 16.dp + // top inner padding
+                            16.dp + // bottom inner padding
+                            48.dp + // album art size
+                            16.dp // card bottom padding
                     AnimatedVisibility(
                         visible = !pagerState.isScrollInProgress,
                         enter = fadeIn(),
@@ -610,7 +613,10 @@ fun SharedTransitionScope.Workout(
                             backgroundContent = {}
                         ) {
                             ElevatedCard(
-                                colors = CardDefaults.elevatedCardColors(containerColor = colors.surface),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                colors = CardDefaults.elevatedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.inverseSurface
+                                ),
                                 modifier = Modifier
                                     .padding(start = 32.dp)
                                     .clickable {  // weird padding as it pretends to be a fab
@@ -625,79 +631,97 @@ fun SharedTransitionScope.Workout(
                                         }
                                     }
                             ) {
-                                Spacer(Modifier.height(8.dp))
-                                Row(
-                                    verticalAlignment = CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp)
+                                Box(
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     if (artworkBitmap != null) {
                                         AsyncImage(
-                                            artworkBitmap, "Song artwork",
-                                            Modifier
-                                                .size(48.dp)
-                                                .clip(
-                                                    RoundedCornerShape(8.dp)
+                                            artworkBitmap,
+                                            "Song artwork",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.matchParentSize().blur(16.dp)
+                                        )
+                                        // Dimming scrim (dark overlay)
+                                        Box(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .background(Color.Black.copy(alpha = 0.3f))
+                                        )
+                                    }
+                                    Column (Modifier.padding(16.dp)) {
+                                        Row(
+                                            verticalAlignment = CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        ) {
+                                            if (artworkBitmap != null) {
+                                                AsyncImage(
+                                                    artworkBitmap, "Song artwork",
+                                                    Modifier
+                                                        .size(48.dp)
+                                                        .clip(
+                                                            RoundedCornerShape(8.dp)
+                                                        )
                                                 )
-                                        )
-                                    } else {
-                                        Icon(
-                                            Icons.Default.MusicNote,
-                                            "No song artwork",
-                                            Modifier.size(48.dp)
-                                        )
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            mediaTitle!!,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = colors.onSurface
-                                        )
-                                        Text(
-                                            mediaArtist,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = colors.secondary
-                                        )
-                                    }
-                                    // if we are just teasing, gain space by removing buttons
-                                    if (!shouldTeaseMediaAccess) {
-                                        Spacer(Modifier.width(8.dp))
-                                        IconButton(
-                                            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onSurface),
-                                            onClick = {
-                                                if (session != null) {
-                                                    if (session!!.playbackState?.state == STATE_PLAYING)
-                                                        session!!.transportControls.pause()
-                                                    else
-                                                        session!!.transportControls.play()
-                                                }
-                                            }
-                                        ) {
-                                            if (isPlaying) {
-                                                Icon(Icons.Default.Pause, "Pause")
                                             } else {
-                                                Icon(Icons.Default.PlayArrow, "Play")
+                                                Icon(
+                                                    Icons.Default.MusicNote,
+                                                    "No song artwork",
+                                                    Modifier.size(48.dp)
+                                                )
                                             }
-                                        }
-                                        IconButton(
-                                            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onSurface),
-                                            onClick = {
-                                                if (session != null) {
-                                                    session!!.transportControls.skipToNext()
+                                            Spacer(Modifier.width(8.dp))
+                                            Column(Modifier.weight(1f)) {
+                                                Text(
+                                                    mediaTitle!!,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    style = MaterialTheme.typography.labelMedium
+                                                )
+                                                Text(
+                                                    mediaArtist,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                            // if we are just teasing, gain space by removing buttons
+                                            if (!shouldTeaseMediaAccess) {
+                                                Spacer(Modifier.width(8.dp))
+                                                FilledIconToggleButton(
+                                                    checked = isPlaying,
+                                                    onCheckedChange = {
+                                                        if (session != null) {
+                                                            if (session!!.playbackState?.state == STATE_PLAYING)
+                                                                session!!.transportControls.pause()
+                                                            else
+                                                                session!!.transportControls.play()
+                                                        }
+                                                    },
+                                                    shapes = IconButtonDefaults.toggleableShapes(),
+                                                    modifier = Modifier.size(IconButtonDefaults.smallContainerSize(
+                                                        IconButtonDefaults.IconButtonWidthOption.Wide))
+                                                ) {
+                                                    if (isPlaying) {
+                                                        Icon(Icons.Default.Pause, "Pause")
+                                                    } else {
+                                                        Icon(Icons.Default.PlayArrow, "Play")
+                                                    }
+                                                }
+                                                FilledTonalIconButton(
+                                                    shapes = IconButtonDefaults.shapes(),
+                                                    onClick = {
+                                                        if (session != null) {
+                                                            session!!.transportControls.skipToNext()
+                                                        }
+                                                    }
+                                                ) {
+                                                    Icon(Icons.Default.SkipNext, "Next track")
                                                 }
                                             }
-                                        ) {
-                                            Icon(Icons.Default.SkipNext, "Next track")
                                         }
                                     }
                                 }
-                                Spacer(Modifier.height(8.dp))
                             }
                         }
                     }

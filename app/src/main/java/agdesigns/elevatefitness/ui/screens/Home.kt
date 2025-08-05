@@ -31,15 +31,15 @@ import agdesigns.elevatefitness.viewmodels.HomeViewModel
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
@@ -48,6 +48,7 @@ import com.ramcosta.composedestinations.generated.destinations.AddWorkoutPlanDes
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
+import kotlin.math.min
 
 
 @Destination<BottomNavigationGraph>(start = true, style = FadeTransition::class)
@@ -84,19 +85,17 @@ fun SharedTransitionScope.Home(
 //        delay(200)  // FIXME: done in order to avoid double dialog showing
         resumeWorkoutDialogOpen = homeState.currentWorkout != null
     }
-
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        rememberTopAppBarState()
-    )
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        // use a primary container to put emphasis on upcoming workout in elevated card
+        containerColor = MaterialTheme.colorScheme.surfaceDim,
         floatingActionButton = {
             if (homeState.currentPlan == null) {
                 LargeFloatingActionButton(
                     onClick = {
                         navigator.navigate(
-                        AddWorkoutPlanDestination(openDialogNow = true)
-                    ) }
+                            AddWorkoutPlanDestination(openDialogNow = true)
+                        )
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
@@ -105,12 +104,6 @@ fun SharedTransitionScope.Home(
                     )
                 }
             }
-        },
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(stringResource(R.string.default_quote)) },
-                scrollBehavior = scrollBehavior
-            )
         }
     ) { innerPadding ->
         if (homeState.currentPlan == null) {
@@ -157,7 +150,6 @@ fun SharedTransitionScope.Home(
             && homeState.currentProgram != null
         ) {
             LazyColumn(
-                Modifier.padding(horizontal = 16.dp).nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding = innerPadding
             ) {
                 var currentProgram = homeState.programs?.getOrNull(homeState.currentProgram!!)
@@ -177,11 +169,12 @@ fun SharedTransitionScope.Home(
                 }
                 item {
                     // Coming next
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = stringResource(id = R.string.coming_next),
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
                     // animate card, image and text separately
                     val cardKey = rememberSharedContentState("card_${currentProgram.programId}")
                     val imageKey = rememberSharedContentState("img_${currentProgram.programId}")
@@ -203,6 +196,7 @@ fun SharedTransitionScope.Home(
                         navigator = navigator,
                         // FIXME: suboptimal solution
                         cardModifier = Modifier
+                            .padding(16.dp)
                             .sharedBounds(
                                 sharedContentState = cardKey,
                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -230,143 +224,214 @@ fun SharedTransitionScope.Home(
                     item {
                         Text(
                             text = stringResource(id = R.string.other_programs),
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    items(items = otherPrograms, key = { it }) {
-                        val exs =
-                            homeState.exercisesAndInfo[it.programId]?.sortedBy {
-                                it.orderInProgram
-                            } ?: emptyList()
+                    itemsIndexed(items = otherPrograms, key = { _, it -> it.programId }) { index, program ->
+                        val exs = homeState.exercisesAndInfo[program.programId]?.sortedBy {
+                            it.orderInProgram
+                        } ?: emptyList()
+
                         val pagerState = rememberPagerState(pageCount = { exs.size })
+
+                        // Softer corner radius for less emphasis
+                        val cardShape = when (index) {
+                            0 -> RoundedCornerShape(16.dp, 16.dp, 4.dp, 4.dp)
+                            otherPrograms.size - 1 -> RoundedCornerShape(4.dp, 4.dp, 16.dp, 16.dp)
+                            else -> RoundedCornerShape(4.dp)
+                        }
+
                         Card(
+                            shape = cardShape,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
                             modifier = Modifier
                                 .sharedBounds(
-                                    sharedContentState = rememberSharedContentState("card_${it.programId}"),
+                                    sharedContentState = rememberSharedContentState("card_${program.programId}"),
                                     animatedVisibilityScope = animatedVisibilityScope,
                                 )
                                 .fillMaxWidth()
-                                .padding(vertical = dimensionResource(R.dimen.card_space_between) / 2)
-                                .combinedClickable(onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    navigator.navigate(
-                                        AddProgramExerciseDestination(
-                                            programName = it.name,
-                                            programId = it.programId
+                                .combinedClickable(
+                                    onLongClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        navigator.navigate(
+                                            AddProgramExerciseDestination(
+                                                programName = program.name,
+                                                programId = program.programId
+                                            )
                                         )
-                                    )
-                                }) {
+                                    }
+                                ) {
                                     navigator.navigate(
                                         WorkoutDestination(
-                                            programId = it.programId,
+                                            programId = program.programId,
                                             previewExercise = exs.getOrNull(pagerState.currentPage)
                                         )
                                     )
                                 }
                         ) {
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(dimensionResource(R.dimen.card_inner_padding))
-                            ) {
-                                Column(
-                                    Modifier
-                                        .weight(1.6f)
-                                        .fillMaxHeight()
-                                ) {
-                                    Text(
-                                        text = it.name,
-                                        style = MaterialTheme.typography.titleLarge,
-                                    )
-                                    exs.forEach { exercise -> // TODO: mark supersets
-                                        val exerciseName = exercise.name + exercise.variation
-                                        val modifier =
-                                            if (exercise.orderInProgram == pagerState.currentPage) Modifier.sharedBounds(
-                                                sharedContentState = rememberSharedContentState("exName_${it.programId}"),
-                                                animatedVisibilityScope = animatedVisibilityScope,
-                                            ) else Modifier
-                                        Text(text = exerciseName, modifier = modifier)
-                                    }
-                                }
-                                Column(
-                                    verticalArrangement = Arrangement.SpaceBetween,
+                            Column {
+                                // Main content row
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
+                                        .fillMaxWidth()
+                                        .padding(12.dp) // Slightly reduced padding
                                 ) {
+                                    // Exercise image pager
                                     if (exs.isNotEmpty()) {
                                         HorizontalPager(
                                             state = pagerState,
                                             userScrollEnabled = false,
                                             modifier = Modifier
                                                 .sharedBounds(
-                                                    sharedContentState = rememberSharedContentState(
-                                                        "img_${it.programId}"
-                                                    ),
+                                                    sharedContentState = rememberSharedContentState("img_${program.programId}"),
                                                     animatedVisibilityScope = animatedVisibilityScope,
                                                 )
-                                                .width(150.dp)
-                                                .height(150.dp / 3 * 2)
-                                                .clip(AbsoluteRoundedCornerShape(12.dp))
-                                                .align(Alignment.End)
+                                                .size(80.dp) // Smaller image for less emphasis
+                                                .clip(RoundedCornerShape(8.dp))
                                         ) { page ->
-                                            Box(Modifier.wrapContentSize()) {
-                                                AsyncImage(
-                                                    model = exs[page].image,
-                                                    contentDescription = "Exercise image",
-                                                    contentScale = ContentScale.Crop,
-                                                    modifier = Modifier
-                                                        .height(150.dp / 3 * 2)
-                                                        .width(150.dp)
-                                                )
-                                            }
+                                            AsyncImage(
+                                                model = exs[page].image,
+                                                contentDescription = "Exercise image",
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize(),
+                                                colorFilter = ColorFilter.tint(
+                                                    Color.Black.copy(alpha = 0.1f),
+                                                    BlendMode.Darken
+                                                ) // Subtle overlay for less prominence
+                                            )
                                         }
+
                                         LaunchedEffect(homeState.animationTick) {
                                             if (!animatedVisibilityScope.transition.isRunning) {
                                                 pagerState.animateScrollToPage(
-                                                    (pagerState.currentPage + 1) %
-                                                            exs.size
+                                                    (pagerState.currentPage + 1) % exs.size
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    // Program info column
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                    ) {
+                                        Text(
+                                            text = program.name,
+                                            style = MaterialTheme.typography.titleMedium, // Smaller title
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = Ellipsis
+                                        )
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        // Exercise preview - show max 3 for cleaner look
+                                        exs.take(3).forEach { exercise ->
+                                            var exerciseName = exercise.name
+                                            if (exercise.variation.isNotBlank()) {
+                                                exerciseName += " (${exercise.variation})"
+                                            }
+                                            exerciseName += ": "
+
+                                            var exInfo = "${exercise.reps.size}x${exercise.reps.min()}"
+                                            if (exercise.reps.distinct().size > 1) {
+                                                exInfo += "+"
+                                            }
+                                            exInfo += " • ${exercise.rest.min()}s"
+                                            if (exercise.rest.distinct().size > 1) {
+                                                exInfo += "+"
+                                            }
+
+                                            val modifier = if (exercise.orderInProgram == pagerState.currentPage) {
+                                                Modifier.sharedBounds(
+                                                    sharedContentState = rememberSharedContentState("exName_${program.programId}"),
+                                                    animatedVisibilityScope = animatedVisibilityScope,
+                                                )
+                                            } else Modifier
+
+                                            Text(
+                                                text = exerciseName + exInfo,
+                                                modifier = modifier,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                                maxLines = 1,
+                                                overflow = Ellipsis
+                                            )
+                                        }
+
+                                        if (exs.size > 3) {
+                                            Text(
+                                                text = "+${exs.size - 2} more exercises",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                                maxLines = 1,
+                                                overflow = Ellipsis
+                                            )
+                                        }
+                                    }
+
+                                    // Action buttons - more compact
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                navigator.navigate(
+                                                    AddProgramExerciseDestination(
+                                                        programName = program.name,
+                                                        programId = program.programId
+                                                    )
+                                                )
+                                            },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.Edit,
+                                                contentDescription = "Edit program",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        if (exs.isNotEmpty()) {
+                                            IconButton(
+                                                onClick = {
+                                                    navigator.navigate(
+                                                        WorkoutDestination(
+                                                            programId = program.programId,
+                                                            previewExercise = exs[pagerState.currentPage],
+                                                            quickStart = true
+                                                        )
+                                                    )
+                                                },
+                                                modifier = Modifier.size(36.dp) // Smaller buttons
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.RocketLaunch,
+                                                    contentDescription = "Quick start workout",
+                                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                                    modifier = Modifier.size(18.dp)
                                                 )
                                             }
                                         }
                                     }
                                 }
                             }
-                            Row(
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.Bottom,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (exs.isNotEmpty()) {
-                                    IconButton(
-                                        onClick = {
-                                            navigator.navigate(
-                                                WorkoutDestination(
-                                                    programId = it.programId,
-                                                    previewExercise = exs[pagerState.currentPage],
-                                                    quickStart = true
-                                                )
-                                            )
-                                        }) {
-                                        Icon(Icons.Default.RocketLaunch, "Quick start workout")
-                                    }
-                                }
-                                IconButton(
-                                    onClick = {
-                                        navigator.navigate(
-                                            AddProgramExerciseDestination(
-                                                programName = it.name,
-                                                programId = it.programId
-                                            )
-                                        )
-                                    }) {
-                                    Icon(Icons.Outlined.Edit, "Edit program")
-                                }
-                            }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Consistent spacing
+                        if (index != otherPrograms.size - 1) {
+                            Spacer(modifier = Modifier.height(1.dp)) // Minimal gap for cohesion
+                        }
                     }
                 }
                 item {

@@ -24,6 +24,7 @@ import agdesigns.elevatefitness.data.Sex
 import agdesigns.elevatefitness.data.Theme
 import agdesigns.elevatefitness.ui.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.FadeTransition
+import agdesigns.elevatefitness.ui.components.GroupedCard
 import agdesigns.elevatefitness.ui.components.InfoDialog
 import agdesigns.elevatefitness.ui.maybeKgToLb
 import agdesigns.elevatefitness.ui.maybeLbToKg
@@ -40,6 +41,8 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.time.ZonedDateTime
@@ -161,27 +164,109 @@ fun Profile(
             ProfileSection(title = "Preferences") {
                 PreferencesContent(
                     profileState = profileState,
-                    viewModel = viewModel,
-                    focusManager = focusManager
+                    viewModel = viewModel
                 )
             }
         }
 
         // Equipment Increments Section
         item {
-            ProfileSection(title = "Equipment Increments") {
-                EquipmentIncrementsContent(
-                    profileState = profileState,
-                    viewModel = viewModel,
-                    keyboardController = keyboardController,
-                    focusManager = focusManager
+            Text(
+                "Equipment Increments",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            GroupedCard(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                items = listOf(
+                    {
+                        IncrementRow(
+                            label = "Barbell increment",
+                            value = profileState.incrementBarbell,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Bodyweight increment",
+                            value = profileState.incrementBodyweight,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Cable increment",
+                            value = profileState.incrementCable,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Dumbbell increment",
+                            value = profileState.incrementDumbbell,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }, {
+                        IncrementRow(
+                            label = "Machine increment",
+                            value = profileState.incrementMachine,
+                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
                 )
-            }
+            )
         }
         item {
-            ProfileSection(title = "Feedback") {
-                FeedbackContent()
-            }
+            val uriHandler = LocalUriHandler.current
+            val urls = listOf(
+                "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
+                "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
+                "https://github.com/alessioGalatolo/PerfectGymCoach"
+            )
+            Text(
+                "Feedback",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            GroupedCard(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                items = listOf(
+                    { ExternalLink(
+                        title = "Bug report",
+                        description = "Will open externally, once there tap on 'New issue'. Requires a GitHub account.",
+                        leadingIcon = Icons.Default.BugReport
+                    ) },
+                    { ExternalLink(
+                        title = "Feature requests",
+                        description = "Will open externally, once there tap on 'New discussion'. Requires a GitHub account.",
+                        leadingIcon = Icons.Default.Feedback
+                    ) },
+                    { ExternalLink(
+                        title = "Source code",
+                        description = "The entirety of this app is open source. Feel free to contribute or just look around.",
+                        leadingIcon = Icons.Default.Code
+                    ) }
+                ),
+                onClicks = urls.map { { uriHandler.openUri(it) } }
+            )
         }
         item {
             ProfileSection(title = "Acknowledgements") {
@@ -209,9 +294,6 @@ fun ProfileHeader(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -295,7 +377,7 @@ fun ProfileSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PersonalInfoContent(
     profileState: ProfileState,
@@ -385,32 +467,27 @@ fun PersonalInfoContent(
                 modifier = Modifier.weight(1f)
             )
 
-            var expanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier.width(140.dp)
+            Row(
+                Modifier.padding(horizontal = 8.dp).weight(5f),
+                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = profileState.sex.displayName,
-                    onValueChange = {},
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    Sex.entries.forEach { sex ->
-                        DropdownMenuItem(
-                            text = { Text(sex.displayName) },
-                            onClick = {
-                                onEditSex(sex)
-                                expanded = false
+                Sex.entries.forEachIndexed { index, sex ->
+                    val modifier = if (sex == profileState.sex)
+                        Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
+                    else Modifier.weight(1f)
+
+                    ToggleButton(
+                        checked = sex == profileState.sex,
+                        onCheckedChange = { onEditSex(sex) },
+                        modifier = modifier,
+                        shapes =
+                            when (index) {
+                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                Sex.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                             },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                        )
+                    ) {
+                        Text(sex.displayName)
                     }
                 }
             }
@@ -582,12 +659,11 @@ fun MeasurementRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PreferencesContent(
     profileState: ProfileState,
     viewModel: ProfileViewModel,
-    focusManager: FocusManager
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -619,94 +695,47 @@ fun PreferencesContent(
                 modifier = Modifier.weight(1f)
             )
 
-            var expanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier.width(140.dp).weight(2f)
+            Row(
+                Modifier.padding(horizontal = 8.dp).weight(5.8f),
+                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = profileState.theme.displayName,
-                    onValueChange = {},
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    Theme.entries.forEach { theme ->
-                        DropdownMenuItem(
-                            text = { Text(theme.displayName) },
-                            onClick = {
-                                viewModel.onEvent(ProfileEvent.UpdateTheme(theme))
-                                expanded = false
-                                focusManager.clearFocus()
+                // FIXME: "Same as system" overflows
+                Theme.entries.forEachIndexed { index, theme ->
+                    val modifier = if (theme == profileState.theme)
+                        Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
+                    else Modifier.weight(1f)
+
+                    var textAlign = when (index) {
+                        0 -> TextAlign.End
+                        Theme.entries.lastIndex -> TextAlign.Start
+                        else -> TextAlign.Center
+                    }
+                    if (theme == profileState.theme) {
+                        textAlign = TextAlign.Center
+                    }
+                    ToggleButton(
+                        checked = theme == profileState.theme,
+                        onCheckedChange = {
+                            viewModel.onEvent(ProfileEvent.UpdateTheme(theme))
+                        },
+                        modifier = modifier,
+                        shapes =
+                            when (index) {
+                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                Theme.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                             },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                    ) {
+                        Text(
+                            theme.displayName,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = textAlign,
                         )
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun EquipmentIncrementsContent(
-    profileState: ProfileState,
-    viewModel: ProfileViewModel,
-    keyboardController: SoftwareKeyboardController?,
-    focusManager: FocusManager
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        IncrementRow(
-            label = "Barbell increment",
-            value = profileState.incrementBarbell,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Bodyweight increment",
-            value = profileState.incrementBodyweight,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Cable increment",
-            value = profileState.incrementCable,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Dumbbell increment",
-            value = profileState.incrementDumbbell,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
-
-        IncrementRow(
-            label = "Machine increment",
-            value = profileState.incrementMachine,
-            unit = if (profileState.imperialSystem) "lb" else "kg",
-            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
     }
 }
 
@@ -801,47 +830,12 @@ fun IncrementRow(
 }
 
 @Composable
-fun FeedbackContent() {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        ExternalLink(
-            title = "Bug report",
-            description = "Will open externally, once there tap on 'New issue'. Requires a GitHub account.",
-            url = "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
-            leadingIcon = Icons.Default.BugReport
-        )
-        ExternalLink(
-            title = "Feature requests",
-            description = "Will open externally, once there tap on 'New discussion'. Requires a GitHub account.",
-            url = "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
-            leadingIcon = Icons.Default.Feedback
-        )
-        ExternalLink(
-            title = "Source code",
-            description = "The entirety of this app is open source. Feel free to contribute or just look around.",
-            url = "https://github.com/alessioGalatolo/PerfectGymCoach",
-            leadingIcon = Icons.Default.Code
-        )
-    }
-}
-
-@Composable
-fun ExternalLink(title: String, description: String, url: String, leadingIcon: ImageVector? = null) {
-    val uriHandler = LocalUriHandler.current
+fun ExternalLink(title: String, description: String, leadingIcon: ImageVector? = null) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth()
             .clip(CardDefaults.shape)
-            .combinedClickable(
-                indication = ripple(),
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = {
-                    uriHandler.openUri(url)
-                },
-                onLongClick = { }
-            )
     ) {
         if (leadingIcon != null) {
             Icon(

@@ -239,7 +239,7 @@ fun History(
 ) {
     val historyState by viewModel.state.collectAsState()
     val recordsMapMap = historyState.workoutRecords
-
+    // TODO: add change of plan header
     if (recordsMapMap.isEmpty()) {
         // Empty state with improved styling
         Column(

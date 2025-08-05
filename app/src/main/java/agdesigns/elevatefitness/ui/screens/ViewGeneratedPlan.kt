@@ -19,6 +19,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Destination<GeneratePlanGraph>(style = SlideTransition::class)
 @Composable
 fun ViewGeneratedPlan(
@@ -43,7 +44,7 @@ fun ViewGeneratedPlan(
             Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CircularProgressIndicator()
+            ContainedLoadingIndicator()
             Spacer(Modifier.height(8.dp))
 
             // TODO: circle on messages
