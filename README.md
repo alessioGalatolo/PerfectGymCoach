@@ -1,6 +1,22 @@
 # ElevateFitness (previously PerfectGymCoach)
 A gym workout app born from the frustration of using badly designed apps with terrible UX and infinite number of paywalls.
 
+### Material 3 Expressive (WIP)
+
+![expressive](https://github.com/user-attachments/assets/057b1aa6-71c6-4787-b76e-1bf9c2ef7955)
+
+Done:
+* Grouped cards
+* Use (available) expressive elements
+* Update physics
+* Add some new animations
+
+To do:
+* Colourful screens?
+* More expressive elements
+* Typography
+
+
 ### Wear OS companion
 ![Screen_recording_20250604_225657-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/08acae06-e532-4d8a-ba43-6ac733827260)
 
