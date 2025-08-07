@@ -14,13 +14,17 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 30
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2  // match phone app version
+        versionName = "0.0.2"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Enables code-related app optimization.
+            isMinifyEnabled = true
+
+            // Enables resource shrinking.
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
