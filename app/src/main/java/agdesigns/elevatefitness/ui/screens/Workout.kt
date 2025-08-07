@@ -599,17 +599,24 @@ fun SharedTransitionScope.Workout(
             },
             floatingActionButton = {
                 if (mediaTitle != null) {
-                    fabHeight = 16.dp + // top inner padding
+                    val visibleFabHeight = 16.dp + // top inner padding
                             16.dp + // bottom inner padding
                             48.dp + // album art size
                             16.dp // card bottom padding
+                    var dismissed by remember { mutableStateOf(false) }
+                    LaunchedEffect(dismissed, pagerState.isScrollInProgress) {
+                        fabHeight = if (dismissed || pagerState.isScrollInProgress) 0.dp else visibleFabHeight
+                    }
                     AnimatedVisibility(
-                        visible = !pagerState.isScrollInProgress,
+                        visible = !pagerState.isScrollInProgress && !dismissed,
                         enter = fadeIn(),
                         exit = fadeOut()
                     ) {
                         SwipeToDismissBox(
                             state = rememberSwipeToDismissBoxState(),
+                            onDismiss = {
+                                dismissed = true
+                            },
                             backgroundContent = {}
                         ) {
                             ElevatedCard(
@@ -622,12 +629,20 @@ fun SharedTransitionScope.Workout(
                                     .clickable {  // weird padding as it pretends to be a fab
                                         if (shouldTeaseMediaAccess) {
                                             viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog)
-                                        } else if (session?.packageName != null) {
-                                            val intent =
-                                                context.packageManager.getLaunchIntentForPackage(
-                                                    session!!.packageName!!
-                                                )
-                                            context.startActivity(intent)
+                                        } else {
+                                            // TODO: This has fixed the crash when clicking on the card
+                                            //  right after granting permission but results in clicks
+                                            //  that go nowhere...
+                                            val packageName = session?.packageName
+                                            if (packageName != null) {
+                                                val intent =
+                                                    context.packageManager.getLaunchIntentForPackage(
+                                                        packageName
+                                                    )
+                                                if (intent != null) {
+                                                    context.startActivity(intent)
+                                                }
+                                            }
                                         }
                                     }
                             ) {
