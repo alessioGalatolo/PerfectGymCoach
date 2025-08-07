@@ -199,9 +199,10 @@ fun ExercisePage(
                             Modifier.align(CenterHorizontally)
                         )
                         LaunchedEffect(restCounterMillis / 1000) {
-                            if (restCounterMillis / 1000 == 1L || restCounterMillis / 1000 == 2L || restCounterMillis / 1000 == 3L) {
+                            // do not vibrate on 0L as this will be called multiple times with 0L
+                            if (restCounterMillis / 1000 == 2L || restCounterMillis / 1000 == 3L) {
                                 haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
-                            } else if (restCounterMillis / 1000 == 0L) {
+                            } else if (restCounterMillis / 1000 == 1L) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         }
