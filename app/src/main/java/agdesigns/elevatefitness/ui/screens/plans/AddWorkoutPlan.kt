@@ -1,0 +1,414 @@
+package agdesigns.elevatefitness.ui.screens.plans
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFloatingActionButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
+import androidx.hilt.navigation.compose.hiltViewModel
+import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
+import agdesigns.elevatefitness.navigation.ChangePlanGraph
+import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.components.InsertNameDialog
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.SwipeToDismissBoxDefaults
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
+import com.ramcosta.composedestinations.generated.destinations.ArchivedPlansDestination
+import com.ramcosta.composedestinations.generated.destinations.CustomizePlanGenerationDestination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
+import kotlin.math.abs
+
+@Destination<ChangePlanGraph>(start=true, style = SlideTransition::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun AddWorkoutPlan(
+    navigator: DestinationsNavigator,
+    openDialogNow: Boolean = false,
+    viewModel: PlansViewModel = hiltViewModel()
+) {
+    // FIXME: two plans and some archived ones. If swapping current plan, archived button disappears
+    val addWorkoutState by viewModel.state.collectAsState()
+    InsertNameDialog(
+        prompt = "Name of the new plan",
+        dialogueIsOpen = addWorkoutState.openAddPlanDialogue,
+        toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
+        insertName = {
+            planName -> viewModel.onEvent(
+            PlansEvent.AddPlan(
+                WorkoutPlan(
+                    name = planName,
+                    creationDate = ZonedDateTime.now(),
+                ))) }
+    )
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
+    LaunchedEffect(openDialog.value) {
+        if (openDialog.value) {
+            awaitFrame()
+            awaitFrame()
+            viewModel.onEvent(PlansEvent.TogglePlanDialogue)
+            openDialog.value = false
+        }
+    }
+    Scaffold (
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.manage_workout_plans)) },
+                navigationIcon = {
+                    IconButton(onClick = { navigator.navigateUp() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Go back"
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
+        }, floatingActionButton = {
+            LargeFloatingActionButton (
+                modifier = Modifier.navigationBarsPadding(),
+                onClick = {
+                    viewModel.onEvent(PlansEvent.TogglePlanDialogue)
+                },
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Add workout plan",
+                    modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
+                )
+            }
+        }) { innerPadding ->
+        if (addWorkoutState.workoutPlanMapPrograms.isEmpty()) {
+            // if you have no plans
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.ContentPaste,
+                    contentDescription = "",
+                    modifier = Modifier.size(160.dp)
+                )
+                Text(
+                    stringResource(id = R.string.empty_plans),
+                    modifier = Modifier.padding(16.dp)
+                )
+                GeneratePlanButton(navigator)
+            }
+        } else {
+            // if you have some plans
+            LazyColumn(
+                contentPadding = innerPadding,
+                modifier = Modifier.padding(horizontal=16.dp)
+            ) {
+                itemsIndexed(items = addWorkoutState.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
+                { index, plan ->
+                    if (index == 0){
+                        Text("Current plan", fontWeight = FontWeight.Bold)
+                    } else if (index == 1) {
+                        Column (Modifier.fillMaxWidth()){
+                            Text("Other plans", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    // TODO: consider having only the first plan in card, the others are simple list items
+                    PlanCard(
+                        navigator = navigator,
+                        plan = plan.first,
+                        programs = plan.second,
+                        canBeSwiped = index != 0,
+                        onSwipe = {
+                            viewModel.onEvent(PlansEvent.ArchivePlan(plan.first.planId))
+                            scope.launch {
+                                val snackbarResult = snackbarHostState.showSnackbar(
+                                    "Plan archived",
+                                    actionLabel = "Undo",
+                                    duration = SnackbarDuration.Short
+                                )
+                                when (snackbarResult) {
+                                    SnackbarResult.ActionPerformed -> {
+                                        viewModel.onEvent(PlansEvent.UnarchivePlan(plan.first.planId))
+                                    }
+
+                                    SnackbarResult.Dismissed -> {
+                                        /* Handle snackbar dismissed */
+                                    }
+                                }
+                            }
+                        },
+                        swipeIcon = Icons.Default.Archive,
+                        swipeDescription = "Archive plan",
+                        swipeBackgroundColor = MaterialTheme.colorScheme.errorContainer,
+                        trailingIcon = if (index == 0) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        trailingIconDescription = if (index == 0) "Current plan" else "Set as current plan",
+                        onTrailingIconClick = {
+                            viewModel.onEvent(PlansEvent.SetCurrentPlan(plan.first.planId))
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Plan set as current")
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    if (index == 0) {
+                        Column (Modifier.fillMaxWidth()) {
+                            GeneratePlanButton(navigator)
+                        }
+                    }
+                }
+                if (addWorkoutState.archivedPlans.isNotEmpty()) {
+                    item {
+                        if (addWorkoutState.workoutPlanMapPrograms.size <= 1) {
+                            Column (Modifier.fillMaxWidth()){
+                                Text("Other plans", fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        // Archived chat card
+                        OutlinedCard(onClick = {
+                            navigator.navigate(ArchivedPlansDestination)
+                        }) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(dimensionResource(R.dimen.card_inner_padding)),
+                                horizontalArrangement = Arrangement.Start,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Archive, contentDescription = "")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.archived_plans), style = MaterialTheme.typography.headlineSmall)
+                            }
+                        }
+                    }
+                }
+                item{
+                    var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode
+                    finalSpacerSize += 16.dp
+                    Spacer(modifier = Modifier.navigationBarsPadding())
+                    Spacer(Modifier.height(finalSpacerSize))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun LazyItemScope.PlanCard(
+    navigator: DestinationsNavigator,
+    plan: WorkoutPlan,
+    programs: List<WorkoutProgram>,
+    canBeSwiped: Boolean = true,
+    onSwipe: (Long) -> Unit = {},
+    swipeBackgroundColor: Color = Color.White,
+    swipeIcon: ImageVector? = null,
+    swipeDescription: String? = null,
+    trailingIcon: ImageVector? = null,
+    trailingIconDescription: String? = null,
+    onTrailingIconClick: (() -> Unit) = {}
+){
+    val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val positionalThresholdFun = SwipeToDismissBoxDefaults.positionalThreshold
+    // NOTE: we need these two keys otherwise when undoing archivePlan, the state would be recycled
+    val dismissState = remember(plan.planId, plan.archived) {
+        SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            positionalThreshold = positionalThresholdFun
+        )
+    }
+    val density = LocalDensity.current
+    val swipeWidthDp by remember {
+        derivedStateOf {
+            try {
+                with(density) { abs(dismissState.requireOffset()).toDp() }
+            } catch (e: IllegalStateException) {
+                0.dp
+            }
+        }
+    }
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromEndToStart = canBeSwiped,
+        enableDismissFromStartToEnd = canBeSwiped,
+        onDismiss = { direction ->
+            if (direction != SwipeToDismissBoxValue.Settled) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onSwipe(plan.planId)
+            } else {
+                scope.launch {
+                    dismissState.reset()
+                }
+            }
+        },
+        backgroundContent = {
+            val direction = dismissState.dismissDirection
+            val defaultColors = CardDefaults.cardColors()
+            val dismissColors by animateColorAsState(
+                when (dismissState.targetValue) {  // pastel red
+                    SwipeToDismissBoxValue.StartToEnd -> swipeBackgroundColor
+                    SwipeToDismissBoxValue.EndToStart -> swipeBackgroundColor
+                    SwipeToDismissBoxValue.Settled -> defaultColors.containerColor
+                }, label = "Dismiss box anim color"
+            )
+
+            val alignment = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> Alignment.Start
+                SwipeToDismissBoxValue.EndToStart -> Alignment.End
+                SwipeToDismissBoxValue.Settled -> Alignment.CenterHorizontally
+            }
+            val scale by animateFloatAsState(
+                if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 1f else 1.5f,
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                label = "Dismiss box anim"
+            )
+            val targetHeight = if (dismissState.targetValue != SwipeToDismissBoxValue.Settled &&
+                dismissState.progress > 0.85f) 1f - dismissState.progress else 1f
+            val animatedHeight by animateFloatAsState(
+                targetValue = targetHeight,
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                label = "heightAnim"
+            )
+            Column(horizontalAlignment = alignment, modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    shape = MaterialTheme.shapes.extraExtraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = dismissColors
+                    ),
+                    modifier = Modifier
+                        .width(swipeWidthDp)
+                        .fillMaxHeight(animatedHeight)
+                        .clipToBounds()
+                ) {
+                    if (swipeIcon != null) {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                swipeIcon,
+                                contentDescription = swipeDescription,
+                                modifier = Modifier
+                                    .padding(horizontal = 20.dp)
+                                    .scale(scale)
+                                    .align(Alignment.CenterHorizontally)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    ) {
+        ElevatedCard(
+            modifier = Modifier
+                .animateItem()
+                .clickable {
+                    navigator.navigate(
+                        AddProgramDestination(
+                            planName = plan.name,
+                            planId = plan.planId
+                        )
+                    )
+                }) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(dimensionResource(R.dimen.card_inner_padding)),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+//          // TODO: maybe add back image as random icon
+
+                Column(Modifier.weight(1f)) {
+                    Text(text = plan.name, style = MaterialTheme.typography.headlineMedium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    programs.forEach {
+                        Text(it.name)
+                    }
+                }
+                if (trailingIcon != null) {
+                    IconButton(
+                        onClick = onTrailingIconClick,
+                    ) {
+                        Icon(
+                            trailingIcon,
+                            contentDescription = trailingIconDescription
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
+    FilledTonalButton(
+        onClick = {
+            navigator.navigate(CustomizePlanGenerationDestination())
+        },
+        modifier = Modifier.align(Alignment.CenterHorizontally))
+    {
+        Icon(Icons.Filled.AutoAwesome, "Magic")
+        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+        Text("Generate a new plan")
+    }
+}

@@ -21,8 +21,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import agdesigns.elevatefitness.data.exercise.ProgramExerciseAndInfo
-import agdesigns.elevatefitness.data.workout_program.WorkoutProgram
+import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CardDefaults

@@ -1,11 +1,11 @@
 package agdesigns.elevatefitness.ui.components
 
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.data.exercise.Exercise
-import agdesigns.elevatefitness.data.exercise.ExerciseRecordAndEquipment
-import agdesigns.elevatefitness.data.exercise.ExerciseRecordAndInfo
-import agdesigns.elevatefitness.ui.barbellFromWeight
-import agdesigns.elevatefitness.ui.maybeKgToLb
+import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
+import agdesigns.elevatefitness.utils.barbellFromWeight
+import agdesigns.elevatefitness.utils.maybeKgToLb
 import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
