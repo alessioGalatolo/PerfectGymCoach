@@ -181,7 +181,12 @@ fun Home(
                     val context = LocalContext.current
                     val remoteActivityHelper = RemoteActivityHelper(context)
                     // TODO: this is nice but would be nicer if it opened next workout on phone
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                    // TODO: should check if app is installed, then only show one button
+                    val getAppIntent = Intent(Intent.ACTION_VIEW).apply {
+                        addCategory(Intent.CATEGORY_BROWSABLE)
+                        data = "market://details?id=agdesigns.elevatefitness".toUri()
+                    }
+                    val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
                         addCategory(Intent.CATEGORY_BROWSABLE)
                         data = "myapp://openapp".toUri()
                     }
@@ -206,12 +211,22 @@ fun Home(
                         )
                         Spacer(Modifier.height(16.dp))
                         Button(onClick = {
-                            val result = remoteActivityHelper.startRemoteActivity(intent)
+                            val result = remoteActivityHelper.startRemoteActivity(openAppIntent)
                             Log.d("Home", "Result: $result")
                             showConfirmation = true
                         }) {
                             Icon(Icons.Default.PhoneAndroid, "Phone")
                             Text("Open phone app")
+                        }
+                        TextButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                val result = remoteActivityHelper.startRemoteActivity(getAppIntent)
+                                Log.d("Home", "Result: $result")
+                                showConfirmation = true
+                            }
+                        ) {
+                            Text("Get phone app", maxLines = 1)
                         }
                     }
                 } else {
