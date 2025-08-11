@@ -1,8 +1,8 @@
-## Perfect Gym Coach: Privacy policy
+## Elevate Fitness: Privacy policy
 
-Welcome to the Perfect Gym Coach app for Android!
+Welcome to the Elevate Fitness app for Android!
 
-This is an open source Android app developed by Alessio Galatolo. The source code is available on GitHub under the GPL v3 license.
+This is an open-source Android app developed by Alessio Galatolo. The source code is available on GitHub under the GPL v3 license.
 
 ### Data collected by the app
 
