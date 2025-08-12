@@ -1,6 +1,4 @@
-package agdesigns.elevatefitness.presentation
-
-import android.graphics.Bitmap
+package agdesigns.elevatefitness.data.phone
 
 data class WearWorkout(
     val exerciseName: String? = null,

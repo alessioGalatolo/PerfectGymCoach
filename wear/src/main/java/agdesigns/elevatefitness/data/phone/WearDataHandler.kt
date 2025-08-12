@@ -1,5 +1,6 @@
-package agdesigns.elevatefitness.presentation
+package agdesigns.elevatefitness.data.phone
 
+import agdesigns.elevatefitness.data.phone.WearWorkout
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -10,7 +11,6 @@ import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
-import com.google.android.gms.wearable.DataItemBuffer
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
@@ -29,6 +29,13 @@ import javax.inject.Singleton
 class WearDataHandler @Inject constructor(
     @ApplicationContext private val context: Context
 ) : DataClient.OnDataChangedListener {
+    // observed from home to check workout status
+    private val _workoutActive = MutableSharedFlow<Boolean>(
+        replay = 0,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val workoutActive: SharedFlow<Boolean> = _workoutActive.asSharedFlow()
 
     // messages receives and emits workout data
     private val _workoutData = MutableSharedFlow<WearWorkout>(
@@ -72,6 +79,7 @@ class WearDataHandler @Inject constructor(
             if (queuedAsset != null) {
                 Log.d("WearDataHandler", "Found some queued image on init")
                 decodeImageAndEmit(queuedAsset)
+                _workoutActive.tryEmit(true)
             }
         }
         Wearable.getDataClient(context).getDataItems("/phone2watch".toUri()).addOnSuccessListener {
@@ -80,6 +88,7 @@ class WearDataHandler @Inject constructor(
                 val dataMap = DataMapItem.fromDataItem(item).dataMap
                 queuedWorkout = updateWorkout(dataMap, queuedWorkout)
             }
+            _workoutActive.tryEmit(true)
             _workoutData.tryEmit(queuedWorkout)
         }
     }
@@ -95,13 +104,16 @@ class WearDataHandler @Inject constructor(
                     wearWorkout = updateWorkout(dataMap, wearWorkout)
 
                     _workoutData.tryEmit(wearWorkout)
+                    _workoutActive.tryEmit(true)
                 } else if (item.uri.path == "/image2watch") {
                     Log.d("WearDataHandler", "onDataChanged: received image on new uri ")
                     DataMapItem.fromDataItem(item).dataMap.getAsset("image")?.let { asset ->
                         decodeImageAndEmit(asset)
+                        _workoutActive.tryEmit(true)
                     }
                 } else if (item.uri.path == "/stop_workout") {
                     _workoutInterrupted.tryEmit(true)
+                    _workoutActive.tryEmit(false)
                 }
             }
         }

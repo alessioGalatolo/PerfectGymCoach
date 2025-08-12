@@ -1,18 +1,19 @@
-package agdesigns.elevatefitness.presentation
+package agdesigns.elevatefitness.presentation.screens.workout
 
+import agdesigns.elevatefitness.data.WearRepository
 import android.graphics.Bitmap
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -24,7 +25,7 @@ import java.time.ZonedDateTime
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
-data class HomeState(
+data class WorkoutState(
     val exerciseName: String = "",
     val setsDone: Int = 0,
     val reps: List<Int> = emptyList(),
@@ -44,23 +45,33 @@ data class HomeState(
     val imperialSystem: Boolean = false
 )
 
-sealed class HomeEvent {
-    data object ResetRest: HomeEvent()
-    data class ChangeReps(val change: Int): HomeEvent()
-    data class ChangeWeight(val change: Int): HomeEvent()
-    data object CompleteSet: HomeEvent()
-    data object ForceSync: HomeEvent()
-    data class ChangeTare(val newIndex: Int): HomeEvent()
+sealed class WorkoutEvent {
+    data object ResetRest: WorkoutEvent()
+    data class ChangeReps(val change: Int): WorkoutEvent()
+    data class ChangeWeight(val change: Int): WorkoutEvent()
+    data object CompleteSet: WorkoutEvent()
+    data object ForceSync: WorkoutEvent()
+    data object StopActivity: WorkoutEvent()
+    data class ChangeTare(val newIndex: Int): WorkoutEvent()
 }
 
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(private val repository: WearRepository): ViewModel() {
-    private val _state = MutableStateFlow(HomeState())
-    val state: StateFlow<HomeState> = _state.asStateFlow()
+class WorkoutViewModel @Inject constructor(private val repository: WearRepository): ViewModel() {
+    private val _state = MutableStateFlow(WorkoutState())
+    val state: StateFlow<WorkoutState> = _state.asStateFlow()
     private var timerJob: Job? = null
 
     init {
+        // ensure binding happens
+        repository.bindForegroundOnlyService()
+        viewModelScope.launch {
+            // wait until the service is available once, then start
+            repository.service
+                .filterNotNull()
+                .first()
+                .startWorkout()
+        }
         viewModelScope.launch {
             repository.observeWearWorkout().collect { workout ->
                 val setsDone = (workout.setsDone ?: state.value.setsDone)
@@ -83,7 +94,7 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                         tareIndex = barbellSizes!!.indexOf(number)
                     }
                 }
-                Log.d("HomeViewModel", "got wear workout: $workout")
+                Log.d("WorkoutViewModel", "got wear workout: $workout")
                 _state.update {
                     it.copy(
                         exerciseName = workout.exerciseName ?: state.value.exerciseName,
@@ -119,36 +130,36 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
             repository.isPhoneAlive().collect {
                 // reset state
                 if (!it) {
-                    _state.value = HomeState()
+                    _state.value = WorkoutState()
                 }
             }
         }
         viewModelScope.launch {
             repository.observeWorkoutInterrupted().collect {
                 if (it) {
-                    _state.value = HomeState()
+                    _state.value = WorkoutState()
                 }
             }
         }
         startTimer()
-        onEvent(HomeEvent.ForceSync) // request sync once
+        onEvent(WorkoutEvent.ForceSync) // request sync once
     }
 
-    fun onEvent(event: HomeEvent){
+    fun onEvent(event: WorkoutEvent){
         when (event) {
-            is HomeEvent.ResetRest -> {
+            is WorkoutEvent.ResetRest -> {
                 viewModelScope.launch {
                     _state.update { it.copy(restTimestamp = ZonedDateTime.now()) }
                 }
             }
-            is HomeEvent.ChangeReps -> {
+            is WorkoutEvent.ChangeReps -> {
                 _state.update { it.copy(currentReps = state.value.currentReps + event.change) }
             }
-            is HomeEvent.ChangeWeight -> {
+            is WorkoutEvent.ChangeWeight -> {
                 val deincrement = state.value.exerciseIncrement * event.change
                 _state.update { it.copy(weight = state.value.weight + deincrement) }
             }
-            is HomeEvent.CompleteSet -> {
+            is WorkoutEvent.CompleteSet -> {
                 viewModelScope.launch {
                     val tare = if (state.value.equipment.lowercase().contains("barbell"))
                         state.value.barbellSizes[state.value.tareIndex]
@@ -162,13 +173,18 @@ class HomeViewModel @Inject constructor(private val repository: WearRepository):
                 }
 
             }
-            is HomeEvent.ForceSync -> {
+            is WorkoutEvent.ForceSync -> {
                 viewModelScope.launch {
                     repository.forceSync()
                 }
             }
-            is HomeEvent.ChangeTare -> {
+            is WorkoutEvent.ChangeTare -> {
                 _state.update { it.copy(tareIndex = event.newIndex) }
+            }
+            is WorkoutEvent.StopActivity -> {
+                viewModelScope.launch {
+                    repository.service.firstOrNull()?.stopWorkout()
+                }
             }
 
         }

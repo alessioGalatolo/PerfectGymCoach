@@ -1,32 +1,81 @@
-package agdesigns.elevatefitness.presentation
+package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.data.datastore.PermissionStateDataStore
+import agdesigns.elevatefitness.data.datastore.WorkoutDataStore
+import agdesigns.elevatefitness.data.phone.WearDataHandler
+import agdesigns.elevatefitness.data.phone.WearMessageHandler
+import agdesigns.elevatefitness.data.phone.WearWorkout
+import agdesigns.elevatefitness.service.ForegroundOnlyWorkoutService
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.graphics.Bitmap
+import android.os.IBinder
 import android.util.Log
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable.isActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
-
 @Singleton
 class WearRepository @Inject constructor(
     private val dataHandler: WearDataHandler,
     private val messageHandler: WearMessageHandler,
+    private val workoutDataStore: WorkoutDataStore,
+    val permissionStateDataStore: PermissionStateDataStore,
     @ApplicationContext private val context: Context
 ) {
     private var lastHeartbeat = System.currentTimeMillis()
     private val _isPhoneAlive = MutableStateFlow(true)
+    // The remaining variables are related to the binding/monitoring/interacting with the
+    // service that gathers all the data to calculate walking points.
+    private var foregroundOnlyServiceBound = false
+    private val _service = MutableStateFlow<ForegroundOnlyWorkoutService?>(null)
+    val service: StateFlow<ForegroundOnlyWorkoutService?> = _service
+
+    var foregroundOnlyWalkingWorkoutService: ForegroundOnlyWorkoutService? = null
+        private set
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            val binder = service as ForegroundOnlyWorkoutService.LocalBinder
+            foregroundOnlyWalkingWorkoutService = binder.foregroundOnlyWorkoutService
+            foregroundOnlyServiceBound = true
+            _service.value = foregroundOnlyWalkingWorkoutService
+        }
+        override fun onServiceDisconnected(name: ComponentName) {
+            foregroundOnlyWalkingWorkoutService = null
+            foregroundOnlyServiceBound = false
+            _service.value = null
+        }
+    }
+
+    fun bindForegroundOnlyService() {
+        val intent = Intent(context, ForegroundOnlyWorkoutService::class.java)
+        // If it's a foreground service that must actually run, start it as well:
+        // ContextCompat.startForegroundService(context, intent)
+        context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+    }
+
+    fun stopForegroundOnlyService() {
+        if (foregroundOnlyServiceBound) {
+            context.unbindService(connection)
+            foregroundOnlyServiceBound = false
+            _service.value = null
+        }
+    }
+
+    val activeWorkoutFlow: Flow<Boolean> = workoutDataStore.activeWorkoutFlow
 
     init {
         CoroutineScope(Dispatchers.Default).launch {
@@ -42,6 +91,8 @@ class WearRepository @Inject constructor(
             }
         }
     }
+
+    fun observeWorkoutActive(): Flow<Boolean> = dataHandler.workoutActive
 
     fun observeWearWorkout(): Flow<WearWorkout> = dataHandler.workoutData
 
@@ -93,24 +144,20 @@ class WearRepository @Inject constructor(
         messageHandler.reopen()
     }
 
-    init {
-        CoroutineScope(Dispatchers.Default).launch {
-            while (true) {
-                val alive = System.currentTimeMillis() - lastHeartbeat < 2000
-                _isPhoneAlive.tryEmit(alive)
-                delay(1000)
-            }
-        }
-    }
+    /*
+     * Ongoing activity stuff
+     */
+    suspend fun setActiveWorkout(activeWorkout: Boolean) = workoutDataStore.setActiveWorkout(activeWorkout)
+
 
     companion object {
 
         // For Singleton instantiation
         @Volatile private var instance: WearRepository? = null
 
-        fun getInstance(dataHandler: WearDataHandler, messageHandler: WearMessageHandler, context: Context) =
+        fun getInstance(dataHandler: WearDataHandler, messageHandler: WearMessageHandler, workoutDataStore: WorkoutDataStore, permissionStateDataStore: PermissionStateDataStore, context: Context) =
             instance ?: synchronized(this) {
-                instance ?: WearRepository(dataHandler, messageHandler, context).also { instance = it }
+                instance ?: WearRepository(dataHandler, messageHandler, workoutDataStore, permissionStateDataStore, context).also { instance = it }
             }
     }
 }

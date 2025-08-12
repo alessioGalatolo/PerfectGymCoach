@@ -14,8 +14,8 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 30
         targetSdk = 35
-        versionCode = 2  // match phone app version
-        versionName = "0.0.2"
+        versionCode = 4  // cannot match app version
+        versionName = "0.0.2a" // match phone app version + eventual revisions
     }
 
     buildTypes {
@@ -47,7 +47,11 @@ android {
 }
 
 dependencies {
+    implementation(libs.core.ktx)
+    implementation(libs.lifecycle.service)
+    implementation(libs.datastore.preferences)
     implementation(libs.compose.destinations.wear)
+    implementation(libs.accompanist.permissions)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.hilt.android)
@@ -70,6 +74,7 @@ dependencies {
     implementation(libs.wear.compose.material3)
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.tooling.preview)
+    implementation(libs.wear.ongoing)
 
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)

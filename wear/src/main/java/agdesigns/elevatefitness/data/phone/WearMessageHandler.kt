@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.presentation
+package agdesigns.elevatefitness.data.phone
 
 import android.content.Context
 import android.util.Log
@@ -10,7 +10,6 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
