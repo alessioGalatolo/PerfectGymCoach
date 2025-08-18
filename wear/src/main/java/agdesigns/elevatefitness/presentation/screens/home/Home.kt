@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -62,6 +63,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
@@ -70,6 +73,7 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButton
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
+import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
 import androidx.wear.remote.interactions.RemoteActivityHelper
@@ -86,7 +90,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 fun Home(
     navigator: DestinationsNavigator,
     viewModel: HomeViewModel = hiltViewModel()
-){
+) {
     val homeState by viewModel.state.collectAsState()
     val activeWorkout by viewModel.activeWorkout.collectAsState(false)
 
@@ -103,10 +107,10 @@ fun Home(
         // Below T, POST_NOTIFICATIONS does not need to be requested at runtime but must still be
         // specified in the Manifest. Therefore, permissionState is created such that it is already
         // in the granted state.
-        object: PermissionState {
+        object : PermissionState {
             override val permission = "no_runtime_permission_required"
             override val status = PermissionStatus.Granted
-            override fun launchPermissionRequest() { }
+            override fun launchPermissionRequest() {}
         }
     }
     val context = LocalContext.current
@@ -124,7 +128,9 @@ fun Home(
 
         if (denied.shouldShowRationale) {
             LaunchedEffect(Unit) {
-                viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(ShownRationaleStatus.HAS_SHOWN)
+                viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
+                    ShownRationaleStatus.HAS_SHOWN
+                )
             }
             // ShouldShowRationale returns true if:
             // - A request has previously been denied
@@ -150,6 +156,21 @@ fun Home(
             }
         }
     }
+    val remoteActivityHelper = RemoteActivityHelper(context)
+    // TODO: this is nice but would be nicer if it opened next workout on phone
+    // TODO: should check if app is installed, then only show one button
+    val getAppIntent = Intent(Intent.ACTION_VIEW).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+        setData("market://details?id=agdesigns.elevatefitness".toUri())
+    }
+    val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+        setData("myapp://openapp".toUri())
+    }
+    var showConfirmation by remember { mutableStateOf(false) }
+    val text = OpenOnPhoneDialogDefaults.text
+    val style = OpenOnPhoneDialogDefaults.curvedTextStyle
+    val listState = rememberScalingLazyListState()
     // FIXME: nullpointerexception
     Box(
         modifier = Modifier
@@ -158,76 +179,74 @@ fun Home(
         contentAlignment = Alignment.Center
     ) {
         AppScaffold(Modifier.background(Color.Transparent)) {
-            val context = LocalContext.current
-            val remoteActivityHelper = RemoteActivityHelper(context)
-            // TODO: this is nice but would be nicer if it opened next workout on phone
-            // TODO: should check if app is installed, then only show one button
-            val getAppIntent = Intent(Intent.ACTION_VIEW).apply {
-                addCategory(Intent.CATEGORY_BROWSABLE)
-                setData("market://details?id=agdesigns.elevatefitness".toUri())
-            }
-            val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
-                addCategory(Intent.CATEGORY_BROWSABLE)
-                setData("myapp://openapp".toUri())
-            }
-            var showConfirmation by remember { mutableStateOf(false) }
-            val text = OpenOnPhoneDialogDefaults.text
-            val style = OpenOnPhoneDialogDefaults.curvedTextStyle
-            OpenOnPhoneDialog(
-                visible = showConfirmation,
-                onDismissRequest = { showConfirmation = false },
-                curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
-            )
-            Column (Modifier
-                .fillMaxSize()
-                .background(Color.Transparent), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                // TODO: replace with swipe to refresh
-                IconButton({
-                    viewModel.onEvent(HomeEvent.ForceSync)
-                }) {
-                    Icon(Icons.Default.Sync, "Force sync")
-                }
-
-                if (!homeState.workoutRunningFromPhone) {
-                    Text(
-                        text = "Please start a workout on your phone to begin",
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = {
-                        remoteActivityHelper.startRemoteActivity(openAppIntent)
-                        showConfirmation = true
-                    }) {
-                        Icon(Icons.Default.PhoneAndroid, "Phone")
-                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                        Text("Open phone app")
-                    }
-                    TextButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            remoteActivityHelper.startRemoteActivity(getAppIntent)
-                            showConfirmation = true
+            ScreenScaffold (listState) {
+                OpenOnPhoneDialog(
+                    visible = showConfirmation,
+                    onDismissRequest = { showConfirmation = false },
+                    curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
+                )
+                ScalingLazyColumn(state = listState) {
+                    if (!homeState.workoutRunningFromPhone) {
+                        item {
+                            Spacer(Modifier.height(8.dp))
                         }
-                    ) {
-                        Text("Get phone app", maxLines = 1)
-                    }
-                } else {
-                    Text(
-                        "We have detected a workout running on your phone",
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = {
-                        navigator.navigate(WorkoutDestination())
-                    }) {
-                        Icon(Icons.Default.FitnessCenter, "Fitness centre")
-                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                        Text("Workout view")
+                        item {
+                            Text(
+                                text = "Please start a workout on your phone to begin",
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        item {
+                            Spacer(Modifier.height(16.dp))
+                        }
+                        item {
+                            Button(onClick = {
+                                remoteActivityHelper.startRemoteActivity(openAppIntent)
+                                showConfirmation = true
+                            }) {
+                                Icon(Icons.Default.PhoneAndroid, "Phone")
+                                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                Text("Open phone app")
+                            }
+                        }
+                        item {
+                            TextButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    remoteActivityHelper.startRemoteActivity(getAppIntent)
+                                    showConfirmation = true
+                                }
+                            ) {
+                                Text("Get phone app", maxLines = 1)
+                            }
+                        }
+                    } else {
+                        item {
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        item {
+                            Text(
+                                "We have detected a workout running on your phone",
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        item {
+                            Spacer(Modifier.height(16.dp))
+                        }
+                        item {
+                            Button(onClick = {
+                                navigator.navigate(WorkoutDestination())
+                            }) {
+                                Icon(Icons.Default.FitnessCenter, "Fitness centre")
+                                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                Text("Workout view")
+                            }
+                        }
                     }
                 }
             }
         }
-
     }
 }
 

@@ -164,8 +164,7 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
     /*
      * Generates a BIG_TEXT_STYLE Notification that represent latest Walking Points while a
      * workout is active.
-     */
-    private fun generateNotification(mainText: String): Notification {
+     */private fun generateNotification(mainText: String): Notification {
         Log.d(TAG, "generateNotification()")
 
         // Main steps for building a BIG_TEXT_STYLE notification:
@@ -272,6 +271,7 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
 
         return notificationBuilder.build()
     }
+
 
     /**
      * Class used for the client Binder.  Since this service runs in the same process as its

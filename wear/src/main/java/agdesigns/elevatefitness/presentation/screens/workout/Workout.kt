@@ -366,9 +366,13 @@ fun Workout(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text("Waiting for exercise data...")
-                    Spacer(Modifier.height(8.dp))
                     CircularProgressIndicator()
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Waiting for exercise data...",
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        textAlign = TextAlign.Center
+                    )
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = {
                         viewModel.onEvent(WorkoutEvent.StopActivity)
