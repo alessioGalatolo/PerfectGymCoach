@@ -49,12 +49,12 @@ fun ArchivedPlans(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.archived_plans)) },
+                title = { Text(stringResource(R.string.archived_plans_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = stringResource(R.string.go_back_icon)
                         )
                     }
                 },
@@ -76,7 +76,7 @@ fun ArchivedPlans(
                     modifier = Modifier.size(160.dp)
                 )
                 Text(
-                    "You don't have any archived plans!",
+                    stringResource(R.string.you_don_t_have_any_archived_plans),
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -90,6 +90,8 @@ fun ArchivedPlans(
                 { index, plan ->
                     // TODO: consider having only the first plan in card, the others are simple list items
                     Spacer(Modifier.height(4.dp))
+                    val planRestoredString = stringResource(R.string.plan_restored)
+                    val undoString = stringResource(R.string.undo)
                     PlanCard(
                         navigator = navigator,
                         plan = plan.first,
@@ -98,8 +100,8 @@ fun ArchivedPlans(
                             viewModel.onEvent(PlansEvent.UnarchivePlan(it))
                             scope.launch {
                                 val snackbarResult = snackbarHostState.showSnackbar(
-                                    "Plan restored!",
-                                    actionLabel = "Undo",
+                                    planRestoredString,
+                                    actionLabel = undoString,
                                     duration = SnackbarDuration.Short
                                 )
                                 when (snackbarResult) {
@@ -113,14 +115,14 @@ fun ArchivedPlans(
                             }
                         },
                         swipeIcon = Icons.Default.Unarchive,
-                        swipeDescription = "Unarchive plan",
+                        swipeDescription = stringResource(R.string.unarchive_plan),
                         swipeBackgroundColor = Color.Green.copy(alpha = 0.3f),
                         trailingIcon = Icons.Default.Unarchive,
-                        trailingIconDescription = "Unarchive plan",
+                        trailingIconDescription = stringResource(R.string.unarchive_plan),
                         onTrailingIconClick = {
                             viewModel.onEvent(PlansEvent.UnarchivePlan(plan.first.planId))
                             scope.launch {
-                                snackbarHostState.showSnackbar("Plan restored")
+                                snackbarHostState.showSnackbar(planRestoredString)
                             }
                         }
                     )

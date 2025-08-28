@@ -5,6 +5,9 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.agdesignes.shared.BarbellType
+import com.agdesignes.shared.Equipment
+import com.agdesignes.shared.barbellIndexFromWeight
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -38,9 +41,8 @@ data class WorkoutState(
     val exerciseIncrement: Float = 0.5f,
     val nextExerciseName: String = "",
     val imageBitmap: Bitmap? = null,
-    val equipment: String = "",
-    val barbellNames: List<String> = emptyList(),
-    val barbellSizes: List<Float> = emptyList(),
+    val equipment: Equipment? = null,
+    val tareBarbell: Float = 0f,
     val tareIndex: Int = 0,
     val imperialSystem: Boolean = false
 )
@@ -81,20 +83,13 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                 if (exerciseIncrement == 0f) {
                     exerciseIncrement = state.value.exerciseIncrement  // FIXME: sometimes arrives 0, why?
                 }
+                // FIXME: should change logic now that we have shared components
                 var tareIndex: Int? = null
-                var barbellSizes: List<Float>? = workout.barbellSizes
-                if (workout.tareBarbellName != null && workout.barbellNames != null) {
-                    tareIndex = workout.barbellNames.indexOf(workout.tareBarbellName)
-                    if (tareIndex == -1) {
-                        // is other, format is "Other (number kg/lb)" extract number
-                        val regex = Regex("""Other \((\d+(\.\d+)?)""")
-                        val match = regex.find(workout.tareBarbellName)
-                        val number = match?.groupValues?.get(1)?.toFloatOrNull() ?: 0f
-                        barbellSizes = barbellSizes!!.dropLast(1).plus(number)
-                        tareIndex = barbellSizes!!.indexOf(number)
-                    }
+                if (workout.tareBarbell != null) {
+                    tareIndex = barbellIndexFromWeight(workout.tareBarbell)
                 }
                 Log.d("WorkoutViewModel", "got wear workout: $workout")
+                val equipment = Equipment.fromResKey(workout.equipmentResKey)
                 _state.update {
                     it.copy(
                         exerciseName = workout.exerciseName ?: state.value.exerciseName,
@@ -112,10 +107,9 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                         currentReps = currentReps,
                         exerciseIncrement = exerciseIncrement,
                         nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName,
-                        equipment = workout.equipment ?: state.value.equipment,
-                        barbellNames = workout.barbellNames ?: state.value.barbellNames,
-                        barbellSizes = barbellSizes ?: state.value.barbellSizes,
+                        equipment = equipment ?: state.value.equipment,
                         tareIndex = tareIndex ?: state.value.tareIndex,
+                        tareBarbell = workout.tareBarbell ?: state.value.tareBarbell,
                         imperialSystem = workout.imperialSystem ?: state.value.imperialSystem
                     )
                 }
@@ -161,8 +155,8 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
             }
             is WorkoutEvent.CompleteSet -> {
                 viewModelScope.launch {
-                    val tare = if (state.value.equipment.lowercase().contains("barbell"))
-                        state.value.barbellSizes[state.value.tareIndex]
+                    val tare = if (state.value.equipment == Equipment.BARBELL)
+                        BarbellType.entries[state.value.tareIndex].weight[state.value.imperialSystem] ?: 0f
                     else 0f
                     repository.completeSet(
                         state.value.exerciseName,

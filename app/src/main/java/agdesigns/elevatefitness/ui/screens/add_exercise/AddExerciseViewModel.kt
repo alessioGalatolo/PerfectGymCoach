@@ -26,7 +26,7 @@ data class AddExerciseState(
     val exerciseNumber: Int = 0,
     // below are values changeable by user
     val note: String = "",
-    val variation: String = "No variation",  // FIXME: should not hardcode, also used below
+    val variationResKey: String = "no_variation",
     val repsArray: List<UInt> = List(5) { 8U },
     val restArray: List<UInt> = List(5) { 90U },
     val advancedSets: Boolean = false,
@@ -49,7 +49,7 @@ sealed class AddExerciseEvent{
 
     data class UpdateNotes(val newNote: String): AddExerciseEvent()
 
-    data class UpdateVariation(val newVariation: String): AddExerciseEvent()
+    data class UpdateVariationResKey(val newVariationResKey: String): AddExerciseEvent()
 
     data class UpdateSets(val newSets: UInt): AddExerciseEvent()
 
@@ -101,17 +101,18 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 extWorkoutId = state.value.workoutId,
                                 extExerciseId = state.value.exercise!!.exerciseId,
                                 name = state.value.exercise!!.name,
+                                nameResKey = state.value.exercise!!.nameResKey,
                                 image = state.value.exercise!!.image,
+                                imageResKey = state.value.exercise!!.imageResKey,
                                 description = state.value.exercise!!.description,
+                                descriptionResKey = state.value.exercise!!.descriptionResKey,
                                 equipment = state.value.exercise!!.equipment,
                                 orderInProgram = state.value.exerciseNumber,
                                 reps = state.value.repsArray.map { it.toInt() },
                                 rest = state.value.restArray.map { it.toInt() },
                                 note = state.value.note,
-                                variation = if (state.value.variation == "No variation")
-                                    ""
-                                else
-                                    " (${state.value.variation.lowercase()})",
+                                variation = "",
+                                variationResKey = state.value.variationResKey,
                             )
                         )
                     }
@@ -126,10 +127,11 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 reps = state.value.repsArray.map { it.toInt() },
                                 rest = state.value.restArray.map { it.toInt() },
                                 note = state.value.note,
-                                variation = if (state.value.variation == "No variation")
-                                    ""
+                                variation = "",
+                                variationResKey = if(state.value.variationResKey != "no_variation")
+                                    state.value.variationResKey
                                 else
-                                    " (${state.value.variation.lowercase()})"
+                                    ""
                             )
                         )
                     }
@@ -138,8 +140,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
             is AddExerciseEvent.UpdateNotes -> {
                 _state.update { it.copy(note = event.newNote) }
             }
-            is AddExerciseEvent.UpdateVariation -> {
-                _state.update { it.copy(variation = event.newVariation) }
+            is AddExerciseEvent.UpdateVariationResKey -> {
+                _state.update { it.copy(variationResKey = event.newVariationResKey) }
             }
             is AddExerciseEvent.UpdateSets -> {
                 // Needs to update repsArray and restArray
@@ -239,11 +241,6 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 repository.getProgramExercise(programExerciseId)
             ) { exercise, programExercise ->
                 Log.d("AddExerciseViewModel", "retrieved data: $exercise $programExercise")
-                val variation = programExercise.variation.ifBlank { "No variation" }
-                    .replace("(", "")
-                    .replace(")", "")
-                    .trim()
-                    .replaceFirstChar { it.uppercaseChar() }
                 _state.update {
                     it.copy(
                         exercise = exercise,
@@ -251,7 +248,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         programId = programExercise.extProgramId,
                         exerciseNumber = programExercise.orderInProgram,
                         note = programExercise.note,
-                        variation = variation,
+                        // FIXME: once we allow custom variations, should also pass variation
+                        variationResKey = programExercise.variationResKey,
                         repsArray = programExercise.reps.map { it.toUInt() },
                         restArray = programExercise.rest.map { it.toUInt() },
                         advancedSets = (programExercise.reps.distinct().size + programExercise.rest.distinct().size) > 2,

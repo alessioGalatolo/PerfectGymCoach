@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.components.InfoDialog
@@ -78,7 +79,7 @@ fun AddExerciseDialog(
     InfoDialog(
         dialogueIsOpen = awesomeDialogOpen,
         toggleDialogue = { awesomeDialogOpen = !awesomeDialogOpen }) {
-        Text("This number is used to generate new plans. A number higher than 1 means a higher probability of being included in new workouts. A number lower than 1 means a lower probability. 1 is default.")
+        Text(stringResource(R.string.probability_info))
     }
     var resetProbabilityDialogOpen by rememberSaveable { mutableStateOf(false) }
     ResetExerciseProbabilityDialog(
@@ -100,7 +101,7 @@ fun AddExerciseDialog(
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = "Close"
+                            contentDescription = stringResource(R.string.close_icon)
                         )
                     }
                 }, actions = {
@@ -149,7 +150,7 @@ fun AddExerciseDialog(
                     item {
                         AsyncImage(
                             addExerciseState.exercise!!.image,
-                            "Exercise image",
+                            stringResource(R.string.exercise_image),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp)
@@ -164,15 +165,20 @@ fun AddExerciseDialog(
                                 .padding(horizontal = 16.dp)
                                 .padding(vertical = 8.dp)
                         ) {
-                            Icon(Icons.Default.AutoAwesome, "Magic generation")
+                            Icon(Icons.Default.AutoAwesome,
+                                stringResource(R.string.magic_generation)
+                            )
                             Spacer(Modifier.width(8.dp))
                             val currentProbability = addExerciseState.exercise!!.probability
-                            Text("Current probability: %.2f".format(currentProbability))
+                            // FIXME: does this work with string resource??
+                            Text(stringResource(R.string.current_probability_2f, currentProbability))
                             TextButton(onClick = { resetProbabilityDialogOpen = true }) {
-                                Text("Reset")
+                                Text(stringResource(R.string.reset))
                             }
                             IconButton(onClick = { awesomeDialogOpen = true }) {
-                                Icon(Icons.AutoMirrored.Filled.HelpOutline, "More info")
+                                Icon(Icons.AutoMirrored.Filled.HelpOutline,
+                                    stringResource(R.string.more_info)
+                                )
                             }
                             // TODO: check overflow on long probabilities
                         }
@@ -181,14 +187,14 @@ fun AddExerciseDialog(
                         OutlinedTextField(
                             value = addExerciseState.note,
                             onValueChange = { viewModel.onEvent(AddExerciseEvent.UpdateNotes(it)) },
-                            label = { Text("Notes (optional)") },
+                            label = { Text(stringResource(R.string.notes)) },
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
                         )
                     }
-                    if (addExerciseState.exercise!!.variations.isNotEmpty()) {
+                    if (addExerciseState.exercise!!.variationsResKeys.isNotEmpty()) {
                         item {
                             Row(
                                 modifier = Modifier
@@ -206,16 +212,20 @@ fun AddExerciseDialog(
                                 ) {
                                     OutlinedTextField(
                                         readOnly = true,
-                                        value = addExerciseState.variation,
+                                        value = stringResource(
+                                            getVariation(
+                                                addExerciseState.variationResKey
+                                            )
+                                        ).replaceFirstChar { it.uppercaseChar() },
                                         singleLine = true,
                                         onValueChange = {
                                             viewModel.onEvent(
-                                                AddExerciseEvent.UpdateVariation(
+                                                AddExerciseEvent.UpdateVariationResKey(
                                                     it
                                                 )
                                             )
                                         },
-                                        label = { Text("Variation") },
+                                        label = { Text(stringResource(R.string.variation)) },
                                         trailingIcon = {
                                             Row (verticalAlignment = CenterVertically){
                                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
@@ -231,13 +241,13 @@ fun AddExerciseDialog(
                                         onDismissRequest = { expanded.value = false },
                                     ) {
                                         // TODO: add "add variation" to create a variation of the exercise
-                                        addExerciseState.exercise!!.variations.plus("No variation")
+                                        addExerciseState.exercise!!.variationsResKeys.plus("no_variation")
                                             .forEach { selectionOption ->
                                                 DropdownMenuItem(
-                                                    text = { Text(selectionOption) },
+                                                    text = { Text(stringResource(getVariation(selectionOption))) },
                                                     onClick = {
                                                         viewModel.onEvent(
-                                                            AddExerciseEvent.UpdateVariation(
+                                                            AddExerciseEvent.UpdateVariationResKey(
                                                                 selectionOption
                                                             )
                                                         )
@@ -271,10 +281,12 @@ fun AddExerciseDialog(
                                     )
                                 }
                                 ) {
-                                    Icon(Icons.Default.Remove, "Decrease sets")
+                                    Icon(Icons.Default.Remove,
+                                        stringResource(R.string.decrease_sets)
+                                    )
                                 }
                                 Column {
-                                    Text("Sets:", style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(
+                                    Text(stringResource(R.string.sets), style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(
                                         Alignment.CenterHorizontally
                                     ))
                                     Text(addExerciseState.repsArray.size.toString(), modifier = Modifier.align(
@@ -290,14 +302,14 @@ fun AddExerciseDialog(
                                 }
 
                                 ) {
-                                    Icon(Icons.Default.Add, "Increase sets")
+                                    Icon(Icons.Default.Add, stringResource(R.string.increase_sets))
                                 }
                             }
                             Row(
                                 verticalAlignment = CenterVertically,
                                 modifier = Modifier.weight(0.5f)
                             ) {
-                                Text("Advanced sets")
+                                Text(stringResource(R.string.advanced_sets))
                                 Spacer(Modifier.width(8.dp))
                                 Switch(
                                     checked = addExerciseState.advancedSets,
@@ -321,7 +333,7 @@ fun AddExerciseDialog(
                                 ) {
                                     var repsText by remember { mutableStateOf(addExerciseState.repsArray.first().toString()) }
                                     MyDropdownMenu(
-                                        prompt = "Reps",
+                                        prompt = stringResource(R.string.reps),
                                         options = (1..12).map { "$it" },
                                         text = repsText,
                                         onTextChange = {
@@ -345,7 +357,7 @@ fun AddExerciseDialog(
                                 ) {
                                     var restText by remember { mutableStateOf(addExerciseState.restArray.first().toString()) }
                                     MyDropdownMenu(
-                                        prompt = "Rest",
+                                        prompt = stringResource(R.string.rest),
                                         options = (15..120 step 15).map { "$it" },
                                         text = restText,
                                         onTextChange = {
@@ -356,7 +368,7 @@ fun AddExerciseDialog(
                                             }
                                         }, keyboardType = KeyboardType.Number
                                     ) {
-                                        Text("sec")
+                                        Text(stringResource(R.string.sec))
                                     }
                                 }
                             }
@@ -381,7 +393,7 @@ fun AddExerciseDialog(
                                     }
                                     Spacer(Modifier.width(8.dp))
                                     TextFieldWithButtons(
-                                        prompt = "Reps",
+                                        prompt = stringResource(R.string.reps),
                                         text = { repsText },
                                         onNewText = {
                                             repsText = it
@@ -420,14 +432,17 @@ fun AddExerciseDialog(
                                             )
                                         },
                                         textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true },
-                                        contentDescription = "Reps for set ${index+1}"
+                                        contentDescription = stringResource(
+                                            R.string.reps_for_set,
+                                            index+1
+                                        )
                                     )
                                     Spacer(Modifier.width(8.dp))
                                 }
                                 Row(Modifier.weight(1f)) {
                                     var restText by remember { mutableStateOf(addExerciseState.restArray[index].toString()) }
                                     MyDropdownMenu(
-                                        prompt = "Rest" + " ${index+1}",
+                                        prompt = stringResource(R.string.rest_x, index+1),
                                         options = (15..120 step 15).map { "$it" },
                                         text = restText,
                                         onTextChange = {
@@ -444,7 +459,7 @@ fun AddExerciseDialog(
                                         keyboardType = KeyboardType.Number,
                                         textIsValid = { it.toUIntOrNull() != null }
                                     ) {
-                                        Text("sec")
+                                        Text(stringResource(R.string.sec))
                                     }
                                 }
                             }
@@ -457,10 +472,10 @@ fun AddExerciseDialog(
                             Row {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ShowChart,
-                                    "Chart icon",
+                                    stringResource(R.string.chart_icon),
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text("View exercise history and stats")
+                                Text(stringResource(R.string.view_exercise_history_and_stats))
                             }
                         }
                     }

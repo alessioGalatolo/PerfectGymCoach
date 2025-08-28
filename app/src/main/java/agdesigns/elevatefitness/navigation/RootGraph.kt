@@ -55,11 +55,6 @@ enum class BottomBarDestination(
 )
 @Composable
 fun RootDestinationGraph(){
-    // scroll behaviour for top bar
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        rememberTopAppBarState()
-    )
-
     val navController = rememberNavController()
     val navigator = navController.rememberDestinationsNavigator()
     val currentDestination = navController.currentDestinationAsState().value

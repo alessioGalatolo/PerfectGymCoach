@@ -12,6 +12,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface WorkoutExerciseDao {
 
+    @Query("SELECT * FROM workoutexercise")
+    fun getAll(): List<WorkoutExercise>
+
+    @Update
+    suspend fun update(exercise: WorkoutExercise)
+
     @Query("SELECT * FROM workoutexercise WHERE extWorkoutId LIKE :workoutId")
     fun getWorkoutExercises(workoutId: Long): Flow<List<WorkoutExercise>>
 

@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.presentation.screens.home
 
+import com.agdesignes.shared.R as sharedR
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.datastore.ShownRationaleStatus
 import agdesigns.elevatefitness.presentation.screens.home.components.PermissionRequiredScreen
@@ -23,9 +24,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.with
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +36,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
@@ -192,7 +191,7 @@ fun Home(
                         }
                         item {
                             Text(
-                                text = "Please start a workout on your phone to begin",
+                                text = stringResource(R.string.no_workout_detected),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -204,9 +203,11 @@ fun Home(
                                 remoteActivityHelper.startRemoteActivity(openAppIntent)
                                 showConfirmation = true
                             }) {
-                                Icon(Icons.Default.PhoneAndroid, "Phone")
+                                Icon(Icons.Default.PhoneAndroid,
+                                    stringResource(R.string.phone_icon)
+                                )
                                 Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                                Text("Open phone app")
+                                Text(stringResource(R.string.open_phone_app))
                             }
                         }
                         item {
@@ -217,7 +218,7 @@ fun Home(
                                     showConfirmation = true
                                 }
                             ) {
-                                Text("Get phone app", maxLines = 1)
+                                Text(stringResource(R.string.get_phone_app), maxLines = 1)
                             }
                         }
                     } else {
@@ -226,7 +227,7 @@ fun Home(
                         }
                         item {
                             Text(
-                                "We have detected a workout running on your phone",
+                                stringResource(R.string.workout_detected),
                                 modifier = Modifier.padding(horizontal = 16.dp),
                                 textAlign = TextAlign.Center
                             )
@@ -238,9 +239,11 @@ fun Home(
                             Button(onClick = {
                                 navigator.navigate(WorkoutDestination())
                             }) {
-                                Icon(Icons.Default.FitnessCenter, "Fitness centre")
+                                Icon(Icons.Default.FitnessCenter,
+                                    stringResource(R.string.fitness_centre)
+                                )
                                 Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                                Text("Workout view")
+                                Text(stringResource(R.string.switch_to_workout_view))
                             }
                         }
                     }
@@ -287,7 +290,7 @@ fun VignetteImage(
     ) {
         Image(
             imageBitmap,
-            contentDescription = "Image",
+            contentDescription = stringResource(R.string.exercise_image),
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop
         )
@@ -316,7 +319,7 @@ fun ArrowSwitcher(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Previous"
+                        contentDescription = stringResource(R.string.arrowback_icon_previous)
                     )
                 }
             }
@@ -355,7 +358,7 @@ fun ArrowSwitcher(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Next"
+                        contentDescription = stringResource(R.string.arrowforward_icon_next)
                     )
                 }
             }

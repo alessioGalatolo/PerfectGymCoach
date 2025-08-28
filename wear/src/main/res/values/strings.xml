@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ElevateFitness</string>
+    <string name="app_name" translatable="false">ElevateFitness</string>
     <string name="workout_notification_started_text">Workout in progress…</string>
     <string name="active_workout">Active workout</string>
     <string name="stop_workout_notification_text">Stop workout</string>
@@ -8,6 +8,28 @@
     <string name="show_permission">Launch</string>
     <string name="show_settings">Show settings</string>
     <string name="go_back">Go back</string>
+    <string name="no_workout_detected">Please start a workout on your phone to begin</string>
+    <string name="phone_icon">Phone</string>
+    <string name="open_phone_app">Open phone app</string>
+    <string name="get_phone_app">Get phone app</string>
+    <string name="workout_detected">We have detected a workout running on your phone</string>
+    <string name="fitness_centre">Fitness centre</string>
+    <string name="switch_to_workout_view">Workout view</string>
+    <string name="arrowback_icon_previous">Previous</string>
+    <string name="arrowforward_icon_next">Next</string>
+    <string name="next_thing">Next up:</string>
+    <string name="skip_rest">Skip rest</string>
+    <string name="done_icon">Done</string>
+    <string name="reps">Reps</string>
+    <string name="remove_icon_minus_reps">Decrease reps</string>
+    <string name="add_icon_plus_reps">Increase reps</string>
+    <string name="weight">Weight</string>
+    <string name="remove_icon_minus_weight">Decrease weight</string>
+    <string name="add_icon_plus_weight">Increase weight</string>
+    <string name="barbell">Barbell</string>
+    <string name="next_exercise">"Next exercise: "</string>
+    <string name="waiting_exercise_data">Waiting for exercise data…</string>
+    <string name="exercise_image">Faded image of the exercise</string>
     <!--
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.

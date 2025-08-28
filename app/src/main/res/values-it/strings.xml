@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">ElevateFitness</string>
+    <string name="home">Home</string>
+    <string name="history">Storico</string>
+    <string name="statistics">Statistiche</string>
+    <string name="profile">Profilo</string>
+    <string name="workout_empty_exercises">Non hai aggiunto alcun esercizio a questo programma, usa il pulsante qui sotto per aggiungerne alcuni!</string>
+    <string name="volume_info">Info volume: Il termine "volume" in questo contesto indica la quantità totale di peso sollevato: Esercizi x Serie x Ripetizioni x Peso. Molti studi hanno mostrato la correlazione diretta tra il volume totale sollevato e la crescita muscolare. Ciò significa che per aumentare la massa muscolare il volume deve crescere, aumentando i pesi, il numero di ripetizioni, ecc.</string>
+    <string name="calories_info">Il consumo calorico è calcolato in base alla durata dell\'allenamento, alla sua intensità, al tuo peso corporeo (non dimenticare di impostarlo nella scheda Profilo!) e ad alcuni valori supportati dalla ricerca sul consumo energetico dell\'allenamento con i pesi. NB: questo consumo calorico è solo approssimativo e potrebbe non riflettere il consumo reale.</string>
+    <string name="bmi_info"><![CDATA[Il Body Mass Index (BMI) è un calcolo usato per valutare la salute di una persona solo in base al peso e all\'altezza. Un BMI elevato è considerato un fattore di rischio per es. diabete, malattie cardiovascolari, ecc. Un valore compreso tra 18.5 e 25 è considerato normale, un valore inferiore a 18.5 è sottopeso e un valore superiore a 25 fino a 30 è considerato sovrappeso; mentre oltre 30 una persona è considerata obesa. NB: la valutazione della salute è solo approssimativa e non dovrebbe essere considerata rilevante per alcune persone, per es. giovani (<18) ed anziani (>65), bodybuilder, atleti, donne in gravidanza, ecc. Si consiglia di consultare un medico se sei preoccupato per la tua salute.]]></string>
+    <string name="save">Salva</string>
+    <string name="fill_every_field">Compila correttamente tutti i campi per poter salvare</string>
+    <string name="empty_history">Al momento non hai completato allenamenti. Completa un allenamento per vederlo qui!</string>
+    <string name="no_analytics">Qui troverai le tue analisi una volta che avrai completato più di un allenamento dallo stesso programma!</string>
+    <string name="note_empty_workout">Nota: aggiungere un esercizio con il pulsante + lo aggiungerà solo all\'allenamento corrente e non ai futuri. Se vuoi diversamente usa invece il pulsante modifica.</string>
+
+    <!-- # Dialogs strings  -->
+
+    <!-- ## generic dialog -->
+    <string name="dialog_confirm">Conferma</string>
+    <string name="dialog_cancel">Annulla</string>
+    <string name="info">Info</string>
+    <string name="more_info">Altre info</string>
+    <string name="info_dialog_confirm">OK</string>
+    <string name="reset">Reset</string>
+    <!-- ## generic dialog to prompt a name for e.g., workout plan/program name, etc.    -->
+    <string name="enter_name_for">Inserisci %1$s</string>
+    <string name="new_plan_prompt">Nome del nuovo piano</string>
+    <string name="new_program_prompt">Nome del nuovo programma</string>
+    <string name="rename_program_prompt">Nuovo nome del programma</string>
+    <!-- ## resume unfinished workout dialog from home-->
+    <string name="resume_unfinished_workout">Riprendere l\'allenamento non terminato?</string>
+    <string name="resume_workout_info">Abbiamo notato che non hai finito l\'ultimo allenamento che hai iniziato, vuoi terminarlo ora?</string>
+    <string name="resume">Riprendi</string>
+    <string name="discard_workout">Elimina allenamento</string>
+    <!-- ## exit current workout -->
+    <string name="cancel_workout_title">Confermare uscita dall\'allenamento?</string>
+    <string name="cancel_workout_info">Vuoi annullare l\'allenamento corrente? Questo eliminerà l\'allenamento ma manterrà i dati degli esercizi se presenti.</string>
+    <!--  ### optional checkmark when exiting workout -->
+    <string name="cancel_workout_and_records">Elimina anche gli esercizi registrati</string>
+    <string name="cancel_workout_confirm">Esci dall\'allenamento</string>
+    <string name="cancel_workout_cancel">Continua allenamento</string>
+    <!-- ## change reps/weight value for already completed set -->
+    <string name="change_reps_weight_title">Modifica valore ripetizioni/peso</string>
+    <string name="new_reps_value">Nuovo valore ripetizioni</string>
+    <string name="new_weight_value">Nuovo valore peso</string>
+    <string name="change_reps_weight_confirm">Aggiorna valori</string>
+    <!-- ## dialog to enter a barbell weight not in the choices -->
+    <string name="enter_barbell_weight_title">Inserisci altro peso del bilanciere</string>
+    <!-- ## dialog to prompt user to grant notification access to control music from app -->
+    <string name="request_notification_access_title">Vuoi controllare la tua musica durante l\'allenamento?</string>
+    <string name="request_notification_access_info">Se vuoi, puoi abilitare questa app per mostrare e controllare la tua musica mentre l\'allenamento è in corso. Tuttavia, ha bisogno di accedere alle notifiche per farlo. Se vuoi permetterlo, premi \"Facciamolo!\" e cerca questa app nell\'elenco, quindi abilita l\'accesso alle notifiche.</string>
+    <!-- ### optional checkmark to not ask again -->
+    <string name="don_t_ask_again">Non chiedere più</string>
+    <string name="request_notification_access_confirm">Facciamolo!</string>
+    <string name="request_notification_access_cancel">Non ora</string>
+    <!-- ## reset exercise probability dialog -->
+    <string name="reset_exercise_probability_title">Resettare la probabilità dell\'esercizio?</string>
+    <string name="reset_exercise_probability_info">Toccando "Reset" azzererai la probabilità dell\'esercizio di comparire nei nuovi allenamenti generati. Se vuoi riniziare da capo, puoi anche resettare la probabilità di tutti gli esercizi.</string>
+    <string name="reset_all_exercises_probability">Resetta la probabilità di tutti gli esercizi</string>
+    <!-- ## info dialog for exercise probability -->
+    <string name="probability_info">Questo numero è usato per generare nuovi piani. Un numero maggiore di 1 significa maggiore probabilità di essere incluso nei nuovi allenamenti. Un numero inferiore a 1 significa minore probabilità. 1 è il valore predefinito.</string>
+
+    <!-- # Workout -->
+    <string name="exercise_image">Immagine dell\'esercizio</string>
+    <string name="barbell_used">"Bilanciere usato: %1$s %2$s"</string>
+    <string name="bodyweight_at_the_time">"Peso corporeo al momento: %1$s"</string>
+    <string name="reps_weight">Ripetizioni: %1$s Peso: %2$s %3$s</string>
+
+    <!-- # Other -->
+    <string name="magic_generation">Generazione magica</string>
+
+    <!-- # icons -->
+    <string name="chart_icon">Icona grafico</string>
+    <string name="achievement_icon">Obiettivo</string>
+    <string name="workout_i_icon">Allenamento %1$s</string>
+    <string name="year_icon">Anno</string>
+    <string name="week_icon">Settimana</string>
+    <string name="empty_history_icon">Storico vuoto</string>
+    <string name="edit_program_icon">Modifica programma</string>
+    <string name="quick_start_icon">Avvio rapido allenamento</string>
+    <string name="go_back_icon">Torna indietro</string>
+    <string name="add_icon_workout_plan">Aggiungi piano di allenamento</string>
+    <string name="close_icon">Chiudi</string>
+    <string name="edit_icon_increment_i">Modifica %1$s</string>
+    <string name="open_in_icon_browser">Apri nel browser</string>
+    <string name="edit_icon_user_name">Modifica nome</string>
+    <string name="cancel_icon">Annulla</string>
+    <string name="info_icon_bmi">Info BMI</string>
+    <string name="edit_icon_measurement_i">Modifica %1$s</string>
+    <string name="edit_icon_age">Modifica età</string>
+    <string name="done_icon">Fatto</string>
+
+    <!-- Add exercise to program -->
+    <string name="current_probability_2f">Probabilità attuale: %.2f</string>
+    <string name="notes">Note (opzionale)</string>
+    <string name="variation">Variante</string>
+    <string name="no_variation">Nessuna variante</string>
+    <string name="decrease_sets">Diminuisci serie</string>
+    <string name="increase_sets">Aumenta serie</string>
+    <string name="advanced_sets">Serie avanzate</string>
+    <string name="reps">Ripetizioni</string>
+    <string name="rest">Recupero</string>
+    <string name="sec">sec</string>
+    <string name="reps_for_set">Ripetizioni per serie %1$s</string>
+    <string name="rest_x">Recupero %1$s</string>
+    <string name="view_exercise_history_and_stats">Storico esercizio e statistiche</string>
+
+    <!-- Create a new exercise dialog -->
+    <string name="create_a_new_exercise">Crea un nuovo esercizio</string>
+    <string name="enter_exercise_name">Inserisci il nome dell\'esercizio</string>
+    <string name="select_equipment">Seleziona attrezzatura</string>
+    <string name="select_difficulty">Seleziona difficoltà</string>
+    <string name="select_primary_muscle">Seleziona muscolo principale</string>
+    <string name="select_secondary_muscle_s">Seleziona muscoli secondari</string>
+
+    <!-- History -->
+    <string name="weekly_overview">Panoramica settimanale</string>
+    <string name="calendar">Calendario</string>
+    <string name="week_i">Settimana %1$s</string>
+    <string name="no_workouts">Nessun allenamento</string>
+    <string name="rest_week">Settimana di riposo</string>
+    <string name="workout_count">%1$s allenamento%2$s</string>
+    <string name="start_your_fitness_journey_today">Inizia oggi il tuo percorso fitness!</string>
+    <string name="volume">Volume</string>
+    <string name="calories">Calorie</string>
+    <string name="calories_kcal">%1$s kcal</string>
+    <string name="duration">Durata</string>
+    <string name="i_minutes">%1$sm</string>
+
+    <!-- Home -->
+    <string name="coming_next">Prossimo allenamento</string>
+    <string name="other_programs">Altri programmi</string>
+    <string name="add_program">Aggiungi un programma</string>
+    <string name="manage_workout_plans">Gestisci i piani di allenamento</string>
+    <string name="empty_plans">Qui verranno mostrati i tuoi piani di allenamento, usa il pulsante qui sotto per crearne uno!</string>
+    <string name="empty_programs">Qui verranno mostrati i tuoi programmi (programmazione giornaliera), usa il pulsante qui sotto per crearne uno!</string>
+    <string name="empty_exercises">Qui verranno mostrati i tuoi esercizi, usa il pulsante qui sotto per aggiungerne uno!</string>
+    <string name="empty_home">Devi ancora creare un piano di allenamento, usa il pulsante qui sotto per crearne uno!</string>
+    <string name="empty_home_program">Il piano di allenamento che hai selezionato come attuale non ha programmi (programmazione giornaliera) al suo interno. Usa il pulsante qui sotto per selezionare un altro piano o per aggiungere un programma</string>
+    <string name="i_more_exercises">+ altri %1$s esercizi</string>
+    <string name="change_workout_plan">Cambia piano di allenamento</string>
+    <string name="change_programs">Cambia programmi</string>
+    <!-- Add/view workout plan -->
+    <string name="current_plan">Piano attuale</string>
+    <string name="set_as_current_plan">Imposta come piano attuale</string>
+    <string name="plan_set_as_current">Piano impostato come attuale</string>
+    <string name="other_plans">Altri piani</string>
+    <string name="archive_plan_action">Archivia piano</string>
+    <string name="archived_plans_title">Piani archiviati</string>
+    <string name="plan_archived">Piano archiviato</string>
+    <string name="undo">Annulla</string>
+    <string name="generate_a_new_plan">Genera un nuovo piano</string>
+    <!-- View archived plans -->
+    <string name="you_don_t_have_any_archived_plans">Non hai nessun piano archiviato!</string>
+    <string name="plan_restored">Piano ripristinato!</string>
+    <string name="unarchive_plan">Ripristina piano</string>
+    <!-- Plan generation -->
+    <string name="what_is_your_goal_when_training">Qual è il tuo obiettivo?</string>
+    <string name="goal_i_image">Immagine %1$s</string>
+    <string name="goal_i_not_available">%1$s. Non disponibile al momento.</string>
+    <string name="what_is_your_expertise_level">Qual è il tuo livello di esperienza?</string>
+    <string name="how_many_times_per_week_do_you_want_to_exercise">Quante volte a settimana vuoi allenarti?</string>
+    <!-- Generating plan waiting screen-->
+    <string name="generating_plan_waiting_text">Generazione di un piano personalizzato in corso…</string>
+    <!-- Profile -->
+    <string name="personal_information_title">Informazioni personali</string>
+    <string name="physical_measurements_title">Misure fisiche</string>
+    <string name="preferences_title">Preferenze</string>
+    <string name="equipment_increments_title">Incrementi dell\'attrezzatura</string>
+    <string name="barbell_increment">Incremento bilanciere</string>
+    <string name="bodyweight_increment">Incremento peso corporeo</string>
+    <string name="cable_increment">Incremento cavi</string>
+    <string name="dumbbell_increment">Incremento manubri</string>
+    <string name="machine_increment">Incremento macchine</string>
+    <string name="feedback_title">Feedback</string>
+    <string name="bug_report_title">Segnalazione bug</string>
+    <string name="bug_report_info">Si aprirà esternamente, una volta lì tocca su \'New issue\'. Richiede un account GitHub.</string>
+    <string name="feature_requests_title">Richieste di funzionalità</string>
+    <string name="feature_request_info">Si aprirà esternamente, una volta lì tocca su \'New discussion\'. Richiede un account GitHub.</string>
+    <string name="source_code_title">Codice sorgente</string>
+    <string name="source_code_info">L\'intera app è open source. Sentiti libero di contribuire o semplicemente dare un\'occhiata.</string>
+    <string name="acknowledgements_title">Ringraziamenti</string>
+    <string name="acknowledgements">Non possiedo nessuna delle immagini usate in questa app. Sono prive di copyright e sono state raccolte principalmente da pexels e unsplash. Molte grazie a tutti gli artisti che hanno reso disponibili le loro immagini gratuitamente: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb.</string>
+    <string name="salute_user">Ciao, %1$s</string>
+    <string name="name">Nome</string>
+    <string name="age">Età</string>
+    <string name="i_years">%1$s anni</string>
+    <string name="born_in">Nato nel:</string>
+    <string name="year">Anno</string>
+    <string name="please_enter_a_valid_year">Per favore inserisci un anno valido</string>
+    <string name="sex">Sesso:</string>
+    <string name="weight">Peso</string>
+    <string name="height">Altezza</string>
+    <string name="underweight">sottopeso</string>
+    <string name="obese">obeso</string>
+    <string name="overweight">sovrappeso</string>
+    <string name="normal">normale</string>
+    <string name="body_mass_index">Indice di massa corporea</string>
+    <string name="please_enter_a_valid_number">Per favore inserisci un numero valido</string>
+    <string name="use_imperial_system">Usa il sistema imperiale:</string>
+    <string name="theme">Tema:</string>
+    <!-- View/add program screen -->
+    <string name="move_program_up_info">Sposta programma in alto (cambiando l\'ordine nel piano)</string>
+    <string name="move_program_down_info">Sposta programma in basso (cambiando l\'ordine nel piano)</string>
+    <!-- ExerciseStatistics screen -->
+    <string name="es_header0_volume_progression">Progressione del volume</string>
+    <string name="es_header1_max_weight_lifted">Peso massimo sollevato</string>
+    <string name="es_header2_average_weight_lifted">Peso medio sollevato</string>
+    <string name="es_header3_max_reps_done">Massime ripetizioni fatte</string>
+    <string name="es_header4_average_reps_done">Ripetizioni medie fatte</string>
+    <string name="es_header5_one_rep_max">Massimale a una ripetizione</string>
+    <string name="es_header6_history">Cronologia</string>
+    <string name="selected_value_i">Valore selezionato: %1$s</string>
+    <string name="too_few_records_for_stats">Continua così! Una volta che avrai più di un record, vedrai qui le statistiche principali</string>
+    <!-- Statistics -->
+    <string name="s_header0_statistics">Statistiche</string>
+    <string name="s_header1_highlights">In evidenza</string>
+    <string name="s_header2_volume_progress">Progresso del volume</string>
+    <string name="s_header3_workout_frequency">Frequenza degli allenamenti</string>
+    <string name="s_header4_muscle_group_distribution">Distribuzione dei gruppi muscolari</string>
+    <string name="s_header5_top_exercises">Esercizi principali</string>
+    <string name="s_header6_recent_personal_records">Record personali recenti</string>
+    <string name="s_header7_equipment_usage">Uso dell\'attrezzatura</string>
+    <string name="circle_icon_colored">Un cerchio %1$s.</string>
+    <string name="total_workouts">Allenamenti totali</string>
+    <string name="total_volume">Volume totale</string>
+    <string name="avg_duration">Durata media</string>
+    <string name="avg_calories">Calorie medie</string>
+    <string name="current_streak">Serie attuale</string>
+    <!-- ## A streak in number of days   -->
+    <string name="streak_in_days">%1$sg</string>
+    <string name="best_streak">Miglior serie</string>
+    <string name="sets_total">%1$s serie • %2$s %3$s totali</string>
+    <!-- View exercises -->
+    <string name="search_exercise">Cerca esercizio…</string>
+    <string name="search_icon">Cerca</string>
+    <string name="close_icon_clear_textfield">Cancella</string>
+    <string name="bigger_exercise_image">Immagine esercizio più grande</string>
+    <string name="done_icon_item_selected">Selezionato</string>
+    <string name="primary_muscle">"Muscolo principale: "</string>
+    <string name="secondary_muscles">"Muscoli secondari: "</string>
+    <string name="i_variations_available">%1$s+ varianti disponibili</string>
+    <!-- Workout screen (and components) -->
+    <string name="start_workout">Inizia allenamento</string>
+    <string name="complete_workout">Completa allenamento</string>
+    <string name="add_set">Aggiungi serie</string>
+    <string name="next_exercise">Esercizio successivo</string>
+    <string name="complete_set">Completa</string>
+    <string name="decrease_i">Diminuisci %1$s</string>
+    <string name="increase_i">Aumenta %1$s</string>
+    <string name="arrowback_icon_previous_ex">Esercizio precedente</string>
+    <string name="arrowforward_icon_next_ex">Esercizio successivo</string>
+    <string name="note">"Nota: "</string>
+    <string name="thumbdown_icon_dislike_ex">Non mi piace questo esercizio</string>
+    <string name="info_icon_ex_desc">Descrizione esercizio</string>
+    <string name="thumbup_icon_like_ex">Mi piace questo esercizio</string>
+    <string name="current_exercise">Attuale</string>
+    <string name="part_of_superset">" - Parte di un superset"</string>
+    <string name="current_workout">Allenamento attuale</string>
+    <string name="barbell">"Bilanciere: "</string>
+    <string name="barbell_custom_value">%1$s (Valore personalizzato)</string>
+    <string name="lb">lb</string>
+    <string name="kg">kg</string>
+    <string name="show_older_records">Mostra record precedenti</string>
+    <string name="total_workout_time">Tempo totale allenamento: %1$s</string>
+    <string name="workout_completion_tip">Non dimenticare di fare stretching alla fine!</string>
+    <string name="how_intense_was_this_workout">Quanto è stato intenso questo allenamento?</string>
+    <string name="fitness_center_icon_intensity">Intensità</string>
+    <string name="add_exercise_to_workout">Aggiungi esercizio all\'allenamento</string>
+    <string name="morevert_icon_options">Altre opzioni</string>
+    <string name="replace_exercise">Sostituisci esercizio</string>
+    <string name="skip_exercise_this_workout_only">Salta questa volta</string>
+    <string name="add_another_exercise">Aggiungi un altro esercizio</string>
+    <string name="artist_not_available">Artista non disponibile</string>
+    <string name="tease_media_access_prompt">Vuoi i tuoi brani in riproduzione qui?</string>
+    <string name="tease_media_access_learn_more">Tocca per saperne di più o scorri per ignorare</string>
+    <string name="no_music_playing">Nessuna musica in riproduzione</string>
+    <string name="no_music_playing_info">Riproduci un po\' di musica per vederla qui</string>
+    <string name="end_of_workout">Fine allenamento</string>
+    <string name="finish">Fine</string>
+    <string name="exercise_description_not_available">Descrizione non disponibile</string>
+    <string name="increasing_exercise_probability">Aumento della probabilità degli esercizi durante la generazione di nuovi piani…</string>
+    <string name="decreasing_exercise_probability">Diminuzione della probabilità degli esercizi durante la generazione di nuovi piani…</string>
+    <string name="song_artwork">Copertina del brano</string>
+    <string name="no_song_artwork_available">Nessuna copertina del brano</string>
+    <string name="pause_icon">Pausa</string>
+    <string name="play_icon">Riproduci</string>
+    <string name="skipnext_icon_track">Brano successivo</string>
+    <string name="please_enter_valid_numbers">Per favore inserisci numeri validi</string>
+    <string name="current_and_future_workouts">Allenamenti attuali e futuri</string>
+    <string name="add_an_exercise_to_current_and_future_workouts_of_this_program">Aggiungi un esercizio agli allenamenti attuali e futuri di questo programma</string>
+    <string name="add_an_exercise_to_current_workout">Aggiungi un esercizio all\'allenamento attuale</string>
+    <string name="learn_more">Scopri di più.</string>
+    <!-- Workout recap -->
+    <string name="workout_recap">Riepilogo allenamento</string>
+    <string name="workout_recap_praise">Ottimo lavoro!</string>
+    <string name="workout_time">Tempo di allenamento</string>
+    <string name="workout_active_time">Tempo attivo di allenamento</string>
+    <string name="calories_burned">Calorie bruciate</string>
+    <string name="calorie_consumption_i_kcal">Consumo calorico: %1$s kcal</string>
+    <string name="help_icon_info">Aiuto/Info</string>
+    <string name="volume_lifted">Volume sollevato</string>
+    <string name="total_time">"Tempo totale: "</string>
+    <string name="workout_history">Storico allenamenti</string>
+
+    <!-- exercises data -->
+    <!-- Chest Exercises -->
+    <string name="exercise_bench_press_name">Panca piana</string>
+    <string name="exercise_bench_press_description">Sdraiati su una panca con il bilanciere posizionato sopra il petto. Afferra il bilanciere con una presa prona, leggermente più larga della larghezza delle spalle. Stacca il bilanciere e abbassalo lentamente verso il petto, mantenendo i gomiti vicini al corpo. Spingi il bilanciere di nuovo verso l’alto fino alla posizione iniziale, estendendo completamente le braccia.</string>
+
+    <!-- FIXME: should say "incline" but cannot change at this very moment as we need exact same name for migration -->
+    <string name="exercise_incline_bench_press_name">Panca inclinata</string>
+    <string name="exercise_incline_bench_press_description">Sdraiati su una panca inclinata (testa sopra i fianchi) con il bilanciere posizionato sopra il petto. Afferra il bilanciere con una presa prona, leggermente più larga della larghezza delle spalle. Stacca il bilanciere e abbassalo lentamente verso il petto, mantenendo i gomiti vicini al corpo. Spingi il bilanciere di nuovo verso l’alto fino alla posizione iniziale, estendendo completamente le braccia.</string>
+
+    <!-- FIXME: same here -->
+    <string name="exercise_decline_bench_press_name">Panca declinata</string>
+    <string name="exercise_decline_bench_press_description">Sdraiati su una panca declinata (bacino sopra la testa) con il bilanciere posizionato sopra il petto. Afferra il bilanciere con una presa prona, leggermente più larga della larghezza delle spalle. Stacca il bilanciere e abbassalo lentamente verso il petto, mantenendo i gomiti vicini al corpo. Spingi il bilanciere di nuovo verso l’alto fino alla posizione iniziale, estendendo completamente le braccia.</string>
+
+    <string name="exercise_cable_crossover_name">Croci ai cavi</string>
+    <string name="exercise_cable_crossover_description">Per eseguire le croci ai cavi, regola le maniglie di una macchina a doppio cavo appena sopra l’altezza della testa. Posizionati al centro con i piedi alla larghezza delle spalle, ginocchia leggermente piegate e un’inclinazione in avanti. Afferra le maniglie con i palmi rivolti verso il basso. Con un movimento fluido, porta le mani verso il centro descrivendo un ampio arco fino a incontrarsi davanti al petto. Mantieni i gomiti leggermente piegati durante tutto il movimento. Riporta lentamente le maniglie lungo lo stesso percorso alla posizione iniziale, controllando il peso. Concentrati sul contrarre i muscoli del petto mentre avvicini le maniglie.</string>
+
+    <string name="exercise_chest_dip_name">Dip per il petto</string>
+    <string name="exercise_chest_dip_description">Per eseguire un dip per il petto, posizionati alle parallele e afferrale con una presa salda. Spingiti verso l’alto e distendi le braccia per sollevare il corpo da terra, stabilizzandoti sopra le barre. Inclina leggermente il busto in avanti per enfatizzare i muscoli pettorali. Piega i gomiti per abbassare il corpo, scendendo fino a quando le spalle sono leggermente sotto i gomiti o fino a sentire un allungamento completo nel petto. Spingi con i palmi per tornare alla posizione iniziale, concentrandoti sull’attivazione dei pettorali. Evita di bloccare i gomiti in alto per mantenere la tensione muscolare.</string>
+
+    <string name="exercise_push_up_name">Piegamenti</string>
+    <string name="exercise_push_up_description">Per eseguire un piegamento, parti in posizione di plank con le mani leggermente più larghe delle spalle e direttamente sotto di esse. Il corpo deve formare una linea retta dalla testa ai talloni, mantenuti uniti. Attiva l’addome e mantieni la schiena dritta. Abbassa il corpo verso il pavimento piegando i gomiti verso l’esterno fino a quando il petto è appena sopra terra. I gomiti devono formare un angolo di circa 45 gradi rispetto al corpo. Spingi con le mani estendendo i gomiti per tornare alla posizione iniziale. Mantieni i movimenti fluidi e controllati per tutta l’esecuzione.</string>
+    <string name="exercise_variation_pushup_wide">Braccia larghe</string>
+    <string name="exercise_variation_pushup_incline">Inclinato</string>
+    <string name="exercise_variation_pushup_decline">Declinato</string>
+    <string name="exercise_variation_pushup_single_arm">A un braccio</string>
+
+    <string name="exercise_chest_press_name">Chest press</string>
+    <string name="exercise_chest_press_description">Per eseguire il chest press alla macchina, regola il sedile in modo che le maniglie siano all’altezza del petto quando sei seduto. Siediti e afferra le maniglie con i palmi rivolti verso il basso o l’uno verso l’altro, a seconda del design della macchina. Pianta i piedi a terra e tieni la schiena ben aderente allo schienale. Spingi le maniglie lontano dal petto fino a estendere le braccia senza bloccare i gomiti. Concentrati sul contrarre i pettorali durante la spinta. Fai una breve pausa a braccia tese, poi riporta lentamente le maniglie verso il petto controllando il peso. Mantieni i movimenti fluidi e regolari, espirando mentre spingi e inspirando mentre torni alla posizione iniziale.</string>
+
+    <string name="exercise_machine_fly_name">Croci alla macchina</string>
+    <string name="exercise_machine_fly_description">Per eseguire le croci alla macchina, regola il sedile in modo che, una volta seduto, le maniglie siano allineate con il petto. Afferra le maniglie con i palmi rivolti l’uno verso l’altro. Mantieni la schiena ben aderente allo schienale e i piedi a terra. Con una leggera flessione dei gomiti (da mantenere per tutta l’esecuzione), porta le braccia insieme con un movimento ad arco davanti al petto. Contrai i pettorali quando le maniglie si incontrano. Mantieni la contrazione per un attimo, poi riporta lentamente le maniglie alla posizione iniziale controllando la resistenza. Respira espirando mentre chiudi le braccia e inspirando mentre ritorni.</string>
+
+    <string name="exercise_dumbbell_bench_press_name">Panca con manubri</string>
+    <string name="exercise_dumbbell_bench_press_description">Per eseguire la panca con manubri, sdraiati su una panca piana con un manubrio in ciascuna mano all’altezza del petto. I piedi devono essere piantati a terra. Spingi i manubri verso l’alto fino a estendere completamente le braccia sopra di te, senza bloccare i gomiti. Mantieni una leggera flessione in alto. Riporta i manubri lentamente verso il petto mantenendo il controllo. Concentrati sull’attivazione dei pettorali e non lasciare che i manubri si spostino troppo verso la testa o l’addome.</string>
+    <string name="exercise_variation_dumbbell_incline">Panca inclinata</string>
+    <string name="exercise_variation_dumbbell_decline">Panca declinata</string>
+    <string name="exercise_variation_dumbbell_single_arm">A un braccio</string>
+
+    <string name="exercise_dumbbell_fly_name">Croci con manubri</string>
+    <string name="exercise_dumbbell_fly_description">Per eseguire le croci con manubri, sdraiati su una panca piana con un manubrio in ciascuna mano sopra il petto e i palmi rivolti l’uno verso l’altro. Mantieni i gomiti leggermente piegati per tutta l’esecuzione. Abbassa lentamente i manubri lateralmente descrivendo un arco, fino a sentire un allungamento nel petto, senza scendere troppo per non sovraccaricare le spalle. Riporta i manubri lungo lo stesso arco, contraendo i pettorali nella parte alta del movimento. I movimenti devono essere fluidi e controllati.</string>
+    <string name="exercise_variation_dumbbell_fly_incline">Panca inclinata</string>
+    <string name="exercise_variation_dumbbell_fly_decline">Panca declinata</string>
+
+    <string name="exercise_pullover_name">Pullover</string>
+    <string name="exercise_pullover_description">Per eseguire il pullover, sdraiati su una panca con la testa vicino al bordo e un manubrio tenuto con entrambe le mani sopra il petto, braccia estese. Abbassa il manubrio dietro la testa descrivendo un arco, mantenendo le braccia dritte, fino a sentire un allungamento nel petto e nei dorsali. Riporta il manubrio sopra il petto invertendo il movimento. L’esercizio coinvolge sia i pettorali sia la parte alta della schiena.</string>
+
+    <!-- BACK -->
+    <!-- Barbell -->
+    <string name="exercise_deadlift_name">Stacco da terra</string>
+    <string name="exercise_deadlift_description">Per eseguire uno stacco da terra, posizionati con i piedi alla larghezza dei fianchi, le punte rivolte in avanti e il bilanciere sopra il centro dei piedi. Piega i fianchi e le ginocchia per afferrare il bilanciere con una presa leggermente più ampia delle spalle, alternando una mano in presa prona e l\'altra in supina per maggiore stabilità. Mantieni la schiena dritta e il petto sollevato mentre sollevi il bilanciere estendendo fianchi e ginocchia. Il bilanciere deve rimanere vicino alle gambe, quasi a contatto. Spingi con i talloni, non con l\'avampiede. Quando il bilanciere supera le ginocchia, spingi i fianchi in avanti per estenderti completamente. Riporta il bilanciere a terra piegando prima i fianchi e controllando la discesa senza incurvare la schiena.</string>
+
+    <string name="exercise_sumo_deadlift_name">Stacco sumo</string>
+    <string name="exercise_sumo_deadlift_description">Per eseguire lo stacco sumo, posiziona i piedi più larghi delle spalle con le punte rivolte verso l\'esterno, come nella posizione di un lottatore di sumo. Il bilanciere deve essere vicino agli stinchi. Piega i fianchi per afferrare il bilanciere tra le gambe con presa prona o mista (una mano prona e una supina). Mantieni la schiena dritta e il petto sollevato per una posizione neutra. Spingi con i talloni sollevando il bilanciere mentre estendi contemporaneamente fianchi e ginocchia. Il bilanciere deve muoversi in linea retta vicino al corpo. Una volta superate le ginocchia, spingi i fianchi in avanti per completare il movimento. Riporta il bilanciere piegando prima i fianchi, poi le ginocchia, mantenendo sempre la schiena dritta.</string>
+
+    <string name="exercise_barbell_shrug_name">Scrollata con bilanciere</string>
+    <string name="exercise_barbell_shrug_description">Per eseguire la scrollata con bilanciere, stai in piedi con i piedi alla larghezza delle spalle e tieni un bilanciere davanti a te con presa prona, leggermente più larga delle spalle. Lascia che il bilanciere penda a braccia tese davanti alle cosce. Mantieni la schiena dritta e le spalle rilassate. Solleva le spalle verso le orecchie in un movimento di scrollata senza piegare i gomiti né usare i bicipiti. Mantieni la contrazione per un momento, quindi abbassa lentamente le spalle alla posizione iniziale. Controlla sia la salita che la discesa e usa i trapezi per il movimento. Evita di ruotare le spalle per non creare tensioni.</string>
+
+    <string name="exercise_barbell_row_name">Rematore con bilanciere</string>
+    <string name="exercise_barbell_row_description">Per eseguire il rematore con bilanciere, posizionati in piedi con i piedi alla larghezza dei fianchi e il bilanciere davanti a te. Piega leggermente le ginocchia e inclina il busto in avanti dai fianchi, mantenendo la schiena dritta e quasi parallela al pavimento. Afferra il bilanciere con presa prona, leggermente più ampia delle spalle. Porta il bilanciere verso le costole inferiori, mantenendo i gomiti vicino al corpo e stringendo le scapole in alto. Riporta lentamente il bilanciere alla posizione iniziale, vicino al corpo durante tutto il movimento. Mantieni il collo neutro e il core attivo per supportare la schiena.</string>
+
+    <!--    FIXME: "T-bar" -->
+    <string name="exercise_barbell_tbar_row_name">Rematore T-bar con bilanciere</string>
+    <string name="exercise_barbell_tbar_row_description">Per eseguire il rematore T-bar con bilanciere, posizionati sopra il bilanciere con i piedi alla larghezza delle spalle. Afferra la maniglia collegata a un\'estremità del bilanciere e, con le ginocchia leggermente piegate, inclina il busto in avanti finché non è quasi parallelo al pavimento. Mantieni la schiena dritta, tira il bilanciere verso il petto sotto le costole, attivando i muscoli del dorso. Riporta lentamente il bilanciere alla posizione iniziale in modo controllato per completare una ripetizione.</string>
+
+    <string name="exercise_barbell_upright_row_name">Tirata al mento con bilanciere</string>
+    <string name="exercise_barbell_upright_row_description">Per eseguire la tirata al mento con bilanciere, posizionati in piedi con i piedi alla larghezza dei fianchi e afferra il bilanciere con presa prona, leggermente più stretta delle spalle. Con le braccia distese e il bilanciere appoggiato alle cosce, solleva il bilanciere verso il mento, guidando con i gomiti e mantenendo il bilanciere vicino al corpo. Fai una breve pausa quando i gomiti sono all\'altezza delle spalle, quindi riporta lentamente il bilanciere alla posizione iniziale in modo controllato per completare una ripetizione.</string>
+
+    <!-- Cables -->
+    <string name="exercise_cable_row_name">Rematore ai cavi</string>
+    <string name="exercise_cable_row_description">Per eseguire il rematore ai cavi, siediti alla macchina con i piedi ben piantati sulla pedana e le ginocchia leggermente piegate. Afferra la maniglia con entrambe le mani in presa prona. Siediti indietro con le braccia distese, mantenendo la schiena dritta e inclinando leggermente il busto dai fianchi. Porta la maniglia verso l\'addome inferiore, stringendo le scapole e mantenendo i gomiti vicini al corpo. Estendi lentamente le braccia tornando alla posizione iniziale, allargando le scapole per completare una ripetizione.</string>
+
+    <string name="exercise_cable_pullover_name">Pullover ai cavi</string>
+    <string name="exercise_cable_pullover_description">Per eseguire il pullover ai cavi, collega una barra dritta alla carrucola alta di una macchina. Posizionati di fronte alla macchina con i piedi alla larghezza delle spalle e afferra la barra con presa prona, più ampia delle spalle. Con le ginocchia leggermente piegate e il busto inclinato in avanti dai fianchi, porta la barra verso il basso in arco fino a portarla in linea con le cosce, mantenendo le braccia distese e i gomiti leggermente flessi. Ritorna lentamente alla posizione iniziale, mantenendo il controllo e la tensione su dorsali e tricipiti per completare una ripetizione.</string>
+
+    <string name="exercise_cable_upright_row_name">Tirata al mento ai cavi</string>
+    <string name="exercise_cable_upright_row_description">Per eseguire la tirata al mento ai cavi, posizionati davanti a una carrucola bassa con una barra dritta agganciata. Afferra la barra con entrambe le mani in presa prona, leggermente più stretta delle spalle. Stai dritto con le braccia distese, lasciando che il peso allunghi le spalle verso il basso. Porta la barra verso il mento, mantenendola vicina al corpo e sollevando i gomiti verso l\'alto e all\'esterno. Pausa breve in alto, poi riporta lentamente la barra alla posizione iniziale per completare una ripetizione.</string>
+
+    <!-- Bodyweight -->
+    <string name="exercise_pullup_name">Trazioni alla sbarra</string>
+    <string name="exercise_pullup_description">Per eseguire le trazioni alla sbarra, afferra la sbarra con presa prona leggermente più ampia delle spalle. Appenditi con le braccia completamente distese e le gambe sollevate, dritte o incrociate alle caviglie. Porta il corpo verso l\'alto spingendo i gomiti verso il basso finché il mento non supera la sbarra, concentrandoti sullo stringere le scapole. Riabbassati lentamente fino alla posizione iniziale, controllando il movimento e distendendo completamente le braccia per completare una ripetizione.</string>
+    <string name="exercise_variation_pullup_single_arm">Un braccio</string>
+
+    <string name="exercise_wide_grip_pullup_name">Trazioni a presa larga</string>
+    <string name="exercise_wide_grip_pullup_description">Per eseguire le trazioni a presa larga, afferra la sbarra con presa prona molto più ampia delle spalle. Appenditi con le braccia completamente distese e le gambe sollevate, dritte o incrociate alle caviglie. Porta il corpo verso l\'alto spingendo i gomiti verso il basso finché il mento non supera la sbarra, concentrandoti sullo stringere le scapole. Riabbassati lentamente fino alla posizione iniziale, mantenendo il controllo e distendendo le braccia.</string>
+
+    <string name="exercise_chinup_name">Trazioni a presa supina</string>
+    <string name="exercise_chinup_description">Per eseguire le trazioni a presa inversa (supina), afferra la sbarra con i palmi rivolti verso di te e le mani alla larghezza delle spalle. Appenditi con le braccia completamente distese, poi tirati su finché il mento non supera la sbarra. Abbassati lentamente alla posizione iniziale e ripeti.</string>
+    <string name="exercise_variation_chinup_close_grip">Presa stretta</string>
+
+    <string name="exercise_muscleup_name">Muscle up</string>
+    <string name="exercise_muscleup_description">Inizia appendendoti alla sbarra con presa prona. Tirati su in modo esplosivo mentre spingi contemporaneamente verso il basso e porti i fianchi verso la sbarra. Quando il petto raggiunge l\'altezza della sbarra, spingi via la sbarra e porta il corpo sopra di essa. Termina estendendo le braccia. Inverti il movimento per tornare alla posizione iniziale.</string>
+
+    <string name="exercise_rope_climb_name">Arrampicata alla corda</string>
+    <string name="exercise_rope_climb_description">Per eseguire l\'arrampicata alla corda, afferra la corda con entrambe le mani sopra la testa e i piedi sollevati da terra. Usa le braccia per tirare il corpo verso l\'alto mentre avvolgi le gambe attorno alla corda per supporto. Alterna tra la trazione delle braccia e il passo delle gambe per salire. Per scendere, inverti il movimento controllando la discesa con braccia e gambe.</string>
+
+    <!-- Machine -->
+    <string name="exercise_machine_row_name">Machine row</string>
+    <string name="exercise_machine_row_description">Per il rematore alla macchina, regola prima sedile e appoggio del petto in base alla tua altezza. Siediti e pianta i piedi saldamente sulla pedana. Afferra le maniglie con entrambe le mani e tirale verso il busto mantenendo la schiena dritta e i gomiti vicini al corpo. Stringi le scapole alla fine del movimento, poi riporta lentamente le maniglie alla posizione iniziale e ripeti.</string>
+
+    <string name="exercise_hyperextensions_name">Iperestensioni</string>
+    <string name="exercise_hyperextensions_description">Per eseguire le iperestensioni, posizionati sulla panca apposita con le caviglie bloccate sotto i rulli. Piega il busto in avanti dai fianchi mantenendo il corpo dritto. Incrocia le braccia al petto o porta le mani dietro la testa. Solleva lentamente il busto finché non è allineato alle gambe, poi abbassati alla posizione iniziale senza incurvare la schiena. Ripeti il movimento.</string>
+
+    <string name="exercise_lat_pulldown_name">Lat machine</string>
+    <string name="exercise_lat_pulldown_description">Per il lat machine, siediti e afferra la barra con presa prona, più ampia delle spalle. Regola il blocco per le ginocchia in modo che aderisca bene e impedisca di sollevarsi. Inclina leggermente il busto, attiva il core e tira la barra verso il petto portando le scapole in basso e indietro. Rilascia lentamente le braccia tornando alla posizione iniziale, mantenendo il controllo. Ripeti il movimento.</string>
+    <string name="exercise_variation_lat_pulldown_vbar">V-bar</string>
+
+    <string name="exercise_vertical_traction_name">Vertical traction</string>
+    <string name="exercise_vertical_traction_description">Per eseguire il vertical traction, siediti alla macchina e regola i blocchi per fissare le gambe. Afferra le maniglie in alto con presa prona e ampia. Porta le maniglie verso le spalle mantenendo i gomiti rivolti in basso e leggermente indietro. Attiva i muscoli della schiena durante la tirata. Rilascia lentamente le maniglie tornando alla posizione iniziale, mantenendo il controllo e la tensione. Ripeti l\'esercizio.</string>
+
+    <!-- Dumbbell -->
+    <string name="exercise_dumbbell_row_name">Rematore con manubrio</string>
+    <string name="exercise_dumbbell_row_description">Per eseguire un rematore con manubrio, appoggia un ginocchio e la mano dello stesso lato su una panca per avere supporto, mantenendo la schiena piatta e parallela al pavimento. Tieni un manubrio nella mano libera con una presa prona, braccio esteso. Porta il manubrio verso il lato del petto, mantenendo il braccio vicino al corpo e il busto fermo. Concentrati nel tirare con i muscoli della schiena, non solo con il braccio. Abbassa lentamente il manubrio alla posizione di partenza e ripeti per il numero desiderato di ripetizioni prima di cambiare lato.</string>
+
+    <string name="exercise_dumbbell_deadlift_name">Stacco con manubri</string>
+    <string name="exercise_dumbbell_deadlift_description">Per eseguire lo stacco con manubri, inizia stando in piedi con i piedi alla larghezza delle anche, tenendo un manubrio in ciascuna mano davanti alle cosce. I palmi devono essere rivolti verso il corpo. Spingi indietro i fianchi e piega leggermente le ginocchia, abbassando i manubri lungo la parte frontale delle gambe fino a circa metà stinco. Mantieni la schiena dritta e guarda avanti per tenere il collo in posizione neutra. Spingi con i talloni per tornare in piedi, portando i fianchi in avanti e riportando i manubri nella posizione iniziale. Ripeti per il numero desiderato di ripetizioni.</string>
+
+    <string name="exercise_dumbbell_shrug_name">Scrollate con manubri</string>
+    <string name="exercise_dumbbell_shrug_description">Per eseguire le scrollate con manubri, stai in piedi con i piedi alla larghezza delle spalle e un manubrio in ciascuna mano, braccia lungo i fianchi, palmi rivolti verso l\'interno. Mantieni le braccia dritte e solleva le spalle verso le orecchie in un movimento di scrollata. Tieni la contrazione in alto per un momento, poi abbassa lentamente le spalle nella posizione iniziale. Ripeti l\'esercizio per il numero desiderato di ripetizioni, mantenendo sempre il controllo del movimento.</string>
+
+    <string name="exercise_upright_dumbbell_row_name">Tirate al mento con manubri</string>
+    <string name="exercise_upright_dumbbell_row_description">Stai con i piedi alla larghezza delle spalle, tenendo i manubri davanti a te con i palmi rivolti al corpo. Solleva i manubri verticalmente fino al petto, tenendoli vicini al corpo e con i gomiti rivolti verso l\'esterno. Abbassa lentamente.</string>
+
+    <!-- ABS -->
+    <!-- Cable abs -->
+    <string name="exercise_cable_crunch_name">Crunch al cavo</string>
+    <string name="exercise_cable_crunch_desc">Mettiti in ginocchio sotto una macchina con cavo e corda. Afferra la corda con entrambe le mani e portale vicino al viso. Fai un crunch verso le ginocchia usando gli addominali, tirando la corda e la testa verso il basso. Ritorna lentamente alla posizione iniziale.</string>
+
+    <!-- Bodyweight abs -->
+    <string name="exercise_crunch_name">Crunch</string>
+    <string name="exercise_crunch_desc">Sdraiati sulla schiena con le ginocchia piegate e i piedi a terra. Metti le mani dietro la testa. Solleva la parte superiore del corpo verso le ginocchia usando i muscoli addominali. Abbassati lentamente.</string>
+
+    <string name="exercise_knee_raises_name">Sollevamento ginocchia</string>
+    <string name="exercise_knee_raises_desc">Appeso a una sbarra per trazioni con le mani alla larghezza delle spalle, solleva le ginocchia verso il petto mantenendo la zona lombare dritta. Riabbassale lentamente.</string>
+
+    <string name="exercise_leg_raises_name">Sollevamento gambe</string>
+    <string name="exercise_leg_raises_desc">Sdraiati sulla schiena con le gambe dritte e le mani sotto i fianchi per supporto. Solleva le gambe dritte verso il soffitto, poi abbassale senza toccare il pavimento.</string>
+
+    <string name="exercise_plank_name">Plank</string>
+    <string name="exercise_plank_desc">Sdraiati a pancia in giù, poi solleva il corpo da terra poggiandoti sugli avambracci e sulle punte dei piedi. Mantieni il corpo dritto e tieni la posizione.</string>
+
+    <string name="exercise_russian_twist_name">Twist russo</string>
+    <string name="exercise_russian_twist_desc">Siediti a terra con le ginocchia piegate e i piedi sollevati. Inclina leggermente il busto all\'indietro. Con un peso in mano, ruota il busto da sinistra a destra, attivando gli addominali.</string>
+
+    <string name="exercise_side_plank_name">Plank laterale</string>
+    <string name="exercise_side_plank_desc">Sdraiati su un lato con le gambe tese. Sostieni il busto sull\'avambraccio, mantenendo il corpo in linea retta. Tieni la posizione, poi cambia lato.</string>
+
+    <string name="exercise_sit_ups_name">Sit up</string>
+    <string name="exercise_sit_ups_desc">Sdraiati sulla schiena con le ginocchia piegate e i piedi bloccati. Incrocia le braccia sul petto. Sollevati completamente verso le ginocchia, poi abbassati lentamente.</string>
+
+    <string name="exercise_side_crunch_name">Crunch laterale</string>
+    <string name="exercise_side_crunch_desc">Sdraiati su un fianco con le gambe sovrapposte e le ginocchia leggermente piegate. Metti una mano dietro la testa. Porta il busto verso i fianchi. Ripeti dall\'altro lato.</string>
+
+    <!--    FIXME: should say Dragon flag -->
+    <string name="exercise_dragon_flag_name">Dragon flag</string>
+    <string name="exercise_dragon_flag_desc">Sdraiati su una panca e fissa la parte superiore del corpo con cinghie o afferrando la panca sopra la testa. Estendi le gambe dritte, poi sollevale verso il soffitto mantenendole tese, quindi abbassale senza toccare la panca.</string>
+
+    <string name="exercise_ab_roller_name">Ab roller</string>
+    <string name="exercise_ab_roller_desc">Mettiti in ginocchio con l\'ab roller davanti a te. Fallo rotolare in avanti estendendo il corpo in linea retta, poi riportalo verso le ginocchia mantenendo gli addominali contratti.</string>
+
+    <!-- Machine abs -->
+    <string name="exercise_ab_machine_name">Crunch machine</string>
+    <string name="exercise_ab_machine_desc">Siediti sulla macchina per addominali con la schiena contro lo schienale. Posiziona i piedi sotto i rulli e afferra le maniglie. Piega il busto verso le ginocchia, contrai gli addominali, poi torna lentamente alla posizione iniziale.</string>
+
+    <!-- Dumbbell abs -->
+    <string name="exercise_dumbbell_side_bend_name">Piegamenti laterali con manubrio</string>
+    <string name="exercise_dumbbell_side_bend_desc">Stai in piedi con un manubrio in una mano e l\'altra mano sulla vita. Piega il busto lateralmente con il manubrio, mantenendo la schiena dritta e gli addominali contratti, poi ritorna in posizione eretta. Ripeti dall\'altro lato.</string>
+
+    <!-- ================== BICEPS ================== -->
+    <string name="exercise_barbell_curl_name">Curl con bilanciere</string>
+    <string name="exercise_barbell_curl_description">Stai in piedi dritto con un bilanciere all\'altezza dei fianchi, palmi rivolti in avanti. Porta il bilanciere verso il petto mantenendo i gomiti vicini al corpo. Abbassalo lentamente, con controllo.</string>
+    <string name="exercise_variation_preacher">Preacher</string>
+    <string name="exercise_variation_scott">Scott</string>
+
+    <string name="exercise_cable_curl_name">Curl al cavo</string>
+    <string name="exercise_cable_curl_description">Attacca una barra dritto a una macchina con cavo basso. Stai di fronte alla macchina, afferra il bilanciere con entrambe le mani, palmi rivolti verso l\'alto. Porta il bilanciere verso il petto mantenendo i gomiti fermi, poi abbassalo lentamente.</string>
+    <string name="exercise_variation_bar">Barra</string>
+    <string name="exercise_variation_rope">Corda</string>
+    <string name="exercise_variation_handles">Maniglie</string>
+
+    <string name="exercise_machine_biceps_curl_name">Machine biceps curl</string>
+    <string name="exercise_machine_biceps_curl_description">Siediti sulla macchina con la parte superiore delle braccia contro i cuscinetti. Afferra le maniglie con i palmi rivolti verso l\'alto. Porta le maniglie verso le spalle e torna lentamente alla posizione iniziale.</string>
+
+    <string name="exercise_dumbbell_curl_name">Curl con manubri</string>
+    <string name="exercise_dumbbell_curl_description">Stai in piedi con i piedi alla larghezza delle spalle, tenendo un manubrio in ciascuna mano con i palmi rivolti in avanti. Solleva i pesi mantenendo i gomiti vicini al corpo. Abbassali lentamente.</string>
+    <string name="exercise_variation_alternating">Alternati</string>
+    <string name="exercise_variation_dumbbell_inclined_bench">Su panca inclinata</string>
+
+    <string name="exercise_dumbbell_concentration_curl_name">Curl in concentrazione con manubrio</string>
+    <string name="exercise_dumbbell_concentration_curl_description">Siediti su una panca con le gambe divaricate. Tieni un manubrio con una mano e appoggia il gomito sulla coscia, appena dentro il ginocchio. Porta il manubrio verso il petto mantenendo fermo il braccio. Abbassa lentamente il peso.</string>
+
+    <!--    FIXME: "Scott" -->
+    <string name="exercise_dumbbell_scott_curl_name">Curl Scott con manubri</string>
+    <string name="exercise_dumbbell_scott_curl_description">Siediti su una panca preacher con le ascelle appoggiate sulla parte superiore del cuscinetto, tenendo un manubrio in ciascuna mano. Porta i manubri verso l\'alto mantenendo la parte posteriore delle braccia contro il cuscinetto. Abbassa lentamente i pesi nella posizione iniziale.</string>
+
+    <string name="exercise_barbell_triceps_extensions_name">Estensioni tricipiti con bilanciere</string>
+    <string name="exercise_barbell_triceps_extensions_description">Sdraiati su una panca con un bilanciere sopra il petto, braccia estese. Abbassa lentamente il bilanciere dietro la testa piegando i gomiti, mantenendo le braccia superiori ferme. Estendi di nuovo le braccia alla posizione iniziale.</string>
+
+    <string name="exercise_close_grip_bench_press_name">Panca piana a presa stretta</string>
+    <string name="exercise_close_grip_bench_press_description">Sdraiati su una panca con un bilanciere impugnato con presa stretta, mani appena all\'interno della larghezza delle spalle. Abbassa il bilanciere fino al centro del petto, mantenendo i gomiti vicino al corpo. Spingi il bilanciere verso l\'alto fino alla posizione iniziale.</string>
+
+    <string name="exercise_french_press_name">French press</string>
+    <string name="exercise_french_press_description">Siediti su una panca con schienale, tenendo un bilanciere o un manubrio con entrambe le mani sopra la testa. Piega i gomiti per abbassare il peso dietro la testa, poi estendi le braccia tornando all\'inizio.</string>
+
+    <string name="exercise_skull_crusher_name">Skull crusher</string>
+    <string name="exercise_skull_crusher_description">Sdraiati su una panca con bilanciere o manubri. Estendi le braccia verso l\'alto, poi piega i gomiti per abbassare i pesi verso la fronte. Estendi di nuovo le braccia alla posizione iniziale.</string>
+
+    <string name="exercise_cable_skull_crusher_name">Skull crusher ai cavi</string>
+    <string name="exercise_cable_skull_crusher_description">Collega una corda a una puleggia bassa. Sdraiati perpendicolare alla macchina, afferra la corda con entrambe le mani. Estendi le braccia verso l\'alto, poi piega i gomiti abbassando la corda verso la fronte. Estendi di nuovo alla posizione iniziale.</string>
+
+    <string name="exercise_cable_pushdown_name">Pushdown ai cavi</string>
+    <string name="exercise_cable_pushdown_description">Posizionati davanti a una macchina con cavo con corda o barra. Afferra l\'accessorio con presa prona e braccia estese. Piega i gomiti per spingere l\'accessorio verso il basso fino a distendere le braccia, poi torna lentamente all\'inizio.</string>
+
+    <string name="exercise_overhead_cable_triceps_extension_name">Estensioni tricipiti sopra la testa ai cavi</string>
+    <string name="exercise_overhead_cable_triceps_extension_description">Collega una corda a una macchina con cavo impostata sopra la testa. Di spalle alla macchina, afferra la corda con entrambe le mani e porta le mani dietro la testa. Estendi i gomiti sollevando le mani sopra la testa, poi torna all\'inizio.</string>
+
+    <string name="exercise_triceps_dip_name">Dip per tricipiti</string>
+    <string name="exercise_triceps_dip_description">Usa delle parallele o una stazione per dip. Afferra le barre e sollevati con le braccia dritte. Piega i gomiti per abbassare il corpo, mantenendo i gomiti vicini al corpo. Spingi verso l\'alto fino alla posizione iniziale.</string>
+
+    <string name="exercise_bench_dip_name">Dip alla panca</string>
+    <string name="exercise_bench_dip_description">Appoggia le mani su una panca dietro di te con le gambe distese in avanti. Abbassa il corpo piegando i gomiti fino a circa 90 gradi, poi spingi di nuovo verso l\'alto fino alla posizione iniziale.</string>
+
+    <string name="exercise_diamond_push_up_name">Push up a diamante</string>
+    <string name="exercise_diamond_push_up_description">Mettiti in posizione di push-up ma con le mani unite sotto il petto, pollici e indici a formare un diamante. Abbassa il corpo verso terra, poi spingi di nuovo verso l\'alto.</string>
+
+    <string name="exercise_parallel_arms_push_up_name">Push up a braccia parallele</string>
+    <string name="exercise_parallel_arms_push_up_description">Appoggia le mani parallele e alla larghezza delle spalle a terra. Abbassa il corpo in linea retta piegando i gomiti, poi spingi di nuovo verso l\'alto.</string>
+
+    <string name="exercise_machine_triceps_extension_name">Machine triceps extension</string>
+    <string name="exercise_machine_triceps_extension_description">Siediti alla macchina con la schiena appoggiata e le braccia piegate sulle maniglie. Estendi le braccia spingendo le maniglie verso il basso fino a distenderle completamente, poi torna lentamente all\'inizio.</string>
+
+    <string name="exercise_dumbbell_triceps_extensions_name">Estensioni tricipiti con manubrio</string>
+    <string name="exercise_dumbbell_triceps_extensions_description">Stai in piedi o siediti con un manubrio tenuto con entrambe le mani sopra la testa. Piega i gomiti per abbassare il manubrio dietro la testa, poi stendi le braccia per riportarlo su.</string>
+
+    <string name="exercise_close_grip_dumbbell_bench_press_name">Panca piana con manubri a presa stretta</string>
+    <string name="exercise_close_grip_dumbbell_bench_press_description">Sdraiati su una panca con due manubri sopra il petto, mani vicine. Abbassa i manubri al petto mantenendo i gomiti vicino al corpo, poi spingili di nuovo verso l\'alto.</string>
+
+    <string name="exercise_dumbbell_skull_crusher_name">Skull crusher con manubri</string>
+    <string name="exercise_dumbbell_skull_crusher_description">Sdraiati su una panca con due manubri, braccia distese verso l\'alto. Piega i gomiti abbassando i manubri verso le tempie, poi estendi di nuovo le braccia alla posizione iniziale.</string>
+
+    <!-- QUADS, GLUTES, HAMSTRINGS -->
+
+    <!-- Barbell -->
+    <string name="exercise_barbell_hip_thrust_name">Hip thrust con bilanciere</string>
+    <string name="exercise_barbell_hip_thrust_description">Siediti a terra con la parte superiore della schiena contro una panca e i piedi a terra. Porta un bilanciere sopra i fianchi. Spingi con i talloni per sollevare i fianchi, contrai i glutei in alto, poi abbassati.</string>
+
+    <string name="exercise_barbell_clean_name">Clean con bilanciere</string>
+    <string name="exercise_barbell_clean_description">Inizia con un bilanciere a terra vicino agli stinchi. Piega anche e ginocchia per afferrarlo con presa prona. Solleva estendendo ginocchia e anche. Quando il bilanciere arriva alle cosce, portalo alle spalle piegandoti in accosciata, poi sollevati in piedi.</string>
+
+    <string name="exercise_squat_name">Squat</string>
+    <string name="exercise_squat_description">Stai con i piedi alla larghezza delle spalle e le punte leggermente verso l\'esterno. Piega anche e ginocchia abbassando il corpo come per sederti su una sedia, mantenendo il petto alto e la schiena dritta, poi torna su.</string>
+    <string name="exercise_variation_squat_front">Frontale</string>
+    <string name="exercise_variation_squat_hack">Hack</string>
+
+    <string name="exercise_barbell_lunge_name">Affondo con bilanciere</string>
+    <string name="exercise_barbell_lunge_description">Stai con un bilanciere sulla parte alta della schiena. Fai un passo in avanti con una gamba, abbassa i fianchi portando il ginocchio posteriore verso terra. Mantieni il ginocchio anteriore sopra la caviglia e la schiena dritta. Spingi per tornare e ripeti dall\'altra parte.</string>
+
+    <string name="exercise_romanian_deadlift_name">Stacco rumeno</string>
+    <string name="exercise_romanian_deadlift_description">Tieni un bilanciere all\'altezza dei fianchi con presa poco più larga delle spalle. Con le ginocchia leggermente piegate, spingi indietro i fianchi e abbassa il bilanciere lungo le cosce finché senti tensione nei posteriori, poi torna all\'inizio.</string>
+
+    <!-- Cables -->
+    <string name="exercise_cable_leg_curl_name">Leg curl ai cavi</string>
+    <string name="exercise_cable_leg_curl_description">Collega una cavigliera a una puleggia bassa. Fronte alla macchina, aggancia la cavigliera alla caviglia e fletti la gamba portando il piede verso i glutei, poi torna lentamente all\'inizio.</string>
+
+    <string name="exercise_cable_pull_through_name">Pull-through ai cavi</string>
+    <string name="exercise_cable_pull_through_description">Stai di spalle a una puleggia bassa con corda tra le gambe. Flettiti sui fianchi tirando la corda, contrai i glutei in alto, poi torna alla posizione iniziale.</string>
+
+    <!-- Bodyweight -->
+    <string name="exercise_bodyweight_squat_name">Squat a corpo libero</string>
+    <string name="exercise_bodyweight_squat_description">Stai con i piedi alla larghezza delle spalle. Piega ginocchia e anche per abbassare il corpo come su una sedia, poi spingi di nuovo verso l\'alto.</string>
+    <string name="exercise_variation_squat_bodyweight_single_leg">Gamba singola</string>
+
+    <string name="exercise_bodyweight_step_ups_name">Step up a corpo libero</string>
+    <string name="exercise_bodyweight_step_ups_description">Stai davanti a una panca o step. Sali con un piede, spingi con il tallone per sollevare il corpo, poi scendi e ripeti con l\'altro piede.</string>
+
+    <string name="exercise_bodyweight_lunge_name">Affondo a corpo libero</string>
+    <string name="exercise_bodyweight_lunge_description">Stai con i piedi alla larghezza delle anche. Fai un passo in avanti e abbassa i fianchi portando il ginocchio posteriore verso il suolo, mantenendo quello anteriore sopra la caviglia. Spingi indietro e cambia gamba.</string>
+
+    <!-- Machine -->
+    <string name="exercise_machine_leg_curl_name">Leg curl alla macchina</string>
+    <string name="exercise_machine_leg_curl_description">Sdraiati a pancia in giù sulla macchina, con le gambe sotto il rullo. Fletti le ginocchia portando il rullo verso i glutei, poi torna lentamente alla posizione iniziale.</string>
+
+    <string name="exercise_machine_leg_extension_name">Leg extension alla macchina</string>
+    <string name="exercise_machine_leg_extension_description">Siediti sulla macchina con le gambe sotto il rullo e i piedi in avanti. Estendi le gambe sollevando il peso, poi abbassale alla posizione iniziale.</string>
+
+    <string name="exercise_machine_hack_squat_name">Hack squat alla macchina</string>
+    <string name="exercise_machine_hack_squat_description">Posizionati sulla macchina hack squat con la schiena al supporto e le spalle sotto i cuscini. Piega le ginocchia scendendo in squat, poi spingi di nuovo verso l\'alto.</string>
+
+    <string name="exercise_leg_press_name">Leg press</string>
+    <string name="exercise_leg_press_description">Siediti sulla pressa con la schiena al supporto e i piedi sulla pedana. Piega le ginocchia abbassando la pedana verso di te, poi spingi fino a estendere le gambe.</string>
+
+    <string name="exercise_abduction_machine_name">Abduction machine</string>
+    <string name="exercise_abduction_machine_description">Siediti sulla macchina con la schiena al supporto e le gambe all\'interno dei cuscini. Spingi le gambe verso l\'esterno contro la resistenza, poi riportale lentamente insieme.</string>
+
+    <string name="exercise_adduction_machine_name">Adduction machine</string>
+    <string name="exercise_adduction_machine_description">Siediti sulla macchina con la schiena al supporto e le gambe all\'esterno dei cuscini. Stringi le gambe verso l\'interno contro la resistenza, poi rilassale lentamente tornando all\'inizio.</string>
+
+    <string name="exercise_machine_glute_kickback_name">Glute kickback alla macchina</string>
+    <string name="exercise_machine_glute_kickback_description">Posizionati sulla macchina con il petto al supporto e un piede sulla pedana. Spingi la pedana indietro estendendo l\'anca, poi torna alla posizione iniziale.</string>
+
+    <!-- Dumbbell -->
+    <string name="exercise_bulgarian_split_squat_name">Affondo bulgaro</string>
+    <string name="exercise_bulgarian_split_squat_description">Stai con un piede sollevato dietro di te su una panca. Con il piede anteriore avanti, abbassa il corpo piegando il ginocchio anteriore, mantenendo il busto eretto. Spingi con il tallone per tornare all\'inizio.</string>
+
+    <string name="exercise_dumbbell_lunges_name">Affondi con manubri</string>
+    <string name="exercise_dumbbell_lunges_description">Tieni un manubrio in ogni mano con le braccia lungo i fianchi. Fai un passo avanti con una gamba e abbassa il corpo finché il ginocchio anteriore non è a 90°. Spingi per tornare e ripeti con l\'altra gamba.</string>
+
+    <string name="exercise_goblet_squat_name">Goblet squat</string>
+    <string name="exercise_goblet_squat_description">Tieni un manubrio vicino al petto con entrambe le mani. Esegui uno squat abbassando il corpo, mantenendo il petto alto e la schiena dritta. Spingi con i talloni per tornare su.</string>
+
+    <string name="exercise_dumbbell_step_ups_name">Step up con manubri</string>
+    <string name="exercise_dumbbell_step_ups_description">Con un manubrio in ogni mano, sali su una panca o pedana con un piede, spingi con il tallone portando su l\'altro piede. Scendi con il piede guida e ripeti.</string>
+
+    <string name="exercise_dumbbell_romanian_deadlift_name">Stacco rumeno con manubri</string>
+    <string name="exercise_dumbbell_romanian_deadlift_description">Stai con i piedi alla larghezza delle anche, tenendo un manubrio in ciascuna mano. Con le ginocchia leggermente piegate, piegati sui fianchi abbassando i manubri lungo le gambe finché senti tensione nei posteriori. Torna in piedi spingendo i fianchi in avanti.</string>
+
+    <!-- Calves -->
+    <!--    FIXME: "calf" -->
+    <string name="exercise_barbell_calf_raises_name">Sollevamenti sui polpacci con bilanciere</string>
+    <string name="exercise_barbell_calf_raises_desc">Stai in piedi con un bilanciere appoggiato sulla parte alta della schiena, sopra le spalle. Solleva i talloni da terra spingendo con la pianta dei piedi, quindi abbassali lentamente.</string>
+
+    <string name="exercise_calf_raises_name">Sollevamenti sui polpacci</string>
+    <string name="exercise_calf_raises_desc">Stai in piedi su una superficie rialzata o un gradino con i talloni fuori dal bordo. Spingi con la pianta dei piedi per sollevare i talloni, quindi abbassali per un allungamento completo.</string>
+
+    <string name="exercise_single_leg_calf_raises_name">Sollevamenti sui polpacci a gamba singola</string>
+    <string name="exercise_single_leg_calf_raises_desc">Stai in piedi su un piede su una superficie rialzata con l\'altro piede fuori dal bordo. Solleva il tallone il più in alto possibile, quindi abbassalo. Cambia piede e ripeti.</string>
+
+    <string name="exercise_machine_calf_raises_name">Sollevamenti sui polpacci alla macchina</string>
+    <string name="exercise_machine_calf_raises_desc">Usa una macchina per polpacci, sedendoti con i cuscinetti appoggiati sulle cosce. Premi con le punte dei piedi per sollevare i talloni, quindi abbassali lentamente.</string>
+
+    <string name="exercise_dumbbell_calf_raises_name">Sollevamenti sui polpacci con manubrio</string>
+    <string name="exercise_dumbbell_calf_raises_desc">Tieni un manubrio in una mano mentre sei in piedi su un gradino o una pedana rialzata. Solleva i talloni oltre il bordo spingendo con la pianta dei piedi, quindi abbassali per un allungamento. Cambia il manubrio all\'altra mano e ripeti.</string>
+
+    <!-- Shoulders -->
+    <string name="exercise_push_and_press_name">Push and press</string>
+    <string name="exercise_push_and_press_desc">Di solito si riferisce a un push-up seguito da un movimento di spinta, come una spinta con manubri per le spalle. Esegui un push-up, poi alzati ed esegui una shoulder press.</string>
+
+    <string name="exercise_shoulder_press_name">Shoulder press</string>
+    <string name="exercise_shoulder_press_desc">Siediti o stai in piedi con un bilanciere o dei manubri all\'altezza delle spalle. Spingi i pesi sopra la testa fino a distendere completamente le braccia, poi riportali all\'altezza delle spalle.</string>
+
+    <string name="exercise_clean_and_press_name">Clean and press</string>
+    <string name="exercise_clean_and_press_desc">Inizia con un bilanciere a terra. Esegui un clean sollevando il bilanciere alle spalle in un unico movimento fluido. Poi, spingi il bilanciere sopra la testa estendendo completamente le braccia prima di abbassarlo di nuovo.</string>
+
+    <string name="exercise_cable_side_raise_name">Alzata laterale ai cavi</string>
+    <string name="exercise_cable_side_raise_desc">Attacca una maniglia a una puleggia bassa. Mettiti di lato rispetto alla macchina, afferra la maniglia con la mano più lontana e solleva il braccio lateralmente finché non è parallelo al pavimento, poi abbassalo.</string>
+
+    <string name="exercise_cable_rear_delt_fly_name">Aperture inverse ai cavi</string>
+    <string name="exercise_cable_rear_delt_fly_desc">Posizionati al centro tra due pulegge basse con le maniglie attaccate. Afferra la maniglia sinistra con la mano destra e quella destra con la mano sinistra. Con le braccia leggermente piegate, tira le maniglie verso l\'esterno e indietro, stringendo le scapole, poi torna alla posizione iniziale.</string>
+
+    <string name="exercise_cable_face_pull_name">Face pull ai cavi</string>
+    <string name="exercise_cable_face_pull_desc">Attacca una corda a una puleggia alta. Tira la corda verso il viso, separando le mani mentre tiri e mantenendo le braccia superiori parallele al pavimento. Ritorna lentamente alla posizione di partenza.</string>
+
+    <string name="exercise_cable_shoulder_press_name">Shoulder press ai cavi</string>
+    <string name="exercise_cable_shoulder_press_desc">Attacca una maniglia a una puleggia bassa e siediti direttamente davanti. Tieni la maniglia con una mano e spingila sopra la testa. Ripeti con l\'altra mano o usa un setup con due maniglie per entrambe le mani contemporaneamente.</string>
+
+    <string name="exercise_handstand_pushups_name">Handstand push up</string>
+    <string name="exercise_handstand_pushups_desc">Mettiti in posizione verticale sulle mani contro un muro per supporto. Abbassa il corpo piegando i gomiti finché la testa non è quasi a terra, poi spingi di nuovo verso l\'alto.</string>
+
+    <string name="exercise_machine_shoulder_press_name">Shoulder press machine</string>
+    <string name="exercise_machine_shoulder_press_desc">Siediti in una macchina per shoulder press con la schiena contro lo schienale. Afferra le maniglie e spingile sopra la testa fino a distendere le braccia, poi torna all\'inizio.</string>
+
+    <string name="exercise_front_raise_name">Alzata frontale</string>
+    <string name="exercise_front_raise_desc">Stai in piedi con i manubri ai lati. Solleva i pesi davanti a te fino all\'altezza delle spalle mantenendo una leggera piega nei gomiti, poi abbassali.</string>
+
+    <string name="exercise_side_raise_name">Alzata laterale</string>
+    <string name="exercise_side_raise_desc">Stai in piedi con i manubri ai lati. Solleva i pesi lateralmente finché non sono paralleli al pavimento, poi abbassali.</string>
+
+    <string name="exercise_dumbbell_shoulder_press_name">Shoulder press con manubri</string>
+    <string name="exercise_dumbbell_shoulder_press_desc">Siediti o stai in piedi tenendo i manubri all\'altezza delle spalle. Spingi i pesi sopra la testa fino a distendere completamente le braccia, poi riportali in posizione iniziale.</string>
+    <string name="exercise_variation_arnold_press">Arnold Press</string>
+
+    <string name="exercise_dumbbell_rear_delt_row_name">Rematore posteriore con manubri</string>
+    <string name="exercise_dumbbell_rear_delt_row_desc">Piegati in avanti sui fianchi con un manubrio in ciascuna mano, braccia che pendono dritte. Porta i manubri verso i fianchi mantenendo i gomiti larghi e stringendo le scapole, poi abbassali.</string>
+
+    <string name="exercise_name_error">Qualcosa è andato storto nel recuperare il nome/descrizione di questo esercizio.</string>
+    <string name="exercise_variation_error">Qualcosa è andato storto nel recuperare le varianti di questo esercizio.</string>
+    <string name="empty_variation" />
+    <string name="description_not_available">Descrizione non disponibile</string>
+    <string name="sexes_male">Uomo</string>
+    <string name="sexes_female">Donna</string>
+    <string name="sexes_other">Altro</string>
+    <string name="themes_system">Come il sistema</string>
+    <string name="themes_light">Sempre chiaro</string>
+    <string name="themes_dark">Sempre scuro</string>
+    <string name="muscles_see_all">Vedi tutti</string>
+    <string name="muscles_abs">Addominali</string>
+    <string name="muscles_back">Schiena</string>
+    <string name="muscles_biceps">Bicipiti</string>
+    <string name="muscles_calves">Polpacci</string>
+    <string name="muscles_chest">Petto</string>
+    <string name="muscles_glutes">Glutei</string>
+    <string name="muscles_hamstrings">Femorali</string>
+    <string name="muscles_quadriceps">Quadricipiti</string>
+    <string name="muscles_shoulders">Spalle</string>
+    <string name="muscles_triceps">Tricipiti</string>
+    <string name="muscles_error">Muscolo non riconosciuto</string>
+    <string name="difficulties_beginner">Principiante</string>
+    <string name="difficulties_intermediate">Intermedio</string>
+    <string name="difficulties_advanced">Avanzato</string>
+    <string name="goals_hypertrophy_desc">Aumentare la massa (ipertrofia)</string>
+    <string name="goals_strength_desc">Aumentare la forza</string>
+    <string name="goals_endurance_desc">Aumentare la resistenza</string>
+    <string name="goals_cardio_desc">Tonificare (cardio)</string>
+    <string name="goals_hypertrophy">Ipertrofia</string>
+    <string name="goals_strength">Forza</string>
+    <string name="goals_endurance">Resistenza</string>
+    <string name="goals_cardio">Cardio</string>
+    <string name="goals_error">Obiettivo sconosciuto</string>
+    <string name="plan_diff_guess">Dovresti conoscere il mio livello</string>
+    <string name="plan_diff_beginner">Principiante: appena iniziato</string>
+    <string name="plan_diff_intermediate">Intermedio: mi sento pronto a provare esercizi più avanzati</string>
+    <string name="plan_diff_advanced">Avanzato: facciamo tutto 👌</string>
+    <string name="splits_fullbody">Routine total body: 1+ volte a settimana</string>
+    <string name="splits_bro">Bro split (pull/push/gambe): 3 volte a settimana</string>
+    <string name="splits_upper_lower">Split parte alta/bassa: 2+ volte a settimana</string>
+    <string name="splits_gainz">1 gruppo muscolare al giorno: 5 volte a settimana</string>
+    <string name="splits_auto">Sorprendimi</string>
+    <string name="intensities_high">Alta intensità (...)</string>
+    <string name="intensities_medium">Intensità normale (...)</string>
+    <string name="intensities_low">Bassa intensità (...)</string>
+    <string name="timeframes_week">Settimana</string>
+    <string name="timeframes_month">Mese</string>
+    <string name="timeframes_year">Anno</string>
+    <string name="timeframes_all_time">Tutto</string>
+    <string name="stats_loading_filtering">Filtraggio per intervallo corretto…</string>
+    <string name="stats_loading_computing">Calcolo delle statistiche…</string>
+    <string name="stats_loading_calculating">Calcolo delle serie…</string>
+    <string name="stats_loading_summing">Somma dei volumi…</string>
+    <string name="stats_loading_counting">Conteggio allenamenti…</string>
+    <string name="stats_loading_computing_muscle">Calcolo distribuzione muscolare…</string>
+    <string name="stats_loading_deriving">Derivazione esercizi principali…</string>
+    <string name="stats_loading_prs">Recupero PR recenti…</string>
+    <string name="stats_loading_equipment">Calcolo uso attrezzature…</string>
+    <string name="stats_loading_done">Fatto!</string>
+    <string name="stats_loading_generic">Caricamento record…</string>
+    <string name="what_is_your_name">Come ti chiami?</string>
+    <string name="sets">Serie</string>
+    <string name="quick_start">Avvio rapido</string>
+    <string name="edit_icon_program">Modifica programma</string>
+    <string name="edit">Modifica</string>
+    <string name="rename">Rinomina</string>
+    <string name="delete">Cancella</string>
+    <string name="remove">Rimuovi</string>
+    <string name="delete_icon_program">Cancella programma</string>
+    <string name="rename_icon_program">Rinomina programma</string>
+<!--    OTHER-->
+    <string name="day">Giorno</string>
+    <string name="move_up">Sposta sopra</string>
+    <string name="move_down">Sposta sotto</string>
+    <string name="superset">Superset</string>
+    <string name="superset_off">Superset off</string>
+    <string name="add_exercise">Aggiungi esercizio</string>
+    <string name="snackbar_exercise_added">Esercizio aggiunto con successo, puoi continuare ad aggiungere</string>
+    <string name="add_exercise_to_i">Aggiungi esercizio a %1$s</string>
+    <string name="image_highlighting_the_muscle">Immagine con il muscolo in evidenza</string>
+</resources>

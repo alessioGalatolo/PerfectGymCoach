@@ -8,6 +8,7 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
+import com.agdesignes.shared.Equipment
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,7 @@ import javax.inject.Inject
 data class ExercisesState(
     val programExercisesAndInfo: List<ProgramExerciseAndInfo> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
-    val equipToFiler: Exercise.Equipment = Exercise.Equipment.EVERYTHING,  // store request to filter
+    val equipToFiler: Equipment = Equipment.EVERYTHING,  // store request to filter
     val exercisesFilterEquip: List<Exercise>? = null,
     val searchQuery: String = "",  // store request to search
     val exercisesToDisplay: List<Exercise>? = null,
@@ -40,7 +41,7 @@ sealed class ExercisesEvent{
 
     data class FilterExercise(val query: String): ExercisesEvent()
 
-    data class FilterExerciseEquipment(val query: Exercise.Equipment): ExercisesEvent()
+    data class FilterExerciseEquipment(val query: Equipment): ExercisesEvent()
 
     data class UpdateSuperset(val index1: Int, val index2: Int): ExercisesEvent()
 
@@ -75,8 +76,10 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             is ExercisesEvent.GetExercises -> {
                 getExercisesJob?.cancel()
                 getExercisesJob = viewModelScope.launch {
-                    repository.getExercises(event.muscle).collect {
-                        val sorted = it.sortedBy { ex -> ex.name }
+                    repository.getExercises(event.muscle).collect { exs ->
+                        val sorted = exs.sortedBy { ex ->
+                            ex.name
+                        }
                         _state.update { it.copy(
                             exercises = sorted
                         ) }
@@ -88,7 +91,7 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
             }
             is ExercisesEvent.FilterExerciseEquipment -> {
                 val filtered = state.value.exercises.filter {
-                    event.query == Exercise.Equipment.EVERYTHING || it.equipment == event.query
+                    event.query == Equipment.EVERYTHING || it.equipment == event.query
                 }
                 _state.update { it.copy(
                     exercisesFilterEquip = filtered,
@@ -103,10 +106,10 @@ class ExercisesViewModel @Inject constructor(private val repository: Repository)
                     searchQuery = event.query,
                     exercisesToDisplay = it.exercisesFilterEquip?.filter { ex ->
                     ex.name.contains(event.query, ignoreCase = true)
-                            || ex.primaryMuscle.muscleName.contains(event.query, ignoreCase = true)
+//                            || ex.primaryMuscle.muscleName.contains(event.query, ignoreCase = true)  // FIXME: re-enable but needs to get resource
                             || ex.variations.any { it1 -> it1.contains(event.query, ignoreCase = true) }
-                            || ex.equipment.equipmentName.contains(event.query, ignoreCase = true)
-                            || ex.secondaryMuscles.any { it1 -> it1.muscleName.contains(event.query, ignoreCase = true) }
+//                            || ex.equipment.equipmentName.contains(event.query, ignoreCase = true)
+//                            || ex.secondaryMuscles.any { it1 -> it1.muscleName.contains(event.query, ignoreCase = true) }
                 })}
             }
             is ExercisesEvent.ReorderExercises -> {

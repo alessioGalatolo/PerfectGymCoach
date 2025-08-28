@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kg">kg</string>
+    <string name="lb">lb</string>
+    <string name="barbells_light_ez_curl_bar">Bilancere a Z leggero</string>
+    <string name="barbells_ez_curl_bar">Bilancere a Z</string>
+    <string name="barbells_young_s_olympic_bar">Bilancere olimpico giovani</string>
+    <string name="barbells_women_s_olympic_bar">Bilancere olimpico donne</string>
+    <string name="barbells_men_s_olympic_bar">Bilancere olimpico uomini</string>
+    <string name="barbells_squat_bar">Bilancere da Squat</string>
+    <string name="barbells_other">Altro</string>
+    <string name="equipments_see_all">Vedi tutti</string>
+    <string name="equipments_barbell">Bilanciere</string>
+    <string name="equipments_body_weight">Corpo libero</string>
+    <string name="equipments_cables">Cavi</string>
+    <string name="equipments_dumbbell">Manubrio</string>
+    <string name="equipments_machine">Macchina</string>
+</resources>

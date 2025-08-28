@@ -1,14 +1,32 @@
 package agdesigns.elevatefitness.utils
 
+import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import android.content.Context
+import android.content.res.Configuration
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
-import kotlin.math.round
+import com.agdesignes.shared.Equipment
+import java.util.Locale
 
+fun Context.getLocalizedString(
+    @StringRes resId: Int,
+    locale: Locale
+): String {
+    // Copy current configuration
+    val config = resources.configuration
 
-const val decimalPlaces = 100  // 2 decimal places
+    // Create a new configuration with the desired locale
+    val newConfig = Configuration(config)
+    newConfig.setLocale(locale)
+
+    // Create a localized context
+    val localizedContext = createConfigurationContext(newConfig)
+
+    return localizedContext.getString(resId)
+}
+
 
 fun hasNotificationAccess(context: Context): Boolean {
     val contentResolver = context.contentResolver
@@ -28,11 +46,11 @@ fun isMajorMover(muscle: Exercise.Muscle): Boolean {
     }
 }
 
-fun isFreeWeight(equipment: Exercise.Equipment): Boolean {
+fun isFreeWeight(equipment: Equipment): Boolean {
     return when (equipment) {
-        Exercise.Equipment.BARBELL,
-        Exercise.Equipment.DUMBBELL,
-        Exercise.Equipment.BODY_WEIGHT -> true
+        Equipment.BARBELL,
+        Equipment.DUMBBELL,
+        Equipment.BODY_WEIGHT -> true
         else -> false
     }
 }
@@ -44,44 +62,9 @@ fun exerciseIsCompound(exercise: Exercise): Boolean {
         return false
     if (exercise.secondaryMuscles.size > 1)
         return true
-    if (exercise.name.lowercase().contains("squat")) // FIXME: not ideal But can now be fixed
-        return true
     return false
 }
 
-fun maybeKgToLb(kg: Float, useImperial: Boolean): Float {
-    if (!useImperial)
-        return round(kg * decimalPlaces) / decimalPlaces
-    return round(kg * 2.20462f * decimalPlaces) / decimalPlaces
-}
-
-fun maybeLbToKg(weight: Float, useImperial: Boolean): Float {
-    if (!useImperial)
-        return weight
-    return weight / 2.20462f
-}
-
-fun barbellFromWeight(
-    weight: Float,
-    useImperial: Boolean,
-    isRecord: Boolean,
-    noWeight: Boolean = false  // will skip (20.0 kg) unless custom value
-): String {
-    if (weight == 0f && !isRecord)
-        return ExerciseRecord.BarbellType.OTHER.barbellName + "..."
-    var barbellName = ExerciseRecord.BarbellType.entries.find {
-        it.weight[false] == weight ||
-                it.weight[true] == maybeKgToLb(weight, true)
-    }?.barbellName
-    if (barbellName == null) {
-        // return weight in any case
-        barbellName = ExerciseRecord.BarbellType.OTHER.barbellName
-        return barbellName + " (${maybeKgToLb(weight, useImperial)} ${if (useImperial) "lb" else "kg"})"
-    }
-    if (noWeight)
-        return barbellName
-    return barbellName + " (${maybeKgToLb(weight, useImperial)} ${if (useImperial) "lb" else "kg"})"
-}
 
 fun getStickyHeader(
     layoutInfo: LazyListLayoutInfo,
@@ -116,3 +99,4 @@ fun getStickyHeader(
     highestVisibleId ?: lastVisibleKey
     return Pair(titleText, (highestVisibleId ?: lastVisibleKey))
 }
+

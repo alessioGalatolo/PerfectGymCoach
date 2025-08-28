@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.workout.components
 
+import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import androidx.compose.foundation.background
 import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.res.stringResource
+import com.agdesignes.shared.Equipment
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -33,7 +36,7 @@ fun WorkoutBottomBar(
     updateReps: (String) -> Unit,
     weightToDisplay: String,
     updateWeight: (String) -> Unit,
-    autoStepWeight: (String, Exercise.Equipment, Boolean) -> Unit
+    autoStepWeight: (String, Equipment, Boolean) -> Unit
 ) {
     val imeVisible = WindowInsets.isImeVisible
     Column(
@@ -48,7 +51,7 @@ fun WorkoutBottomBar(
                 onClick = startWorkout,
                 Modifier.fillMaxWidth()
             ) {
-                Text("Start workout")
+                Text(stringResource(R.string.start_workout))
             }
         } else if (currentExercise == null) {
             // workout has started and it is on the end page
@@ -56,7 +59,7 @@ fun WorkoutBottomBar(
                 onClick = completeWorkout,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Complete workout")
+                Text(stringResource(R.string.complete_workout))
             }
         } else if (setsFinished) {
             // workout started and the user has done all the sets in the page
@@ -64,13 +67,13 @@ fun WorkoutBottomBar(
                 onClick = addSet,
                 Modifier.fillMaxWidth()
             ) {
-                Text("Add set")
+                Text(stringResource(R.string.add_set))
             }
             Button(
                 onClick = goToNextExercise,
                 Modifier.fillMaxWidth()
             ) {
-                Text("Next exercise")
+                Text(stringResource(R.string.next_exercise))
             }
 
         } else {
@@ -80,17 +83,17 @@ fun WorkoutBottomBar(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 TextFieldWithButtons(
-                    "Reps",
+                    stringResource(R.string.reps),
                     text = { repsToDisplay },
                     onNewText = { new -> updateReps(new) },
                     onIncrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) + 1).toString()) },
                     onDecrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) - 1).toString()) },
-                    contentDescription = "reps",
+                    contentDescription = stringResource(R.string.reps),
                     textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true}
                 )
                 Spacer(Modifier.width(8.dp))
                 TextFieldWithButtons(
-                    "Weight",
+                    stringResource(R.string.weight),
                     text = { weightToDisplay },
                     onNewText = { new -> updateWeight(new) },
                     onIncrement = { autoStepWeight(
@@ -103,7 +106,7 @@ fun WorkoutBottomBar(
                         currentExercise.equipment,
                         true
                     )},
-                    contentDescription = "weight",
+                    contentDescription = stringResource(R.string.weight),
                     textIsValid = { it.toFloatOrNull() != null }
                 )
             }
@@ -120,7 +123,7 @@ fun WorkoutBottomBar(
                         .fillMaxWidth()
                         .padding(bottom = if (imeVisible) 48.dp else 0.dp)
                 ) {
-                    Text("Complete")
+                    Text(stringResource(R.string.complete_set))
                 }
             }
         }
@@ -144,8 +147,14 @@ fun RowScope.TextFieldWithButtons(
             .fillMaxWidth()
             .weight(1f, true)
     ) {
-        IconButton(onClick = onDecrement, modifier = Modifier.weight(0.3f).minimumInteractiveComponentSize()) {
-            Icon(Icons.Filled.Remove, "Decrease $contentDescription")  // FIXME: accessibility -> increase what?
+        IconButton(onClick = onDecrement, modifier = Modifier
+            .weight(0.3f)
+            .minimumInteractiveComponentSize()) {
+            Icon(
+                Icons.Filled.Remove,
+                stringResource(
+                    R.string.decrease_i, contentDescription
+                ))
         }
         OutlinedTextField(
             value = text(),
@@ -159,8 +168,10 @@ fun RowScope.TextFieldWithButtons(
                 .heightIn(1.dp, Dp.Infinity)
                 .weight(0.5f)
         )
-        IconButton(onClick = onIncrement, modifier = Modifier.weight(0.3f).minimumInteractiveComponentSize()) {
-            Icon(Icons.Filled.Add, "Increase $contentDescription")  // FIXME: accessibility -> decrease what?
+        IconButton(onClick = onIncrement, modifier = Modifier
+            .weight(0.3f)
+            .minimumInteractiveComponentSize()) {
+            Icon(Icons.Filled.Add, stringResource(R.string.increase_i, contentDescription))
         }
     }
 }

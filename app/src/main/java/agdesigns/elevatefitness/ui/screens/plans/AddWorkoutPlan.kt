@@ -49,6 +49,8 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
+import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.components.InsertNameDialog
@@ -80,7 +82,7 @@ fun AddWorkoutPlan(
     // FIXME: two plans and some archived ones. If swapping current plan, archived button disappears
     val addWorkoutState by viewModel.state.collectAsState()
     InsertNameDialog(
-        prompt = "Name of the new plan",
+        prompt = stringResource(R.string.new_plan_prompt),
         dialogueIsOpen = addWorkoutState.openAddPlanDialogue,
         toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
         insertName = {
@@ -113,7 +115,7 @@ fun AddWorkoutPlan(
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = stringResource(R.string.go_back_icon)
                         )
                     }
                 },
@@ -128,7 +130,7 @@ fun AddWorkoutPlan(
             ) {
                 Icon(
                     Icons.Filled.Add,
-                    contentDescription = "Add workout plan",
+                    contentDescription = stringResource(R.string.add_icon_workout_plan),
                     modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
                 )
             }
@@ -162,13 +164,16 @@ fun AddWorkoutPlan(
                 itemsIndexed(items = addWorkoutState.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
                 { index, plan ->
                     if (index == 0){
-                        Text("Current plan", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.current_plan), fontWeight = FontWeight.Bold)
                     } else if (index == 1) {
                         Column (Modifier.fillMaxWidth()){
-                            Text("Other plans", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.other_plans), fontWeight = FontWeight.Bold)
                         }
                     }
                     // TODO: consider having only the first plan in card, the others are simple list items
+                    val planArchivedString = stringResource(R.string.plan_archived)
+                    val undoString = stringResource(R.string.undo)
+                    val planSetAsCurrentString = stringResource(R.string.plan_set_as_current)
                     PlanCard(
                         navigator = navigator,
                         plan = plan.first,
@@ -178,8 +183,8 @@ fun AddWorkoutPlan(
                             viewModel.onEvent(PlansEvent.ArchivePlan(plan.first.planId))
                             scope.launch {
                                 val snackbarResult = snackbarHostState.showSnackbar(
-                                    "Plan archived",
-                                    actionLabel = "Undo",
+                                    planArchivedString,
+                                    actionLabel = undoString,
                                     duration = SnackbarDuration.Short
                                 )
                                 when (snackbarResult) {
@@ -194,14 +199,19 @@ fun AddWorkoutPlan(
                             }
                         },
                         swipeIcon = Icons.Default.Archive,
-                        swipeDescription = "Archive plan",
+                        swipeDescription = stringResource(R.string.archive_plan_action),
                         swipeBackgroundColor = MaterialTheme.colorScheme.errorContainer,
                         trailingIcon = if (index == 0) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        trailingIconDescription = if (index == 0) "Current plan" else "Set as current plan",
+                        trailingIconDescription = if (index == 0)
+                            stringResource(R.string.current_plan)
+                        else
+                            stringResource(
+                                R.string.set_as_current_plan
+                            ),
                         onTrailingIconClick = {
                             viewModel.onEvent(PlansEvent.SetCurrentPlan(plan.first.planId))
                             scope.launch {
-                                snackbarHostState.showSnackbar("Plan set as current")
+                                snackbarHostState.showSnackbar(planSetAsCurrentString)
                             }
                         }
                     )
@@ -216,7 +226,7 @@ fun AddWorkoutPlan(
                     item {
                         if (addWorkoutState.workoutPlanMapPrograms.size <= 1) {
                             Column (Modifier.fillMaxWidth()){
-                                Text("Other plans", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.other_plans), fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(8.dp))
                         }
@@ -233,7 +243,7 @@ fun AddWorkoutPlan(
                             ) {
                                 Icon(Icons.Default.Archive, contentDescription = "")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.archived_plans), style = MaterialTheme.typography.headlineSmall)
+                                Text(stringResource(R.string.archived_plans_title), style = MaterialTheme.typography.headlineSmall)
                             }
                         }
                     }
@@ -377,10 +387,13 @@ fun LazyItemScope.PlanCard(
 //          // TODO: maybe add back image as random icon
 
                 Column(Modifier.weight(1f)) {
-                    Text(text = plan.name, style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        text = getPlanDisplayName(plan.name),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
                     programs.forEach {
-                        Text(it.name)
+                        Text(getProgramDisplayName(it.name))
                     }
                 }
                 if (trailingIcon != null) {
@@ -407,8 +420,8 @@ fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
         },
         modifier = Modifier.align(Alignment.CenterHorizontally))
     {
-        Icon(Icons.Filled.AutoAwesome, "Magic")
+        Icon(Icons.Filled.AutoAwesome, stringResource(R.string.generate_a_new_plan))
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-        Text("Generate a new plan")
+        Text(stringResource(R.string.generate_a_new_plan))
     }
 }

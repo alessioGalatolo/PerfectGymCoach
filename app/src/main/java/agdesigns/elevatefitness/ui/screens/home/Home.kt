@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.components.ResumeWorkout
 import agdesigns.elevatefitness.ui.components.WorkoutCard
@@ -283,7 +284,9 @@ fun SharedTransitionScope.Home(
                                             userScrollEnabled = false,
                                             modifier = Modifier
                                                 .sharedBounds(
-                                                    sharedContentState = rememberSharedContentState("img_${program.programId}"),
+                                                    sharedContentState = rememberSharedContentState(
+                                                        "img_${program.programId}"
+                                                    ),
                                                     animatedVisibilityScope = animatedVisibilityScope,
                                                 )
                                                 .size(80.dp) // Smaller image for less emphasis
@@ -291,7 +294,7 @@ fun SharedTransitionScope.Home(
                                         ) { page ->
                                             AsyncImage(
                                                 model = exs[page].image,
-                                                contentDescription = "Exercise image",
+                                                contentDescription = stringResource(id = R.string.exercise_image),
                                                 contentScale = ContentScale.Crop,
                                                 modifier = Modifier.fillMaxSize(),
                                                 colorFilter = ColorFilter.tint(
@@ -319,7 +322,7 @@ fun SharedTransitionScope.Home(
                                             .fillMaxHeight()
                                     ) {
                                         Text(
-                                            text = program.name,
+                                            text = getProgramDisplayName(program.name),
                                             style = MaterialTheme.typography.titleMedium, // Smaller title
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
@@ -364,7 +367,10 @@ fun SharedTransitionScope.Home(
 
                                         if (exs.size > 3) {
                                             Text(
-                                                text = "+${exs.size - 2} more exercises",
+                                                text = stringResource(
+                                                    R.string.i_more_exercises,
+                                                    exs.size - 2
+                                                ),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                                                 maxLines = 1,
@@ -391,7 +397,7 @@ fun SharedTransitionScope.Home(
                                         ) {
                                             Icon(
                                                 Icons.Outlined.Edit,
-                                                contentDescription = "Edit program",
+                                                contentDescription = stringResource(R.string.edit_program_icon),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                                 modifier = Modifier.size(18.dp)
                                             )
@@ -411,7 +417,7 @@ fun SharedTransitionScope.Home(
                                             ) {
                                                 Icon(
                                                     Icons.Default.RocketLaunch,
-                                                    contentDescription = "Quick start workout",
+                                                    contentDescription = stringResource(R.string.quick_start_icon),
                                                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                                                     modifier = Modifier.size(18.dp)
                                                 )
@@ -448,7 +454,7 @@ fun SharedTransitionScope.Home(
                                 )
                             )
                         }) {
-                            Text("Change programs")
+                            Text(stringResource(R.string.change_programs))
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                     }

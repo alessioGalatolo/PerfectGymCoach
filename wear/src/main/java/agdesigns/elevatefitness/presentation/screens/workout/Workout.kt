@@ -54,6 +54,9 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.TimeText
+import com.agdesignes.shared.BarbellType
+import com.agdesignes.shared.Equipment
+import com.agdesignes.shared.weightAndUnit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -132,7 +135,7 @@ fun Workout(
                     }
                     if (nextUp.isNotBlank()) {
                         Text(
-                            text = "Next up:",
+                            text = stringResource(R.string.next_thing),
                             style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier.padding(horizontal = 16.dp),
                             textAlign = TextAlign.Center
@@ -158,7 +161,7 @@ fun Workout(
                     }, Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)) {
-                        Text(text = "Skip rest", textAlign = TextAlign.Center)
+                        Text(text = stringResource(R.string.skip_rest), textAlign = TextAlign.Center)
                     }
                 }
             } else if (workoutState.exerciseName.isNotEmpty()) {
@@ -184,7 +187,7 @@ fun Workout(
                                     overscrollEffect = rememberOverscrollEffect()
                                 )
                         ) {
-                            Icon(Icons.Filled.Done, contentDescription = "Done")
+                            Icon(Icons.Filled.Done, contentDescription = stringResource(R.string.done_icon))
                         }
                     },
                 ) { contentPadding ->
@@ -213,7 +216,7 @@ fun Workout(
                         }
                         item {
                             ListHeader {
-                                Text("Reps")
+                                Text(stringResource(R.string.reps))
                             }
                         }
                         item {
@@ -232,7 +235,7 @@ fun Workout(
                                         ) {
                                             Icon(
                                                 Icons.Default.Remove,
-                                                contentDescription = "Decrease reps"
+                                                contentDescription = stringResource(R.string.remove_icon_minus_reps)
                                             )
                                         }
                                     }
@@ -259,7 +262,7 @@ fun Workout(
                                         ) {
                                             Icon(
                                                 Icons.Default.Add,
-                                                contentDescription = "Increase reps"
+                                                contentDescription = stringResource(R.string.add_icon_plus_reps)
                                             )
                                         }
                                     }
@@ -268,7 +271,7 @@ fun Workout(
                         }
                         item {
                             ListHeader {
-                                Text("Weight")
+                                Text(stringResource(R.string.weight))
                             }
                         }
                         item {
@@ -287,7 +290,7 @@ fun Workout(
                                         ) {
                                             Icon(
                                                 Icons.Default.Remove,
-                                                contentDescription = "Decrease weight"
+                                                contentDescription = stringResource(R.string.remove_icon_minus_weight)
                                             )
                                         }
                                     }
@@ -314,23 +317,33 @@ fun Workout(
                                         ) {
                                             Icon(
                                                 Icons.Default.Add,
-                                                contentDescription = "Increase weight"
+                                                contentDescription = stringResource(R.string.add_icon_plus_weight)
                                             )
                                         }
                                     }
                                 }
                             }
                         }
-                        if (workoutState.equipment.lowercase().contains("barbell")) {
+                        if (workoutState.equipment == Equipment.BARBELL) {
                             item {
                                 ListHeader {
-                                    Text("Barbell")
+                                    Text(stringResource(R.string.barbell))
                                 }
                             }
                             item {
                                 ArrowSwitcher(
-                                    // FIXME: should get imperial system
-                                    items = List(workoutState.barbellNames.size) { i -> "${workoutState.barbellNames[i]} (${workoutState.barbellSizes[i]} ${if (workoutState.imperialSystem) "lb" else "kg"})" },
+                                    items = BarbellType.entries.mapIndexed { index, type ->
+                                        // if barbell is other, use weight from user
+                                        val weight = if (index == workoutState.tareIndex && type == BarbellType.OTHER)
+                                            workoutState.tareBarbell
+                                        else
+                                            type.weight[workoutState.imperialSystem]!!
+
+                                        stringResource(type.barbellResource) +
+                                                " (${weight} ${if (workoutState.imperialSystem) stringResource(
+                                                    com.agdesignes.shared.R.string.lb) else stringResource(
+                                                    com.agdesignes.shared.R.string.kg)})"
+                                    },
                                     currentIndex = workoutState.tareIndex,
                                     onIndexChanged = { index ->
                                         viewModel.onEvent(WorkoutEvent.ChangeTare(index))
@@ -342,7 +355,7 @@ fun Workout(
                             item {
                                 ListHeader {
                                     Text(
-                                        "Next exercise: ",
+                                        stringResource(R.string.next_exercise),
                                         style = MaterialTheme.typography.labelMedium,
                                         textAlign = TextAlign.Center
                                     )
@@ -369,7 +382,7 @@ fun Workout(
                     CircularProgressIndicator()
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Waiting for exercise data...",
+                        stringResource(R.string.waiting_exercise_data),
                         modifier = Modifier.padding(horizontal = 16.dp),
                         textAlign = TextAlign.Center
                     )

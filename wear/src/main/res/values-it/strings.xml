@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="workout_notification_started_text">Allenamento in corso…</string>
+    <string name="active_workout">Allenamento attivo</string>
+    <string name="stop_workout_notification_text">Interrompi allenamento</string>
+    <string name="launch_activity">Apri app</string>
+    <string name="notification_permission_explanation">Questa app ha bisogno del permesso per mostrare attività in corso (allenamento in corso).</string>
+    <string name="show_permission">Mostra richesta permesso</string>
+    <string name="show_settings">Mostra impostazioni</string>
+    <string name="go_back">Torna indietro</string>
+    <string name="no_workout_detected">Inizia un allenamento sul cellulare per iniziare</string>
+    <string name="phone_icon">Cellulare</string>
+    <string name="open_phone_app">Apri app del cellulare</string>
+    <string name="get_phone_app">Scarica app</string>
+    <string name="workout_detected">Abbiamo rilevato un allenamento in corso dal tuo cellulare</string>
+    <string name="fitness_centre">Centro fitness</string>
+    <string name="switch_to_workout_view">Schermata d\'allenamento</string>
+    <string name="arrowback_icon_previous">Precedente</string>
+    <string name="arrowforward_icon_next">Prossimo</string>
+    <string name="next_thing">Prossimo:</string>
+    <string name="skip_rest">Salta recupero</string>
+    <string name="done_icon">Fatto</string>
+    <string name="reps">Ripetizioni</string>
+    <string name="remove_icon_minus_reps">Diminuisci ripetizioni</string>
+    <string name="add_icon_plus_reps">Aumenta ripetizioni</string>
+    <string name="weight">Peso</string>
+    <string name="remove_icon_minus_weight">Diminuisci peso</string>
+    <string name="add_icon_plus_weight">Aumenta peso</string>
+    <string name="barbell">Bilancere</string>
+    <string name="next_exercise">Prossimo esercizio:</string>
+    <string name="waiting_exercise_data">Caricamento dati esercizio…</string>
+    <string name="exercise_image">Immagine sbiadita esercizio</string>
+</resources>

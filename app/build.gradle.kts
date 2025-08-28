@@ -78,6 +78,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.destinations.core)
     implementation(libs.compose.destinations.bottom.sheet)

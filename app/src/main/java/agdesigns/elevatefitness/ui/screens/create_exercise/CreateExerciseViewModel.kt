@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import com.agdesignes.shared.Equipment
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,7 @@ import javax.inject.Inject
 
 data class ExerciseState(
     val name: String = "",
-    val equipment: Exercise.Equipment = Exercise.Equipment.BARBELL,
+    val equipment: Equipment = Equipment.BARBELL,
     val primaryMuscle: Exercise.Muscle = Exercise.Muscle.ABS,
     val secondaryMuscles: List<Boolean> = List(Exercise.Muscle.entries.size-1) { false },
     val difficulty: Exercise.ExerciseDifficulty = Exercise.ExerciseDifficulty.INTERMEDIATE
@@ -24,7 +25,7 @@ data class ExerciseState(
 sealed class CreateExerciseEvent{
     data class UpdateName(val newName: String): CreateExerciseEvent()
 
-    data class UpdateEquipment(val newEquipment: Exercise.Equipment): CreateExerciseEvent()
+    data class UpdateEquipment(val newEquipment: Equipment): CreateExerciseEvent()
 
     data class UpdateDifficulty(val newDifficulty: Exercise.ExerciseDifficulty): CreateExerciseEvent()
 
@@ -56,10 +57,12 @@ class CreateExerciseViewModel @Inject constructor(private val repository: Reposi
                         repository.addExercise(
                             Exercise(
                                 name = state.value.name,
+                                nameResKey = "",
                                 equipment = state.value.equipment,
                                 primaryMuscle = state.value.primaryMuscle,
                                 secondaryMuscles = secondaryMuscles,
-                                difficulty = state.value.difficulty
+                                difficulty = state.value.difficulty,
+                                userDefined = true
                             )
                         )
                     }

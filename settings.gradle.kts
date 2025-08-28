@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ElevateFitness"
 include(":app", ":wear")
+include(":shared")

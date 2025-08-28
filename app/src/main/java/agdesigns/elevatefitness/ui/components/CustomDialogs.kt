@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.components
 
+import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,7 +50,7 @@ fun InsertNameDialog(
                 toggleDialog()
             },
             title = {
-                Text(text = "Enter ${prompt.lowercase()}")
+                Text(text = stringResource(R.string.enter_name_for, prompt.lowercase()))
             },
             text = {
 
@@ -84,7 +86,7 @@ fun InsertNameDialog(
                         text = ""
                     }
                 ) {
-                    Text("Confirm")
+                    Text(stringResource(R.string.dialog_confirm))
                 }
             },
             dismissButton = {
@@ -93,7 +95,7 @@ fun InsertNameDialog(
                         toggleDialog()
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )
@@ -111,23 +113,23 @@ fun ResumeWorkout(
             onDismissRequest = {
             },
             title = {
-                Text(text = "Resume unfinished workout?")
+                Text(text = stringResource(R.string.resume_unfinished_workout))
             },
             text = {
-               Text("We noticed you did not finish the last workout you started, do you want to finish it now?")
+               Text(stringResource(R.string.resume_workout_info))
             },
             confirmButton = {
                 TextButton(
                     onClick = resumeWorkout
                 ) {
-                    Text("Resume")
+                    Text(stringResource(R.string.resume))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = discardWorkout
                 ) {
-                    Text("Discard workout")
+                    Text(stringResource(R.string.discard_workout))
                 }
             }
         )
@@ -149,11 +151,11 @@ fun CancelWorkoutDialog(
                 toggleDialog()
             },
             title = {
-                Text(text = "Confirm exit from workout?")
+                Text(text = stringResource(R.string.cancel_workout_title))
             },
             text = {
                 Column {
-                    Text(text = "Do you want to cancel the current workout? This will delete the workout but will keep the exercise data if there are any.")
+                    Text(text = stringResource(R.string.cancel_workout_info))
                     if (hasRecords)
                         Row(
                             Modifier
@@ -172,7 +174,7 @@ fun CancelWorkoutDialog(
                                 onCheckedChange = null // null recommended for accessibility with screenreaders
                             )
                             Text(
-                                text = "Also delete recorded exercises",
+                                text = stringResource(R.string.cancel_workout_and_records),
                                 style = MaterialTheme.typography.bodyLarge,
                                 modifier = Modifier.padding(start = 16.dp)
                             )
@@ -188,7 +190,7 @@ fun CancelWorkoutDialog(
                         cancelWorkout()
                     }
                 ) {
-                    Text("Exit workout")
+                    Text(stringResource(R.string.cancel_workout_confirm))
                 }
             },
             dismissButton = {
@@ -197,7 +199,7 @@ fun CancelWorkoutDialog(
                         toggleDialog()
                     }
                 ) {
-                    Text("Keep doing workout")
+                    Text(stringResource(R.string.cancel_workout_cancel))
                 }
             }
         )
@@ -212,7 +214,7 @@ fun InfoDialog(dialogueIsOpen: Boolean, toggleDialogue: () -> Unit, infoText: @C
             onDismissRequest = {
                 toggleDialogue()
             },
-            icon = { Icon(Icons.Outlined.Info, "Info")},
+            icon = { Icon(Icons.Outlined.Info, stringResource(R.string.info))},
             text = {
                 infoText()
             },
@@ -222,7 +224,7 @@ fun InfoDialog(dialogueIsOpen: Boolean, toggleDialogue: () -> Unit, infoText: @C
                         toggleDialogue()
                     }
                 ) {
-                    Text("Ok")
+                    Text(stringResource(R.string.info_dialog_confirm))
                 }
             }
         )
@@ -245,7 +247,7 @@ fun ChangeRepsWeightDialog(
             onDismissRequest = {
                 toggleDialog()
             },
-            title = { Text("Change reps/weight value") },
+            title = { Text(stringResource(R.string.change_reps_weight_title)) },
             text = {
                 Column(Modifier.fillMaxWidth()) {
                     OutlinedTextField(
@@ -253,14 +255,14 @@ fun ChangeRepsWeightDialog(
                         onValueChange = {reps = it},
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        label = { Text("New reps value") }
+                        label = { Text(stringResource(R.string.new_reps_value)) }
                     )
                     OutlinedTextField(
                         value = weight,
                         onValueChange = {weight = it},
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        label = { Text("New weight value") }
+                        label = { Text(stringResource(R.string.new_weight_value)) }
                     )
                 }
             },
@@ -268,7 +270,7 @@ fun ChangeRepsWeightDialog(
                 TextButton(
                     onClick = { toggleDialog() }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             },
             confirmButton = {
@@ -279,7 +281,7 @@ fun ChangeRepsWeightDialog(
                         updateValues(reps.toInt(), weight.toFloat())
                     }
                 ) {
-                    Text("Update values")
+                    Text(stringResource(R.string.change_reps_weight_confirm))
                 }
             }
         )
@@ -305,7 +307,7 @@ fun InputOtherEquipmentDialog(
                 toggleDialog()
             },
             title = {
-                Text(text = "Enter other barbell weight")
+                Text(text = stringResource(R.string.enter_barbell_weight_title))
             },
             text = {
                 TextField(
@@ -343,7 +345,7 @@ fun InputOtherEquipmentDialog(
                     },
                     enabled = text.toFloatOrNull() != null
                 ) {
-                    Text("Confirm")
+                    Text(stringResource(R.string.dialog_confirm))
                 }
             },
             dismissButton = {
@@ -352,7 +354,7 @@ fun InputOtherEquipmentDialog(
                         toggleDialog()
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )
@@ -373,11 +375,11 @@ fun RequestNotificationAccessDialog(
                 toggleDialog()
             },
             title = {
-                Text(text = "Would you like to control your music during your workout?")
+                Text(text = stringResource(R.string.request_notification_access_title))
             },
             text = {
                 Column {
-                    Text(text = "If you want, you can enable this app to show and control your music while your workout is running. However, it needs access to your notification to do so. If you want to allow that, press 'Let's do it!' and look for this app in the list and enable the notification access.")
+                    Text(text = stringResource(R.string.request_notification_access_info))
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -395,7 +397,7 @@ fun RequestNotificationAccessDialog(
                             onCheckedChange = null // null recommended for accessibility with screenreaders
                         )
                         Text(
-                            text = "Don't ask again",
+                            text = stringResource(R.string.don_t_ask_again),
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(start = 16.dp)
                         )
@@ -409,7 +411,7 @@ fun RequestNotificationAccessDialog(
                         toggleDialog()
                     }
                 ) {
-                    Text("Let's do it!")
+                    Text(stringResource(R.string.request_notification_access_confirm))
                 }
             },
             dismissButton = {
@@ -420,7 +422,7 @@ fun RequestNotificationAccessDialog(
                         toggleDialog()
                     }
                 ) {
-                    Text("Not now")
+                    Text(stringResource(R.string.request_notification_access_cancel))
                 }
             }
         )
@@ -441,11 +443,11 @@ fun ResetExerciseProbabilityDialog(
                 toggleDialog()
             },
             title = {
-                Text(text = "Reset exercise probability?")
+                Text(text = stringResource(R.string.reset_exercise_probability_title))
             },
             text = {
                 Column {
-                    Text(text = "By tapping on 'Reset' you will reset the exercise's probability of appearing in newly generated workouts. For a fresh start you can also reset the probability of all the exercises.")
+                    Text(text = stringResource(R.string.reset_exercise_probability_info))
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -463,7 +465,7 @@ fun ResetExerciseProbabilityDialog(
                             onCheckedChange = null // null recommended for accessibility with screenreaders
                         )
                         Text(
-                            text = "Reset all exercises' probability",
+                            text = stringResource(R.string.reset_all_exercises_probability),
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(start = 16.dp)
                         )
@@ -481,7 +483,7 @@ fun ResetExerciseProbabilityDialog(
                         toggleDialog()
                     }
                 ) {
-                    Text("Reset")
+                    Text(stringResource(R.string.reset))
                 }
             },
             dismissButton = {
@@ -490,7 +492,7 @@ fun ResetExerciseProbabilityDialog(
                         toggleDialog()
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )

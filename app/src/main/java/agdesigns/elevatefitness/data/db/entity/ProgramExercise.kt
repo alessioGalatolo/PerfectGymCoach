@@ -1,11 +1,13 @@
 package agdesigns.elevatefitness.data.db.entity
 
 import android.os.Parcelable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
+import com.agdesignes.shared.Equipment
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -44,9 +46,15 @@ data class ProgramExercise (
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String = "",
+    @Deprecated("Ensure variationResKey was resolved before using it")
     val variation: String = "",
+    @ColumnInfo(defaultValue = "")
+    val variationResKey: String = "",
     val supersetExercise: Long? = null
-) : Parcelable
+) : Parcelable {
+    val variationResource: Int
+        get() = getVariation(variationResKey)
+}
 
 @Parcelize
 data class ProgramExerciseReorder (
@@ -66,13 +74,31 @@ data class ProgramExerciseAndInfo (
     val extProgramId: Long,
     val extExerciseId: Long,
     val orderInProgram: Int,
+    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
+    val nameResKey: String, // key of the string resource
+    @Deprecated("Use descriptionResKey instead")
     val description: String,
+    val descriptionResKey: String,
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String,
+    @Deprecated("Use variationResKey instead")
     val variation: String,
+    val variationResKey: String,
     val supersetExercise: Long? = null,
+    @Deprecated("Use imageResKey instead")
     val image: Int,
-    val equipment: Exercise.Equipment
-) : Parcelable
+    val imageResKey: String,
+    val equipment: Equipment,
+    val userDefined: Boolean
+) : Parcelable {
+    val nameResource: Int
+        get() = getNameDescriptionResource(nameResKey)
+    val descriptionResource: Int
+        get() = getNameDescriptionResource(descriptionResKey)
+    val variationResource: Int
+        get() = getVariation(variationResKey)
+    val imageResource: Int
+        get() = getImageResource(imageResKey)
+}

@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -43,9 +44,9 @@ fun CustomizePlanGeneration(
     val totalPageCount = 3
     val pagerState = rememberPagerState(pageCount = { totalPageCount })
     val scope = rememberCoroutineScope()
-    val goalChoice = rememberSaveable { mutableStateOf("") }
-    val expertiseLevel = rememberSaveable { mutableStateOf("") }
-    val workoutSplit = rememberSaveable { mutableStateOf("") }
+    val goalChoice = rememberSaveable { mutableStateOf(WorkoutPlanGoal.HYPERTROPHY) }
+    val expertiseLevel = rememberSaveable { mutableStateOf(WorkoutPlanDifficulty.BEGINNER) }
+    val workoutSplit = rememberSaveable { mutableStateOf(WorkoutPlanSplit.BRO) }
 
     // FIXME: maybe replace with predictivebackhandler?
     BackHandler(pagerState.currentPage > 0) {
@@ -55,13 +56,13 @@ fun CustomizePlanGeneration(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            TopAppBar(title = { Text("Generate a new plan") },
+            TopAppBar(title = { Text(stringResource(R.string.generate_a_new_plan)) },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = "Close"
+                            contentDescription = stringResource(R.string.close_icon)
                         )
                     }
                 })
@@ -79,17 +80,17 @@ fun CustomizePlanGeneration(
                         .padding(horizontal = 16.dp)
                 ) {
                     when (it) {
-                        0 -> goalChoice { choice ->
+                        0 -> goalChoicePage { choice ->
                             goalChoice.value = choice
                             scope.launch { pagerState.animateScrollToPage(1) }
                         }
 
-                        1 -> expertiseLevel { choice ->
+                        1 -> expertiseLevelPage { choice ->
                             expertiseLevel.value = choice
                             scope.launch { pagerState.animateScrollToPage(2) }
                         }
 
-                        2 -> workoutSplit { choice ->
+                        2 -> workoutSplitPage { choice ->
                             workoutSplit.value = choice
                             navigator.navigateUp()
                             navigator.navigate(
@@ -109,35 +110,38 @@ fun CustomizePlanGeneration(
 
 
 @OptIn(ExperimentalFoundationApi::class)
-fun LazyListScope.goalChoice(completeGoal: (String) -> Unit){
+fun LazyListScope.goalChoicePage(completeGoal: (WorkoutPlanGoal) -> Unit){
     val goalImages = mapOf(
-        WorkoutPlanGoal.HYPERTROPHY.goal to R.drawable.cable_curl,
-        WorkoutPlanGoal.STRENGTH.goal to R.drawable.headstand_push_up,
-        WorkoutPlanGoal.ENDURANCE.goal to R.drawable.plank,
-        WorkoutPlanGoal.CARDIO.goal to R.drawable.sit_ups
+        WorkoutPlanGoal.HYPERTROPHY to R.drawable.cable_curl,
+        WorkoutPlanGoal.STRENGTH to R.drawable.headstand_push_up,
+        WorkoutPlanGoal.ENDURANCE to R.drawable.plank,
+        WorkoutPlanGoal.CARDIO to R.drawable.sit_ups
     )
     // fixme: would like this to be a stickyHeader but it is currently bugged
     item {
         Text(
-            "What is your goal when training?",
+            stringResource(R.string.what_is_your_goal_when_training),
             style = MaterialTheme.typography.titleLarge
         )
     }
     items(goalImages.size) { index ->
         val goal = goalImages.keys.elementAt(index)
         val image = goalImages.values.elementAt(index)
-        if (goal == WorkoutPlanGoal.CARDIO.goal || goal == WorkoutPlanGoal.ENDURANCE.goal) {
+        if (goal == WorkoutPlanGoal.CARDIO || goal == WorkoutPlanGoal.ENDURANCE) {
             Card {
                 AsyncImage(
                     model = image,
-                    contentDescription = "$goal image",
+                    contentDescription = stringResource(R.string.goal_i_image, goal),
                     contentScale = ContentScale.Inside,
                     colorFilter = ColorFilter.tint(Color.Black, BlendMode.Color),
                     modifier = Modifier
                         .fillMaxWidth()
                 )
                 Text(
-                    text = "$goal. Not currently available.",
+                    text = stringResource(
+                        R.string.goal_i_not_available,
+                        stringResource(goal.descResource)
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(16.dp)
                 )
@@ -149,13 +153,13 @@ fun LazyListScope.goalChoice(completeGoal: (String) -> Unit){
             }) {
                 AsyncImage(
                     model = image,
-                    contentDescription = "$goal image",
+                    contentDescription = stringResource(R.string.goal_i_image, goal),
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier
                         .fillMaxWidth()
                 )
                 Text(
-                    text = goal,
+                    text = stringResource(goal.descResource),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(16.dp)
                 )
@@ -165,15 +169,15 @@ fun LazyListScope.goalChoice(completeGoal: (String) -> Unit){
 }
 
 @OptIn(ExperimentalFoundationApi::class)
-fun LazyListScope.expertiseLevel(completeExpertise: (String) -> Unit) {
+fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) -> Unit) {
     val expertiseImages = mapOf(
-        WorkoutPlanDifficulty.BEGINNER.expertiseLevel to R.drawable.chest_press,
-        WorkoutPlanDifficulty.INTERMEDIATE.expertiseLevel to R.drawable.deadlift,
-        WorkoutPlanDifficulty.ADVANCED.expertiseLevel to R.drawable.muscle_up
+        WorkoutPlanDifficulty.BEGINNER to R.drawable.chest_press,
+        WorkoutPlanDifficulty.INTERMEDIATE to R.drawable.deadlift,
+        WorkoutPlanDifficulty.ADVANCED to R.drawable.muscle_up
     )
     stickyHeader {
         Text(
-            "What is your expertise level?",
+            stringResource(R.string.what_is_your_expertise_level),
             style = MaterialTheme.typography.titleLarge
         )
     }
@@ -185,13 +189,13 @@ fun LazyListScope.expertiseLevel(completeExpertise: (String) -> Unit) {
         }) {
             AsyncImage(
                 model = image,
-                contentDescription = "$level image",
+                contentDescription = stringResource(R.string.goal_i_image, level),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
             )
             Text(
-                text = level,
+                text = stringResource(level.expertiseResource),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(16.dp)
             )
@@ -201,17 +205,17 @@ fun LazyListScope.expertiseLevel(completeExpertise: (String) -> Unit) {
 
 
 @OptIn(ExperimentalFoundationApi::class)
-fun LazyListScope.workoutSplit(completeSplit: (String) -> Unit) {
+fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
     val workoutImages = mapOf(
-        WorkoutPlanSplit.BRO.split to R.drawable.bench_press,
-        WorkoutPlanSplit.GAINZ.split to R.drawable.generic_barbell,
-        WorkoutPlanSplit.FULL_BODY.split to R.drawable.generic_machine,
-        WorkoutPlanSplit.UPPER_LOWER.split to R.drawable.chest_dip,
+        WorkoutPlanSplit.BRO to R.drawable.bench_press,
+        WorkoutPlanSplit.GAINZ to R.drawable.generic_barbell,
+        WorkoutPlanSplit.FULL_BODY to R.drawable.generic_machine,
+        WorkoutPlanSplit.UPPER_LOWER to R.drawable.chest_dip,
     )
 
     stickyHeader {
         Text(
-            "How many times per week do you want to exercise?",
+            stringResource(R.string.how_many_times_per_week_do_you_want_to_exercise),
             style = MaterialTheme.typography.titleLarge
         )
     }
@@ -224,13 +228,13 @@ fun LazyListScope.workoutSplit(completeSplit: (String) -> Unit) {
         }) {
             AsyncImage(
                 model = image,
-                contentDescription = "$split image",
+                contentDescription = stringResource(R.string.goal_i_image, split),
                 contentScale = ContentScale.FillWidth,
                 modifier = Modifier
                     .fillMaxWidth()
             )
             Text(
-                text = split,
+                text = stringResource(split.splitResource),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(16.dp)
             )

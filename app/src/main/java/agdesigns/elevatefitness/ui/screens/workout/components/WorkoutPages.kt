@@ -35,14 +35,18 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.components.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.components.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.components.InfoDialog
-import agdesigns.elevatefitness.utils.barbellFromWeight
-import agdesigns.elevatefitness.utils.maybeKgToLb
-import agdesigns.elevatefitness.utils.maybeLbToKg
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import com.agdesignes.shared.BarbellType
+import com.agdesignes.shared.Equipment
+import com.agdesignes.shared.barbellResFromWeight
+import com.agdesignes.shared.maybeKgToLb
+import com.agdesignes.shared.maybeLbToKg
+import com.agdesignes.shared.weightAndUnit
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -107,7 +111,9 @@ fun ExercisePage(
                     .wrapContentSize()
                     .weight(1f, false)
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Previous exercise")
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack,
+                    stringResource(R.string.arrowback_icon_previous_ex)
+                )
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -130,7 +136,9 @@ fun ExercisePage(
                     .wrapContentSize()
                     .weight(1f, false)
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowForward, "Next exercise")
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward,
+                    stringResource(R.string.arrowforward_icon_next_ex)
+                )
             }
         }
         HorizontalPager(
@@ -146,7 +154,7 @@ fun ExercisePage(
                     if (workoutExercises[page].note.isNotBlank()) {
                         Text(text = buildAnnotatedString {
                             withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                append("Note: ")
+                                append(stringResource(R.string.note))
                             }
                             append(workoutExercises[page].note)
                         }, modifier = Modifier.align(CenterHorizontally))
@@ -170,14 +178,14 @@ fun ExercisePage(
                         }) {
                             Icon(
                                 if (dislikesExercise) Icons.Default.ThumbDown else Icons.Outlined.ThumbDown,
-                                "Dislike this exercise"
+                                stringResource(R.string.thumbdown_icon_dislike_ex)
                             )
                         }
                         // FIXME: it is not clear that this is info about the exercise, not about the like/dislike
                         IconButton(
                             onClick = { infoDialogOpen = true }
                         ) {
-                            Icon(Icons.Outlined.Info, "Exercise description")
+                            Icon(Icons.Outlined.Info, stringResource(R.string.info_icon_ex_desc))
                         }
                         IconButton(onClick = {
                             if (likesExercise) {
@@ -193,7 +201,7 @@ fun ExercisePage(
                         }) {
                             Icon(
                                 if (likesExercise) Icons.Default.ThumbUp else Icons.Outlined.ThumbUp,
-                                "Like this exercise"
+                                stringResource(R.string.thumbup_icon_like_ex)
                             )
                         }
                     }
@@ -216,8 +224,10 @@ fun ExercisePage(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Current" +
-                                    if (workoutExercises[page].supersetExercise != null) " - Part of superset" else "",
+                            stringResource(R.string.current_exercise) +
+                                    if (workoutExercises[page].supersetExercise != null) stringResource(
+                                        R.string.part_of_superset
+                                    ) else "",
                             Modifier.padding(vertical = 8.dp),
                             fontWeight = FontWeight.Bold
                         )
@@ -227,11 +237,12 @@ fun ExercisePage(
                             enter = fadeIn(),
                             exit = fadeOut()
                         ) {
+                            val currentWorkoutString = stringResource(R.string.current_workout)
                             ExerciseSettingsMenu(changeExercise = {
                                 changeExercise(page, workoutExercises.size)
                                 navigator.navigate(
                                     ExercisesByMuscleDestination(
-                                        programName = "Current workout",
+                                        programName = currentWorkoutString,
                                         workoutId = workoutId,
                                         returnAfterAdding = true
                                     )
@@ -241,7 +252,7 @@ fun ExercisePage(
                             }, addExercise = {
                                 navigator.navigate(
                                     ExercisesByMuscleDestination(
-                                        programName = "Current workout",
+                                        programName = currentWorkoutString,
                                         workoutId = workoutId,
                                         returnAfterAdding = true
                                     )
@@ -263,7 +274,7 @@ fun ExercisePage(
                             // if barbell, allow to add barbell weight (used for volume)
                             AnimatedVisibility(
                                 visible = workoutTimeMillis > 0L &&
-                                        workoutExercises[page].equipment == Exercise.Equipment.BARBELL,
+                                        workoutExercises[page].equipment == Equipment.BARBELL,
                                 enter = slideInVertically() + fadeIn(),
                                 exit = slideOutVertically() + fadeOut()
                             ) {
@@ -272,9 +283,9 @@ fun ExercisePage(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Barbell: ")
+                                    Text(stringResource(R.string.barbell))
                                     val barbellName: String =
-                                            barbellFromWeight(tare, useImperialSystem, false)
+                                            stringResource(barbellResFromWeight(tare)) + " " + weightAndUnit(tare, useImperialSystem, inParenthesis = true)
 
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         var expanded by remember { mutableStateOf(false) }
@@ -305,18 +316,24 @@ fun ExercisePage(
                                                 expanded = expanded,
                                                 onDismissRequest = { expanded = false },
                                             ) {
-                                                ExerciseRecord.BarbellType.entries.forEach { selectionOption ->
-                                                    val fullName = if (selectionOption == ExerciseRecord.BarbellType.OTHER)
-                                                        selectionOption.barbellName + " (Custom value)"
+                                                BarbellType.entries.forEach { selectionOption ->
+                                                    val fullName = if (selectionOption == BarbellType.OTHER)
+                                                        stringResource(
+                                                            R.string.barbell_custom_value,
+                                                            stringResource(selectionOption.barbellResource)
+                                                        )
                                                     else
-                                                        selectionOption.barbellName +
-                                                            " (${selectionOption.weight[useImperialSystem]} ${if (useImperialSystem) "lb" else "kg"})"
+                                                        stringResource(selectionOption.barbellResource) +
+                                                            " (${selectionOption.weight[useImperialSystem]} ${if (useImperialSystem) stringResource(
+                                                                R.string.lb
+                                                            ) else stringResource(R.string.kg)
+                                                            })"
                                                     DropdownMenuItem(
                                                         text = { Text(fullName) },
                                                         onClick = {
                                                             expanded = false
                                                             updateTare(maybeLbToKg(selectionOption.weight[useImperialSystem]!!, useImperialSystem))
-                                                            if (selectionOption == ExerciseRecord.BarbellType.OTHER)
+                                                            if (selectionOption == BarbellType.OTHER)
                                                                 toggleOtherEquipment()
                                                         },
                                                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
@@ -392,7 +409,16 @@ fun ExercisePage(
                                         Text((setCount + 1).toString())
                                     }
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Reps: $repsInRow Weight: $weightInRow " + if(useImperialSystem) "lb" else "kg",
+                                    Text(
+                                        stringResource(
+                                            R.string.reps_weight,
+                                            repsInRow,
+                                            weightInRow,
+                                            if(useImperialSystem)
+                                                stringResource(R.string.lb)
+                                            else
+                                                stringResource(R.string.kg)
+                                        ),
                                         color = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
                                     )
                                 }
@@ -403,7 +429,7 @@ fun ExercisePage(
                                 exit = slideOutVertically() + fadeOut()
                             ) {
                                 TextButton(onClick = addSet) {
-                                    Text("Add set")
+                                    Text(stringResource(R.string.add_set))
                                 }
                             }
                         }
@@ -411,7 +437,7 @@ fun ExercisePage(
                     Spacer(modifier = Modifier.height(8.dp))
                     if (currentExerciseRecords.isNotEmpty()) {
                         Text(
-                            "History",
+                            stringResource(R.string.history),
                             Modifier.padding(bottom = 8.dp),
                             fontWeight = FontWeight.Bold
                         )
@@ -426,12 +452,22 @@ fun ExercisePage(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontStyle = FontStyle.Italic // TODO: add how many days ago
                                 )
-                                if (record.equipment == Exercise.Equipment.BARBELL) {
-                                    Text("Barbell used: " + barbellFromWeight(record.tare, useImperialSystem, true)
+                                if (record.equipment == Equipment.BARBELL) {
+                                    Text(
+                                        stringResource(
+                                            R.string.barbell_used,
+                                            stringResource(barbellResFromWeight(record.tare)),
+                                            weightAndUnit(record.tare, useImperialSystem, true)
+                                        )
                                     )
-                                } else if (record.equipment == Exercise.Equipment.BODY_WEIGHT) {
+                                } else if (record.equipment == Equipment.BODY_WEIGHT) {
                                     // FIXME: bug where bodyweight = 0? <- this may have been fixed with the new state update
-                                    Text("Bodyweight at the time: ${maybeKgToLb(record.tare, useImperialSystem)} " + if(useImperialSystem) "lb" else "kg")
+                                    Text(
+                                        stringResource(
+                                            R.string.bodyweight_at_the_time,
+                                            weightAndUnit(record.tare, useImperialSystem)
+                                        )
+                                    )
                                 }
                                 record.reps.forEachIndexed { index, rep ->
                                     Row(
@@ -457,7 +493,15 @@ fun ExercisePage(
                                         }
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            "Reps: $rep Weight: ${maybeKgToLb(record.weights[index], useImperialSystem)} " + if(useImperialSystem) "lb" else "kg"
+                                            stringResource(
+                                                R.string.reps_weight,
+                                                rep,
+                                                maybeKgToLb(record.weights[index], useImperialSystem),
+                                                if (useImperialSystem)
+                                                    stringResource(R.string.lb)
+                                                else
+                                                    stringResource(R.string.kg)
+                                            )
                                         )
                                     }
                                 }
@@ -466,13 +510,13 @@ fun ExercisePage(
                         Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
                     }
                     // FIXME: works initially, but at some point tapping it doesn't work
-                    // and no more records are shown. This happens if records are odd
+                    //  and no more records are shown. This happens if records are odd
                     if (recordsToShow < currentExerciseRecords.size) {
                         TextButton(
                             onClick = { recordsToShow += 2 },
                             modifier = Modifier.align(CenterHorizontally)
                         ) {
-                            Text("Show older records")
+                            Text(stringResource(R.string.show_older_records))
                         }
                         Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
                     }
@@ -502,12 +546,16 @@ fun WorkoutFinishPage(
         Modifier
             .padding(horizontal = 8.dp)
             .padding(top = 8.dp)){
-        Text("Total workout time: ${DateUtils.formatElapsedTime(workoutTimeMillis / 1000)}", style = MaterialTheme.typography.titleLarge)
+        Text(
+            stringResource(
+                R.string.total_workout_time,
+                DateUtils.formatElapsedTime(workoutTimeMillis / 1000)
+            ), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(32.dp))
-        Text("Don't forget to stretch after you finish!", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.workout_completion_tip), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically){
-            Text("How intense was this workout?"/*, Modifier.weight(1f)*/)
+            Text(stringResource(R.string.how_intense_was_this_workout)/*, Modifier.weight(1f)*/)
             var expanded by remember { mutableStateOf(false) }
             Spacer(Modifier.width(16.dp))
             ExposedDropdownMenuBox(
@@ -526,7 +574,8 @@ fun WorkoutFinishPage(
                             modifier = Modifier
                                 .padding(8.dp)){
                             repeat(WorkoutRecord.WorkoutIntensity.entries.size){
-                                Icon(Icons.Default.FitnessCenter, "Intensity",
+                                Icon(Icons.Default.FitnessCenter,
+                                    stringResource(R.string.fitness_center_icon_intensity),
                                     tint = if (it < workoutIntensity.value.ordinal+1) LocalContentColor.current else Color.Transparent)
                             }
                         }
@@ -564,13 +613,14 @@ fun WorkoutFinishPage(
             }
         }
         Spacer(Modifier.height(16.dp))
+        val currentWorkoutString = stringResource(R.string.current_workout)
         TextButton(onClick = { navigator.navigate(
             ExercisesByMuscleDestination(
-                programName = "Current workout",
+                programName = currentWorkoutString,
                 workoutId = workoutId,
             )
         ) }, modifier = Modifier.align(CenterHorizontally)) {
-            Text("Add exercise to workout")
+            Text(stringResource(R.string.add_exercise_to_workout))
         }
         Spacer(Modifier.height(160.dp))
         if (fabHeight > 0.dp) {
@@ -594,7 +644,7 @@ fun ExerciseSettingsMenu(
         IconButton(onClick = { expanded = true }) {
             Icon(
                 Icons.Default.MoreVert,
-                contentDescription = "More options"
+                contentDescription = stringResource(R.string.morevert_icon_options)
             )
         }
         DropdownMenu(
@@ -602,30 +652,30 @@ fun ExerciseSettingsMenu(
             onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
-                text = { Text("Replace exercise") },
+                text = { Text(stringResource(R.string.replace_exercise)) },
                 onClick = changeExercise,
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Edit,
-                        contentDescription = "Replace exercise"
+                        contentDescription = stringResource(R.string.replace_exercise)
                     )
                 })
             DropdownMenuItem(
-                text = { Text("Skip this time") },
+                text = { Text(stringResource(R.string.skip_exercise_this_workout_only)) },
                 onClick = removeExercise,
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Delete,
-                        contentDescription = "Skip this time"
+                        contentDescription = stringResource(R.string.skip_exercise_this_workout_only)
                     )
                 })
             DropdownMenuItem(
-                text = { Text("Add another exercise") },
+                text = { Text(stringResource(R.string.add_another_exercise)) },
                 onClick = addExercise,
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Add,
-                        contentDescription = "Add another exercise"
+                        contentDescription = stringResource(R.string.add_another_exercise)
                     )
                 })
         }

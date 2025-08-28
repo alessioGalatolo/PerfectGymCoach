@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data.db.entity
 
+import agdesigns.elevatefitness.R
 import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -28,10 +29,17 @@ data class WorkoutRecord(
     val activeTimeSeconds: Long = 0L,
     val calories: Float = 0f // MET value * weight_kg / 60 * n_minutes // MET value 3-6 based on intensity
 ) : Parcelable {
-    enum class WorkoutIntensity(val description: String, val metValue: Float) {
-        HIGH_INTENSITY("High intensity (...)", 6f),  // TODO: add description
-        NORMAL_INTENSITY("Normal intensity (...)", 4.5f),
-        LOW_INTENSITY("Low intensity (...)", 3f)
+    enum class WorkoutIntensity(val descriptionResKey: String, val metValue: Float) {
+        HIGH_INTENSITY("intensities_high", 6f),  // TODO: add description
+        NORMAL_INTENSITY("intensities_medium", 4.5f),
+        LOW_INTENSITY("intensities_low", 3f);
+
+        val descriptionResource: Int
+            get() = when (this) {
+                HIGH_INTENSITY -> R.string.intensities_high
+                NORMAL_INTENSITY -> R.string.intensities_medium
+                LOW_INTENSITY -> R.string.intensities_low
+            }
     }
 }
 

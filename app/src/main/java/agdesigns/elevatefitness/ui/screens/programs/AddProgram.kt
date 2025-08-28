@@ -25,6 +25,8 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
+import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.components.InsertNameDialog
@@ -48,7 +50,7 @@ fun AddProgram(
     val addProgramState by viewModel.state.collectAsState()
     viewModel.onEvent(ProgramsEvent.GetPrograms(planId))
     InsertNameDialog(
-        prompt = "Name of the new program",
+        prompt = stringResource(R.string.new_program_prompt),
         dialogueIsOpen = addProgramState.openAddProgramDialog,
         toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog) },
         insertName = { programName ->
@@ -59,7 +61,7 @@ fun AddProgram(
             ))) }
     )
     InsertNameDialog(
-        prompt = "New name of the program",
+        prompt = stringResource(R.string.rename_program_prompt),
         dialogueIsOpen = addProgramState.openChangeNameDialog,
         toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
         insertName = { viewModel.onEvent(ProgramsEvent.RenameProgram(
@@ -85,12 +87,14 @@ fun AddProgram(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(planName) },
+                title = { Text(
+                    getPlanDisplayName(planName)
+                ) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = stringResource(R.string.go_back_icon)
                         )
                     }
                 },
@@ -105,7 +109,7 @@ fun AddProgram(
             ) {
                 Icon(
                     Icons.Filled.Add,
-                    contentDescription = "Add program",
+                    contentDescription = stringResource(R.string.add_program),
                     modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
                 )
             }
@@ -151,9 +155,11 @@ fun AddProgram(
                                         WorkoutProgramReorder(addProgramState.programs[index-1].programId, programEntry.orderInWorkoutPlan)
                                     )))
                                 }, enabled = index > 0) {
-                                    Icon(Icons.Default.ArrowUpward, "Move program up (changing its order in the plan)")
+                                    Icon(Icons.Default.ArrowUpward,
+                                        stringResource(R.string.move_program_up_info)
+                                    )
                                 }
-                                Text("Day", fontWeight = FontWeight.SemiBold, fontStyle = FontStyle.Italic)
+                                Text(stringResource(R.string.day), fontWeight = FontWeight.SemiBold, fontStyle = FontStyle.Italic)
                                 Text("${programEntry.orderInWorkoutPlan+1}",
                                     fontWeight = FontWeight.SemiBold, fontStyle = FontStyle.Italic)
                                 IconButton(onClick = {
@@ -161,7 +167,9 @@ fun AddProgram(
                                         WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan+1),
                                         WorkoutProgramReorder(addProgramState.programs[index+1].programId, programEntry.orderInWorkoutPlan)
                                     ))) }, enabled = index+1 < addProgramState.programs.size) {
-                                    Icon(Icons.Default.ArrowDownward, "Move program down (changing its order in the plan)")
+                                    Icon(Icons.Default.ArrowDownward,
+                                        stringResource(R.string.move_program_down_info)
+                                    )
                                 }
                             }
                             WorkoutCard(

@@ -22,6 +22,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
+import com.agdesignes.shared.Equipment
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -44,12 +45,12 @@ fun CreateExerciseDialog(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            TopAppBar(title = { Text("Create a new Exercise") },
+            TopAppBar(title = { Text(stringResource(R.string.create_a_new_exercise)) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = "Close"
+                            contentDescription = stringResource(R.string.close_icon)
                         )
                     }
                 }, actions = {
@@ -78,38 +79,42 @@ fun CreateExerciseDialog(
                     OutlinedTextField(
                         value = exerciseState.name,
                         onValueChange = { viewModel.onEvent(CreateExerciseEvent.UpdateName(it)) },
-                        label = { Text("Enter exercise name")},
+                        label = { Text(stringResource(R.string.enter_exercise_name))},
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
                 item {
                     Spacer(Modifier.height(16.dp))
-                    Text("Select equipment")
+                    Text(stringResource(R.string.select_equipment))
                     // Note that Modifier.selectableGroup() is essential to ensure correct accessibility behavior
                     Column(Modifier.selectableGroup()) {
-                        Exercise.Equipment.entries.toTypedArray().slice(1 until Exercise.Equipment.entries.size)
-                            .map { it.equipmentName } .forEachIndexed { index, text ->
+                        Equipment.entries.toTypedArray().slice(1 until Equipment.entries.size)
+                            .map { it.equipmentNameResource } .forEachIndexed { index, textRes ->
                             Row(
                                 Modifier
                                     .fillMaxWidth()
                                     .height(56.dp)
                                     .selectable(
-                                        selected = (text == exerciseState.equipment.equipmentName),
-                                        onClick = { viewModel.onEvent(CreateExerciseEvent.UpdateEquipment(
-                                            Exercise.Equipment.entries[index+1]
-                                        )) },
+                                        selected = (textRes == exerciseState.equipment.equipmentNameResource),
+                                        onClick = {
+                                            viewModel.onEvent(
+                                                CreateExerciseEvent.UpdateEquipment(
+                                                    Equipment.entries[index + 1]
+                                                )
+                                            )
+                                        },
                                         role = Role.RadioButton
                                     )
                                     .padding(horizontal = 16.dp),
                                 verticalAlignment = CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = (text == exerciseState.equipment.equipmentName),
+                                    selected = (textRes == exerciseState.equipment.equipmentNameResource),
                                     onClick = null // null recommended for accessibility with screenreaders
                                 )
                                 Text(
-                                    text = text,
+                                    text = stringResource(textRes),
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 16.dp)
                                 )
@@ -119,29 +124,33 @@ fun CreateExerciseDialog(
                 }
                 item {
                     Spacer(Modifier.height(16.dp))
-                    Text("Select difficulty")
+                    Text(stringResource(R.string.select_difficulty))
                     Column(Modifier.selectableGroup()) {
-                        Exercise.ExerciseDifficulty.entries.map { it.difficulty } .forEachIndexed { index, text ->
+                        Exercise.ExerciseDifficulty.entries.map { it.difficultyResource } .forEachIndexed { index, textRes ->
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
                                         .height(56.dp)
                                         .selectable(
-                                            selected = (text == exerciseState.difficulty.difficulty),
-                                            onClick = { viewModel.onEvent(CreateExerciseEvent.UpdateDifficulty(
-                                                Exercise.ExerciseDifficulty.entries[index]
-                                            )) },
+                                            selected = (textRes == exerciseState.difficulty.difficultyResource),
+                                            onClick = {
+                                                viewModel.onEvent(
+                                                    CreateExerciseEvent.UpdateDifficulty(
+                                                        Exercise.ExerciseDifficulty.entries[index]
+                                                    )
+                                                )
+                                            },
                                             role = Role.RadioButton
                                         )
                                         .padding(horizontal = 16.dp),
                                     verticalAlignment = CenterVertically
                                 ) {
                                     RadioButton(
-                                        selected = (text == exerciseState.difficulty.difficulty),
+                                        selected = (textRes == exerciseState.difficulty.difficultyResource),
                                         onClick = null // null recommended for accessibility with screenreaders
                                     )
                                     Text(
-                                        text = text,
+                                        text = stringResource(textRes),
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.padding(start = 16.dp)
                                     )
@@ -151,30 +160,34 @@ fun CreateExerciseDialog(
                 }
                 item {
                     Spacer(Modifier.height(16.dp))
-                    Text("Select primary muscle")
+                    Text(stringResource(R.string.select_primary_muscle))
                     Column(Modifier.selectableGroup()) {
                         Exercise.Muscle.entries.toTypedArray().slice(1 until Exercise.Muscle.entries.size)
-                            .map { it.muscleName } .forEachIndexed { index, text ->
+                            .map { it.muscleNameResource } .forEachIndexed { index, textRes ->
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
                                         .height(56.dp)
                                         .selectable(
-                                            selected = (text == exerciseState.primaryMuscle.muscleName),
-                                            onClick = { viewModel.onEvent(CreateExerciseEvent.UpdatePrimaryMuscle(
-                                                Exercise.Muscle.entries[index+1]
-                                            )) },
+                                            selected = (textRes == exerciseState.primaryMuscle.muscleNameResource),
+                                            onClick = {
+                                                viewModel.onEvent(
+                                                    CreateExerciseEvent.UpdatePrimaryMuscle(
+                                                        Exercise.Muscle.entries[index + 1]
+                                                    )
+                                                )
+                                            },
                                             role = Role.RadioButton
                                         )
                                         .padding(horizontal = 16.dp),
                                     verticalAlignment = CenterVertically
                                 ) {
                                     RadioButton(
-                                        selected = (text == exerciseState.primaryMuscle.muscleName),
+                                        selected = (textRes == exerciseState.primaryMuscle.muscleNameResource),
                                         onClick = null // null recommended for accessibility with screenreaders
                                     )
                                     Text(
-                                        text = text,
+                                        text = stringResource(textRes),
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.padding(start = 16.dp)
                                     )
@@ -184,17 +197,23 @@ fun CreateExerciseDialog(
                 }
                 item {
                     Spacer(Modifier.height(16.dp))
-                    Text("Select secondary muscle(s)")
+                    Text(stringResource(R.string.select_secondary_muscle_s))
                     Column(Modifier.selectableGroup()) {
                         Exercise.Muscle.entries.toTypedArray().slice(1 until Exercise.Muscle.entries.size)
-                            .map { it.muscleName } .forEachIndexed { index, text ->
+                            .map { it.muscleNameResource } .forEachIndexed { index, textRes ->
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
                                         .height(56.dp)
                                         .selectable(
                                             selected = exerciseState.secondaryMuscles[index],
-                                            onClick = { viewModel.onEvent(CreateExerciseEvent.ToggleSecondaryMuscle(index)) },
+                                            onClick = {
+                                                viewModel.onEvent(
+                                                    CreateExerciseEvent.ToggleSecondaryMuscle(
+                                                        index
+                                                    )
+                                                )
+                                            },
                                             role = Role.RadioButton
                                         )
                                         .padding(horizontal = 5.dp), // manually set-up to align checkbox and radio button
@@ -208,7 +227,7 @@ fun CreateExerciseDialog(
                                             )}
                                     )
                                     Text(
-                                        text = text,
+                                        text = stringResource(textRes),
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.padding(start = 16.dp)
                                     )

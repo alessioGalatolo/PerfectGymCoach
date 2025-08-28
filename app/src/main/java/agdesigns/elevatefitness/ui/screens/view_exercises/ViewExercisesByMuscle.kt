@@ -25,9 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.ui.res.stringResource
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ViewExercisesDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -50,10 +52,11 @@ fun ExercisesByMuscle(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val showSnackbar = rememberSaveable { mutableStateOf(successfulAddExercise) }
+    val snackbarText = stringResource(R.string.snackbar_exercise_added)
     LaunchedEffect(showSnackbar){
         if (showSnackbar.value){
             if (!returnAfterAdding) {
-                snackbarHostState.showSnackbar("Exercise added successfully, you can continue adding")
+                snackbarHostState.showSnackbar(snackbarText)
                 showSnackbar.value = false
             } else {
                 navigator.navigateUp()
@@ -66,13 +69,16 @@ fun ExercisesByMuscle(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            LargeTopAppBar(title = { Text("Add exercise to $programName") },
+            LargeTopAppBar(title = { Text(stringResource(
+                R.string.add_exercise_to_i,
+                getProgramDisplayName(programName)
+            )) },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = stringResource(R.string.go_back_icon)
                         )
                     }
                 }
@@ -116,7 +122,7 @@ fun ExercisesByMuscle(
                                 returnAfterAdding = returnAfterAdding
                             )
                         ) },
-                        placeholder = { Text("Search exercise...") },
+                        placeholder = { Text(stringResource(R.string.search_exercise)) },
                         leadingIcon = {
                             Icon(Icons.Default.Search, contentDescription = null)
                         }
@@ -139,8 +145,8 @@ fun ExercisesByMuscle(
                     ) {
                         Row (Modifier.padding(dimensionResource(R.dimen.card_inner_padding))){
                             Image(
-                                painter = painterResource(it.image),
-                                contentDescription = "Contact profile picture",
+                                painter = painterResource(it.imageRes),
+                                contentDescription = stringResource(R.string.image_highlighting_the_muscle),
                                 modifier = Modifier
                                     // Set image size to 40 dp
                                     .size(80.dp)
@@ -150,7 +156,7 @@ fun ExercisesByMuscle(
 
 
                             Column(modifier = Modifier.align(Alignment.CenterVertically)) {
-                                Text(text = it.muscleName, fontWeight = FontWeight.Bold)
+                                Text(text = stringResource(it.muscleNameResource), fontWeight = FontWeight.Bold)
 //                                Spacer(modifier = Modifier.height(4.dp))
 //                                Text(text = "Some exercise names...") // TODO
                             }

@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.statistics
 
+import agdesigns.elevatefitness.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
@@ -10,6 +11,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord.WorkoutIntensity
 import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import android.util.Log
+import com.agdesignes.shared.Equipment
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -38,14 +40,14 @@ data class StatisticsState(
     val longestStreak: Int = 0,
     val weeklyVolume: List<LineData> = emptyList(),
     val monthlyWorkouts: List<BarData> = emptyList(),
-    val muscleGroupDistribution: List<PieData> = emptyList(),
+    val muscleGroupDistribution: List<Pair<Int, Float>> = emptyList(),
     val topExercises: List<ExerciseStats> = emptyList(),
     val recentPRs: List<PersonalRecord> = emptyList(),
-    val equipmentUsage: List<Pair<String, DonutData>> = emptyList(),
+    val equipmentUsage: List<Pair<Int, DonutData>> = emptyList(),
     val selectedTimeFrame: TimeFrame = TimeFrame.MONTH,
     val allExerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     val allWorkouts: List<WorkoutRecord> = emptyList(),
-    val progressText: String = "Loading records..."
+    val progressTextRes: Int = R.string.stats_loading_generic
 )
 
 data class ExerciseStats(
@@ -64,11 +66,19 @@ data class PersonalRecord(
     val date: ZonedDateTime
 )
 
-enum class TimeFrame(val displayName: String) {
-    WEEK("Week"),
-    MONTH("Month"),
-    YEAR("Year"),
-    ALL_TIME("All Time")
+enum class TimeFrame(val displayResKey: String) {
+    WEEK("timeframes_week"),
+    MONTH("timeframes_month"),
+    YEAR("timeframes_year"),
+    ALL_TIME("timeframes_all_time");
+
+    val displayResource: Int
+        get() = when (this) {
+            WEEK -> R.string.timeframes_week
+            MONTH -> R.string.timeframes_month
+            YEAR -> R.string.timeframes_year
+            ALL_TIME -> R.string.timeframes_all_time
+        }
 }
 
 sealed class StatisticsEvent {
@@ -142,7 +152,7 @@ class StatisticsViewModel @Inject constructor(
                     ZoneId.systemDefault()
                 )
             }
-            _state.update { it.copy(progressText = "Filtering by ${timeFrame.displayName}...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_filtering) }
             val nonEmptyWorkouts = state.value.allWorkouts.filter { it.startDate != null }
                 .filter { it.durationSeconds > 0 }
             val recordList = state.value.allExerciseRecords
@@ -155,7 +165,7 @@ class StatisticsViewModel @Inject constructor(
             }
 
             // Calculate basic metrics
-            _state.update { it.copy(progressText = "Computing stats...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_computing) }
             val totalWorkouts = workoutsDateFiltered.size
             val totalVolume = recordsDateFiltered.sumOf {
                 computeVolume(
@@ -173,21 +183,21 @@ class StatisticsViewModel @Inject constructor(
             } else 0.0
 
             // Calculate streaks
-            _state.update { it.copy(progressText = "Calculating streaks...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_calculating) }
             val (currentStreak, longestStreak) = calculateStreaks(workoutsDateFiltered)
 
             // Generate chart data
-            _state.update { it.copy(progressText = "Summing volumes...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_summing) }
             val weeklyVolume = generateVolumeProgressionData(recordsDateFiltered)
-            _state.update { it.copy(progressText = "Counting workouts...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_counting) }
             val monthlyWorkouts = generateMonthlyWorkoutData(nonEmptyWorkouts)
-            _state.update { it.copy(progressText = "Computing muscle distribution...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_computing_muscle) }
             val muscleDistribution = generateMuscleDistribution(recordsDateFiltered)
-            _state.update { it.copy(progressText = "Deriving top exercises...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_deriving) }
             val topExercises = generateTopExercises(recordsDateFiltered)
-            _state.update { it.copy(progressText = "Getting recent PRs...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_prs) }
             val recentPRs = generateRecentPRs(recordsDateFiltered)
-            _state.update { it.copy(progressText = "Computing equipment usage...") }
+            _state.update { it.copy(progressTextRes = R.string.stats_loading_equipment) }
             val equipmentUsage = generateEquipmentUsage(recordsDateFiltered)
 
             _state.update {
@@ -206,7 +216,7 @@ class StatisticsViewModel @Inject constructor(
                     topExercises = topExercises,
                     recentPRs = recentPRs,
                     equipmentUsage = equipmentUsage,
-                    progressText = "Done!"
+                    progressTextRes = R.string.stats_loading_done
                 )
             }
             Log.d("StatisticsViewModel", "Statistics computed successfully")
@@ -310,8 +320,8 @@ class StatisticsViewModel @Inject constructor(
         .take(5)
     }
 
-    private suspend fun generateEquipmentUsage(records: List<ExerciseRecordAndEquipment>): List<Pair<String, DonutData>> {
-        val equipmentCount = mutableMapOf<Exercise.Equipment, Int>()
+    private suspend fun generateEquipmentUsage(records: List<ExerciseRecordAndEquipment>): List<Pair<Int, DonutData>> {
+        val equipmentCount = mutableMapOf<Equipment, Int>()
 
         records.forEach { record ->
             val exercise = repository.getExercise(record.extExerciseId).first()
@@ -321,7 +331,7 @@ class StatisticsViewModel @Inject constructor(
         }
         return equipmentCount.entries.mapIndexed { index, (equipment, count) ->
             Pair(
-                equipment.equipmentName,
+                equipment.equipmentNameResource,
                 DonutData(
                     value = count.toFloat()
                 )
@@ -329,7 +339,7 @@ class StatisticsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun generateMuscleDistribution(records: List<ExerciseRecordAndEquipment>): List<PieData> {
+    private suspend fun generateMuscleDistribution(records: List<ExerciseRecordAndEquipment>): List<Pair<Int, Float>> {
         val muscleCount = mutableMapOf<Exercise.Muscle, Int>()
 
         records.forEach { record ->
@@ -341,9 +351,9 @@ class StatisticsViewModel @Inject constructor(
 
         val totalCount = muscleCount.values.sum().toFloat()
         return muscleCount.entries.mapIndexed { index, (muscle, count) ->
-            PieData(
-                value = count.toFloat() / totalCount * 100f,
-                label = muscle.muscleName
+            Pair(
+                muscle.muscleNameResource,
+                count.toFloat() / totalCount * 100f,
             )
         }
     }
@@ -386,8 +396,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(60f, 65f),
                 tare = 0f,
                 variation = "Standard",
+                variationResKey = "",
                 rest = listOf(60, 90),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 2L,
@@ -399,8 +410,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(50f),
                 tare = 2f,
                 variation = "Incline",
+                variationResKey = "",
                 rest = listOf(90),
-                equipment = Exercise.Equipment.DUMBBELL
+                equipment = Equipment.DUMBBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 3L,
@@ -412,8 +424,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(100f),
                 tare = 5f,
                 variation = "Wide grip",
+                variationResKey = "",
                 rest = listOf(120),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             ),
 
             // This month
@@ -427,8 +440,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(70f),
                 tare = 2.5f,
                 variation = "Standard",
+                variationResKey = "",
                 rest = listOf(90),
-                equipment = Exercise.Equipment.DUMBBELL
+                equipment = Equipment.DUMBBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 5L,
@@ -440,8 +454,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(80f, 85f),
                 tare = 0f,
                 variation = "Paused",
+                variationResKey = "",
                 rest = listOf(90, 120),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 6L,
@@ -453,8 +468,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(40f),
                 tare = 0f,
                 variation = "Tempo",
+                variationResKey = "",
                 rest = listOf(60),
-                equipment = Exercise.Equipment.MACHINE
+                equipment = Equipment.MACHINE
             ),
 
             // Older but still relevant
@@ -468,8 +484,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(90f),
                 tare = 0f,
                 variation = "Standard",
+                variationResKey = "",
                 rest = listOf(90),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 8L,
@@ -481,8 +498,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(55f),
                 tare = 0f,
                 variation = "Close grip",
+                variationResKey = "",
                 rest = listOf(75),
-                equipment = Exercise.Equipment.DUMBBELL
+                equipment = Equipment.DUMBBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 9L,
@@ -494,8 +512,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(60f, 65f),
                 tare = 2f,
                 variation = "Standard",
+                variationResKey = "",
                 rest = listOf(90, 90),
-                equipment = Exercise.Equipment.CABLES
+                equipment = Equipment.CABLES
             ),
 
             // Variety / Distribution
@@ -509,8 +528,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(100f),
                 tare = 0f,
                 variation = "PR attempt",
+                variationResKey = "",
                 rest = listOf(150),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 11L,
@@ -522,8 +542,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(120f, 130f, 140f),
                 tare = 0f,
                 variation = "Max volume",
+                variationResKey = "",
                 rest = listOf(120, 150, 180),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             ),
 
             // Edge case: old record
@@ -537,8 +558,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(45f),
                 tare = 1f,
                 variation = "Standard",
+                variationResKey = "",
                 rest = listOf(90),
-                equipment = Exercise.Equipment.MACHINE
+                equipment = Equipment.MACHINE
             ),
 
             // Invalid edge cases (included for filtering tests)
@@ -552,8 +574,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(75f),
                 tare = 0f,
                 variation = "Empty set",
+                variationResKey = "",
                 rest = listOf(90),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             ),
             ExerciseRecordAndEquipment(
                 recordId = 14L,
@@ -565,8 +588,9 @@ class StatisticsViewModel @Inject constructor(
                 weights = listOf(),
                 tare = 0f,
                 variation = "Missing data",
+                variationResKey = "",
                 rest = listOf(),
-                equipment = Exercise.Equipment.BARBELL
+                equipment = Equipment.BARBELL
             )
         )
     }

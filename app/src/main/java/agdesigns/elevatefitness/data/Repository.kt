@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
@@ -17,6 +18,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.ArchiveWorkoutPlan
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.RemovePlan
@@ -26,10 +29,14 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
+import agdesigns.elevatefitness.utils.getLocalizedString
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import androidx.annotation.AnyRes
 import androidx.annotation.DrawableRes
+import androidx.datastore.core.DataMigration
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
@@ -40,15 +47,23 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import okio.SYSTEM
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.time.ZonedDateTime
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "settings",
+    produceMigrations = { ctx ->
+        listOf(V1PrefsMigration(ctx))
+    }
+)
 
 @Singleton
 class Repository @Inject constructor(
@@ -57,6 +72,7 @@ class Repository @Inject constructor(
     @ApplicationContext  private val context: Context
 ) {
     private val dataStore = context.dataStore
+    private val dataStoreVersionKey = intPreferencesKey("Data store version")
     private val currentPlan = longPreferencesKey("Current plan")
     private val currentWorkout = longPreferencesKey("Current workout")
     private val userWeight = floatPreferencesKey("User weight")
@@ -172,10 +188,22 @@ class Repository @Inject constructor(
      * WORKOUT PROGRAM
      */
     fun getProgramsMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<ProgramExercise>>> =
-        db.workoutProgramDao.getProgramsMapExercises(planId)
+        db.workoutProgramDao.getProgramsMapExercises(planId).map {
+            it.mapValues {
+                it.value.map {
+                    resolveResources(it)
+                }
+            }
+        }
 
     fun getProgramMapExercises(programId: Long): Flow<Map<WorkoutProgram, List<ProgramExercise>>> =
-        db.workoutProgramDao.getProgramMapExercises(programId)
+        db.workoutProgramDao.getProgramMapExercises(programId).map {
+            it.mapValues {
+                it.value.map {
+                    resolveResources(it)
+                }
+            }
+        }
 
     fun getPrograms(planId: Long) = db.workoutProgramDao.getPrograms(planId)
 
@@ -192,15 +220,23 @@ class Repository @Inject constructor(
     )
 
     fun getProgramExercisesAndInfo(programId: Long): Flow<List<ProgramExerciseAndInfo>> =
-        db.programExerciseDao.getExercisesAndInfo(programId)
+        db.programExerciseDao.getExercisesAndInfo(programId).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
     fun getProgramExercisesAndInfo(programIds: List<Long>): Flow<List<ProgramExerciseAndInfo>> =
-        db.programExerciseDao.getExercisesAndInfo(programIds)
+        db.programExerciseDao.getExercisesAndInfo(programIds).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
-    fun getProgramExercises(programId: Long) = db.programExerciseDao.getExercises(programId)
+    fun getProgramExercises(programId: Long) = db.programExerciseDao.getExercises(programId).map {
+        it.map { exercise -> resolveResources(exercise) }
+    }
 
     fun getProgramExercise(programExerciseId: Long) =
-        db.programExerciseDao.getProgramExercise(programExerciseId)
+        db.programExerciseDao.getProgramExercise(programExerciseId).map {
+            resolveResources(it)
+        }
 
     suspend fun addProgramExercise(exercise: ProgramExercise): Long =
         db.programExerciseDao.insert(exercise)
@@ -214,6 +250,41 @@ class Repository @Inject constructor(
     suspend fun updateExerciseSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>) =
         db.programExerciseDao.updateSuperset(updateExerciseSupersets)
 
+    fun resolveResources(exercise: ProgramExercise): ProgramExercise {
+        if (exercise.variationResKey.isBlank()) {
+            // can either be no variation or user-defined variation
+            // while not currently implemented, user-defined variation will be stored in 'variation'
+            return exercise
+        }
+        return exercise.copy(
+            variation = context.getString(exercise.variationResource)
+        )
+    }
+
+    fun resolveResources(exerciseAndInfo: ProgramExerciseAndInfo): ProgramExerciseAndInfo {
+        val name = if (exerciseAndInfo.userDefined)
+            exerciseAndInfo.name
+        else
+            context.getString(exerciseAndInfo.nameResource)
+        val description = if (exerciseAndInfo.userDefined)
+            exerciseAndInfo.description
+        else
+            context.getString(exerciseAndInfo.descriptionResource)
+        val image = if (exerciseAndInfo.userDefined)
+            R.drawable.finish_workout
+        else
+            exerciseAndInfo.imageResource
+        val variation = if (exerciseAndInfo.variationResKey.isBlank())
+            exerciseAndInfo.variation  // could be user defined
+        else
+            context.getString(exerciseAndInfo.variationResource)
+        return exerciseAndInfo.copy(
+            name = name,
+            description = description,
+            image = image,
+            variation = variation
+        )
+    }
 
     /*
      * WORKOUT EXERCISE
@@ -225,7 +296,9 @@ class Repository @Inject constructor(
         db.workoutExerciseDao.insert(workoutExercises)
 
     fun getWorkoutExercises(workoutId: Long) =
-        db.workoutExerciseDao.getWorkoutExercises(workoutId)
+        db.workoutExerciseDao.getWorkoutExercises(workoutId).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
     suspend fun deleteWorkoutExercise(workoutExerciseId: Long) =
         db.workoutExerciseDao.delete(workoutExerciseId)
@@ -233,30 +306,115 @@ class Repository @Inject constructor(
     suspend fun updateWorkoutExerciseNumber(workoutExerciseReorder: WorkoutExerciseReorder) =
         db.workoutExerciseDao.updateOrder(workoutExerciseReorder)
 
+    fun resolveResources(workoutExercise: WorkoutExercise): WorkoutExercise {
+        val name = if (workoutExercise.userDefined)
+            workoutExercise.name
+        else
+            context.getString(workoutExercise.nameResource)
+        val image = if (workoutExercise.userDefined)
+            R.drawable.finish_workout
+        else
+            workoutExercise.imageResource
+        val variation = if (workoutExercise.variationResKey.isBlank())
+            workoutExercise.variation  // could be user defined
+        else
+            context.getString(workoutExercise.variationResource)
+        val description = if (workoutExercise.userDefined)
+            workoutExercise.description
+        else
+            context.getString(workoutExercise.descriptionResource)
+        return workoutExercise.copy(
+            name = name,
+            image = image,
+            variation = variation,
+            description = description
+        )
+    }
 
     /*
      * EXERCISE RECORD
      */
-    fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId)
+    fun getExerciseRecords(exerciseId: Long) = db.exerciseRecordDao.getRecords(exerciseId).map {
+        it.map { exercise -> resolveResources(exercise) }
+    }
 
-    fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds)
+    fun getExerciseRecords(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecords(exerciseIds).map {
+        it.map { exercise -> resolveResources(exercise) }
+    }
 
-    fun getExerciseRecordsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) = db.exerciseRecordDao.getRecordsInRange(startDate, endDate)
+    fun getExerciseRecordsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) =
+        db.exerciseRecordDao.getRecordsInRange(startDate, endDate).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
-    fun getExerciseRecordsAndEquipment(exerciseIds: List<Long>) = db.exerciseRecordDao.getRecordsWithEquipment(exerciseIds)
+    fun getExerciseRecordsAndEquipment(exerciseIds: List<Long>) =
+        db.exerciseRecordDao.getRecordsWithEquipment(exerciseIds).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
-    fun getExerciseRecordsAndEquipment(exerciseId: Long) = db.exerciseRecordDao.getRecordsWithEquipment(exerciseId)
+    fun getExerciseRecordsAndEquipment(exerciseId: Long) =
+        db.exerciseRecordDao.getRecordsWithEquipment(exerciseId).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
-    fun getAllExerciseRecordsAndEquipment() = db.exerciseRecordDao.getAllRecordsWithEquipment()
+    fun getAllExerciseRecordsAndEquipment() =
+        db.exerciseRecordDao.getAllRecordsWithEquipment().map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
-    fun getWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.getByWorkout(workoutId)
+    fun getWorkoutExerciseRecords(workoutId: Long) =
+        db.exerciseRecordDao.getByWorkout(workoutId).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
     suspend fun deleteWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.deleteByWorkout(workoutId)
 
     // FIXME: bad name
-    fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) = db.exerciseRecordDao.getByWorkoutWithInfo(workoutId)
+    fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) =
+        db.exerciseRecordDao.getByWorkoutWithInfo(workoutId).map {
+            it.map { exercise -> resolveResources(exercise) }
+        }
 
     suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
+
+    fun resolveResources(exerciseRecord: ExerciseRecord): ExerciseRecord {
+        if (exerciseRecord.variationResKey.isBlank()) {
+            return exerciseRecord
+        }
+        return exerciseRecord.copy(
+            variation = context.getString(exerciseRecord.variationResource)
+        )
+    }
+
+    fun resolveResources(exerciseRecord: ExerciseRecordAndEquipment): ExerciseRecordAndEquipment {
+        if (exerciseRecord.variationResKey.isBlank()) {
+            return exerciseRecord
+        }
+        return exerciseRecord.copy(
+            variation = context.getString(exerciseRecord.variationResource)
+        )
+    }
+
+    fun resolveResources(exerciseRecord: ExerciseRecordAndInfo): ExerciseRecordAndInfo {
+        val name = if (exerciseRecord.userDefined)
+            exerciseRecord.name
+        else
+            context.getString(exerciseRecord.nameResource)
+        val image = if (exerciseRecord.userDefined)
+            R.drawable.finish_workout
+        else
+            exerciseRecord.imageResource
+        val variation = if (exerciseRecord.variationResKey.isBlank())
+            exerciseRecord.variation  // could be user defined
+        else
+            context.getString(exerciseRecord.variationResource)
+        return exerciseRecord.copy(
+            name = name,
+            image = image,
+            variation = variation
+        )
+
+    }
 
 
     /*
@@ -283,14 +441,45 @@ class Repository @Inject constructor(
      * EXERCISE
      */
     fun getExercises(muscle: Exercise.Muscle): Flow<List<Exercise>> {
-        return if (muscle == Exercise.Muscle.EVERYTHING) {
+        return (if (muscle == Exercise.Muscle.EVERYTHING) {
             db.exerciseDao.getAllExercises()
         } else {
             db.exerciseDao.getExercises(muscle)
+        }).map {
+            it.map { exercise -> resolveResources(exercise) }
         }
     }
 
-    fun getExercise(exerciseId: Long) = db.exerciseDao.getExercise(exerciseId)
+    fun resolveResources(exercise: Exercise): Exercise {
+        val name = if (exercise.userDefined)
+            exercise.name
+        else
+            context.getString(exercise.nameResource)
+        val description = if (exercise.userDefined)
+            // currently user cannot specify description but if ever allowed, it will be stored here
+            exercise.description
+        else
+            context.getString(exercise.descriptionResource)
+        val image = if (exercise.userDefined)
+            R.drawable.finish_workout
+        else
+            exercise.imageResource
+        val variations = if (exercise.userDefined)
+            exercise.variations
+        else
+            exercise.variationsResource.map {
+                context.getString(it)
+            }
+        return exercise.copy(
+            name = name,
+            description = description,
+            image = image,
+            variations = variations
+        )
+    }
+
+    fun getExercise(exerciseId: Long) =
+        db.exerciseDao.getExercise(exerciseId).map { resolveResources(it) }
 
     suspend fun addExercise(exercise: Exercise) = db.exerciseDao.insert(exercise)
 
@@ -332,18 +521,18 @@ class Repository @Inject constructor(
 
 
     // TODO: move default value outside
-    fun getUserSex(): Flow<Sex> = dataStore.data.map{ Sex.fromName(it[userSex]) }
+    fun getUserSex(): Flow<Sex> = dataStore.data.map{ Sex.fromResKey(it[userSex]) }
 
-    suspend fun setUserSex(newSex: Sex) = dataStore.edit { it[userSex] = newSex.displayName }
-
-    // TODO: move default value outside
-    fun getTheme(): Flow<Theme> = dataStore.data.map{ Theme.fromName(it[theme]) }
-
-    suspend fun setTheme(newTheme: Theme) = dataStore.edit { it[theme] = newTheme.displayName }
-
+    suspend fun setUserSex(newSex: Sex) = dataStore.edit { it[userSex] = newSex.nameResKey }
 
     // TODO: move default value outside
-    fun getUserName(): Flow<String> = dataStore.data.map{ it[userName] ?: "what's your name?" }
+    fun getTheme(): Flow<Theme> = dataStore.data.map{ Theme.fromResKey(it[theme]) }
+
+    suspend fun setTheme(newTheme: Theme) = dataStore.edit { it[theme] = newTheme.nameResKey }
+
+
+    // TODO: move default value outside
+    fun getUserName(): Flow<String> = dataStore.data.map{ it[userName] ?: "" }
 
     suspend fun setUserName(newName: String) = dataStore.edit { it[userName] = newName }
 
@@ -407,6 +596,8 @@ class Repository @Inject constructor(
         val options = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
+        fun Resources.debugName(@AnyRes id: Int) = runCatching { getResourceName(id) }.getOrNull()
+        Log.d("ResCheck", "resId=$resId name=${context.resources.debugName(resId)}")
         BitmapFactory.decodeResource(context.resources, resId, options)
 
         // FIXME: is this enough res?
@@ -451,4 +642,54 @@ class Repository @Inject constructor(
                 instance ?: Repository(workoutDatabase, watchMessageReceiver, context).also { instance = it }
             }
     }
+}
+
+
+// v0 -> v1 datastore migration
+class V1PrefsMigration(
+    private val context: Context
+) : DataMigration<Preferences> {
+    // Keys (same ones you already use)
+    private val dataStoreVersionKey = intPreferencesKey("Data store version")
+    private val userSex = stringPreferencesKey("User sex")
+    private val theme = stringPreferencesKey("Theme")
+
+    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+        val version = currentData[dataStoreVersionKey] ?: 0
+        return version < 1
+    }
+
+    override suspend fun migrate(currentData: Preferences): Preferences {
+        val out = currentData.toMutablePreferences()
+
+        Log.d("V1PrefsMigration", "Migrating")
+        // Map legacy userSex strings (from resources) to canonical enum names
+        val currentUserSex = currentData[userSex].orEmpty()
+        Log.d("V1PrefsMigration", "currentUserSex=$currentUserSex")
+        val sexEnumName = when (currentUserSex) {
+            context.getLocalizedString(R.string.sexes_other, Locale.ENGLISH) -> Sex.OTHER.nameResKey
+            context.getLocalizedString(R.string.sexes_male, Locale.ENGLISH) -> Sex.MALE.nameResKey
+            context.getLocalizedString(R.string.sexes_female, Locale.ENGLISH) -> Sex.FEMALE.nameResKey
+            else -> Sex.OTHER.nameResKey
+        }
+        Log.d("V1PrefsMigration", "sexEnumName=$sexEnumName")
+        out[userSex] = sexEnumName
+
+        // Map legacy theme strings (from resources) to canonical enum names
+        val currentTheme = currentData[theme].orEmpty()
+        Log.d("V1PrefsMigration", "currentTheme=$currentTheme")
+        val themeEnumName = when (currentTheme) {
+            context.getLocalizedString(R.string.themes_system, Locale.ENGLISH) -> Theme.SYSTEM.nameResKey
+            context.getLocalizedString(R.string.themes_dark, Locale.ENGLISH) -> Theme.DARK.nameResKey
+            context.getLocalizedString(R.string.themes_light, Locale.ENGLISH) -> Theme.LIGHT.nameResKey
+            else -> Theme.SYSTEM.nameResKey
+        }
+        Log.d("V1PrefsMigration", "themeEnumName=$themeEnumName")
+        out[theme] = themeEnumName
+
+        out[dataStoreVersionKey] = 1
+        return out
+    }
+
+    override suspend fun cleanUp() { /* no-op */ }
 }

@@ -7,11 +7,18 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import java.time.ZonedDateTime
 
 @Dao
 interface ExerciseRecordDao {
+
+    @Query("SELECT * FROM exerciserecord")
+    fun getAll(): List<ExerciseRecord>
+
+    @Update
+    suspend fun update(exerciseRecord: ExerciseRecord)
 
     @Query(
         "SELECT * FROM exerciserecord " +
@@ -19,7 +26,7 @@ interface ExerciseRecordDao {
     fun getByWorkout(workoutId: Long): Flow<List<ExerciseRecord>>
 
     @Query(
-        "SELECT exerciserecord.*, exercise.name, exercise.image, exercise.equipment " +
+        "SELECT exerciserecord.*, exercise.name, exercise.nameResKey, exercise.image, exercise.imageResKey, exercise.equipment, exercise.userDefined " +
         "FROM exerciserecord " +
         "INNER JOIN exercise ON exerciserecord.extExerciseId = exercise.exerciseId " +
         "WHERE exerciserecord.extWorkoutId LIKE :workoutId")

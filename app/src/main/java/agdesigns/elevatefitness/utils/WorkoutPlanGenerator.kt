@@ -9,6 +9,9 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
+import agdesigns.elevatefitness.data.db.entity.getGeneratedPlanName
+import agdesigns.elevatefitness.data.db.entity.getGeneratedProgramName
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.flow.first
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -141,11 +144,9 @@ suspend fun generatePlan(
 
 
     }
-    val formatter = DateTimeFormatter.ofPattern("d MMM (yyyy)")
     val planId = repository.addPlan(
         WorkoutPlan(
-            name = "${goalChoice.name.lowercase()
-                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }} program ${currentTime.format(formatter)}",
+            name = getGeneratedPlanName(goalChoice, currentTime),
             creationDate = currentTime
         )
     )
@@ -188,7 +189,7 @@ suspend fun generatePlan(
         val programId = repository.addProgram(
             WorkoutProgram(
                 extPlanId = planId,
-                name = day.joinToString(separator = ", ") { it.muscleName },
+                name = getGeneratedProgramName(day),
                 orderInWorkoutPlan = programNumber
             )
         )
@@ -247,7 +248,9 @@ suspend fun generatePlan(
                             extExerciseId = chosenExercise.exerciseId,
                             orderInProgram = exerciseCount++,
                             reps = reps,
-                            rest = rest
+                            rest = rest,
+                            variation = "",
+                            variationResKey = ""
                         )
                     )
                     exerciseForThisMuscle--
@@ -270,7 +273,9 @@ suspend fun generatePlan(
                         extExerciseId = chosenExercise.exerciseId,
                         orderInProgram = exerciseCount++,
                         reps = List(currentSets) { currentReps },
-                        rest = List(currentSets) { currentRest }
+                        rest = List(currentSets) { currentRest },
+                        variation = "",
+                        variationResKey = ""
                     )
                 )
                 if (lastExerciseId != null && shouldPairForSuperset(nonAutoDifficulty, nonAutoSplit, lastExerciseMuscle, muscle, isSameMuscleOkay = true)) {

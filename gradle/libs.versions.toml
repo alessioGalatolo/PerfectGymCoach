@@ -39,6 +39,10 @@ kotlin_android = "2.0.21"
 compose_plugin = "2.0.21"
 ksp = "2.0.21-1.0.25"
 hilt_plugin = "2.49"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+appcompat = "1.6.1"
+material = "1.10.0"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android_application" }
@@ -92,3 +96,7 @@ wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-fou
 wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wear_tooling_preview" }
 core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "core_splashscreen" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }

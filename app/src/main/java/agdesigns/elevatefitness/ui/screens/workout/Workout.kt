@@ -30,8 +30,8 @@ import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.ui.components.*
-import agdesigns.elevatefitness.utils.maybeKgToLb
-import agdesigns.elevatefitness.utils.maybeLbToKg
+import com.agdesignes.shared.maybeKgToLb
+import com.agdesignes.shared.maybeLbToKg
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -128,7 +128,8 @@ fun SharedTransitionScope.Workout(
     }
     var session: MediaController? by remember { mutableStateOf(null) }
     var mediaTitle: String? by remember { mutableStateOf(null) }
-    var mediaArtist: String by remember { mutableStateOf("Artist not available") }
+    val artistNotAvailableString = stringResource(R.string.artist_not_available)
+    var mediaArtist: String by remember { mutableStateOf(artistNotAvailableString) }
     var isPlaying: Boolean by remember { mutableStateOf(false) }
     var artworkBitmap: Bitmap? by remember { mutableStateOf(null) }
     // Show media card and ask user if they want it with actual content
@@ -137,15 +138,19 @@ fun SharedTransitionScope.Workout(
                 && !hasNotificationAccess(context)
                 && !alreadyRequestedPermission
     } }
+    val teaseMediaAccessPrompt = stringResource(R.string.tease_media_access_prompt)
+    val teaseMediaAccessLearnMore = stringResource(R.string.tease_media_access_learn_more)
+    val noMusicPlayingString = stringResource(R.string.no_music_playing)
+    val noMusicPlayingInfo = stringResource(R.string.no_music_playing_info)
     LaunchedEffect(shouldTeaseMediaAccess) {
         if (mediaTitle == null && shouldTeaseMediaAccess) {
-            mediaTitle = "Do you want your playing songs here?"
-            mediaArtist = "Tap to learn more or swipe to dismiss"
-        } else if (!shouldTeaseMediaAccess && mediaTitle == "Do you want your playing songs here?") {
+            mediaTitle = teaseMediaAccessPrompt
+            mediaArtist = teaseMediaAccessLearnMore
+        } else if (!shouldTeaseMediaAccess && mediaTitle == teaseMediaAccessPrompt) {
             // reset if we should not tease anymore (e.g., user says "do not ask again")
             // TODO: check that if user has not granted permission and says "do not ask again", music card disappears
             mediaTitle = null
-            mediaArtist = "Artist not available"
+            mediaArtist = artistNotAvailableString
         }
     }
     DisposableEffect(context) {
@@ -167,7 +172,7 @@ fun SharedTransitionScope.Workout(
 
                             override fun onMetadataChanged(metadata: MediaMetadata?) {
                                 mediaTitle = metadata?.description?.title?.toString()
-                                mediaArtist = metadata?.description?.subtitle?.toString() ?: "Artist not available"
+                                mediaArtist = metadata?.description?.subtitle?.toString() ?: artistNotAvailableString
                                 val newBitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                                     ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
                                 if (newBitmap != null && !newBitmap.sameAs(artworkBitmap)) {
@@ -182,8 +187,8 @@ fun SharedTransitionScope.Workout(
                             ?: session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ART)
                         isPlaying = session!!.playbackState?.state == STATE_PLAYING
                     } else {
-                        mediaTitle = "No music playing"
-                        mediaArtist = "Play some music to see it here"
+                        mediaTitle = noMusicPlayingString
+                        mediaArtist = noMusicPlayingInfo
                     }
                 }
                 delay(100)
@@ -243,7 +248,7 @@ fun SharedTransitionScope.Workout(
     InputOtherEquipmentDialog(
         dialogIsOpen = workoutState.otherEquipmentDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
-        weightUnit = if (workoutState.imperialSystem) "lb" else "kg",
+        weightUnit = if (workoutState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
         updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, workoutState.imperialSystem))) }
     )
 
@@ -279,15 +284,15 @@ fun SharedTransitionScope.Workout(
     }
     val timer = {" " + if (workoutTimeMillis > 0L) DateUtils.formatElapsedTime(workoutTimeMillis / 1000) else "" }
 
-
+    val variation = if ((currentExercise?.variation ?: "").isNotBlank()) " (${currentExercise?.variation})" else ""
     // title for top app bar, do not share bounds for animation
     val titleTopBar = @Composable { Text(
-        currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
+        currentExercise?.name?.plus(variation) ?: stringResource(R.string.end_of_workout),
         overflow = TextOverflow.Ellipsis,
     ) }
     // title below image, share bounds for animation
     val title = @Composable { Text(
-        currentExercise?.name?.plus(currentExercise?.variation) ?: "End of workout",
+        currentExercise?.name?.plus(variation) ?: stringResource(R.string.end_of_workout),
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.sharedBounds(
             sharedStateTitle,
@@ -446,7 +451,7 @@ fun SharedTransitionScope.Workout(
                 IconButton(onClick = onClose) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.close_icon),
                         tint = if (needsDarkColor) Color.Gray else Color.White
                     )
                 }
@@ -464,7 +469,7 @@ fun SharedTransitionScope.Workout(
                         else
                             scope.launch{ pagerState.animateScrollToPage(pagerPageCount-1) }
                         }) {
-                            Text("Finish", color = if (needsDarkColor) Color.Gray else Color.White)
+                            Text(stringResource(R.string.finish), color = if (needsDarkColor) Color.Gray else Color.White)
                         }
                     }
                 }
@@ -489,7 +494,7 @@ fun SharedTransitionScope.Workout(
                                     }
                             }
                             .build(),
-                        "Exercise image",
+                        stringResource(R.string.exercise_image),
                         Modifier
                             .fillMaxWidth()
                             .height(imageHeight)
@@ -551,7 +556,7 @@ fun SharedTransitionScope.Workout(
                     ongoingRecord = ongoingRecord,
                     currentExerciseRecords = recordsToDisplay,
                     exerciseDescription = currentExercise?.description
-                        ?: "Description not available",
+                        ?: stringResource(R.string.exercise_description_not_available),
                     fabHeight = fabHeight,
                     title = title,
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
@@ -563,9 +568,9 @@ fun SharedTransitionScope.Workout(
                             // if already snackbarring, dismiss it before a new one.
                             snackbarHostState.currentSnackbarData?.dismiss()
                             if (probability > 0)
-                                snackbarHostState.showSnackbar("Increasing exercise probability when generating new plans...")
+                                snackbarHostState.showSnackbar(context.getString(R.string.increasing_exercise_probability))
                             else
-                                snackbarHostState.showSnackbar("Decreasing exercise probability when generating new plans...")
+                                snackbarHostState.showSnackbar(context.getString(R.string.decreasing_exercise_probability))
                         }
                         viewModel.onEvent(
                             WorkoutEvent.UpdateExerciseProbability(
@@ -665,9 +670,11 @@ fun SharedTransitionScope.Workout(
                                     if (artworkBitmap != null) {
                                         AsyncImage(
                                             artworkBitmap,
-                                            "Song artwork",
+                                            stringResource(R.string.song_artwork),
                                             contentScale = ContentScale.Crop,
-                                            modifier = Modifier.matchParentSize().blur(16.dp)
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .blur(16.dp)
                                         )
                                         // Dimming scrim (dark overlay)
                                         Box(
@@ -684,7 +691,7 @@ fun SharedTransitionScope.Workout(
                                         ) {
                                             if (artworkBitmap != null) {
                                                 AsyncImage(
-                                                    artworkBitmap, "Song artwork",
+                                                    artworkBitmap, stringResource(R.string.song_artwork),
                                                     Modifier
                                                         .size(48.dp)
                                                         .clip(
@@ -694,7 +701,7 @@ fun SharedTransitionScope.Workout(
                                             } else {
                                                 Icon(
                                                     Icons.Default.MusicNote,
-                                                    "No song artwork",
+                                                    stringResource(R.string.no_song_artwork_available),
                                                     Modifier.size(48.dp)
                                                 )
                                             }
@@ -731,9 +738,13 @@ fun SharedTransitionScope.Workout(
                                                         IconButtonDefaults.IconButtonWidthOption.Wide))
                                                 ) {
                                                     if (isPlaying) {
-                                                        Icon(Icons.Default.Pause, "Pause")
+                                                        Icon(Icons.Default.Pause,
+                                                            stringResource(R.string.pause_icon)
+                                                        )
                                                     } else {
-                                                        Icon(Icons.Default.PlayArrow, "Play")
+                                                        Icon(Icons.Default.PlayArrow,
+                                                            stringResource(R.string.play_icon)
+                                                        )
                                                     }
                                                 }
                                                 FilledTonalIconButton(
@@ -744,7 +755,9 @@ fun SharedTransitionScope.Workout(
                                                         }
                                                     }
                                                 ) {
-                                                    Icon(Icons.Default.SkipNext, "Next track")
+                                                    Icon(Icons.Default.SkipNext,
+                                                        stringResource(R.string.skipnext_icon_track)
+                                                    )
                                                 }
                                             }
                                         }
@@ -779,7 +792,7 @@ fun SharedTransitionScope.Workout(
                         ) {
                             scope.launch {
                                 snackbarHostState.currentSnackbarData?.dismiss()
-                                snackbarHostState.showSnackbar("Please enter valid numbers")
+                                snackbarHostState.showSnackbar(context.getString(R.string.please_enter_valid_numbers))
                             }
                         } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
                             val superExercise =
@@ -842,7 +855,7 @@ fun SharedTransitionScope.Workout(
                 IconButton(onClick = { /* just a placeholder, won't be clicked anyway */}) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.close_icon),
                         tint = if (needsDarkColor) Color.Gray else Color.White
                     )
                 }
@@ -868,7 +881,7 @@ fun SharedTransitionScope.Workout(
                                     }
                             }
                             .build(),
-                        "Exercise image",
+                        stringResource(R.string.exercise_image),
                         Modifier
                             .fillMaxWidth()
                             .height(imageHeight)
@@ -899,43 +912,33 @@ fun SharedTransitionScope.Workout(
                     weights = previewExercise.reps.map { 0f },
                     tare = 0f,
                     variation = previewExercise.variation,
+                    variationResKey = previewExercise.variationResKey,
                     rest = previewExercise.rest,
                     equipment = previewExercise.equipment
                 )
+                val exampleExercise = WorkoutExercise(
+                    workoutExerciseId = 0L,
+                    extWorkoutId = 0L,
+                    extProgramExerciseId = 0L,
+                    extExerciseId = 0L,
+                    name = previewExercise.name,
+                    nameResKey = previewExercise.nameResKey,
+                    image = previewExercise.image,
+                    imageResKey = previewExercise.imageResKey,
+                    description = previewExercise.description,
+                    descriptionResKey = previewExercise.descriptionResKey,
+                    equipment = previewExercise.equipment,
+                    orderInProgram = previewExercise.orderInProgram,
+                    reps = previewExercise.reps,
+                    rest = previewExercise.rest,
+                    note = previewExercise.note,
+                    variation = previewExercise.variation,
+                    variationResKey = previewExercise.variationResKey,
+                    supersetExercise = previewExercise.supersetExercise
+                )
                 val workoutExercisesExample = listOf(
-                    WorkoutExercise(
-                        workoutExerciseId = 0L,
-                        extWorkoutId = 0L,
-                        extProgramExerciseId = 0L,
-                        extExerciseId = 0L,
-                        name = previewExercise.name,
-                        image = previewExercise.image,
-                        description = previewExercise.description,
-                        equipment = previewExercise.equipment,
-                        orderInProgram = previewExercise.orderInProgram,
-                        reps = previewExercise.reps,
-                        rest = previewExercise.rest,
-                        note = previewExercise.note,
-                        variation = previewExercise.variation,
-                        supersetExercise = previewExercise.supersetExercise
-                    ),
-                    WorkoutExercise(
-                        workoutExerciseId = 0L,
-                        extWorkoutId = 0L,
-                        extProgramExerciseId = 0L,
-                        extExerciseId = 0L,
-                        name = previewExercise.name,
-                        image = previewExercise.image,
-                        description = previewExercise.description,
-                        equipment = previewExercise.equipment,
-                        orderInProgram = previewExercise.orderInProgram,
-                        reps = previewExercise.reps,
-                        rest = previewExercise.rest,
-                        note = previewExercise.note,
-                        variation = previewExercise.variation,
-                        supersetExercise = previewExercise.supersetExercise
-                    )
-
+                    exampleExercise,
+                    exampleExercise
                 )
                 ExercisePage(
                     bottomPadding = bottomPadding,
@@ -987,7 +990,7 @@ fun SharedTransitionScope.Workout(
                         IconButton(onClick = { navigator.navigateUp() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Go back"
+                                contentDescription = stringResource(R.string.go_back_icon)
                             )
                         }
                     },
@@ -1003,25 +1006,28 @@ fun SharedTransitionScope.Workout(
                     SmallFloatingActionButton(onClick = {
                         navigator.navigate(
                             ExercisesByMuscleDestination(
-                                programName = "Current and future workouts",  // FIXME: all workouts?
+                                programName = context.getString(R.string.current_and_future_workouts),  // FIXME: all workouts?
                                 workoutId = workoutState.workoutId,
                                 programId = programId
                             )
                         )
                     }, Modifier.padding(bottom = 24.dp),
                         containerColor = MaterialTheme.colorScheme.secondary) {
-                        Icon(Icons.Default.Edit, "Add an exercise to current and future workouts of this program")
+                        Icon(Icons.Default.Edit,
+                            stringResource(R.string.add_an_exercise_to_current_and_future_workouts_of_this_program)
+                        )
                     }
                     LargeFloatingActionButton(onClick = {
                         navigator.navigate(
                             ExercisesByMuscleDestination(
-                                programName = "Current workout",
+                                programName = context.getString(R.string.current_workout),
                                 workoutId = workoutState.workoutId,
                             )
                         )
                     }) {
                         Icon(
-                            Icons.Default.Add, "Add an exercise to current workout",
+                            Icons.Default.Add,
+                            stringResource(R.string.add_an_exercise_to_current_workout),
                             Modifier.size(FloatingActionButtonDefaults.LargeIconSize)
                         )
                     }

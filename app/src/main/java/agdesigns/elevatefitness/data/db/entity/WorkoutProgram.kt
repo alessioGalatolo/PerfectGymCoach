@@ -1,6 +1,8 @@
 package agdesigns.elevatefitness.data.db.entity
 
 import android.os.Parcelable
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
@@ -27,6 +29,25 @@ data class WorkoutProgram(
     val orderInWorkoutPlan: Int,
     val name: String
 ) : Parcelable
+
+// generated programs should be named with this + comma separated muscleResKeys
+const val GENERATED_PROGRAM_PREFIX = "[GENERATED PROGRAM] "
+fun getGeneratedProgramName(muscles: List<Exercise.Muscle>): String {
+    return GENERATED_PROGRAM_PREFIX + muscles.joinToString(", ") { it.muscleResKey }
+}
+
+@Suppress("SimplifiableCallChain") // if we simplify, stringResource won't work
+@Composable
+fun getProgramDisplayName(name: String): String {
+    // check if generated program, otherwise return original name
+    return if (name.startsWith(GENERATED_PROGRAM_PREFIX)) {
+        name.removePrefix(GENERATED_PROGRAM_PREFIX).split(", ").map {
+            stringResource(getMuscleResource(it))
+        }.joinToString(", ")
+    } else {
+        name
+    }
+}
 
 @Parcelize
 data class WorkoutProgramRename(

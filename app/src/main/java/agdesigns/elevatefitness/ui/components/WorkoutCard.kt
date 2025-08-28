@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.components
 
+import agdesigns.elevatefitness.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,12 +24,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
@@ -59,7 +62,8 @@ fun WorkoutCard(
                 onClick = {
                     onCardClick(
                         exercises.getOrNull(pagerState.currentPage)
-                    ) },
+                    )
+                },
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     expanded = true
@@ -84,7 +88,7 @@ fun WorkoutCard(
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
                                 model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
-                                contentDescription = "Image of the exercise",
+                                contentDescription = stringResource(R.string.exercise_image),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -105,7 +109,7 @@ fun WorkoutCard(
             }
             Row{
                 Text(
-                    text = program.name,
+                    text = getProgramDisplayName(program.name),
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
@@ -119,23 +123,31 @@ fun WorkoutCard(
                 val exerciseText = it.name + it.variation
                 Text(text = exerciseText,
                     // exerciseModifier needs to go after because we're adding padding
-                    modifier = Modifier.padding(horizontal = 8.dp).then(modifier))
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .then(modifier))
                 Text(text = buildAnnotatedString {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append("Sets: ")
+                        append(stringResource(R.string.sets))
+                        append(": ")
                     }
                     append(it.reps.size.toString())
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(" • Reps: ")
+                        append(" • ")
+                        append(stringResource(R.string.reps))
+                        append(": ")
                     }
                     append(it.reps.joinToString(", "))
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(" • Rest: ")
+                        append(" • ")
+                        append(stringResource(R.string.rest))
+                        append(": ")
                     }
                     append(it.rest.joinToString("s, ") + "s")
                     if (it.note.isNotBlank()) {
                         withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                            append(" • Note: ")
+                            append(" • ")
+                            append(stringResource(R.string.note))
                         }
                         append(it.note)
                     }
@@ -164,9 +176,9 @@ fun WorkoutCard(
                         modifier = Modifier
                             .padding(8.dp)
                     ) {
-                        Icon(Icons.Default.RocketLaunch, "Quick start workout")
+                        Icon(Icons.Default.RocketLaunch, stringResource(R.string.quick_start_icon))
                         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                        Text("Quick start")
+                        Text(stringResource(R.string.quick_start))
                     }
                 }
                 Row (
@@ -183,7 +195,7 @@ fun WorkoutCard(
                                 )
                             )
                         }) {
-                            Icon(Icons.Outlined.Edit, "Edit program")
+                            Icon(Icons.Outlined.Edit, stringResource(R.string.edit_icon_program))
                         }
                     } else {
                         IconButton(onClick = {
@@ -193,7 +205,7 @@ fun WorkoutCard(
                                 )
                             )
                         }) {
-                            Icon(Icons.Outlined.PlayCircle, "Start workout")
+                            Icon(Icons.Outlined.PlayCircle, stringResource(R.string.start_workout))
                         }
                         Box(
                             modifier = Modifier.wrapContentSize()
@@ -201,7 +213,7 @@ fun WorkoutCard(
                             IconButton(onClick = { expanded = true }) {
                                 Icon(
                                     Icons.Default.MoreVert,
-                                    contentDescription = "More options",
+                                    contentDescription = stringResource(R.string.morevert_icon_options),
                                 )
                             }
                             DropdownMenu(
@@ -226,7 +238,7 @@ fun WorkoutCard(
 //                                        )
 //                                    })
                                 DropdownMenuItem(
-                                    text = { Text("Edit") },
+                                    text = { Text(stringResource(R.string.edit)) },
                                     onClick = {
                                         navigator.navigate(
                                             AddProgramExerciseDestination(
@@ -239,12 +251,12 @@ fun WorkoutCard(
                                     leadingIcon = {
                                         Icon(
                                             Icons.Outlined.Edit,
-                                            contentDescription = "Edit program"
+                                            contentDescription = stringResource(R.string.edit_icon_program)
                                         )
                                     })
                                 if (onRename != null) {
                                     DropdownMenuItem(
-                                        text = { Text("Rename") },
+                                        text = { Text(stringResource(R.string.rename)) },
                                         onClick = {
                                             onRename()
                                             expanded = false
@@ -252,14 +264,14 @@ fun WorkoutCard(
                                         leadingIcon = {
                                             Icon(
                                                 Icons.Outlined.DriveFileRenameOutline,
-                                                contentDescription = "Rename"
+                                                contentDescription = stringResource(R.string.rename_icon_program)
                                             )
                                         }
                                     )
                                 }
                                 if (onDelete != null) {
                                     DropdownMenuItem(
-                                        text = { Text("Delete") },
+                                        text = { Text(stringResource(R.string.delete)) },
                                         onClick = {
                                             onDelete()
                                             expanded = false
@@ -267,7 +279,7 @@ fun WorkoutCard(
                                         leadingIcon = {
                                             Icon(
                                                 Icons.Outlined.Delete,
-                                                contentDescription = "Delete program"
+                                                contentDescription = stringResource(R.string.delete_icon_program)
                                             )
                                         }
                                     )

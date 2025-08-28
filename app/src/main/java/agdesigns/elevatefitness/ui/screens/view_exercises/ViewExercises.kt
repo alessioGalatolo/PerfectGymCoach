@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.data.db.entity.Exercise.Equipment
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.ExercisesEvent
@@ -47,6 +46,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
 import com.ramcosta.composedestinations.generated.destinations.CreateExerciseDialogDestination
@@ -54,6 +54,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.agdesignes.shared.Equipment
 import kotlinx.coroutines.launch
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
@@ -98,12 +99,12 @@ fun ViewExercises(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(Exercise.Muscle.entries[muscleOrdinal].muscleName) },
+                title = { Text(stringResource(Exercise.Muscle.entries[muscleOrdinal].muscleNameResource)) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = stringResource(R.string.go_back_icon)
                         )
                     }
                 },
@@ -140,7 +141,7 @@ fun ViewExercises(
                                             showSearchResultOnMainScreen = true
                                         }
                                     },
-                                    placeholder = { Text("Search exercise...") },
+                                    placeholder = { Text(stringResource(R.string.search_exercise)) },
                                     leadingIcon = {
                                         if (searchBarState.currentValue == SearchBarValue.Expanded) {
                                             IconButton(
@@ -150,10 +151,15 @@ fun ViewExercises(
                                                         showSearchResultOnMainScreen = false
                                                 } }
                                             ) {
-                                                Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                                                Icon(
+                                                    Icons.AutoMirrored.Default.ArrowBack,
+                                                    contentDescription = stringResource(R.string.go_back_icon)
+                                                )
                                             }
                                         } else {
-                                            Icon(Icons.Default.Search, contentDescription = null)
+                                            Icon(Icons.Default.Search, contentDescription = stringResource(
+                                                R.string.search_icon
+                                            ))
                                         }
                                     },
                                     trailingIcon = {
@@ -162,7 +168,9 @@ fun ViewExercises(
                                                 textFieldState.clearText()
                                                 showSearchResultOnMainScreen = false
                                             }) {
-                                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                                                Icon(Icons.Default.Close, contentDescription = stringResource(
+                                                    R.string.close_icon_clear_textfield
+                                                ))
                                             }
                                         }
                                     }
@@ -249,9 +257,9 @@ fun ViewExercises(
                                     )
                                 }
                             ) {
-                                Icon(Icons.Default.Add, "Create exercise")
+                                Icon(Icons.Default.Add, stringResource(R.string.create_a_new_exercise))
                                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text("Create exercise")
+                                Text(stringResource(R.string.create_a_new_exercise))
                             }
                         }
                     }
@@ -264,7 +272,8 @@ fun ViewExercises(
                     enter = fadeIn() + scaleIn(),
                     exit = fadeOut() + scaleOut()
                 ) {
-                    Image(painterResource(id = longPressImage.intValue), "Bigger exercise image",
+                    Image(painterResource(id = longPressImage.intValue),
+                        stringResource(R.string.bigger_exercise_image),
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp)))
@@ -305,12 +314,12 @@ fun EquipmentFilterChips(
                         filterExerciseEquipment(Equipment.EVERYTHING)
                     }
                 },
-                label = { Text(equipment.equipmentName) },
+                label = { Text(stringResource(equipment.equipmentNameResource)) },
                 leadingIcon = if (equipment == exercisesState.equipToFiler) {
                     {
                         Icon(
                             imageVector = Icons.Default.Done,
-                            contentDescription = "Selected",
+                            contentDescription = stringResource(R.string.done_icon_item_selected),
                             modifier = Modifier.size(FilterChipDefaults.IconSize)
                         )
                     }
@@ -361,10 +370,10 @@ fun LazyItemScope.ExerciseCard(
                 .crossfade(true)
                 .build(),
             contentScale = ContentScale.Crop,
-            contentDescription = "Exercise image",
+            contentDescription = stringResource(R.string.exercise_image),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4)
+                .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4)
                 .align(Alignment.CenterHorizontally)
                 .clip(RoundedCornerShape(12.dp))
         )
@@ -373,26 +382,33 @@ fun LazyItemScope.ExerciseCard(
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = buildAnnotatedString {
                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                    append("Primary muscle: ")
+                    append(stringResource(R.string.primary_muscle))
                 }
-                append(exercise.primaryMuscle.muscleName)
+                append(stringResource(exercise.primaryMuscle.muscleNameResource))
             })
             if (exercise.secondaryMuscles.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
+                // don't simplify call chain, won't be able to use stringResource
+                val secondaryMuscles = exercise.secondaryMuscles.map {
+                    stringResource(it.muscleNameResource)
+                }.joinToString(
+                    ", "
+                )
                 Text(text = buildAnnotatedString {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append("Secondary muscles: ")
+                        append(stringResource(R.string.secondary_muscles))
                     }
-                    append(exercise.secondaryMuscles.joinToString(
-                        ", "
-                    ) { it.muscleName })
+                    append(secondaryMuscles)
                 })
             }
             // TODO: add option to have variations already expanded
             if (exercise.variations.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row (Modifier.fillMaxWidth()){
-                    Text(text = "${exercise.variations.size}+ variations available",
+                    Text(text = stringResource(
+                        R.string.i_variations_available,
+                        exercise.variations.size
+                    ),
                         fontStyle = FontStyle.Italic
                     )
                 }

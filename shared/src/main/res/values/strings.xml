@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kg">kg</string>
+    <string name="lb">lb</string>
+    <string name="barbells_light_ez_curl_bar">Light EZ curl bar</string>
+    <string name="barbells_ez_curl_bar">EZ curl bar</string>
+    <string name="barbells_young_s_olympic_bar">Young\'s olympic bar</string>
+    <string name="barbells_women_s_olympic_bar">Women\'s olympic bar</string>
+    <string name="barbells_men_s_olympic_bar">Men\'s olympic bar</string>
+    <string name="barbells_squat_bar">Squat bar</string>
+    <string name="barbells_other">Other</string>
+    <string name="equipments_see_all">See all</string>
+    <string name="equipments_barbell">Barbell</string>
+    <string name="equipments_body_weight">Body weight</string>
+    <string name="equipments_cables">Cables</string>
+    <string name="equipments_dumbbell">Dumbbell</string>
+    <string name="equipments_machine">Machine</string>
+</resources>

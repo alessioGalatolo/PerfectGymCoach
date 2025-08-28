@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.statistics
 
+import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import coil3.compose.AsyncImage
@@ -61,7 +63,7 @@ fun ExerciseStats(
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = stringResource(R.string.go_back_icon)
                         )
                     }
                 },
@@ -71,16 +73,18 @@ fun ExerciseStats(
                 val listState = rememberLazyListState()
 
                 // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
-                val stickyHeaders2Id = mapOf(
-                    Pair(state.exercise!!.name, Int.MAX_VALUE),
-                    Pair("Volume Progression", Int.MAX_VALUE - 1),
-                    Pair("Max Weight Lifted", Int.MAX_VALUE - 2),
-                    Pair("Average Weight Lifted", Int.MAX_VALUE - 3),
-                    Pair("Max Reps Done", Int.MAX_VALUE - 4),
-                    Pair("Average Reps Done", Int.MAX_VALUE - 5),
-                    Pair("One Rep Max", Int.MAX_VALUE - 6),
-                    Pair("History", Int.MAX_VALUE - 7)
+                val headers = listOf(
+                    stringResource(R.string.es_header0_volume_progression),
+                    stringResource(R.string.es_header1_max_weight_lifted),
+                    stringResource(R.string.es_header2_average_weight_lifted),
+                    stringResource(R.string.es_header3_max_reps_done),
+                    stringResource(R.string.es_header4_average_reps_done),
+                    stringResource(R.string.es_header5_one_rep_max),
+                    stringResource(R.string.es_header6_history)
                 )
+                val stickyHeaders2Id = headers.mapIndexed { index, header ->
+                    Pair(header, Int.MAX_VALUE - index)
+                }.toMap()
                 val id2StickyHeader = stickyHeaders2Id.entries.associate { (k, v) -> v to k }
                 var lastVisibleKey by remember { mutableIntStateOf(Int.MAX_VALUE) }
                 // Monitor visibility changes
@@ -108,7 +112,7 @@ fun ExerciseStats(
                     item {
                         AsyncImage(
                             state.exercise!!.image,
-                            "Exercise image",
+                            stringResource(R.string.exercise_image),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp)
@@ -116,41 +120,46 @@ fun ExerciseStats(
                         )
                     }
                     if (state.exerciseRecords.isNotEmpty()) {
+                        // Volume progression
                         PlotStat(
-                            "Volume Progression",
-                            stickyHeaders2Id["Volume Progression"]!!,
+                            headers[0],
+                            stickyHeaders2Id[headers[0]]!!,
                             state.volumeProgression
                         )
+                        // max weights lifted
                         PlotStat(
-                            "Max Weight Lifted",
-                            stickyHeaders2Id["Max Weight Lifted"]!!,
+                            headers[1],
+                            stickyHeaders2Id[headers[1]]!!,
                             state.maxWeights.zip(state.volumeProgression) { maxWeight, lineData ->
                                 LineData(
                                     lineData.x,
                                     maxWeight
                                 )
                             })
+                        // average weights lifted
                         PlotStat(
-                            "Average Weight Lifted",
-                            stickyHeaders2Id["Average Weight Lifted"]!!,
+                            headers[2],
+                            stickyHeaders2Id[headers[2]]!!,
                             state.avgWeight.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
                                     maxRep
                                 )
                             })
+                        // max reps done
                         PlotStat(
-                            "Max Reps Done",
-                            stickyHeaders2Id["Max Reps Done"]!!,
+                            headers[3],
+                            stickyHeaders2Id[headers[3]]!!,
                             state.maxReps.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
                                     maxRep
                                 )
                             })
+                        // average reps done
                         PlotStat(
-                            "Average Reps Done",
-                            stickyHeaders2Id["Average Reps Done"]!!,
+                            headers[4],
+                            stickyHeaders2Id[headers[4]]!!,
                             state.avgReps.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
@@ -158,14 +167,18 @@ fun ExerciseStats(
                                 )
                             })
                         if (state.oneRepMaxs.isNotEmpty()) {
-                            item (key = stickyHeaders2Id["One Rep Max"]!!) {
+                            // one rep max
+                            item (key = stickyHeaders2Id[headers[5]]!!) {
                                 Text(
-                                    "One Rep Max",
+                                    headers[5],
                                     style = MaterialTheme.typography.headlineSmall,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Medium,
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .padding(top = 8.dp)
+                                        .fillMaxWidth()
                                 )
                             }
                             item {
@@ -217,7 +230,7 @@ fun ExerciseStats(
                                 ) {
                                     if (selectedValue.isNotEmpty()) {
                                         Text(
-                                            "Selected value: $selectedValue",
+                                            stringResource(R.string.selected_value_i, selectedValue),
                                             style = MaterialTheme.typography.titleMedium,
                                             modifier = Modifier.padding(16.dp)
                                         )
@@ -246,7 +259,7 @@ fun ExerciseStats(
                                     } else {
                                         Box(Modifier.height(200.dp), contentAlignment = Alignment.Center) {
                                             Text(
-                                                "Keep going! Once you have more than one record, you will see key statistics here",
+                                                stringResource(R.string.too_few_records_for_stats),
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 modifier = Modifier.padding(16.dp),
                                                 textAlign = TextAlign.Center
@@ -257,21 +270,24 @@ fun ExerciseStats(
                             }
                         }
                         // FIXME: history does not stick
-                        item (key = stickyHeaders2Id["History"]!!) {
+                        item (key = stickyHeaders2Id[headers[6]]!!) {
                             Text(
-                                "History",
+                                headers[6],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         ExerciseRecordsList(state.imperialSystem, state.exerciseRecords)
                     } else {
                         item {
                             Text(
-                                "No records found",
+                                stringResource(R.string.empty_history),
                                 style = MaterialTheme.typography.bodyLarge,
                                 modifier = Modifier.padding(16.dp)
                             )
@@ -292,7 +308,10 @@ fun LazyListScope.PlotStat(name: String, stickyKey: Int, data: List<LineData>) {
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
             )
         }
         item {
@@ -302,7 +321,7 @@ fun LazyListScope.PlotStat(name: String, stickyKey: Int, data: List<LineData>) {
             ) {
                 if (selectedValue.isNotEmpty()) {
                     Text(
-                        "Selected value: $selectedValue",
+                        stringResource(R.string.selected_value_i, selectedValue),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -325,7 +344,7 @@ fun LazyListScope.PlotStat(name: String, stickyKey: Int, data: List<LineData>) {
                 } else {
                     Box(Modifier.height(200.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            "Keep going! Once you have more than one record, you will see key statistics here",
+                            stringResource(R.string.too_few_records_for_stats),
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(16.dp),
                             textAlign = TextAlign.Center

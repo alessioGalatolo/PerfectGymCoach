@@ -26,8 +26,8 @@ import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.components.GroupedCard
 import agdesigns.elevatefitness.ui.components.InfoDialog
-import agdesigns.elevatefitness.utils.maybeKgToLb
-import agdesigns.elevatefitness.utils.maybeLbToKg
+import com.agdesignes.shared.maybeKgToLb
+import com.agdesignes.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -108,7 +108,7 @@ fun Profile(
 
         // Personal Information Section
         item {
-            ProfileSection(title = "Personal Information") {
+            ProfileSection(title = stringResource(R.string.personal_information_title)) {
                 PersonalInfoContent(
                     profileState = profileState,
                     editYear = editYear,
@@ -142,7 +142,7 @@ fun Profile(
 
         // Physical Measurements Section
         item {
-            ProfileSection(title = "Physical Measurements") {
+            ProfileSection(title = stringResource(R.string.physical_measurements_title)) {
                 PhysicalMeasurementsContent(
                     profileState = profileState,
                     viewModel = viewModel,
@@ -155,7 +155,7 @@ fun Profile(
 
         // Preferences Section
         item {
-            ProfileSection(title = "Preferences") {
+            ProfileSection(title = stringResource(R.string.preferences_title)) {
                 PreferencesContent(
                     profileState = profileState,
                     viewModel = viewModel
@@ -166,7 +166,7 @@ fun Profile(
         // Equipment Increments Section
         item {
             Text(
-                "Equipment Increments",
+                stringResource(R.string.equipment_increments_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -178,45 +178,45 @@ fun Profile(
                 items = listOf(
                     {
                         IncrementRow(
-                            label = "Barbell increment",
+                            label = stringResource(R.string.barbell_increment),
                             value = profileState.incrementBarbell,
-                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
                             onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
                             keyboardController = keyboardController,
                             focusManager = focusManager
                         )
                     }, {
                         IncrementRow(
-                            label = "Bodyweight increment",
+                            label = stringResource(R.string.bodyweight_increment),
                             value = profileState.incrementBodyweight,
-                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
                             onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
                             keyboardController = keyboardController,
                             focusManager = focusManager
                         )
                     }, {
                         IncrementRow(
-                            label = "Cable increment",
+                            label = stringResource(R.string.cable_increment),
                             value = profileState.incrementCable,
-                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
                             onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
                             keyboardController = keyboardController,
                             focusManager = focusManager
                         )
                     }, {
                         IncrementRow(
-                            label = "Dumbbell increment",
+                            label = stringResource(R.string.dumbbell_increment),
                             value = profileState.incrementDumbbell,
-                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
                             onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
                             keyboardController = keyboardController,
                             focusManager = focusManager
                         )
                     }, {
                         IncrementRow(
-                            label = "Machine increment",
+                            label = stringResource(R.string.machine_increment),
                             value = profileState.incrementMachine,
-                            unit = if (profileState.imperialSystem) "lb" else "kg",
+                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
                             onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
                             keyboardController = keyboardController,
                             focusManager = focusManager
@@ -233,7 +233,7 @@ fun Profile(
                 "https://github.com/alessioGalatolo/PerfectGymCoach"
             )
             Text(
-                "Feedback",
+                stringResource(R.string.feedback_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -244,18 +244,18 @@ fun Profile(
                 ),
                 items = listOf(
                     { ExternalLink(
-                        title = "Bug report",
-                        description = "Will open externally, once there tap on 'New issue'. Requires a GitHub account.",
+                        title = stringResource(R.string.bug_report_title),
+                        description = stringResource(R.string.bug_report_info),
                         leadingIcon = Icons.Default.BugReport
                     ) },
                     { ExternalLink(
-                        title = "Feature requests",
-                        description = "Will open externally, once there tap on 'New discussion'. Requires a GitHub account.",
+                        title = stringResource(R.string.feature_requests_title),
+                        description = stringResource(R.string.feature_request_info),
                         leadingIcon = Icons.Default.Feedback
                     ) },
                     { ExternalLink(
-                        title = "Source code",
-                        description = "The entirety of this app is open source. Feel free to contribute or just look around.",
+                        title = stringResource(R.string.source_code_title),
+                        description = stringResource(R.string.source_code_info),
                         leadingIcon = Icons.Default.Code
                     ) }
                 ),
@@ -263,8 +263,9 @@ fun Profile(
             )
         }
         item {
-            ProfileSection(title = "Acknowledgements") {
-                Text("I do not own any of the images used in this app. They are copyright free and were collected mostly through pexels and unsplash. Many thanks to all the artist that made their images freely available: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb.",
+            ProfileSection(title = stringResource(R.string.acknowledgements_title)) {
+                Text(
+                    stringResource(R.string.acknowledgements),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -298,7 +299,10 @@ fun ProfileHeader(
             ) {
                 if (!editName) {
                     Text(
-                        text = "Hi, $name",
+                        text = if (name.isNotBlank())
+                            stringResource(R.string.salute_user, name)
+                        else
+                            stringResource(R.string.what_is_your_name),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.weight(1f)
@@ -309,13 +313,13 @@ fun ProfileHeader(
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     ) {
-                        Icon(Icons.Default.Edit, "Edit name")
+                        Icon(Icons.Default.Edit, stringResource(R.string.edit_icon_user_name))
                     }
                 } else {
                     OutlinedTextField(
                         value = nameValue,
                         onValueChange = onNameChange,
-                        label = { Text("Name") },
+                        label = { Text(stringResource(R.string.name)) },
                         keyboardOptions = KeyboardOptions(
                             imeAction = ImeAction.Done,
                             capitalization = KeyboardCapitalization.Words
@@ -338,7 +342,7 @@ fun ProfileHeader(
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     ) {
-                        Icon(Icons.Default.Done, "Done")
+                        Icon(Icons.Default.Done, stringResource(R.string.done_icon))
                     }
                 }
             }
@@ -395,12 +399,12 @@ fun PersonalInfoContent(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Age",
+                    text = stringResource(R.string.age),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "$age years",
+                    text = stringResource(R.string.i_years, age),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -408,12 +412,12 @@ fun PersonalInfoContent(
             IconButton(onClick = onEditYearToggle) {
                 if (editYear) {
                     if (validUserYear) {
-                        Icon(Icons.Default.Done, "Done")
+                        Icon(Icons.Default.Done, stringResource(R.string.done_icon))
                     } else {
-                        Icon(Icons.Default.Close, "Cancel")
+                        Icon(Icons.Default.Close, stringResource(R.string.cancel_icon))
                     }
                 } else {
-                    Icon(Icons.Default.Edit, "Edit age")
+                    Icon(Icons.Default.Edit, stringResource(R.string.edit_icon_age))
                 }
             }
         }
@@ -425,7 +429,7 @@ fun PersonalInfoContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Born in:",
+                    text = stringResource(R.string.born_in),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -433,7 +437,7 @@ fun PersonalInfoContent(
                 OutlinedTextField(
                     value = userYear,
                     onValueChange = onUserYearChange,
-                    label = { Text("Year") },
+                    label = { Text(stringResource(R.string.year)) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
@@ -442,7 +446,7 @@ fun PersonalInfoContent(
                     keyboardActions = KeyboardActions(onDone = { onYearSubmit() }),
                     supportingText = {
                         if (!validUserYear) {
-                            Text("Please enter a valid year")
+                            Text(stringResource(R.string.please_enter_a_valid_year))
                         }
                     },
                     modifier = Modifier.width(120.dp)
@@ -456,13 +460,15 @@ fun PersonalInfoContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Sex:",
+                text = stringResource(R.string.sex),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
 
             Row(
-                Modifier.padding(horizontal = 8.dp).weight(5f),
+                Modifier
+                    .padding(horizontal = 8.dp)
+                    .weight(5f),
                 horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
                 Sex.entries.forEachIndexed { index, sex ->
@@ -481,7 +487,7 @@ fun PersonalInfoContent(
                                 else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                             },
                     ) {
-                        Text(sex.displayName)
+                        Text(stringResource(sex.displayRes))
                     }
                 }
             }
@@ -502,9 +508,9 @@ fun PhysicalMeasurementsContent(
     ) {
         // Weight
         MeasurementRow(
-            label = "Weight",
+            label = stringResource(R.string.weight),
             value = maybeKgToLb(profileState.weight, profileState.imperialSystem),
-            unit = if (profileState.imperialSystem) "lb" else "kg",
+            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
             onValueChange = { newWeight ->
                 viewModel.onEvent(ProfileEvent.UpdateWeight(
                     maybeLbToKg(newWeight, profileState.imperialSystem)
@@ -516,7 +522,7 @@ fun PhysicalMeasurementsContent(
 
         // Height
         MeasurementRow(
-            label = "Height",
+            label = stringResource(R.string.height),
             value = if (profileState.imperialSystem) profileState.height / 2.54f else profileState.height,
             unit = if (profileState.imperialSystem) "in" else "cm",
             onValueChange = { newHeight ->
@@ -534,10 +540,10 @@ fun PhysicalMeasurementsContent(
         else
             0f
         val bmiCategory = when {
-            bmi < 18.5f -> "underweight"
-            bmi > 30f -> "obese"
-            bmi > 25f -> "overweight"
-            else -> "normal"
+            bmi < 18.5f -> stringResource(R.string.underweight)
+            bmi > 30f -> stringResource(R.string.obese)
+            bmi > 25f -> stringResource(R.string.overweight)
+            else -> stringResource(R.string.normal)
         }
 
         Row(
@@ -546,7 +552,7 @@ fun PhysicalMeasurementsContent(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Body Mass Index",
+                    text = stringResource(R.string.body_mass_index),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -557,7 +563,7 @@ fun PhysicalMeasurementsContent(
             }
 
             IconButton(onClick = onBmiInfoClick) {
-                Icon(Icons.AutoMirrored.Filled.HelpOutline, "BMI Info")
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, stringResource(R.string.info_icon_bmi))
             }
         }
     }
@@ -611,7 +617,7 @@ fun MeasurementRow(
             }
 
             IconButton(onClick = { isEditing = true }) {
-                Icon(Icons.Default.Edit, "Edit $label")
+                Icon(Icons.Default.Edit, stringResource(R.string.edit_icon_measurement_i, label))
             }
         } else {
             OutlinedTextField(
@@ -622,7 +628,7 @@ fun MeasurementRow(
                 isError = !isValid,
                 supportingText = {
                     if (!isValid) {
-                        Text("Please enter a valid number")
+                        Text(stringResource(R.string.please_enter_a_valid_number))
                     }
                 },
                 keyboardOptions = KeyboardOptions(
@@ -644,9 +650,9 @@ fun MeasurementRow(
                 }
             ) {
                 if (isValid) {
-                    Icon(Icons.Default.Done, "Done")
+                    Icon(Icons.Default.Done, stringResource(R.string.done_icon))
                 } else {
-                    Icon(Icons.Default.Close, "Cancel")
+                    Icon(Icons.Default.Close, stringResource(R.string.cancel_icon))
                 }
             }
         }
@@ -668,7 +674,7 @@ fun PreferencesContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Use imperial system:",
+                text = stringResource(R.string.use_imperial_system),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
@@ -684,13 +690,15 @@ fun PreferencesContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Theme:",
+                text = stringResource(R.string.theme),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
 
             Row(
-                Modifier.padding(horizontal = 8.dp).weight(5.8f),
+                Modifier
+                    .padding(horizontal = 8.dp)
+                    .weight(5.8f),
                 horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
                 // FIXME: "Same as system" overflows
@@ -721,7 +729,7 @@ fun PreferencesContent(
                             },
                     ) {
                         Text(
-                            theme.displayName,
+                            stringResource(theme.displayRes),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = textAlign,
@@ -781,7 +789,7 @@ fun IncrementRow(
             }
 
             IconButton(onClick = { isEditing = true }) {
-                Icon(Icons.Default.Edit, "Edit $label")
+                Icon(Icons.Default.Edit, stringResource(R.string.edit_icon_increment_i, label))
             }
         } else {
             OutlinedTextField(
@@ -792,7 +800,7 @@ fun IncrementRow(
                 isError = !isValid,
                 supportingText = {
                     if (!isValid) {
-                        Text("Please enter a valid number")
+                        Text(stringResource(R.string.please_enter_a_valid_number))
                     }
                 },
                 keyboardOptions = KeyboardOptions(
@@ -814,9 +822,9 @@ fun IncrementRow(
                 }
             ) {
                 if (isValid) {
-                    Icon(Icons.Default.Done, "Done")
+                    Icon(Icons.Default.Done, stringResource(R.string.done_icon))
                 } else {
-                    Icon(Icons.Default.Close, "Cancel")
+                    Icon(Icons.Default.Close, stringResource(R.string.cancel_icon))
                 }
             }
         }
@@ -828,7 +836,8 @@ fun ExternalLink(title: String, description: String, leadingIcon: ImageVector? =
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .clip(CardDefaults.shape)
     ) {
         if (leadingIcon != null) {
@@ -851,7 +860,7 @@ fun ExternalLink(title: String, description: String, leadingIcon: ImageVector? =
         Spacer(Modifier.width(16.dp))
         Icon(
             Icons.AutoMirrored.Filled.OpenInNew,
-            "Open in browser",
+            stringResource(R.string.open_in_icon_browser),
         )
     }
 }

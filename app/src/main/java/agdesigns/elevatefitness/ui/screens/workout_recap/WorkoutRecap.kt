@@ -27,7 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.components.InfoDialog
-import agdesigns.elevatefitness.utils.maybeKgToLb
+import com.agdesignes.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
@@ -72,7 +72,7 @@ fun WorkoutRecap(
 
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = LocalContentColor.current)) {
-                append("Volume info: " + stringResource(R.string.volume_info))
+                append(stringResource(R.string.volume_info))
             }
             withLink(
                 LinkAnnotation.Url(
@@ -82,7 +82,7 @@ fun WorkoutRecap(
                     )
                 )
             ) {
-                append("Learn more.")
+                append(stringResource(R.string.learn_more))
             }
         }
 
@@ -99,9 +99,19 @@ fun WorkoutRecap(
         recapState.workoutId != 0L &&
         recapState.workoutRecord != null
     ){
+        val records = recapState.olderRecords
+        val graphsYaxis = listOf (
+            Pair(Pair(stringResource(R.string.volume), if (recapState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)),
+                records.map {
+                    maybeKgToLb(it.volume.toFloat(), recapState.imperialSystem)
+                }),
+            Pair(Pair(stringResource(R.string.calories), "kcal"), records.map { it.calories }),
+            Pair(Pair(stringResource(R.string.workout_time), "s"), records.map { it.durationSeconds }),
+            Pair(Pair(stringResource(R.string.workout_active_time), "s"), records.map { it.activeTimeSeconds })
+        )
         Scaffold(topBar = {
             TopAppBar (title = {
-                Text("Workout recap")
+                Text(stringResource(R.string.workout_recap))
             }, navigationIcon = {
                 IconButton(onClick = {
                     navigator.navigateUp()
@@ -110,7 +120,7 @@ fun WorkoutRecap(
                         HistoryDestination()
                     )
                 }) {
-                    Icon(Icons.Default.Close, "Close")
+                    Icon(Icons.Default.Close, stringResource(R.string.close_icon))
                 }
             })
         }) { innerPadding ->
@@ -120,7 +130,8 @@ fun WorkoutRecap(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ){
                 item {
-                    Text("Great job!",
+                    Text(
+                        stringResource(R.string.workout_recap_praise),
                         style = MaterialTheme.typography.headlineMedium,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -129,16 +140,6 @@ fun WorkoutRecap(
                             .padding(horizontal = 16.dp)
                     )
                 }
-                val records = recapState.olderRecords
-                val graphsYaxis = listOf (
-                    Pair(Pair("Volume", if (recapState.imperialSystem) "lb" else "kg"),
-                        records.map {
-                            maybeKgToLb(it.volume.toFloat(), recapState.imperialSystem)
-                        }),
-                    Pair(Pair("Calories", "kcal"), records.map { it.calories }),
-                    Pair(Pair("Workout time", "s"), records.map { it.durationSeconds }),
-                    Pair(Pair("Workout active time", "s"), records.map { it.activeTimeSeconds })
-                )
                 item{
                     val pagerState = rememberPagerState(pageCount = { graphsYaxis.size })
                     if (records.size > 1){
@@ -223,7 +224,9 @@ fun WorkoutRecap(
                             HorizontalPagerIndicator(
                                 pagerState = pagerState,
                                 pageCount = graphsYaxis.size,
-                                modifier = Modifier.padding(8.dp).align(Alignment.CenterHorizontally)
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .align(Alignment.CenterHorizontally)
                             )
                         }
                     } else {
@@ -248,13 +251,16 @@ fun WorkoutRecap(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(
-                                            Icons.Outlined.LocalFireDepartment, "Calories burned",
+                                            Icons.Outlined.LocalFireDepartment,
+                                            stringResource(R.string.calories_burned),
                                             Modifier.size(50.dp)
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            "Calorie consumption: " + // split for easier translation
-                                                    "${recapState.workoutRecord!!.calories.toInt()} kcal"
+                                            stringResource(
+                                                R.string.calorie_consumption_i_kcal,
+                                                recapState.workoutRecord!!.calories.toInt()
+                                            )
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     }
@@ -262,7 +268,9 @@ fun WorkoutRecap(
                                         onClick = { calorieDialogIsOpen.value = true },
                                         modifier = Modifier.weight(0.1f)
                                     ) {
-                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/Info")
+                                        Icon(Icons.AutoMirrored.Filled.HelpOutline,
+                                            stringResource(R.string.help_icon_info)
+                                        )
                                     }
                                 }
 //                                HorizontalDivider()
@@ -276,16 +284,17 @@ fun WorkoutRecap(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(
-                                            painterResource(R.drawable.weight_icon), "Volume lifted",
+                                            painterResource(R.drawable.weight_icon),
+                                            stringResource(R.string.volume_lifted),
                                             Modifier.size(50.dp)
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            "Total volume: " +
-                                                    "%.2f ".format(maybeKgToLb(
+                                            stringResource(R.string.total_volume) +
+                                                    ": %.2f ".format(maybeKgToLb(
                                                         recapState.workoutRecord!!.volume.toFloat(),
                                                         recapState.imperialSystem
-                                                    )) + if (recapState.imperialSystem) "lb" else "kg"
+                                                    )) + if (recapState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
                                         )
                                         Spacer(Modifier.width(8.dp))
                                     }
@@ -293,7 +302,7 @@ fun WorkoutRecap(
                                         onClick = { volumeDialogIsOpen.value = true },
                                         modifier = Modifier.weight(0.1f)
                                     ) {
-                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help/Info")
+                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, stringResource(R.string.help_icon_info))
                                     }
                                 }
 //                                HorizontalDivider()
@@ -303,12 +312,12 @@ fun WorkoutRecap(
                                     horizontalArrangement = Arrangement.Start
                                 ) {
                                     Icon(
-                                        Icons.Outlined.Schedule, "Workout time",
+                                        Icons.Outlined.Schedule, stringResource(R.string.workout_time),
                                         Modifier.size(50.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        "Total time: " +
+                                        stringResource(R.string.total_time) +
                                                 DateUtils.formatElapsedTime(
                                                     recapState.workoutRecord!!.durationSeconds
                                                 )
@@ -321,12 +330,12 @@ fun WorkoutRecap(
                                     horizontalArrangement = Arrangement.Start
                                 ) {
                                     Icon(
-                                        Icons.Outlined.PendingActions, "Active time",
+                                        Icons.Outlined.PendingActions, stringResource(R.string.workout_active_time),
                                         Modifier.size(50.dp)
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        "Active time: " +
+                                        stringResource(R.string.workout_active_time) + ": " +
                                                 DateUtils.formatElapsedTime(
                                                     recapState.workoutRecord!!.activeTimeSeconds
                                                 )
@@ -337,9 +346,12 @@ fun WorkoutRecap(
                     }
                 }
                 item {
-                    Text("Workout history",
+                    Text(
+                        stringResource(R.string.workout_history),
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp).padding(horizontal = 16.dp))
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .padding(horizontal = 16.dp))
                 }
                 ExerciseRecordsList(
                     recapState.imperialSystem,

@@ -28,7 +28,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordAndName
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
-import agdesigns.elevatefitness.utils.maybeKgToLb
+import com.agdesignes.shared.maybeKgToLb
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,7 +72,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Weekly Overview",
+                    text = stringResource(R.string.weekly_overview),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
@@ -80,7 +80,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 
                 Icon(
                     imageVector = Icons.Default.CalendarMonth,
-                    contentDescription = "Calendar",
+                    contentDescription = stringResource(R.string.calendar),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
@@ -117,7 +117,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = "Week $week",
+                                        text = stringResource(R.string.week_i, week),
                                         style = MaterialTheme.typography.titleSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.Medium
@@ -127,7 +127,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 
                                     Icon(
                                         imageVector = Icons.Default.Remove,
-                                        contentDescription = "No workouts",
+                                        contentDescription = stringResource(R.string.no_workouts),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -135,7 +135,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                     Spacer(modifier = Modifier.height(4.dp))
 
                                     Text(
-                                        text = "Rest week",
+                                        text = stringResource(R.string.rest_week),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                     )
@@ -150,7 +150,8 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                     .clickable {
                                         scope.launch {
                                             listState.animateScrollToItem(
-                                                index = recordsMap.toSortedMap().tailMap(week).keys.size
+                                                index = recordsMap.toSortedMap()
+                                                    .tailMap(week).keys.size
                                             )
                                         }
                                     },
@@ -171,7 +172,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                 ) {
                                     // Header
                                     Text(
-                                        text = "Week $week",
+                                        text = stringResource(R.string.week_i, week),
                                         style = MaterialTheme.typography.titleSmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         fontWeight = FontWeight.SemiBold
@@ -187,7 +188,7 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 
                                     Icon(
                                         imageVector = icon,
-                                        contentDescription = "Achievement",
+                                        contentDescription = stringResource(R.string.achievement_icon),
                                         tint = iconColor,
                                         modifier = Modifier.size(28.dp)
                                     )
@@ -200,7 +201,10 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
                                         repeat(minOf(weekRecords.size, 7)) { index ->
                                             Icon(
                                                 imageVector = Icons.Default.FitnessCenter,
-                                                contentDescription = "Workout ${index + 1}",
+                                                contentDescription = stringResource(
+                                                    R.string.workout_i_icon,
+                                                    index + 1
+                                                ),
                                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                                 modifier = Modifier.size(12.dp)
                                             )
@@ -212,7 +216,11 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 
                                     // Workout count
                                     Text(
-                                        text = "${weekRecords.size} workout${if (weekRecords.size != 1) "s" else ""}",
+                                        text = stringResource(
+                                            R.string.workout_count,
+                                            weekRecords.size,
+                                            if (weekRecords.size != 1) "s" else ""
+                                        ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                     )
@@ -253,7 +261,7 @@ fun History(
             ) {
                 Icon(
                     imageVector = Icons.Default.History,
-                    contentDescription = "Empty history",
+                    contentDescription = stringResource(R.string.empty_history_icon),
                     modifier = Modifier
                         .size(120.dp)
                         .padding(24.dp),
@@ -273,7 +281,7 @@ fun History(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Start your fitness journey today!",
+                text = stringResource(R.string.start_your_fitness_journey_today),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
@@ -313,7 +321,7 @@ fun History(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.CalendarToday,
-                                    contentDescription = "Year",
+                                    contentDescription = stringResource(R.string.year_icon),
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -348,13 +356,13 @@ fun History(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.DateRange,
-                                        contentDescription = "Week",
+                                        contentDescription = stringResource(R.string.week_icon),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Week ${record.key}",
+                                        text = stringResource(R.string.week_i, record.key),
                                         style = MaterialTheme.typography.headlineSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.SemiBold
@@ -422,8 +430,8 @@ fun History(
                                             // Volume stat
                                             StatCard(
                                                 icon = Icons.Default.FitnessCenter,
-                                                label = "Volume",
-                                                value = "${maybeKgToLb(workout.volume, historyState.useImperialSystem)} ${if (historyState.useImperialSystem) "lb" else "kg"}",
+                                                label = stringResource(R.string.volume),
+                                                value = "${maybeKgToLb(workout.volume, historyState.useImperialSystem)} ${if (historyState.useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)}",
                                                 modifier = Modifier.weight(1f)
                                             )
 
@@ -432,8 +440,11 @@ fun History(
                                             // Calories stat
                                             StatCard(
                                                 icon = Icons.Default.LocalFireDepartment,
-                                                label = "Calories",
-                                                value = "${workout.calories.toInt()} kcal",
+                                                label = stringResource(R.string.calories),
+                                                value = stringResource(
+                                                    R.string.calories_kcal,
+                                                    workout.calories.toInt()
+                                                ),
                                                 modifier = Modifier.weight(1f)
                                             )
 
@@ -442,8 +453,11 @@ fun History(
                                             // Duration stat
                                             StatCard(
                                                 icon = Icons.Default.Schedule,
-                                                label = "Duration",
-                                                value = "${(workout.durationSeconds / 60).toInt()}m",
+                                                label = stringResource(R.string.duration),
+                                                value = stringResource(
+                                                    R.string.i_minutes,
+                                                    (workout.durationSeconds / 60).toInt()
+                                                ),
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }

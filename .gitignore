@@ -11,6 +11,7 @@ local.properties
 .keys
 
 app/release
+wear/release
 *.jks
 
 .kotlin

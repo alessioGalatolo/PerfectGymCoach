@@ -1,10 +1,12 @@
 package agdesigns.elevatefitness.data.db.entity
 
 import android.os.Parcelable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.agdesignes.shared.Equipment
 import kotlinx.parcelize.Parcelize
 import java.time.ZonedDateTime
 
@@ -35,20 +37,15 @@ data class ExerciseRecord(
     val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
+    @Deprecated("Use variationResKey instead")
     val variation: String,
+    @ColumnInfo(defaultValue = "")
+    val variationResKey: String,
     val rest: List<Int>,
     val tare: Float = 0f // e.g. barbell weight or bodyweight
 ) : Parcelable {
-    // FIXME: US weights pretty much made up
-    enum class BarbellType(val barbellName: String, val weight: Map<Boolean, Float>){
-        EZ_CURL_LIGHT("Light EZ curl bar", mapOf(Pair(false, 5f), Pair(true, 15f))),
-        EZ_CURL("EZ curl bar", mapOf(Pair(false, 12f), Pair(true, 30f))),
-        YOUNG_OLYMPIC("Young's olympic bar", mapOf(Pair(false, 10f), Pair(true, 25f))),
-        WOMEN_OLYMPIC("Women's olympic bar", mapOf(Pair(false, 15f), Pair(true, 35f))),
-        MEN_OLYMPIC("Men's olympic bar", mapOf(Pair(false, 20f), Pair(true, 45f))),
-        SQUAT("Squat bar", mapOf(Pair(false, 25f), Pair(true, 55f))),
-        OTHER("Other", mapOf(Pair(false, 0f), Pair(true, 0f)))
-    }
+    val variationResource: Int
+        get() = getVariation(variationResKey)
 }
 
 
@@ -62,10 +59,15 @@ data class ExerciseRecordAndEquipment(
     val reps: List<Int>,
     val weights: List<Float>,
     val tare: Float = 0f,
+    @Deprecated("Use variationResKey instead")
     val variation: String,
+    val variationResKey: String,
     val rest: List<Int>,
-    val equipment: Exercise.Equipment
-) : Parcelable
+    val equipment: Equipment
+) : Parcelable {
+    val variationResource: Int
+        get() = getVariation(variationResKey)
+}
 
 
 @Parcelize
@@ -77,10 +79,25 @@ data class ExerciseRecordAndInfo(
     val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
+    @Deprecated("Use variationResKey instead")
     val variation: String,
+    val variationResKey: String,
     val rest: List<Int>,
     val tare: Float = 0f, // e.g. barbell weight or bodyweight
+    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
+    val nameResKey: String, // key of the string resource
+    @Deprecated("Use imageResKey instead")
     val image: Int,
-    val equipment: Exercise.Equipment
-) : Parcelable
+    val imageResKey: String,
+    val userDefined: Boolean = false,
+    val equipment: Equipment
+) : Parcelable {
+    val nameResource: Int
+        get() = getNameDescriptionResource(nameResKey)
+    val imageResource: Int
+        get() = getImageResource(imageResKey)
+    val variationResource: Int
+        get() = getVariation(variationResKey)
+
+}

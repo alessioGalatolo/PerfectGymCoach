@@ -195,6 +195,8 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
             .setBigContentTitle(titleText)
 
         // 3. Set up main Intent/Pending Intents for notification.
+        // FIXME: each time the user resumes ongoing activity a new back stack is
+        //  added, meaning the user then as to go back MANY times to exit the app
         val launchActivityIntent = Intent(this, WearActivity::class.java)
 
         val cancelIntent = Intent(this, ForegroundOnlyWorkoutService::class.java)

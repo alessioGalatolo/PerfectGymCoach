@@ -14,6 +14,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ProgramExerciseDao {
 
+    // get all exercises
+    @Query("SELECT * FROM programexercise")
+    fun getAll(): List<ProgramExercise>
+
+    @Update
+    suspend fun update(programExercise: ProgramExercise)
+
     @Query(
         "SELECT * FROM programexercise " +
                 "WHERE extProgramId LIKE :programId")
@@ -22,14 +29,14 @@ interface ProgramExerciseDao {
     @Query("SELECT * FROM programexercise WHERE programExerciseId LIKE :programExerciseId")
     fun getProgramExercise(programExerciseId: Long): Flow<ProgramExercise>
 
-    @Query("SELECT programexercise.*, exercise.image, exercise.equipment, exercise.name, exercise.description " +
+    @Query("SELECT programexercise.*, exercise.image, exercise.imageResKey, exercise.equipment, exercise.name, exercise.nameResKey, exercise.description, exercise.descriptionResKey, exercise.userDefined " +
             "FROM programexercise " +
             "LEFT JOIN exercise ON programexercise.extExerciseId = exercise.exerciseId " +
             "WHERE programexercise.extProgramId = :programId")
     fun getExercisesAndInfo(programId: Long): Flow<List<ProgramExerciseAndInfo>>
 
 
-    @Query("SELECT programexercise.*, exercise.image, exercise.equipment, exercise.name, exercise.description " +
+    @Query("SELECT programexercise.*, exercise.image, exercise.imageResKey, exercise.equipment, exercise.name, exercise.nameResKey, exercise.description, exercise.descriptionResKey, exercise.userDefined " +
             "FROM programexercise " +
             "LEFT JOIN exercise ON programexercise.extExerciseId = exercise.exerciseId " +
             "WHERE programexercise.extProgramId IN (:programIds) "

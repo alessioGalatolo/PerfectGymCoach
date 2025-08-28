@@ -1,11 +1,12 @@
 package agdesigns.elevatefitness.ui.components
 
 import agdesigns.elevatefitness.R
+import com.agdesignes.shared.R as sharedR
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
-import agdesigns.elevatefitness.utils.barbellFromWeight
-import agdesigns.elevatefitness.utils.maybeKgToLb
+import com.agdesignes.shared.maybeKgToLb
+import com.agdesignes.shared.weightAndUnit
 import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,11 +30,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat.ID_NULL
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.agdesignes.shared.Equipment
+import com.agdesignes.shared.barbellResFromWeight
 
 // Shows a nice list of records
 fun LazyListScope.ExerciseRecordsList(
@@ -58,11 +62,14 @@ fun LazyListScope.ExerciseRecordsList(
                 reps = it.reps,
                 weights = it.weights,
                 variation = it.variation,
+                variationResKey = it.variationResKey,
                 rest = it.rest,
                 tare = it.tare,
                 equipment = it.equipment,
                 name = "",
+                nameResKey = "",
                 image = ID_NULL,
+                imageResKey = ""
             )
         }
     }
@@ -71,7 +78,9 @@ fun LazyListScope.ExerciseRecordsList(
     items (items = exerciseRecordsToUse, key = { it.recordId }) { exercise ->
         Card (onClick = {
             onRecordClick(exercise.recordId)
-        }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)){
+        }, modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)){
             if (exercise.image != ID_NULL) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -79,7 +88,7 @@ fun LazyListScope.ExerciseRecordsList(
                         .crossfade(true)
                         .build(),
                     contentScale = ContentScale.Crop,
-                    contentDescription = "Exercise image",
+                    contentDescription = stringResource(R.string.exercise_image),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4)
@@ -90,14 +99,23 @@ fun LazyListScope.ExerciseRecordsList(
             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                 if (exercise.name.isNotEmpty())
                     Text(text = exercise.name + exercise.variation, style = MaterialTheme.typography.titleLarge)
-                if (exercise.equipment == Exercise.Equipment.BARBELL) {
+                if (exercise.equipment == Equipment.BARBELL) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Barbell used: " +
-                            barbellFromWeight(exercise.tare, useImperialSystem, true)
+                    Text(
+                        stringResource(
+                            R.string.barbell_used,
+                            stringResource(barbellResFromWeight(exercise.tare)),
+                            weightAndUnit(exercise.tare, useImperialSystem, inParenthesis = true)
+                        )
                     )
-                } else if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT) {
+                } else if (exercise.equipment == Equipment.BODY_WEIGHT) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Bodyweight at the time: ${maybeKgToLb(exercise.tare, useImperialSystem)} " + if (useImperialSystem) "lb" else "kg")
+                    Text(
+                        stringResource(
+                            R.string.bodyweight_at_the_time,
+                            weightAndUnit(exercise.tare, useImperialSystem)
+                        )
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 exercise.reps.forEachIndexed { index, rep ->
@@ -111,7 +129,12 @@ fun LazyListScope.ExerciseRecordsList(
                         }
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Reps: $rep Weight: ${maybeKgToLb(exercise.weights[index], useImperialSystem)} " + if (useImperialSystem) "lb" else "kg"
+                            stringResource(
+                                R.string.reps_weight,
+                                rep,
+                                maybeKgToLb(exercise.weights[index], useImperialSystem),
+                                if (useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
+                            )
                         )
                     }
                 }

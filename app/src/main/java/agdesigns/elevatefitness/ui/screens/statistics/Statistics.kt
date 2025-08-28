@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.statistics
 
+import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,7 @@ import com.jaikeerthick.composable_graphs.composables.line.LineGraph
 import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphStyle
 import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphVisibility
 import com.jaikeerthick.composable_graphs.composables.pie.PieChart
+import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
 import com.jaikeerthick.composable_graphs.style.LabelPosition
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
@@ -67,16 +70,19 @@ fun Statistics(
     // we want to have headers as top app bar titles, need listState
     val listState = rememberLazyListState()
     // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
-    val stickyHeaders2Id = mapOf(
-        Pair("Statistics", Int.MAX_VALUE),
-        Pair("Highlights", Int.MAX_VALUE - 1),
-        Pair("Volume Progress", Int.MAX_VALUE - 2),
-        Pair("Workout Frequency", Int.MAX_VALUE - 3),
-        Pair("Muscle Group Distribution", Int.MAX_VALUE - 4),
-        Pair("Top Exercises", Int.MAX_VALUE - 5),
-        Pair("Recent Personal Records", Int.MAX_VALUE - 6),
-        Pair("Equipment Usage", Int.MAX_VALUE - 7)
+    val headers = listOf(
+        stringResource(R.string.s_header0_statistics),
+        stringResource(R.string.s_header1_highlights),
+        stringResource(R.string.s_header2_volume_progress),
+        stringResource(R.string.s_header3_workout_frequency),
+        stringResource(R.string.s_header4_muscle_group_distribution),
+        stringResource(R.string.s_header5_top_exercises),
+        stringResource(R.string.s_header6_recent_personal_records),
+        stringResource(R.string.s_header7_equipment_usage)
     )
+    val stickyHeaders2Id = headers.mapIndexed { index, header ->
+        Pair(header, Int.MAX_VALUE - index)
+    }.toMap()
     val id2StickyHeader = stickyHeaders2Id.entries.associate { (k, v) -> v to k }
     var lastVisibleKey by remember { mutableIntStateOf(Int.MAX_VALUE) }
     // Monitor visibility changes
@@ -106,7 +112,9 @@ fun Statistics(
         }
     ) { innerPadding ->
         Column (
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Time Frame Selector
@@ -117,7 +125,7 @@ fun Statistics(
                 TimeFrameSelector(
                     selectedTimeFrame = state.selectedTimeFrame,
                     onTimeFrameSelected = { timeFrame ->
-                        titleText = "Statistics"
+                        titleText = headers[0]
                         viewModel.onEvent(StatisticsEvent.OnTimeFrameChanged(timeFrame))
                     }
                 )
@@ -129,7 +137,7 @@ fun Statistics(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     ContainedLoadingIndicator()
-                    Text(state.progressText)
+                    Text(stringResource(state.progressTextRes))
                 }
             } else {
                 LazyColumn(
@@ -141,14 +149,17 @@ fun Statistics(
                         Spacer(Modifier.height(0.dp))
                     }
                     // Overview Cards
-                    item(stickyHeaders2Id["Highlights"]) {
+                    item(stickyHeaders2Id[headers[1]]) {
                         Text(
-                            "Highlights",
+                            headers[1],
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp)
+                                .fillMaxWidth()
                         )
                     }
                     overviewCards(
@@ -164,14 +175,17 @@ fun Statistics(
 
                     // Volume Progress Chart
                     if (state.weeklyVolume.isNotEmpty()) {
-                        item(stickyHeaders2Id["Volume Progress"]) {
+                        item(stickyHeaders2Id[headers[2]]) {
                             Text(
-                                "Volume Progress",
+                                headers[2],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         item {
@@ -182,7 +196,7 @@ fun Statistics(
                             ) {
                                 if (selectedValue.isNotEmpty()) {
                                     Text(
-                                        "Selected value: $selectedValue",
+                                        stringResource(R.string.selected_value_i, selectedValue),
                                         style = MaterialTheme.typography.titleMedium,
                                         modifier = Modifier.padding(16.dp)
                                     )
@@ -207,14 +221,17 @@ fun Statistics(
 
                     // Workout Frequency Chart
                     if (state.monthlyWorkouts.isNotEmpty()) {
-                        item(stickyHeaders2Id["Workout Frequency"]) {
+                        item(stickyHeaders2Id[headers[3]]) {
                             Text(
-                                "Workout Frequency",
+                                headers[3],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         item {
@@ -224,7 +241,7 @@ fun Statistics(
                             ) {
                                 if (selectedValue.isNotEmpty()) {
                                     Text(
-                                        "Selected value: $selectedValue",
+                                        stringResource(R.string.selected_value_i, selectedValue),
                                         style = MaterialTheme.typography.titleMedium,
                                         modifier = Modifier.padding(16.dp)
                                     )
@@ -253,20 +270,29 @@ fun Statistics(
 
                     // Muscle Group Distribution
                     if (state.muscleGroupDistribution.isNotEmpty()) {
-                        item(stickyHeaders2Id["Muscle Group Distribution"]) {
+                        item(stickyHeaders2Id[headers[4]]) {
                             Text(
-                                "Muscle Group Distribution",
+                                headers[4],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         item {
                             ElevatedCard(
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             ) {
+                                val pieData = state.muscleGroupDistribution.map { pair ->
+                                    PieData(
+                                        label = stringResource(pair.first),
+                                        value = pair.second
+                                    )
+                                }
                                 Row(Modifier.padding(16.dp)) {
                                     PieChart(
                                         modifier = Modifier
@@ -274,15 +300,18 @@ fun Statistics(
                                             .wrapContentWidth()
                                             .weight(1f)
                                             .padding(8.dp),
-                                        data = state.muscleGroupDistribution
+                                        data = pieData
                                     )
                                     Spacer(Modifier.width(32.dp))
                                     Column {
-                                        for (data in state.muscleGroupDistribution) {
+                                        for (data in pieData) {
                                             Row {
                                                 Icon(
                                                     Icons.Default.Circle,
-                                                    "A ${data.color} circle.",
+                                                    stringResource(
+                                                        R.string.circle_icon_colored,
+                                                        data.color
+                                                    ),
                                                     tint = data.color
                                                 )
                                                 Spacer(Modifier.width(8.dp))
@@ -297,14 +326,17 @@ fun Statistics(
 
                     // Top Exercises
                     if (state.topExercises.isNotEmpty()) {
-                        item(stickyHeaders2Id["Top Exercises"]) {
+                        item(stickyHeaders2Id[headers[5]]) {
                             Text(
-                                text = "Top Exercises",
+                                text = headers[5],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         item {
@@ -332,14 +364,17 @@ fun Statistics(
 
                     // Recent Personal Records
                     if (state.recentPRs.isNotEmpty()) {
-                        item(stickyHeaders2Id["Recent Personal Records"]) {
+                        item(stickyHeaders2Id[headers[6]]) {
                             Text(
-                                "Recent Personal Records",
+                                headers[6],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         item {
@@ -367,14 +402,17 @@ fun Statistics(
 
                     // Equipment Usage
                     if (state.equipmentUsage.isNotEmpty()) {
-                        item(stickyHeaders2Id["Equipment Usage"]) {
+                        item(stickyHeaders2Id[headers[7]]) {
                             Text(
-                                "Equipment Usage",
+                                headers[7],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         item {
@@ -404,7 +442,7 @@ fun Statistics(
                                             Row {
                                                 Icon(
                                                     Icons.Default.Circle,
-                                                    "A ${nameDataPair.second.color} circle.",
+                                                    stringResource(R.string.circle_icon_colored, nameDataPair.second.color),
                                                     tint = nameDataPair.second.color
                                                 )
                                                 Spacer(Modifier.width(8.dp))
@@ -454,7 +492,7 @@ private fun TimeFrameSelector(
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     },
             ) {
-                Text(timeFrame.displayName)
+                Text(stringResource(timeFrame.displayResource))
             }
         }
     }
@@ -472,11 +510,13 @@ private fun LazyListScope.overviewCards(
 ) {
     item {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             MetricCard(
-                title = "Total Workouts",
+                title = stringResource(R.string.total_workouts),
                 value = totalWorkouts.toString(),
                 icon = Icons.Default.FitnessCenter,
                 iconColor = MaterialTheme.colorScheme.primary,
@@ -485,8 +525,8 @@ private fun LazyListScope.overviewCards(
             )
             Spacer(Modifier.width(8.dp))
             MetricCard(
-                title = "Total Volume",
-                value = "${totalVolume.toInt()} ${if (useImperial) "lbs" else "kg"}",
+                title = stringResource(R.string.total_volume),
+                value = "${totalVolume.toInt()} ${if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)}",
                 icon = Icons.Default.Scale,
                 iconColor = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f)
@@ -495,11 +535,13 @@ private fun LazyListScope.overviewCards(
     }
     item {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             MetricCard(
-                title = "Avg Duration",
+                title = stringResource(R.string.avg_duration),
                 value = "${avgDuration / 60}m",
                 icon = Icons.Default.Timer,
                 iconColor = MaterialTheme.colorScheme.tertiary,
@@ -507,8 +549,8 @@ private fun LazyListScope.overviewCards(
             )
             Spacer(Modifier.width(8.dp))
             MetricCard(
-                title = "Calories",
-                value = "${totalCalories.toInt()}",
+                title = stringResource(R.string.calories),
+                value = "${totalCalories.toInt()} kcal",
                 icon = Icons.Default.LocalFireDepartment,
                 iconColor = Color(0xFFFF6B35),
                 modifier = Modifier.weight(1f)
@@ -517,11 +559,13 @@ private fun LazyListScope.overviewCards(
     }
     item {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             MetricCard(
-                title = "Avg Calories",
+                title = stringResource(R.string.avg_calories),
                 value = "${avgCalories.toInt()}",
                 icon = Icons.Default.LocalFireDepartment,
                 iconColor = Color(0xFFFF6B35),
@@ -529,8 +573,8 @@ private fun LazyListScope.overviewCards(
             )
             Spacer(Modifier.width(8.dp))
             MetricCard(
-                title = "Current Streak",
-                value = "${currentStreak}d",
+                title = stringResource(R.string.current_streak),
+                value = stringResource(R.string.streak_in_days, currentStreak),
                 icon = Icons.Default.Whatshot,
                 iconColor = Color(0xFFFF9500),
                 modifier = Modifier.weight(1f)
@@ -539,12 +583,14 @@ private fun LazyListScope.overviewCards(
     }
     item {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             MetricCard(
-                title = "Best Streak",
-                value = "${longestStreak}d",
+                title = stringResource(R.string.best_streak),
+                value = stringResource(R.string.streak_in_days, longestStreak),
                 icon = Icons.Default.EmojiEvents,
                 iconColor = Color(0xFFFFD700),
                 modifier = Modifier.weight(1f)
@@ -615,13 +661,18 @@ private fun ExerciseStatItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "${exercise.timesPerformed} sets • ${exercise.totalVolume.toInt()} ${if (useImperial) "lbs" else "kg"} total",
+                text = stringResource(
+                    R.string.sets_total,
+                    exercise.timesPerformed,
+                    exercise.totalVolume.toInt(),
+                    if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Text(
-            text = "${exercise.maxWeight.toInt()} ${if (useImperial) "lbs" else "kg"}",
+            text = "${exercise.maxWeight.toInt()} ${if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)}",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -654,7 +705,7 @@ private fun PersonalRecordItem(
             )
         }
         Text(
-            text = "${pr.weight.toInt()} ${if (useImperial) "lbs" else "kg"} × ${pr.reps}",
+            text = "${pr.weight.toInt()} ${if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)} × ${pr.reps}",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary

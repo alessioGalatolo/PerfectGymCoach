@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.plans
 
+import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,6 +13,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.navigation.GeneratePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import androidx.compose.ui.res.stringResource
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -21,18 +23,17 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 @Composable
 fun ViewGeneratedPlan(
     navigator: DestinationsNavigator,
-    goalChoice: String,
-    expertiseLevel: String,
-    workoutSplit: String,
+    goalChoice: WorkoutPlanGoal,
+    expertiseLevel: WorkoutPlanDifficulty,
+    workoutSplit: WorkoutPlanSplit,
     viewModel: GeneratePlanViewModel = hiltViewModel()
 ) {
     val generationState by viewModel.state.collectAsState() 
     viewModel.onEvent(
         GeneratePlanEvent.GeneratePlan(
-            // FIXME: should pass the enum class instead of string
-            WorkoutPlanGoal.entries.first { it.goal == goalChoice },
-            WorkoutPlanDifficulty.entries.first { it.expertiseLevel == expertiseLevel },
-            WorkoutPlanSplit.entries.first { it.split == workoutSplit }
+            goalChoice,
+            expertiseLevel,
+            workoutSplit
         )
     )
 
@@ -45,7 +46,7 @@ fun ViewGeneratedPlan(
             Spacer(Modifier.height(8.dp))
 
             // TODO: circle on messages
-            Text("Generating a plan just for you...", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.generating_plan_waiting_text), style = MaterialTheme.typography.titleLarge)
         }
     } else {
         navigator.navigateUp()

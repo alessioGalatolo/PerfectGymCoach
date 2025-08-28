@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.ExercisesEvent
@@ -74,12 +75,12 @@ fun AddProgramExercise(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(programName) },
+                title = { Text(getProgramDisplayName(programName)) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go back"
+                            contentDescription = stringResource(R.string.go_back_icon)
                         )
                     }
                 },
@@ -99,7 +100,7 @@ fun AddProgramExercise(
             ) {
                 Icon(
                     Icons.Filled.Add,
-                    contentDescription = "Add exercise",
+                    contentDescription = stringResource(R.string.add_exercise),
                     modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
                 )
             }
@@ -143,13 +144,13 @@ fun AddProgramExercise(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null,
                                         onClick = {
-                                        viewModel.onEvent(
-                                            ExercisesEvent.UpdateSuperset(
-                                                index,
-                                                index - 1
+                                            viewModel.onEvent(
+                                                ExercisesEvent.UpdateSuperset(
+                                                    index,
+                                                    index - 1
+                                                )
                                             )
-                                        )
-                                    }, onLongClick = {})
+                                        }, onLongClick = {})
                                     .wrapContentHeight()
                             ){
                                 val linked = exercise.supersetExercise == addProgramState.programExercisesAndInfo[index-1].programExerciseId
@@ -165,12 +166,14 @@ fun AddProgramExercise(
                                     Icons.Default.Link
                                 else
                                     Icons.Default.LinkOff,
-                                    if (linked) "Superset" else "Superset off",
-                                    Modifier.scale(scale.value)
+                                    stringResource(if (linked) R.string.superset else R.string.superset_off),
+                                    Modifier
+                                        .scale(scale.value)
                                         .rotate(orientation.value)
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text("Superset",
+                                Text(
+                                    stringResource(R.string.superset),
                                     fontStyle = FontStyle.Italic,
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -198,7 +201,7 @@ fun AddProgramExercise(
                                 )
                                 .padding(
                                     horizontal = dimensionResource(R.dimen.card_outside_padding),
-                                    vertical = dimensionResource(R.dimen.card_space_between)/2
+                                    vertical = dimensionResource(R.dimen.card_space_between) / 2
                                 )
                         ) {
                             Box (Modifier.fillMaxWidth()){
@@ -218,10 +221,10 @@ fun AddProgramExercise(
                                                 }
                                         }
                                         .build(),
-                                    "Exercise image",
+                                    stringResource(R.string.exercise_image),
                                     Modifier
                                         .fillMaxWidth()
-                                        .height(with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 3)
+                                        .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 3)
                                         .align(Alignment.TopCenter)
                                         .clip(RoundedCornerShape(12.dp)),
                                     contentScale = ContentScale.Crop
@@ -235,7 +238,7 @@ fun AddProgramExercise(
                                     IconButton(onClick = { expanded = true }) {
                                         Icon(
                                             Icons.Default.MoreVert,
-                                            contentDescription = "More options",
+                                            contentDescription = stringResource(R.string.morevert_icon_options),
                                             tint = if (brightImage.value) Color.Black else Color.White
                                         )
                                     }
@@ -244,7 +247,7 @@ fun AddProgramExercise(
                                         onDismissRequest = { expanded = false }
                                     ) {
                                         DropdownMenuItem(
-                                            text = { Text("Move up") },
+                                            text = { Text(stringResource(R.string.move_up)) },
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
                                                     ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram-1),
@@ -256,11 +259,11 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.ArrowUpward,
-                                                    contentDescription = "Move up"
+                                                    contentDescription = stringResource(R.string.move_up)
                                                 )
                                             })
                                         DropdownMenuItem(
-                                            text = { Text("Move down") },
+                                            text = { Text(stringResource(R.string.move_down)) },
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
                                                     ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram+1),
@@ -272,11 +275,11 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.ArrowDownward,
-                                                    contentDescription = "Move down"
+                                                    contentDescription = stringResource(R.string.move_down)
                                                 )
                                             })
                                         DropdownMenuItem(
-                                            text = { Text("Edit") },
+                                            text = { Text(stringResource(R.string.edit)) },
                                             onClick = {
                                                 navigator.navigate(
                                                     AddExerciseDialogDestination(
@@ -291,11 +294,11 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.Edit,
-                                                    contentDescription = "Edit"
+                                                    contentDescription = stringResource(R.string.edit)
                                                 )
                                             })
                                         DropdownMenuItem(
-                                            text = { Text("Delete") },
+                                            text = { Text(stringResource(R.string.remove)) },
                                             onClick = {
                                                 viewModel.onEvent(ExercisesEvent.DeleteExercise(
                                                     exercise.programExerciseId
@@ -305,7 +308,7 @@ fun AddProgramExercise(
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.Delete,
-                                                    contentDescription = "Delete"
+                                                    contentDescription = stringResource(R.string.delete)
                                                 )
                                             })
                                     }
@@ -319,22 +322,27 @@ fun AddProgramExercise(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(text = buildAnnotatedString {
                                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                        append("Sets: ")
+                                        append(stringResource(R.string.sets))
+                                        append(": ")
                                     }
                                     append(exercise.reps.size.toString())
                                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                        append(" • Reps: ")
+                                        append(" • ")
+                                        append(stringResource(R.string.reps))
+                                        append(": ")
                                     }
                                     append(exercise.reps.joinToString(", "))
                                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                        append(" • Rest: ")
+                                        append(" • ")
+                                        append(stringResource(R.string.rest))
+                                        append(": ")
                                     }
                                     append(exercise.rest.joinToString("s, ") + "s")
                                 })
                                 if (exercise.note.isNotBlank())
                                     Text(text = buildAnnotatedString {
                                         withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                            append("Note: ")
+                                            append(stringResource(R.string.note))
                                         }
                                         append(exercise.note)
                                     })

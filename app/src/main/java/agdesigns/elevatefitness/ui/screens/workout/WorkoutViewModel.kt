@@ -13,9 +13,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
-import agdesigns.elevatefitness.utils.barbellFromWeight
 import agdesigns.elevatefitness.utils.computeVolume
-import agdesigns.elevatefitness.utils.maybeLbToKg
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -27,6 +25,8 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.math.max
 import androidx.compose.runtime.snapshotFlow
+import com.agdesignes.shared.Equipment
+import com.agdesignes.shared.maybeLbToKg
 import com.google.android.gms.wearable.PutDataMapRequest
 import kotlinx.coroutines.Dispatchers
 import java.time.ZonedDateTime
@@ -103,7 +103,7 @@ sealed class WorkoutEvent{
     // same as above but updates the weight based on the equipment's default de/increment value
     data class AutoStepWeight(
         val newValue: String,
-        val equipment: Exercise.Equipment,
+        val equipment: Equipment,
         val subtract: Boolean
     ): WorkoutEvent()
 
@@ -184,7 +184,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     // StartWorkout is async, need to wait for it to finish
                     startWorkoutJob?.join()
                 }
-                // tare on watch is either lb or kg, but we store in kg
+                // tare on watch can be lb/kg
                 val tareKg = maybeLbToKg(tare, state.value.imperialSystem)
                 // Need to store these in state otherwise TryCompleteSet may fail
                 _state.update { it.copy(
@@ -256,9 +256,13 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 extProgramExerciseId = it.programExerciseId,
                                 orderInProgram = it.orderInProgram,
                                 variation = it.variation,
+                                variationResKey = it.variationResKey,
                                 name = it.name,
+                                nameResKey = it.nameResKey,
                                 image = it.image,
+                                imageResKey = it.imageResKey,
                                 description = it.description,
+                                descriptionResKey = it.descriptionResKey,
                                 equipment = it.equipment,
                                 note = it.note,
                                 reps = it.reps.toList(),
@@ -337,7 +341,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     // when first set completed, we need to create the record
                     if (record == null) {
                         val exercise = state.value.workoutExercises[event.exerciseInWorkout]
-                        if (exercise.equipment == Exercise.Equipment.BODY_WEIGHT)
+                        if (exercise.equipment == Equipment.BODY_WEIGHT)
                             _state.update { it.copy(tare = repository.getUserWeight().first()) }
                         repository.addExerciseRecord(
                             ExerciseRecord(
@@ -350,6 +354,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                     maybeLbToKg(state.value.weightBottomBar.toFloat(), state.value.imperialSystem)
                                 ),
                                 variation = exercise.variation,
+                                variationResKey = exercise.variationResKey,
                                 rest = listOf(event.exerciseRest.toInt()),
                                 tare = state.value.tare
                             )
@@ -358,18 +363,19 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         // update exercise record with new set
                         repository.addExerciseRecord(
                             ExerciseRecord(
-                                record.recordId,
-                                record.extExerciseId,
-                                record.extWorkoutId,
-                                record.exerciseInWorkout,
-                                record.date,
-                                record.reps.plus(state.value.repsBottomBar.toInt()),
-                                record.weights.plus(
+                                recordId = record.recordId,
+                                extExerciseId = record.extExerciseId,
+                                extWorkoutId = record.extWorkoutId,
+                                exerciseInWorkout = record.exerciseInWorkout,
+                                date = record.date,
+                                reps = record.reps.plus(state.value.repsBottomBar.toInt()),
+                                weights = record.weights.plus(
                                     maybeLbToKg(state.value.weightBottomBar.toFloat(), state.value.imperialSystem)
                                 ),
-                                record.variation,
-                                record.rest.plus(event.exerciseRest.toInt()),
-                                state.value.tare  // allow user to change the initial tare, in case they selected wrong one
+                                variation = record.variation,
+                                variationResKey = record.variationResKey,
+                                    record.rest.plus(event.exerciseRest.toInt()),
+                                tare = state.value.tare  // allow user to change the initial tare, in case they selected wrong one
                             )
                         )
                     }
@@ -446,12 +452,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.AutoStepWeight -> {
                 var increment = when (event.equipment) {
-                    Exercise.Equipment.EVERYTHING -> throw Exception("Was asked about the increment of 'everything' equipment. This should not happen.")  // should never happen
-                    Exercise.Equipment.BARBELL -> state.value.incrementBarbell
-                    Exercise.Equipment.BODY_WEIGHT -> state.value.incrementBodyweight
-                    Exercise.Equipment.CABLES -> state.value.incrementCable
-                    Exercise.Equipment.DUMBBELL -> state.value.incrementDumbbell
-                    Exercise.Equipment.MACHINE -> state.value.incrementMachine
+                    Equipment.EVERYTHING -> throw Exception("Was asked about the increment of 'everything' equipment. This should not happen.")  // should never happen
+                    Equipment.BARBELL -> state.value.incrementBarbell
+                    Equipment.BODY_WEIGHT -> state.value.incrementBodyweight
+                    Equipment.CABLES -> state.value.incrementCable
+                    Equipment.DUMBBELL -> state.value.incrementDumbbell
+                    Equipment.MACHINE -> state.value.incrementMachine
                 }
                 if (event.subtract)
                     increment *= -1f
@@ -502,16 +508,17 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         weights[event.set] = event.weight
                         repository.addExerciseRecord(
                             ExerciseRecord(
-                                record.recordId,
-                                record.extExerciseId,
-                                record.extWorkoutId,
-                                record.exerciseInWorkout,
-                                record.date,
-                                reps,
-                                weights,
-                                record.variation,
-                                record.rest,
-                                record.tare
+                                recordId = record.recordId,
+                                extExerciseId = record.extExerciseId,
+                                extWorkoutId = record.extWorkoutId,
+                                exerciseInWorkout = record.exerciseInWorkout,
+                                date = record.date,
+                                reps = reps,
+                                weights = weights,
+                                variation = record.variation,
+                                variationResKey = record.variationResKey,
+                                rest = record.rest,
+                                tare = record.tare
                             )
                         )
                     }
@@ -604,12 +611,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 val nextExercise = if (state.value.currentPage < state.value.workoutExercises.size - 1)
                     state.value.workoutExercises[state.value.currentPage + 1] else null
                 val exerciseIncrement = when (exercise.equipment) {
-                    Exercise.Equipment.EVERYTHING -> throw Exception("Was asked about the increment of 'everything' equipment. This should not happen.")  // should never happen
-                    Exercise.Equipment.BARBELL -> state.value.incrementBarbell
-                    Exercise.Equipment.BODY_WEIGHT -> state.value.incrementBodyweight
-                    Exercise.Equipment.CABLES -> state.value.incrementCable
-                    Exercise.Equipment.DUMBBELL -> state.value.incrementDumbbell
-                    Exercise.Equipment.MACHINE -> state.value.incrementMachine
+                    Equipment.EVERYTHING -> throw Exception("Was asked about the increment of 'everything' equipment. This should not happen.")  // should never happen
+                    Equipment.BARBELL -> state.value.incrementBarbell
+                    Equipment.BODY_WEIGHT -> state.value.incrementBodyweight
+                    Equipment.CABLES -> state.value.incrementCable
+                    Equipment.DUMBBELL -> state.value.incrementDumbbell
+                    Equipment.MACHINE -> state.value.incrementMachine
                 }
                 val dataMapReq = PutDataMapRequest.create("/phone2watch")
                 var exerciseName = exercise.name
@@ -628,22 +635,12 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 dataMapReq.dataMap.putIntegerArrayList("reps", exercise.reps as ArrayList<Int>)
                 dataMapReq.dataMap.putString("note", exercise.note)
                 dataMapReq.dataMap.putFloat("weight", state.value.weightBottomBar.toFloatOrNull() ?: 0f)
-                // is either barbell name or other (x kg/lb)
-                val tare = barbellFromWeight(state.value.tare, state.value.imperialSystem, isRecord = false, noWeight = true)
-                dataMapReq.dataMap.putString("tareBarbellName", tare)
-                dataMapReq.dataMap.putString("equipment", exercise.equipment.equipmentName)
+                dataMapReq.dataMap.putFloat("tareBarbell", state.value.tare)
+                dataMapReq.dataMap.putString("equipmentResKey", exercise.equipment.equipmentResKey)
                 // not necessary but can help verify exercise needs barbell choice
                 dataMapReq.dataMap.putBoolean("imperialSystem", state.value.imperialSystem)
                 if (state.value.restTimestamp != null)
                     dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
-                if (exercise.equipment == Exercise.Equipment.BARBELL) {
-                    // need to pass in the various barbell sizes
-                    val barbells = ExerciseRecord.BarbellType.entries.map { Pair(it.barbellName, it.weight[state.value.imperialSystem]) }
-                    val barbellNames = Array<String>(barbells.size) { barbells[it].first }
-                    val barbellSizes = FloatArray(barbells.size) { barbells[it].second!! }
-                    dataMapReq.dataMap.putFloatArray("barbellSizes", barbellSizes)
-                    dataMapReq.dataMap.putStringArray("barbellNames", barbellNames)
-                }
                 repository.sendWorkout2Wear(
                     dataMapReq,
                     overrideDeadWatch
