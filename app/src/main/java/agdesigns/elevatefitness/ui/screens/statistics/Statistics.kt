@@ -447,7 +447,7 @@ fun Statistics(
                                                 )
                                                 Spacer(Modifier.width(8.dp))
                                                 Text(
-                                                    "${nameDataPair.first}: ${nameDataPair.second.value.toInt()}",
+                                                    "${stringResource(nameDataPair.first)}: ${nameDataPair.second.value.toInt()}",
                                                 )
                                             }
                                         }
