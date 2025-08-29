@@ -116,6 +116,13 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                         ))
                     }
                     repository.removeProgramFromPlan(event.programId)
+                    // reorder programs after this one
+                    val programs2reorder = state.value.programs.filter { it.orderInWorkoutPlan > program.orderInWorkoutPlan }
+                    repository.reorderPrograms(
+                        programs2reorder.map {
+                            WorkoutProgramReorder(it.programId, it.orderInWorkoutPlan-1)
+                        }
+                    )
                 }
             }
         }
