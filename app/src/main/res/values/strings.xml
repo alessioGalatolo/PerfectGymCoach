@@ -763,4 +763,5 @@
     <string name="snackbar_exercise_added">Exercise added successfully, you can continue adding</string>
     <string name="add_exercise_to_i">Add exercise to %1$s</string>
     <string name="image_highlighting_the_muscle">Image highlighting the muscle</string>
+    <string name="exercise_statistics">Exercise statistics</string>
 </resources>

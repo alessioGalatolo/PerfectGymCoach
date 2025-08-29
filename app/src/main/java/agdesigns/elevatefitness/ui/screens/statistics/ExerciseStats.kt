@@ -74,6 +74,7 @@ fun ExerciseStats(
 
                 // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
                 val headers = listOf(
+                    title.ifEmpty { stringResource(R.string.exercise_statistics) },
                     stringResource(R.string.es_header0_volume_progression),
                     stringResource(R.string.es_header1_max_weight_lifted),
                     stringResource(R.string.es_header2_average_weight_lifted),
@@ -122,14 +123,14 @@ fun ExerciseStats(
                     if (state.exerciseRecords.isNotEmpty()) {
                         // Volume progression
                         PlotStat(
-                            headers[0],
-                            stickyHeaders2Id[headers[0]]!!,
+                            headers[1],
+                            stickyHeaders2Id[headers[1]]!!,
                             state.volumeProgression
                         )
                         // max weights lifted
                         PlotStat(
-                            headers[1],
-                            stickyHeaders2Id[headers[1]]!!,
+                            headers[2],
+                            stickyHeaders2Id[headers[2]]!!,
                             state.maxWeights.zip(state.volumeProgression) { maxWeight, lineData ->
                                 LineData(
                                     lineData.x,
@@ -138,8 +139,8 @@ fun ExerciseStats(
                             })
                         // average weights lifted
                         PlotStat(
-                            headers[2],
-                            stickyHeaders2Id[headers[2]]!!,
+                            headers[3],
+                            stickyHeaders2Id[headers[3]]!!,
                             state.avgWeight.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
@@ -148,8 +149,8 @@ fun ExerciseStats(
                             })
                         // max reps done
                         PlotStat(
-                            headers[3],
-                            stickyHeaders2Id[headers[3]]!!,
+                            headers[4],
+                            stickyHeaders2Id[headers[4]]!!,
                             state.maxReps.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
@@ -158,8 +159,8 @@ fun ExerciseStats(
                             })
                         // average reps done
                         PlotStat(
-                            headers[4],
-                            stickyHeaders2Id[headers[4]]!!,
+                            headers[5],
+                            stickyHeaders2Id[headers[5]]!!,
                             state.avgReps.zip(state.volumeProgression) { maxRep, lineData ->
                                 LineData(
                                     lineData.x,
@@ -168,9 +169,9 @@ fun ExerciseStats(
                             })
                         if (state.oneRepMaxs.isNotEmpty()) {
                             // one rep max
-                            item (key = stickyHeaders2Id[headers[5]]!!) {
+                            item (key = stickyHeaders2Id[headers[6]]!!) {
                                 Text(
-                                    headers[5],
+                                    headers[6],
                                     style = MaterialTheme.typography.headlineSmall,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Medium,
@@ -270,9 +271,9 @@ fun ExerciseStats(
                             }
                         }
                         // FIXME: history does not stick
-                        item (key = stickyHeaders2Id[headers[6]]!!) {
+                        item (key = stickyHeaders2Id[headers[7]]!!) {
                             Text(
-                                headers[6],
+                                headers[7],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,

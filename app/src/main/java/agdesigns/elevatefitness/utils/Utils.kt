@@ -5,6 +5,7 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import android.content.Context
 import android.content.res.Configuration
 import android.provider.Settings
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import com.agdesignes.shared.Equipment
@@ -94,7 +95,8 @@ fun getStickyHeader(
     val titleText = if (lastVisibleKey > (highestVisibleId ?: 0)) {
         id2StickyHeader[lastVisibleKey]!!
     } else if (highestVisibleId != null) {
-        id2StickyHeader[highestVisibleId + 1]!!
+        // call can be null if highest header is in list (opposed to being in the topappbar)
+        id2StickyHeader[highestVisibleId + 1]
     } else null
     highestVisibleId ?: lastVisibleKey
     return Pair(titleText, (highestVisibleId ?: lastVisibleKey))
