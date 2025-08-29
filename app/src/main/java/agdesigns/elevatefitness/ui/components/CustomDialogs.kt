@@ -23,6 +23,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -296,9 +297,13 @@ fun InputOtherEquipmentDialog(
     weightUnit: String, // kg or lb
     updateTare: (Float) -> Unit
 ) {
-    // alert dialogue to enter the workout plan/program name
-
     var text by rememberSaveable { mutableStateOf("") }
+    var isValid by remember { mutableStateOf(false) }
+
+    // Validate input
+    LaunchedEffect(text) {
+        isValid = text.toFloatOrNull()?.let { it >= 0 } == true
+    }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     if (dialogIsOpen) {
@@ -307,7 +312,10 @@ fun InputOtherEquipmentDialog(
                 toggleDialog()
             },
             title = {
-                Text(text = stringResource(R.string.enter_barbell_weight_title))
+                Text(
+                    text = stringResource(R.string.enter_barbell_weight_title),
+                    style = MaterialTheme.typography.headlineSmall
+                )
             },
             text = {
                 TextField(
@@ -325,8 +333,15 @@ fun InputOtherEquipmentDialog(
                     keyboardActions = KeyboardActions(onDone = {
                         keyboardController?.hide()
                     }),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    singleLine = true,
+                    isError = text.isNotEmpty() && !isValid,
+                    supportingText = if (text.isNotEmpty() && !isValid) {
+                        { Text("Please enter a valid weight") }
+                    } else null,
                 )
                 LaunchedEffect(focusRequester) {
                     awaitFrame()

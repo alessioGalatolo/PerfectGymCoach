@@ -11,7 +11,6 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,12 +34,33 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.components.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.components.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.components.InfoDialog
+import android.util.Log
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import com.agdesignes.shared.BarbellType
 import com.agdesignes.shared.Equipment
 import com.agdesignes.shared.barbellResFromWeight
@@ -51,6 +71,7 @@ import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscle
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+import kotlin.enums.EnumEntries
 import kotlin.math.min
 
 @OptIn(
@@ -278,72 +299,18 @@ fun ExercisePage(
                                 enter = slideInVertically() + fadeIn(),
                                 exit = slideOutVertically() + fadeOut()
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(stringResource(R.string.barbell))
-                                    val barbellName: String =
-                                            stringResource(barbellResFromWeight(tare)) + " " + weightAndUnit(tare, useImperialSystem, inParenthesis = true)
+                                val barbellName: String =
+                                    stringResource(barbellResFromWeight(tare)) + " " + weightAndUnit(tare, useImperialSystem, inParenthesis = true)
 
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        var expanded by remember { mutableStateOf(false) }
-                                        ExposedDropdownMenuBox(
-                                            expanded = expanded,
-                                            onExpandedChange = { expanded = !expanded },
-                                            modifier = Modifier
-                                                .widthIn(1.dp, Dp.Infinity)
-                                                .weight(1f)
-                                        ) {
-                                            OutlinedTextField(
-                                                readOnly = true,
-                                                value = barbellName,
-                                                onValueChange = {},
-                                                trailingIcon = {
-                                                    ExposedDropdownMenuDefaults.TrailingIcon(
-                                                        expanded = expanded
-                                                    )
-                                                },
-                                                colors = ExposedDropdownMenuDefaults.textFieldColors(
-                                                    focusedContainerColor = Color.Transparent,
-                                                    unfocusedContainerColor = Color.Transparent,
-                                                    errorContainerColor = Color.Transparent
-                                                ),
-                                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
-                                            )
-                                            ExposedDropdownMenu(
-                                                expanded = expanded,
-                                                onDismissRequest = { expanded = false },
-                                            ) {
-                                                BarbellType.entries.forEach { selectionOption ->
-                                                    val fullName = if (selectionOption == BarbellType.OTHER)
-                                                        stringResource(
-                                                            R.string.barbell_custom_value,
-                                                            stringResource(selectionOption.barbellResource)
-                                                        )
-                                                    else
-                                                        stringResource(selectionOption.barbellResource) +
-                                                            " (${selectionOption.weight[useImperialSystem]} ${if (useImperialSystem) stringResource(
-                                                                R.string.lb
-                                                            ) else stringResource(R.string.kg)
-                                                            })"
-                                                    DropdownMenuItem(
-                                                        text = { Text(fullName) },
-                                                        onClick = {
-                                                            expanded = false
-                                                            updateTare(maybeLbToKg(selectionOption.weight[useImperialSystem]!!, useImperialSystem))
-                                                            if (selectionOption == BarbellType.OTHER)
-                                                                toggleOtherEquipment()
-                                                        },
-                                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Spacer(Modifier.height(8.dp))
-                                    }
-                                }
+                                BarbellSelector(
+                                    selectedBarbell = barbellName,
+                                    toggleOtherEquipment = toggleOtherEquipment,
+                                    useImperialSystem = useImperialSystem,
+                                    onBarbellSelected = { weight -> updateTare(weight) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .align(CenterHorizontally)
+                                )
                             }
                             workoutExercises[page].reps.forEachIndexed { setCount, repsCount ->
                                 val toBeDone = setsDone.value <= setCount
@@ -678,6 +645,206 @@ fun ExerciseSettingsMenu(
                         contentDescription = stringResource(R.string.add_another_exercise)
                     )
                 })
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun BarbellSelector(
+    selectedBarbell: String,
+    toggleOtherEquipment: () -> Unit,
+    useImperialSystem: Boolean,
+    onBarbellSelected: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // NOTE: cannot use ExposedDropdownMenu as it currently opens unreliably
+
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier
+        .padding(vertical = 8.dp)
+        .clip(MaterialTheme.shapes.small)
+        .background(
+            MaterialTheme.colorScheme.surfaceContainerHigh,
+            MaterialTheme.shapes.small
+        )
+    ) {
+        Card(
+            onClick = { isExpanded = !isExpanded },
+            modifier = Modifier
+                .fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            shape = MaterialTheme.shapes.small,
+            border = BorderStroke(
+                width = 2.dp,
+                color = if (isExpanded)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.barbell),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = selectedBarbell,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                ExposedDropdownMenuDefaults.TrailingIcon(
+                    expanded = isExpanded
+                )
+            }
+        }
+
+        // Animated options list
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = expandVertically(
+                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+            ) + fadeIn(),
+            exit = shrinkVertically(
+                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+            ) + fadeOut()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                        RoundedCornerShape(16.dp)
+                    ),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                BarbellType.entries.forEachIndexed { index, option ->
+                    val defaultShape: RoundedCornerShape = when (CardDefaults.shape) {
+                        is RoundedCornerShape -> CardDefaults.shape as RoundedCornerShape
+                        else -> RoundedCornerShape(16.dp) // fallback
+                    }
+                    // the corner radius between items
+                    val defaultOtherCorner: Dp = 4.dp
+                    val currentItemShape = when (index) {
+                        0 -> defaultShape.copy(
+                            bottomStart = CornerSize(defaultOtherCorner),
+                            bottomEnd = CornerSize(defaultOtherCorner)
+                        )
+
+                        BarbellType.entries.lastIndex -> defaultShape.copy(
+                            topStart = CornerSize(defaultOtherCorner),
+                            topEnd = CornerSize(defaultOtherCorner),
+                        )
+
+                        else -> RoundedCornerShape(
+                            topStart = defaultOtherCorner,
+                            topEnd = defaultOtherCorner,
+                            bottomStart = defaultOtherCorner,
+                            bottomEnd = defaultOtherCorner
+                        )
+                    }
+                    val optionText = if (option == BarbellType.OTHER) {
+                        stringResource(
+                            R.string.barbell_custom_value,
+                            stringResource(option.barbellResource)
+                        )
+                    } else {
+                        stringResource(option.barbellResource) +
+                                " (${option.weight[useImperialSystem]} ${
+                                    if (useImperialSystem) stringResource(R.string.lb)
+                                    else stringResource(R.string.kg)
+                                })"
+                    }
+
+                    val isSelected = selectedBarbell == optionText || (option == BarbellType.OTHER && selectedBarbell.contains(stringResource(option.barbellResource)))
+
+                    Card(
+                        onClick = {
+                            if (option == BarbellType.OTHER) {
+                                toggleOtherEquipment()
+                            } else {
+                                onBarbellSelected(maybeLbToKg(option.weight[useImperialSystem]!!, useImperialSystem))
+                            }
+                            isExpanded = false
+                        },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected)
+                                MaterialTheme.colorScheme.inverseSurface
+                            else
+                                MaterialTheme.colorScheme.surface
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        shape = currentItemShape
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                // Icon for barbell types
+                                Icon(
+                                    imageVector = if (option == BarbellType.OTHER)
+                                        Icons.Rounded.Edit
+                                    else
+                                        Icons.Rounded.FitnessCenter,
+                                    contentDescription = null,
+                                    tint = if (isSelected)
+                                        MaterialTheme.colorScheme.inverseOnSurface
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Text(
+                                    text = optionText,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (isSelected)
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
+
+                            // Selection indicator
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Rounded.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.inversePrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
