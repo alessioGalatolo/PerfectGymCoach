@@ -28,13 +28,18 @@ import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.components.InfoDialog
 import agdesigns.elevatefitness.ui.components.ResetExerciseProbabilityDialog
+import agdesigns.elevatefitness.ui.screens.home.components.ValueSuggestionRow
 import agdesigns.elevatefitness.ui.screens.workout.components.TextFieldWithButtons
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.input.ImeAction
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
@@ -45,7 +50,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.max
 
 @Destination<ChangePlanGraph>(style = FullscreenDialogTransition::class)
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun AddExerciseDialog(
     navigator: DestinationsNavigator,
@@ -92,6 +99,7 @@ fun AddExerciseDialog(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // make topappbar opaque
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
@@ -273,7 +281,12 @@ fun AddExerciseDialog(
                                 verticalAlignment = CenterVertically,
                                 modifier = Modifier.weight(0.5f)
                             ) {
-                                IconButton({
+                                FilledTonalIconButton(
+                                    shapes = IconButtonDefaults.shapes(
+                                        shape = MaterialTheme.shapes.medium,
+                                        pressedShape = MaterialTheme.shapes.extraExtraLarge
+                                    ),
+                                    onClick = {
                                     viewModel.onEvent(
                                         AddExerciseEvent.UpdateSets(
                                             max(1, addExerciseState.repsArray.size-1).toUInt()
@@ -293,15 +306,18 @@ fun AddExerciseDialog(
                                         Alignment.CenterHorizontally
                                     ))
                                 }
-                                IconButton({
+                                FilledTonalIconButton(
+                                    shapes = IconButtonDefaults.shapes(
+                                        shape = MaterialTheme.shapes.medium,
+                                        pressedShape = MaterialTheme.shapes.extraExtraLarge
+                                    ),
+                                    onClick = {
                                     viewModel.onEvent(
                                         AddExerciseEvent.UpdateSets(
                                             (addExerciseState.repsArray.size + 1).toUInt()
                                         )
                                     )
-                                }
-
-                                ) {
+                                }) {
                                     Icon(Icons.Default.Add, stringResource(R.string.increase_sets))
                                 }
                             }
@@ -320,6 +336,47 @@ fun AddExerciseDialog(
                     }
                     if (!addExerciseState.advancedSets) {
                         item {
+                            // reps/rest when advanced sets if off
+                            var repsBeingFocussed by remember { mutableStateOf(false) }
+                            val repsTextFieldState = rememberTextFieldState(addExerciseState.repsArray.first().toString())
+                            var restBeingFocussed by remember { mutableStateOf(false) }
+                            val restTextFieldState = rememberTextFieldState(addExerciseState.restArray.first().toString())
+                            var repsTextIsValid by remember { mutableStateOf(true) }
+                            LaunchedEffect(repsTextFieldState.text) {
+                                val reps = repsTextFieldState.text.toString().toUIntOrNull()
+                                repsTextIsValid = reps?.let { it > 0U } == true
+                                if (reps?.toUInt()?.let{it  > 0U} == true) {
+                                    viewModel.onEvent(AddExerciseEvent.UpdateReps(reps))
+                                }
+                            }
+                            var restTextIsValid by remember { mutableStateOf(true) }
+                            LaunchedEffect(restTextFieldState.text) {
+                                val rest = restTextFieldState.text.toString().toUIntOrNull()
+                                restTextIsValid = restTextFieldState.text.toString().toUIntOrNull() != null
+                                if (rest != null) {
+                                    viewModel.onEvent(AddExerciseEvent.UpdateRest(rest))
+                                }
+                            }
+                            ValueSuggestionRow(
+                                shouldBeShown = repsBeingFocussed,
+                                options = (1..50).toList(),
+                                onClick = {
+                                    repsTextFieldState.setTextAndPlaceCursorAtEnd(it.toString())
+                                },
+                                valueIsSelected = {
+                                    it.toUInt() == repsTextFieldState.text.toString().toUIntOrNull()
+                                }
+                            )
+                            ValueSuggestionRow(
+                                shouldBeShown = restBeingFocussed,
+                                options = (15..120 step 15).toList(),
+                                onClick = {
+                                    restTextFieldState.setTextAndPlaceCursorAtEnd(it.toString())
+                                },
+                                valueIsSelected = {
+                                    it.toUInt() == restTextFieldState.text.toString().toUIntOrNull()
+                                }
+                            )
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -331,19 +388,20 @@ fun AddExerciseDialog(
                                     verticalAlignment = CenterVertically,
                                     modifier = Modifier.weight(0.5f)
                                 ) {
-                                    var repsText by remember { mutableStateOf(addExerciseState.repsArray.first().toString()) }
-                                    MyDropdownMenu(
-                                        prompt = stringResource(R.string.reps),
-                                        options = (1..12).map { "$it" },
-                                        text = repsText,
-                                        onTextChange = {
-                                            repsText = it
-                                            if (it.toUIntOrNull() != null && it.toUInt() > 0U) {
-                                                viewModel.onEvent(AddExerciseEvent.UpdateReps(it.toUInt()))
-                                            }
-                                        }, keyboardType = KeyboardType.Number,
-                                        textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true }
-
+                                    TextField(
+                                        state = repsTextFieldState,
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Number,
+                                            imeAction = ImeAction.Done
+                                        ),
+                                        label = { Text(stringResource(R.string.reps)) },
+                                        isError = !repsTextIsValid,
+                                        supportingText = if (!repsTextIsValid) {
+                                            { Text(stringResource(R.string.please_enter_a_valid_number)) }
+                                        } else { null },
+                                        modifier = Modifier.onFocusChanged { newFocus ->
+                                            repsBeingFocussed = newFocus.isFocused
+                                        }
                                     )
                                 }
                                 Spacer(
@@ -355,21 +413,24 @@ fun AddExerciseDialog(
                                     verticalAlignment = CenterVertically,
                                     modifier = Modifier.weight(0.5f)
                                 ) {
-                                    var restText by remember { mutableStateOf(addExerciseState.restArray.first().toString()) }
-                                    MyDropdownMenu(
-                                        prompt = stringResource(R.string.rest),
-                                        options = (15..120 step 15).map { "$it" },
-                                        text = restText,
-                                        onTextChange = {
-                                            restText = it
-                                            // try to update but don't mind an error
-                                            if (it.toUIntOrNull() != null) {
-                                                viewModel.onEvent(AddExerciseEvent.UpdateRest(it.toUInt()))
-                                            }
-                                        }, keyboardType = KeyboardType.Number
-                                    ) {
-                                        Text(stringResource(R.string.sec))
-                                    }
+                                    TextField(
+                                        state = restTextFieldState,
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Number,
+                                            imeAction = ImeAction.Done
+                                        ),
+                                        label = { Text(stringResource(R.string.rest)) },
+                                        isError = !restTextIsValid,
+                                        supportingText = if (!restTextIsValid) {
+                                            { Text(stringResource(R.string.please_enter_a_valid_number)) }
+                                        } else { null },
+                                        suffix = {
+                                            Text(stringResource(R.string.sec))
+                                        },
+                                        modifier = Modifier.onFocusChanged { newFocus ->
+                                            restBeingFocussed = newFocus.isFocused
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -378,7 +439,47 @@ fun AddExerciseDialog(
                             Spacer(Modifier.height(16.dp))
                         }
                         itemsIndexed(items = addExerciseState.repsArray, { i, _ -> i }) { index, reps ->
-                            var repsText by remember { mutableStateOf(reps.toString()) }
+                            // reps/rest when advanced sets if off
+                            var repsBeingFocussed by remember { mutableStateOf(false) }
+                            val repsTextFieldState = rememberTextFieldState(reps.toString())
+                            var restBeingFocussed by remember { mutableStateOf(false) }
+                            val restTextFieldState = rememberTextFieldState(addExerciseState.restArray[index].toString())
+                            var repsTextIsValid by remember { mutableStateOf(true) }
+                            LaunchedEffect(repsTextFieldState.text) {
+                                val reps = repsTextFieldState.text.toString().toUIntOrNull()
+                                repsTextIsValid = reps?.let { it > 0U } == true
+                                if (reps?.toUInt()?.let{it  > 0U} == true) {
+                                    viewModel.onEvent(AddExerciseEvent.UpdateRepsAtIndex(reps, index))
+                                }
+                            }
+                            var restTextIsValid by remember { mutableStateOf(true) }
+                            LaunchedEffect(restTextFieldState.text) {
+                                val rest = restTextFieldState.text.toString().toUIntOrNull()
+                                restTextIsValid = restTextFieldState.text.toString().toUIntOrNull() != null
+                                if (rest != null) {
+                                    viewModel.onEvent(AddExerciseEvent.UpdateRestAtIndex(rest, index))
+                                }
+                            }
+                            ValueSuggestionRow(
+                                shouldBeShown = repsBeingFocussed,
+                                options = (1..50).toList(),
+                                onClick = {
+                                    repsTextFieldState.setTextAndPlaceCursorAtEnd(it.toString())
+                                },
+                                valueIsSelected = {
+                                    it.toUInt() == repsTextFieldState.text.toString().toUIntOrNull()
+                                }
+                            )
+                            ValueSuggestionRow(
+                                shouldBeShown = restBeingFocussed,
+                                options = (15..120 step 15).toList(),
+                                onClick = {
+                                    restTextFieldState.setTextAndPlaceCursorAtEnd(it.toString())
+                                },
+                                valueIsSelected = {
+                                    it.toUInt() == restTextFieldState.text.toString().toUIntOrNull()
+                                }
+                            )
                             Row(
                                 verticalAlignment = CenterVertically,
                                 modifier = Modifier
@@ -392,11 +493,12 @@ fun AddExerciseDialog(
                                         Text((index + 1).toString())
                                     }
                                     Spacer(Modifier.width(8.dp))
+                                    // FIXME: should register when textfield gets focus
                                     TextFieldWithButtons(
                                         prompt = stringResource(R.string.reps),
-                                        text = { repsText },
+                                        text = { repsTextFieldState.text.toString() },
                                         onNewText = {
-                                            repsText = it
+                                            repsTextFieldState.setTextAndPlaceCursorAtEnd(it)
                                             if (it.toUIntOrNull() != null && it.toUInt() > 0U) {
                                                 viewModel.onEvent(
                                                     AddExerciseEvent.UpdateRepsAtIndex(
@@ -407,31 +509,31 @@ fun AddExerciseDialog(
                                             }
                                         },
                                         onIncrement = {
-                                            val reps = (repsText.toUIntOrNull() ?: 0U) + 1U
-                                            repsText = reps.toString()
+                                            val reps = (repsTextFieldState.text.toString().toUIntOrNull() ?: 0U) + 1U
+                                            repsTextFieldState.setTextAndPlaceCursorAtEnd(reps.toString())
                                             viewModel.onEvent(
                                                 AddExerciseEvent.UpdateRepsAtIndex(
-                                                    repsText.toUInt(),
+                                                    reps,
                                                     index
                                                 )
                                             )
                                         },
                                         onDecrement = {
-                                            var reps = repsText.toUIntOrNull() ?: 0U
+                                            var reps = repsTextFieldState.text.toString().toUIntOrNull() ?: 0U
                                             if (reps < 2U)
                                                 reps = 1U
                                             else
                                                 reps -= 1U
 
-                                            repsText = reps.toString()
+                                            repsTextFieldState.setTextAndPlaceCursorAtEnd(reps.toString())
                                             viewModel.onEvent(
                                                 AddExerciseEvent.UpdateRepsAtIndex(
-                                                    repsText.toUInt(),
+                                                    reps,
                                                     index
                                                 )
                                             )
                                         },
-                                        textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true },
+                                        textIsValid = { repsTextIsValid },
                                         contentDescription = stringResource(
                                             R.string.reps_for_set,
                                             index+1
@@ -440,27 +542,24 @@ fun AddExerciseDialog(
                                     Spacer(Modifier.width(8.dp))
                                 }
                                 Row(Modifier.weight(1f)) {
-                                    var restText by remember { mutableStateOf(addExerciseState.restArray[index].toString()) }
-                                    MyDropdownMenu(
-                                        prompt = stringResource(R.string.rest_x, index+1),
-                                        options = (15..120 step 15).map { "$it" },
-                                        text = restText,
-                                        onTextChange = {
-                                            restText = it
-                                            if (it.toUIntOrNull() != null) {
-                                                viewModel.onEvent(
-                                                    AddExerciseEvent.UpdateRestAtIndex(
-                                                        it.toUInt(),
-                                                        index
-                                                    )
-                                                )
-                                            }
+                                    TextField(
+                                        state = restTextFieldState,
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Number,
+                                            imeAction = ImeAction.Done
+                                        ),
+                                        label = { Text(stringResource(R.string.rest)) },
+                                        isError = !restTextIsValid,
+                                        supportingText = if (!restTextIsValid) {
+                                            { Text(stringResource(R.string.please_enter_a_valid_number)) }
+                                        } else { null },
+                                        suffix = {
+                                            Text(stringResource(R.string.sec))
                                         },
-                                        keyboardType = KeyboardType.Number,
-                                        textIsValid = { it.toUIntOrNull() != null }
-                                    ) {
-                                        Text(stringResource(R.string.sec))
-                                    }
+                                        modifier = Modifier.onFocusChanged { newFocus ->
+                                            restBeingFocussed = newFocus.isFocused
+                                        }
+                                    )
                                 }
                             }
                         }

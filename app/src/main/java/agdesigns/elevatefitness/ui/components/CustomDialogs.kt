@@ -340,7 +340,7 @@ fun InputOtherEquipmentDialog(
                     singleLine = true,
                     isError = text.isNotEmpty() && !isValid,
                     supportingText = if (text.isNotEmpty() && !isValid) {
-                        { Text("Please enter a valid weight") }
+                        { Text(stringResource(R.string.please_enter_a_valid_number)) }
                     } else null,
                 )
                 LaunchedEffect(focusRequester) {
