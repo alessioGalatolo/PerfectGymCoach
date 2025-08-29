@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.data.db.dao
 
 import agdesigns.elevatefitness.data.db.entity.ArchiveWorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
+import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import androidx.room.Dao
@@ -34,4 +35,7 @@ interface WorkoutPlanDao {
 
     @Update(entity = WorkoutPlan::class)
     suspend fun archivePlan(archiveWorkoutPlan: ArchiveWorkoutPlan)
+
+    @Update(entity = WorkoutPlan::class)
+    suspend fun updateName(workoutPlanRename: WorkoutPlanRename)
 }

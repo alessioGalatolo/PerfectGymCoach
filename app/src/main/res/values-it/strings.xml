@@ -760,4 +760,6 @@
     <string name="add_exercise_to_i">Aggiungi esercizio a %1$s</string>
     <string name="image_highlighting_the_muscle">Immagine con il muscolo in evidenza</string>
     <string name="exercise_statistics">Statistiche esercizio</string>
+    <string name="archive_plan_swipe_error">Non puoi archiviare il tuo piano corrente!</string>
+    <string name="rename_plan">Nuovo nome del piano</string>
 </resources>

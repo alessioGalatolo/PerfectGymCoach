@@ -28,6 +28,9 @@ import agdesigns.elevatefitness.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import androidx.compose.material3.SwipeToDismissBoxDefaults
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.ui.graphics.Color
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -92,10 +95,18 @@ fun ArchivedPlans(
                     Spacer(Modifier.height(4.dp))
                     val planRestoredString = stringResource(R.string.plan_restored)
                     val undoString = stringResource(R.string.undo)
+                    val positionalThresholdFun = SwipeToDismissBoxDefaults.positionalThreshold
+                    val swipeToDismissBoxState = remember(plan.first.planId, plan.first.archived) {
+                        SwipeToDismissBoxState(
+                            initialValue = SwipeToDismissBoxValue.Settled,
+                            positionalThreshold = positionalThresholdFun
+                        )
+                    }
                     PlanCard(
                         navigator = navigator,
                         plan = plan.first,
                         programs = plan.second,
+                        swipeToDismissBoxState = swipeToDismissBoxState,
                         onSwipe = {
                             viewModel.onEvent(PlansEvent.UnarchivePlan(it))
                             scope.launch {
@@ -114,14 +125,15 @@ fun ArchivedPlans(
                                 }
                             }
                         },
+                        swipeBackgroundColor = Color.Green.copy(alpha = 0.3f),
                         swipeIcon = Icons.Default.Unarchive,
                         swipeDescription = stringResource(R.string.unarchive_plan),
-                        swipeBackgroundColor = Color.Green.copy(alpha = 0.3f),
-                        trailingIcon = Icons.Default.Unarchive,
-                        trailingIconDescription = stringResource(R.string.unarchive_plan),
-                        onTrailingIconClick = {
-                            viewModel.onEvent(PlansEvent.UnarchivePlan(plan.first.planId))
+                        primaryActionIcon = Icons.Default.Unarchive,
+                        primaryActionDescription = stringResource(R.string.unarchive_plan),
+                        onPrimaryAction = {
                             scope.launch {
+                                swipeToDismissBoxState.dismiss(SwipeToDismissBoxValue.StartToEnd)
+                                viewModel.onEvent(PlansEvent.UnarchivePlan(plan.first.planId))
                                 snackbarHostState.showSnackbar(planRestoredString)
                             }
                         }

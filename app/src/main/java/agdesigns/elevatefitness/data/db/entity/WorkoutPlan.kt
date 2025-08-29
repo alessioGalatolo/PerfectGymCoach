@@ -33,6 +33,12 @@ data class WorkoutPlanUpdateProgram(
 ): Parcelable
 
 @Parcelize
+data class WorkoutPlanRename(
+    val planId: Long,
+    val name: String
+): Parcelable
+
+@Parcelize
 data class ArchiveWorkoutPlan(
     val planId: Long,
     val archived: Boolean = true

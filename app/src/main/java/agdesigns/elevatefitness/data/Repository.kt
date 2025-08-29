@@ -23,6 +23,7 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.RemovePlan
+import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
@@ -183,6 +184,8 @@ class Repository @Inject constructor(
 
     suspend fun unarchivePlan(planId: Long) = db.workoutPlanDao.archivePlan(ArchiveWorkoutPlan(planId, false))
 
+    suspend fun renamePlan(workoutPlanRename: WorkoutPlanRename) =
+        db.workoutPlanDao.updateName(workoutPlanRename)
 
     /*
      * WORKOUT PROGRAM

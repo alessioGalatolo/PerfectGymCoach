@@ -144,7 +144,7 @@
     <string name="change_programs">Change programs</string>
     <!-- Add/view workout plan -->
     <string name="current_plan">Current plan</string>
-    <string name="set_as_current_plan">Set as current plan</string>
+    <string name="set_as_current_plan">Use as current plan</string>
     <string name="plan_set_as_current">Plan set as current</string>
     <string name="other_plans">Other plans</string>
     <string name="archive_plan_action">Archive plan</string>
@@ -764,4 +764,6 @@
     <string name="add_exercise_to_i">Add exercise to %1$s</string>
     <string name="image_highlighting_the_muscle">Image highlighting the muscle</string>
     <string name="exercise_statistics">Exercise statistics</string>
+    <string name="archive_plan_swipe_error">You cannot archive the current plan!</string>
+    <string name="rename_plan">New name of the plan</string>
 </resources>
