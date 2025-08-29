@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordAndName
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import com.agdesignes.shared.maybeKgToLb
@@ -404,7 +405,7 @@ fun History(
                                             verticalAlignment = Alignment.Top
                                         ) {
                                             Text(
-                                                text = workout.name,
+                                                text = getProgramDisplayName(workout.name),
                                                 style = MaterialTheme.typography.titleMedium,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 fontWeight = FontWeight.SemiBold,
