@@ -164,7 +164,7 @@ fun Home(
     }
     val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
         addCategory(Intent.CATEGORY_BROWSABLE)
-        setData("myapp://openapp".toUri())
+        setData("elevatefitness://autoopenworkout".toUri())
     }
     var showConfirmation by remember { mutableStateOf(false) }
     val text = OpenOnPhoneDialogDefaults.text

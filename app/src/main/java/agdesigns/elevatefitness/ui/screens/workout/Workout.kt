@@ -64,12 +64,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.net.toUri
+import androidx.wear.remote.interactions.RemoteActivityHelper
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.toBitmap
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.parameters.DeepLink
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -79,7 +82,13 @@ import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import kotlin.math.max
 
-@Destination<WorkoutOnlyGraph>(start = true, style = FadeTransition::class)
+@Destination<WorkoutOnlyGraph>(
+    start = true,
+    style = FadeTransition::class,
+    deepLinks = [
+        DeepLink(uriPattern="elevatefitness://autoopenworkout")
+    ]
+)
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class,
@@ -90,13 +99,27 @@ import kotlin.math.max
 fun SharedTransitionScope.Workout(
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
-    programId: Long = 0,
+    programId: Long = 0L,
     previewExercise: ProgramExerciseAndInfo? = null, // preview of the first exercise, used for transition
     quickStart: Boolean = false,
     resumeWorkout: Boolean = false,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
     val workoutState by viewModel.state.collectAsState()
+    LaunchedEffect(workoutState.autoStartFailed) {
+        if (workoutState.autoStartFailed)
+            navigator.navigateUp()
+    }
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        // maybe open wear os app
+        val openWearIntent = Intent(Intent.ACTION_VIEW).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            setData("elevatefitnesswear://startworkout".toUri())
+        }
+        val remoteActivityHelper = RemoteActivityHelper(context)
+        remoteActivityHelper.startRemoteActivity(openWearIntent)
+    }
     // when exiting the screen, stop wear workout
     DisposableEffect(Unit) {
         onDispose {
@@ -112,13 +135,14 @@ fun SharedTransitionScope.Workout(
     val snackbarHostState = remember { SnackbarHostState() }
     if (resumeWorkout)
         viewModel.onEvent(WorkoutEvent.ResumeWorkout)
+    else if (programId == 0L)
+        viewModel.onEvent(WorkoutEvent.AutoStartWorkout)
     else
         viewModel.onEvent(WorkoutEvent.InitWorkout(programId))
 
     val scope = rememberCoroutineScope()
 
     val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
-    val context = LocalContext.current
 
     // request to have notification access to show music playing
     var alreadyRequestedPermission by rememberSaveable { mutableStateOf(false) }

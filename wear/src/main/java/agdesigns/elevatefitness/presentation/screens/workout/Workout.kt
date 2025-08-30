@@ -59,10 +59,15 @@ import com.agdesignes.shared.Equipment
 import com.agdesignes.shared.weightAndUnit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.annotation.parameters.DeepLink
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlin.math.max
 
-@Destination<RootGraph>
+@Destination<RootGraph>(
+    deepLinks = [
+        DeepLink(uriPattern = "elevatefitnesswear://startworkout")
+    ]
+)
 @Composable
 fun Workout(
     navigator: DestinationsNavigator,

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Theme
-import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
@@ -30,6 +29,7 @@ import com.agdesignes.shared.maybeLbToKg
 import com.google.android.gms.wearable.PutDataMapRequest
 import kotlinx.coroutines.Dispatchers
 import java.time.ZonedDateTime
+import kotlin.math.min
 
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
@@ -57,7 +57,8 @@ data class WorkoutState(
     val incrementCable: Float = 0f,
     val currentPage: Int = 0,  // needed to know which is the current exercise
     val setsDone: Int = 0,
-    val hasRecordedExercise: Boolean = false // used to add a flag in cancel workout
+    val hasRecordedExercise: Boolean = false, // used to add a flag in cancel workout
+    val autoStartFailed: Boolean = false  // autoStart was not able to find a workout program, navigate up
 )
 
 sealed class WorkoutEvent{
@@ -122,6 +123,7 @@ sealed class WorkoutEvent{
 
     data object InterruptWearWorkout : WorkoutEvent()
 
+    data object AutoStartWorkout : WorkoutEvent()
 }
 
 @HiltViewModel
@@ -131,6 +133,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
     private var retrieveExercises: Job? = null
     private var resumeWorkoutJob: Job? = null
+    private var autoStartWorkoutJob: Job? = null
     private var retrieveExercisesRecords: Job? = null
     private var timerJob: Job? = null
     private var startWorkoutJob: Job? = null
@@ -490,6 +493,27 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     }
                 }
 
+            }
+            is WorkoutEvent.AutoStartWorkout -> {
+                if (autoStartWorkoutJob == null) {
+                    autoStartWorkoutJob = viewModelScope.launch {
+                        val currentPlanId = repository.getCurrentPlan().first()
+                        if (currentPlanId == null) {
+                            Log.e("WorkoutViewModel", "Tried to auto start workout but current plan is null.")
+                            _state.update { it.copy(autoStartFailed = true) }
+                            return@launch
+                        }
+                        val currentPlan = repository.getPlan(currentPlanId).first()
+                        val programs = repository.getPrograms(currentPlanId).first()
+                        if (programs.isEmpty()) {
+                            Log.e("WorkoutViewModel", "Tried to auto start workout but current plan has no programs.")
+                            _state.update { it.copy(autoStartFailed = true) }
+                            return@launch
+                        }
+                        val upcomingProgram = programs[min(currentPlan.currentProgram, programs.size-1)]
+                        onEvent(WorkoutEvent.InitWorkout(upcomingProgram.programId))
+                    }
+                }
             }
             is WorkoutEvent.EditSetRecord -> {
                 viewModelScope.launch {
