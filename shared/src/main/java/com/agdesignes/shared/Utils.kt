@@ -13,6 +13,13 @@ fun maybeKgToLb(kg: Float, useImperial: Boolean): Float {
     return round(kg * 2.20462f * decimalPlaces) / decimalPlaces
 }
 
+fun maybeKgToLb(kg: Double, useImperial: Boolean): Double {
+    if (!useImperial)
+        return round(kg * decimalPlaces) / decimalPlaces
+    return round(kg * 2.20462f * decimalPlaces) / decimalPlaces
+}
+
+
 fun maybeLbToKg(weight: Float, useImperial: Boolean): Float {
     if (!useImperial)
         return weight

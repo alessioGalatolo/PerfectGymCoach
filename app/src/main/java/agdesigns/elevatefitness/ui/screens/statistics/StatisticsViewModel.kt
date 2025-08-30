@@ -8,10 +8,13 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord.WorkoutIntensity
+import agdesigns.elevatefitness.ui.screens.statistics.components.BestColumnKey
+import agdesigns.elevatefitness.ui.screens.statistics.components.MeanLineKey
 import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import android.util.Log
 import com.agdesignes.shared.Equipment
+import com.agdesignes.shared.maybeKgToLb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -19,8 +22,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.jaikeerthick.composable_graphs.composables.bar.model.BarData
 import com.jaikeerthick.composable_graphs.composables.donut.model.DonutData
-import com.jaikeerthick.composable_graphs.composables.line.model.LineData
-import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -38,8 +41,8 @@ data class StatisticsState(
     val avgCalories: Double = 0.0,
     val currentStreak: Int = 0,
     val longestStreak: Int = 0,
-    val weeklyVolume: List<LineData> = emptyList(),
-    val monthlyWorkouts: List<BarData> = emptyList(),
+    val volumeChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val frequencyChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val muscleGroupDistribution: List<Pair<Int, Float>> = emptyList(),
     val topExercises: List<ExerciseStats> = emptyList(),
     val recentPRs: List<PersonalRecord> = emptyList(),
@@ -47,7 +50,8 @@ data class StatisticsState(
     val selectedTimeFrame: TimeFrame = TimeFrame.MONTH,
     val allExerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     val allWorkouts: List<WorkoutRecord> = emptyList(),
-    val progressTextRes: Int = R.string.stats_loading_generic
+    val progressTextRes: Int = R.string.stats_loading_generic,
+    val volumeIndex2Date: Map<Int, String> = emptyMap()
 )
 
 data class ExerciseStats(
@@ -167,13 +171,13 @@ class StatisticsViewModel @Inject constructor(
             // Calculate basic metrics
             _state.update { it.copy(progressTextRes = R.string.stats_loading_computing) }
             val totalWorkouts = workoutsDateFiltered.size
-            val totalVolume = recordsDateFiltered.sumOf {
+            val totalVolume = maybeKgToLb(recordsDateFiltered.sumOf {
                 computeVolume(
                     it.weights,
                     it.reps,
                     it.tare
                 ).toDouble()
-            }
+            }, state.value.useImperialSystem)
             val avgDuration = if (nonEmptyWorkouts.isNotEmpty()) {
                 nonEmptyWorkouts.map { it.durationSeconds }.average().toLong()
             } else 0L
@@ -188,15 +192,50 @@ class StatisticsViewModel @Inject constructor(
 
             // Generate chart data
             _state.update { it.copy(progressTextRes = R.string.stats_loading_summing) }
-            val weeklyVolume = generateVolumeProgressionData(recordsDateFiltered)
+            val volumeProgression = generateVolumeProgressionData(
+                recordsDateFiltered,
+                timeFrame,
+                state.value.useImperialSystem
+            )
+            val volumeIndex2Date = volumeProgression.mapIndexed { index, pair -> index to pair.first }.toMap()
+            viewModelScope.launch {
+                if (volumeProgression.isEmpty())
+                    return@launch
+                state.value.volumeChartProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            volumeProgression.indices.toList(),
+                            volumeProgression.map { it.second }
+                        )
+                    }
+                    extras {
+                        val nonZeroVolumeEntries = volumeProgression.filter { it.second > 0 }.size
+                        it[MeanLineKey] = volumeProgression.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
+                        it[BestColumnKey] = volumeProgression.maxOfOrNull { it.second }?.toDouble() ?: 0.0
+                    }
+                }
+            }
             _state.update { it.copy(progressTextRes = R.string.stats_loading_counting) }
             val monthlyWorkouts = generateMonthlyWorkoutData(nonEmptyWorkouts)
+            viewModelScope.launch {
+                if (monthlyWorkouts.isEmpty())
+                    return@launch
+                state.value.frequencyChartProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            monthlyWorkouts.map { it.first },
+                            monthlyWorkouts.map { it.second }
+                        )
+                    }
+                }
+            }
+
             _state.update { it.copy(progressTextRes = R.string.stats_loading_computing_muscle) }
             val muscleDistribution = generateMuscleDistribution(recordsDateFiltered)
             _state.update { it.copy(progressTextRes = R.string.stats_loading_deriving) }
-            val topExercises = generateTopExercises(recordsDateFiltered)
+            val topExercises = generateTopExercises(recordsDateFiltered, state.value.useImperialSystem)
             _state.update { it.copy(progressTextRes = R.string.stats_loading_prs) }
-            val recentPRs = generateRecentPRs(recordsDateFiltered)
+            val recentPRs = generateRecentPRs(recordsDateFiltered, state.value.useImperialSystem)
             _state.update { it.copy(progressTextRes = R.string.stats_loading_equipment) }
             val equipmentUsage = generateEquipmentUsage(recordsDateFiltered)
 
@@ -210,8 +249,7 @@ class StatisticsViewModel @Inject constructor(
                     avgCalories = avgCalories,
                     currentStreak = currentStreak,
                     longestStreak = longestStreak,
-                    weeklyVolume = weeklyVolume,
-                    monthlyWorkouts = monthlyWorkouts,
+                    volumeIndex2Date = volumeIndex2Date,
                     muscleGroupDistribution = muscleDistribution,
                     topExercises = topExercises,
                     recentPRs = recentPRs,
@@ -256,38 +294,21 @@ class StatisticsViewModel @Inject constructor(
     }
 
     private fun generateMonthlyWorkoutData(
-        workouts: List<WorkoutRecord>,
-        maxRecords: Int = 20,
-        maxLabels: Int = 5
-    ): List<BarData> {
+        workouts: List<WorkoutRecord>
+    ): List<Pair<Long, Float>> {
         val formatter = DateTimeFormatter.ofPattern("MMM yyyy")
 
         var monthlyData = workouts.sortedBy { it.startDate }.groupBy { it.startDate!!.format(formatter) }.toList()
 
-        if (monthlyData.size > maxRecords) {
-            monthlyData = monthlyData.drop(monthlyData.size - maxRecords)
-        }
-        var saveLabelEvery = monthlyData.size.floorDiv(maxLabels)
-        if (monthlyData.size.mod(maxLabels) != 0) {
-            saveLabelEvery += 1
-        }
-        return monthlyData.mapIndexed { index, pair ->
-            if (index % saveLabelEvery == 0) {
-                BarData(
-                    pair.first,
-                    pair.second.size.toFloat()
-                )
-            } else {
-                BarData(
-                    "",
-                    pair.second.size.toFloat()
-                )
-            }
-
+        return monthlyData.map { pair ->
+            Pair(
+                pair.second[0].startDate!!.toInstant().toEpochMilli(),
+                pair.second.size.toFloat()
+            )
         }
     }
 
-    private suspend fun generateTopExercises(records: List<ExerciseRecordAndEquipment>): List<ExerciseStats> {
+    private suspend fun generateTopExercises(records: List<ExerciseRecordAndEquipment>, useImperialSystem: Boolean): List<ExerciseStats> {
         val exerciseStats = mutableMapOf<Long, Triple<String, Int, Float>>()
 
         records.forEach { record ->
@@ -309,11 +330,14 @@ class StatisticsViewModel @Inject constructor(
             val tripleData = it.value
             val name = tripleData.first
             val count = tripleData.second
-            val totalVolume = tripleData.third
-            val maxWeight = records
-                .filter { record -> repository.getExercise(record.extExerciseId).first().name == name }
-                .flatMap { it.weights }
-                .maxOrNull() ?: 0f
+            val totalVolume = maybeKgToLb(tripleData.third, useImperialSystem)
+            val maxWeight = maybeKgToLb(
+                records
+                    .filter { record -> repository.getExercise(record.extExerciseId).first().name == name }
+                    .flatMap { it.weights }
+                    .maxOrNull() ?: 0f,
+                useImperialSystem
+            )
 
             ExerciseStats(id, name, count, totalVolume, maxWeight)
         }.sortedByDescending { it.totalVolume }
@@ -358,7 +382,7 @@ class StatisticsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun generateRecentPRs(records: List<ExerciseRecordAndEquipment>): List<PersonalRecord> {
+    private suspend fun generateRecentPRs(records: List<ExerciseRecordAndEquipment>, useImperialSystem: Boolean): List<PersonalRecord> {
         // filter records with no weights
         val filteredRecords = records.filter { it.weights.isNotEmpty() }
 
@@ -369,10 +393,11 @@ class StatisticsViewModel @Inject constructor(
                 exercise.let {
                     val maxWeight = record.weights.maxOrNull() ?: 0f
                     val repsAtMax = record.reps[record.weights.indexOf(maxWeight)]
+                    val weight = maybeKgToLb(maxWeight + record.tare, useImperialSystem)
                     PersonalRecord(
                         exerciseId = record.extExerciseId,
                         exerciseName = it.name,
-                        weight = maxWeight + record.tare,
+                        weight = weight,
                         reps = repsAtMax,
                         date = record.date
                     )

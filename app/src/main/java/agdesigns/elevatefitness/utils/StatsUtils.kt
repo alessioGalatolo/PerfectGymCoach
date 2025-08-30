@@ -1,10 +1,16 @@
 package agdesigns.elevatefitness.utils
 
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.ui.screens.statistics.TimeFrame
 import android.util.Log
-import com.jaikeerthick.composable_graphs.composables.line.model.LineData
+import com.agdesignes.shared.maybeKgToLb
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 import kotlin.math.exp
 import kotlin.math.pow
 
@@ -21,49 +27,83 @@ fun computeVolume(weights: List<Float>, reps: List<Int>, tare: Float): Float {
 
 fun generateVolumeProgressionData(
     records: List<ExerciseRecordAndEquipment>,
-    maxRecords: Int = 20, // max points to display
-    maxLabels: Int = 5 // among the points, max n of labels
-): List<LineData> {
-    val formatter = DateTimeFormatter.ofPattern("MMM dd")
+    timeFrame: TimeFrame,
+    useImperialSystem: Boolean
+): List<Pair<String, Float>> {
+    val zone: ZoneId = records.firstOrNull()?.date?.zone ?: ZoneId.systemDefault()
+    val today: ZonedDateTime = ZonedDateTime.now(zone).truncatedTo(ChronoUnit.DAYS)
+    val locale: Locale = Locale.getDefault()
 
-    val dateVolumePairs = records.map {
-        Pair(it.date, computeVolume(it.weights, it.reps, it.tare))
+    val weekLabelFmt = DateTimeFormatter.ofPattern("EEE", locale)  // e.g., Sun
+    val dayLabelFmt = DateTimeFormatter.ofPattern("d MMM", locale)  // e.g., 30 Aug
+    val monthLabelFmt = DateTimeFormatter.ofPattern("MMM", locale)  // e.g., Aug
+    val yearLabelFmt = DateTimeFormatter.ofPattern("MMM yyyy", locale)  // e.g., Aug 2025
+
+    // Pre-compute volumes per record in the working zone
+    val dateVolumePairs: List<Pair<ZonedDateTime, Float>> = records.map {
+        it.date.withZoneSameInstant(zone) to maybeKgToLb(
+            computeVolume(it.weights, it.reps, it.tare),
+            useImperialSystem
+        )
     }
-    val dateVolumePairsNeeded = mutableListOf<Pair<ZonedDateTime, Float>>()
-    // get maxRecords but get avg from missing ones
-    var cumulatedVolume = 0f
-    var cumulatedN = 0
-    var saveRecordEvery = dateVolumePairs.size.floorDiv(maxRecords)
-    if (dateVolumePairs.size.mod(maxRecords) != 0) {
-        saveRecordEvery += 1
-    }
-    dateVolumePairs.forEachIndexed { index, pair ->
-        cumulatedVolume += pair.second
-        cumulatedN++
-        if (index % saveRecordEvery == 0) {
-            val pair2add = Pair(pair.first, cumulatedVolume / cumulatedN)
-            dateVolumePairsNeeded.add(pair2add)
-            cumulatedVolume = 0f
-            cumulatedN = 0
+
+    fun sumByDay(): Map<LocalDate, Float> =
+        dateVolumePairs
+            .groupBy { it.first.toLocalDate() }
+            .mapValues { (_, list) -> list.fold(0f) { acc, pair -> acc + pair.second } }
+
+    fun sumByMonth(): Map<YearMonth, Float> =
+        dateVolumePairs
+            .groupBy { YearMonth.from(it.first) }
+            .mapValues { (_, list) -> list.fold(0f) { acc, pair -> acc + pair.second } }
+
+    return when (timeFrame) {
+        TimeFrame.WEEK -> {
+            val sums = sumByDay()
+            val start = today.minusDays(6)
+            (0..6).map { i ->
+                val day = start.plusDays(i.toLong())
+                weekLabelFmt.format(day) to (sums[day.toLocalDate()] ?: 0f)
+            }
         }
 
-    }
-    Log.d("StatisticsViewModel", "dateVolumePairsNeeded: $dateVolumePairsNeeded")
-    var saveLabelEvery = dateVolumePairsNeeded.size.floorDiv(maxLabels)
-    if (dateVolumePairsNeeded.size.mod(maxLabels) != 0) {
-        saveLabelEvery += 1
-    }
-    return dateVolumePairsNeeded.sortedBy { it.first }.mapIndexed { index, pair ->
-        if (index % saveLabelEvery == 0) {
-            LineData(
-                pair.first.format(formatter),
-                pair.second
-            )
-        } else {
-            LineData(
-                "",
-                pair.second
-            )
+        TimeFrame.MONTH -> {
+            if (dateVolumePairs.isEmpty()) return emptyList()
+            val sums = sumByDay()
+            val startDate = dateVolumePairs.minOf { it.first.toLocalDate() } // only back to oldest entry
+            val endDate = today.toLocalDate()
+            val daysBetween = ChronoUnit.DAYS.between(startDate, endDate).toInt()
+            (0..daysBetween).map { i ->
+                val d = startDate.plusDays(i.toLong())
+                val anchor = d.atStartOfDay(zone)
+                dayLabelFmt.format(anchor) to (sums[d] ?: 0f)
+            }
+        }
+
+        TimeFrame.YEAR -> {
+            if (dateVolumePairs.isEmpty()) return emptyList()
+            val sums = sumByMonth()
+            val startYm = YearMonth.from(dateVolumePairs.minOf { it.first }) // only back to oldest entry
+            val endYm = YearMonth.from(today)
+            val monthsBetween = ChronoUnit.MONTHS.between(startYm.atDay(1), endYm.atDay(1)).toInt()
+            (0..monthsBetween).map { i ->
+                val ym = startYm.plusMonths(i.toLong())
+                val anchor = ym.atDay(1).atStartOfDay(zone)
+                monthLabelFmt.format(anchor) to (sums[ym] ?: 0f)
+            }
+        }
+
+        TimeFrame.ALL_TIME -> {
+            if (dateVolumePairs.isEmpty()) return emptyList()
+            val sums = sumByMonth()
+            val startYm = sums.keys.minOrNull()!!
+            val endYm = YearMonth.from(today)
+            val monthsBetween = ChronoUnit.MONTHS.between(startYm.atDay(1), endYm.atDay(1)).toInt()
+            (0..monthsBetween).map { i ->
+                val ym = startYm.plusMonths(i.toLong())
+                val anchor = ym.atDay(1).atStartOfDay(zone)
+                yearLabelFmt.format(anchor) to (sums[ym] ?: 0f)
+            }
         }
     }
 }

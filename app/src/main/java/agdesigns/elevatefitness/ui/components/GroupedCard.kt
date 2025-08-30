@@ -35,7 +35,10 @@ fun GroupedCard(
             }
             // the corner radius between items
             val defaultOtherCorner: Dp = 4.dp
-            val currentItemShape = when (index) {
+            val currentItemShape = if (items.size == 1)
+                defaultShape
+            else
+                when (index) {
                 0 -> defaultShape.copy(
                     bottomStart = CornerSize(defaultOtherCorner),
                     bottomEnd = CornerSize(defaultOtherCorner)

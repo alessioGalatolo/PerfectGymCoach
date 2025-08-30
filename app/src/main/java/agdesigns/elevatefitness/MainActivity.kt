@@ -15,6 +15,8 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Theme
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.rememberNavHostEngine
@@ -59,11 +61,13 @@ class MainActivity : ComponentActivity() {
             val navController = engine.rememberNavController()
 
             ElevateFitnessTheme (darkTheme = darkTheme) {
-                DestinationsNavHost(
-                    navGraph = NavGraphs.root,
-                    engine = engine,
-                    navController = navController
-                )
+                ProvideVicoTheme(rememberM3VicoTheme()) {
+                    DestinationsNavHost(
+                        navGraph = NavGraphs.root,
+                        engine = engine,
+                        navController = navController
+                    )
+                }
             }
         }
     }

@@ -9,6 +9,9 @@ import androidx.compose.ui.Modifier
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.components.GroupedCard
+import agdesigns.elevatefitness.ui.screens.statistics.components.MeanLineKey
+import agdesigns.elevatefitness.ui.screens.statistics.components.PillChart
+import agdesigns.elevatefitness.ui.screens.statistics.components.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.getStickyHeader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.*
@@ -46,15 +49,16 @@ import com.jaikeerthick.composable_graphs.composables.donut.DonutChart
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartStyle
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartType
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutSliceType
-import com.jaikeerthick.composable_graphs.composables.line.LineGraph
-import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphStyle
-import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphVisibility
 import com.jaikeerthick.composable_graphs.composables.pie.PieChart
 import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
-import com.jaikeerthick.composable_graphs.style.LabelPosition
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import java.text.DecimalFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -174,97 +178,88 @@ fun Statistics(
                     )
 
                     // Volume Progress Chart
-                    if (state.weeklyVolume.isNotEmpty()) {
-                        item(stickyHeaders2Id[headers[2]]) {
-                            Text(
-                                headers[2],
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                        item {
-                            var selectedValue by remember { mutableStateOf("") }
-                            ElevatedCard(
+                    item(stickyHeaders2Id[headers[2]]) {
+                        Text(
+                            headers[2],
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp)
+                                .fillMaxWidth()
+                        )
+                    }
+                    item {
+                        var selectedValue by remember { mutableStateOf("") }
+                        ElevatedCard(
 //                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            ) {
-                                if (selectedValue.isNotEmpty()) {
-                                    Text(
-                                        stringResource(R.string.selected_value_i, selectedValue),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(16.dp)
-                                    )
-                                }
-                                LineGraph(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp)
-                                        .padding(16.dp),
-                                    data = state.weeklyVolume,
-                                    style = LineGraphStyle(
-                                        visibility = LineGraphVisibility(
-                                            isYAxisLabelVisible = true
-                                        ),
-                                        yAxisLabelPosition = LabelPosition.LEFT
-                                    ),
-                                    onPointClick = { selectedValue = it.y.toString() }
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        ) {
+                            if (selectedValue.isNotEmpty()) {
+                                Text(
+                                    stringResource(R.string.selected_value_i, selectedValue),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(16.dp)
                                 )
                             }
+                            // TODO: add volume by muscle group
+                            PillChart(
+                                modelProducer = state.volumeChartProducer,
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    DecimalFormat("#.## ${if (state.useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)}")
+                                ),
+                                xValueFormatter = CartesianValueFormatter { _, value, _ ->
+                                    val index = value.toInt().coerceIn(0, state.volumeIndex2Date.keys.max())
+                                    state.volumeIndex2Date[index]?.format(
+                                        DateTimeFormatter.ofPattern("MMM dd")
+                                    ) ?: ""
+                                },
+                                decorations = listOf(
+                                    rememberHorizontalLine(
+                                        MeanLineKey,
+                                        stringResource(R.string.average)
+                                    )
+                                ),
+                                modifier = Modifier.padding(8.dp),
+                                scrollable = state.selectedTimeFrame == TimeFrame.ALL_TIME
+                            )
                         }
                     }
 
                     // Workout Frequency Chart
-                    if (state.monthlyWorkouts.isNotEmpty()) {
-                        item(stickyHeaders2Id[headers[3]]) {
-                            Text(
-                                headers[3],
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp)
-                                    .fillMaxWidth()
+                    item(stickyHeaders2Id[headers[3]]) {
+                        Text(
+                            headers[3],
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp)
+                                .fillMaxWidth()
+                        )
+                    }
+                    item {
+                        ElevatedCard(
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        ) {
+                            PillChart(
+                                state.frequencyChartProducer,
+                                baseShape = MaterialTheme.shapes.small,
+                                baseColor = MaterialTheme.colorScheme.tertiary,
+                                xValueFormatter = CartesianValueFormatter { _, value, _ ->
+                                    Instant
+                                        .ofEpochMilli(value.toLong())
+                                        .atZone(ZoneId.systemDefault()).format(
+                                            DateTimeFormatter.ofPattern("MMM yyyy")
+                                        )
+                                },
+                                scrollable = true,
+                                modifier = Modifier.padding(8.dp)
                             )
-                        }
-                        item {
-                            var selectedValue by remember { mutableStateOf("") }
-                            ElevatedCard(
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            ) {
-                                if (selectedValue.isNotEmpty()) {
-                                    Text(
-                                        stringResource(R.string.selected_value_i, selectedValue),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(16.dp)
-                                    )
-                                }
-                                BarGraph(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp)
-                                        .padding(16.dp),
-                                    data = state.monthlyWorkouts.map {
-                                        BarData(it.x, it.y)
-                                    },
-                                    onBarClick = { selectedValue = it.y.toInt().toString() },
-                                    // FIXME: cannot show y labels as it shows one label per point
-                                    // resulting in repeated entries e.g., 0 1 1 2 3 3 4
-//                                style = BarGraphStyle(
-//                                    visibility = BarGraphVisibility(
-//                                        isYAxisLabelVisible = true
-//                                    ),
-//                                    yAxisLabelPosition = LabelPosition.LEFT
-//                                )
-                                )
-                            }
                         }
                     }
 

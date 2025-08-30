@@ -5,10 +5,14 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.ui.screens.statistics.components.BestColumnKey
+import agdesigns.elevatefitness.ui.screens.statistics.components.MeanLineKey
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
 import agdesigns.elevatefitness.utils.estimate1RM
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
-import com.jaikeerthick.composable_graphs.composables.line.model.LineData
+import com.agdesignes.shared.Equipment
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +22,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import javax.inject.Inject
 
 data class ExerciseStatsState(
@@ -25,12 +31,15 @@ data class ExerciseStatsState(
     val exercise: Exercise? = null,
     val exerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     val oneRepMaxFormula: OneRepMaxFormula = OneRepMaxFormula.EPLEY,
-    val volumeProgression: List<LineData> = emptyList(),
-    val maxWeights: List<Float> = emptyList(),
-    val maxReps: List<Int> = emptyList(),
-    val avgWeight: List<Float> = emptyList(),
-    val avgReps: List<Float> = emptyList(),
-    val oneRepMaxs: List<Float> = emptyList()
+    val volumeProgressionAllProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val volumeProgressionMonthProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val maxWeightsProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val maxRepsProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val avgWeightProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val avgRepsProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val oneRepMaxsProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val indices2dates: Map<Int, String> = emptyMap(),
+    val volumeMonthIndex2Date: Map<Int, String> = emptyMap(),
 )
 
 sealed class ExerciseStatsEvent{
@@ -107,32 +116,165 @@ class ExerciseStatsViewModel @Inject constructor(private val repository: Reposit
         // computeStats
         if (state.value.exerciseRecords.isNotEmpty()) {
             val exerciseRecords = state.value.exerciseRecords
-            // exerciseRecords may be A LOT. If more than 20, split plots
-            val maxRecordsPerPlot = 20
-            val maxLabelsPerPlot = 5
-            var numPlots = exerciseRecords.size / maxRecordsPerPlot
-            if (exerciseRecords.size % maxRecordsPerPlot != 0) {
-                numPlots++
-            }
-            val volumeProgression = generateVolumeProgressionData(
+            val volumeProgressionAll = generateVolumeProgressionData(
                 exerciseRecords,
-                maxRecords = Int.MAX_VALUE,
-                maxLabels = numPlots * maxLabelsPerPlot
+                TimeFrame.ALL_TIME,
+                state.value.imperialSystem
             )
+            val volumeAllIndex2Date = volumeProgressionAll.mapIndexed { index, pair -> index to pair.first }.toMap()
+            viewModelScope.launch {
+                if (volumeProgressionAll.isEmpty())
+                    return@launch
+                state.value.volumeProgressionAllProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            volumeProgressionAll.indices.toList(),
+                            volumeProgressionAll.map { it.second }
+                        )
+                    }
+                    extras {
+                        val nonZeroVolumeEntries = volumeProgressionAll.filter { it.second > 0 }.size
+                        it[MeanLineKey] = volumeProgressionAll.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
+                        it[BestColumnKey] = volumeProgressionAll.maxOfOrNull { it.second }?.toDouble() ?: 0.0
+                    }
+                }
+            }
+            val startDate = ZonedDateTime.now().minusMonths(1)
+            val volumeProgressionMonth = generateVolumeProgressionData(
+                exerciseRecords.filter { it.date.isAfter(startDate) },
+                TimeFrame.MONTH,
+                state.value.imperialSystem
+            )
+            val volumeMonthIndex2Date = volumeProgressionMonth.mapIndexed { index, pair -> index to pair.first }.toMap()
+            viewModelScope.launch {
+                if (volumeProgressionMonth.isEmpty())
+                    return@launch
+                state.value.volumeProgressionMonthProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            volumeProgressionMonth.indices.toList(),
+                            volumeProgressionMonth.map { it.second }
+                        )
+                    }
+                    extras {
+                        val nonZeroVolumeEntries = volumeProgressionMonth.filter { it.second > 0 }.size
+                        it[MeanLineKey] = volumeProgressionMonth.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
+                        it[BestColumnKey] = volumeProgressionMonth.maxOfOrNull { it.second }?.toDouble() ?: 0.0
+                    }
+                }
+            }
             val maxWeights = exerciseRecords.map { it.weights.max() + it.tare }
+            viewModelScope.launch {
+                if (maxWeights.isEmpty())
+                    return@launch
+                state.value.maxWeightsProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            maxWeights.indices.toList(),
+                            maxWeights
+                        )
+                    }
+                }
+            }
             val maxReps = exerciseRecords.map { it.reps.max() }
+            viewModelScope.launch {
+                if (maxReps.isEmpty())
+                    return@launch
+                state.value.maxRepsProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            maxReps.indices.toList(),
+                            maxReps
+                        )
+                    }
+                }
+            }
             val avgWeight = exerciseRecords.map { it.weights.average().toFloat() + it.tare }
+            viewModelScope.launch {
+                if (avgWeight.isEmpty())
+                    return@launch
+                state.value.avgWeightProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            avgWeight.indices.toList(),
+                            avgWeight
+                        )
+                    }
+                }
+            }
             val avgReps = exerciseRecords.map { it.reps.average().toFloat() }
+            viewModelScope.launch {
+                if (avgReps.isEmpty())
+                    return@launch
+                state.value.avgRepsProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            avgReps.indices.toList(),
+                            avgReps
+                        )
+                    }
+                }
+            }
             val oneRepMaxs = exerciseRecords.map { estimate1RM(it, state.value.oneRepMaxFormula) }
+            viewModelScope.launch {
+                if (oneRepMaxs.isEmpty())
+                    return@launch
+                state.value.oneRepMaxsProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            oneRepMaxs.indices.toList(),
+                            oneRepMaxs
+                        )
+                    }
+                }
+            }
             _state.update {
                 it.copy(
-                    volumeProgression = volumeProgression,
-                    maxWeights = maxWeights,
-                    maxReps = maxReps,
-                    avgWeight = avgWeight,
-                    avgReps = avgReps,
-                    oneRepMaxs = oneRepMaxs
+                    indices2dates = volumeAllIndex2Date,
+                    volumeMonthIndex2Date = volumeMonthIndex2Date,
                 )
+            }
+        }
+    }
+
+    private fun getFakeRecords(): List<ExerciseRecordAndEquipment> {
+        return buildList {
+            val zone = ZoneId.systemDefault()
+
+            // Create data for the last 2 years, ~ every 3–4 days
+            var id = 1L
+            val startDate = ZonedDateTime.now(zone).minusYears(2)
+            var currentDate = startDate
+
+            while (currentDate.isBefore(ZonedDateTime.now(zone))) {
+                val reps = when ((1..3).random()) {
+                    1 -> listOf(5, 5, 5)
+                    2 -> listOf(10, 8, 6)
+                    else -> listOf(12, 12, 12, 12)
+                }
+                val weights = reps.map { (40..120).random().toFloat() }
+                val tare = listOf(0f, 20f).random()
+                val rest = reps.map { listOf(60, 90, 120).random() }
+
+                add(
+                    ExerciseRecordAndEquipment(
+                        recordId = id++,
+                        extExerciseId = (1..5).random().toLong(), // simulate different exercises
+                        extWorkoutId = (1..20).random().toLong(),
+                        exerciseInWorkout = (1..3).random(),
+                        date = currentDate,
+                        reps = reps,
+                        weights = weights,
+                        tare = tare,
+                        variation = "variation_$id",
+                        variationResKey = "variation_key_$id",
+                        rest = rest,
+                        equipment = Equipment.BARBELL
+                    )
+                )
+
+                // progress time irregularly to make sparse data
+                currentDate = currentDate.plusDays((2..6).random().toLong())
             }
         }
     }

@@ -206,12 +206,13 @@
     <string name="move_program_down_info">Move program down (changing its order in the plan)</string>
     <!-- ExerciseStatistics screen -->
     <string name="es_header0_volume_progression">Volume Progression</string>
-    <string name="es_header1_max_weight_lifted">Max Weight Lifted</string>
-    <string name="es_header2_average_weight_lifted">Average Weight Lifted</string>
-    <string name="es_header3_max_reps_done">Max Reps Done</string>
-    <string name="es_header4_average_reps_done">Average Reps Done</string>
-    <string name="es_header5_one_rep_max">One Rep Max</string>
-    <string name="es_header6_history">History</string>
+    <string name="es_header1_volume_progression_month">Volume Progression (last month)</string>
+    <string name="es_header2_max_weight_lifted">Max Weight Lifted</string>
+    <string name="es_header3_average_weight_lifted">Average Weight Lifted</string>
+    <string name="es_header4_max_reps_done">Max Reps Done</string>
+    <string name="es_header5_average_reps_done">Average Reps Done</string>
+    <string name="es_header6_one_rep_max">One Rep Max</string>
+    <string name="es_header7_history">History</string>
     <string name="selected_value_i">Selected value: %1$s</string>
     <string name="too_few_records_for_stats">Keep going! Once you have more than one record, you will see key statistics here</string>
     <!-- Statistics -->
@@ -766,4 +767,6 @@
     <string name="exercise_statistics">Exercise statistics</string>
     <string name="archive_plan_swipe_error">You cannot archive the current plan!</string>
     <string name="rename_plan">New name of the plan</string>
+    <string name="average">Average</string>
+    <string name="_1rm_calculation_method">1RM Calculation method</string>
 </resources>

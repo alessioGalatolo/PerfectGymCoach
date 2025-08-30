@@ -205,13 +205,14 @@
     <string name="move_program_up_info">Sposta programma in alto (cambiando l\'ordine nel piano)</string>
     <string name="move_program_down_info">Sposta programma in basso (cambiando l\'ordine nel piano)</string>
     <!-- ExerciseStatistics screen -->
-    <string name="es_header0_volume_progression">Progressione del volume</string>
-    <string name="es_header1_max_weight_lifted">Peso massimo sollevato</string>
-    <string name="es_header2_average_weight_lifted">Peso medio sollevato</string>
-    <string name="es_header3_max_reps_done">Massime ripetizioni fatte</string>
-    <string name="es_header4_average_reps_done">Ripetizioni medie fatte</string>
-    <string name="es_header5_one_rep_max">Massimale a una ripetizione</string>
-    <string name="es_header6_history">Cronologia</string>
+    <string name="es_header0_volume_progression">Progresso del volume</string>
+    <string name="es_header1_volume_progression_month">Progresso del volume (ultimo mese)</string>
+    <string name="es_header2_max_weight_lifted">Peso massimo sollevato</string>
+    <string name="es_header3_average_weight_lifted">Peso medio sollevato</string>
+    <string name="es_header4_max_reps_done">Massime ripetizioni fatte</string>
+    <string name="es_header5_average_reps_done">Ripetizioni medie fatte</string>
+    <string name="es_header6_one_rep_max">Massimale a una ripetizione</string>
+    <string name="es_header7_history">Cronologia</string>
     <string name="selected_value_i">Valore selezionato: %1$s</string>
     <string name="too_few_records_for_stats">Continua così! Una volta che avrai più di un record, vedrai qui le statistiche principali</string>
     <!-- Statistics -->
@@ -762,4 +763,6 @@
     <string name="exercise_statistics">Statistiche esercizio</string>
     <string name="archive_plan_swipe_error">Non puoi archiviare il tuo piano corrente!</string>
     <string name="rename_plan">Nuovo nome del piano</string>
+    <string name="average">Media</string>
+    <string name="_1rm_calculation_method">Metodo per calcolare 1RM</string>
 </resources>
