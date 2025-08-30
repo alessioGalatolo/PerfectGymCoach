@@ -665,6 +665,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 dataMapReq.dataMap.putBoolean("imperialSystem", state.value.imperialSystem)
                 if (state.value.restTimestamp != null)
                     dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
+                if (state.value.currentExerciseRest != null)
+                    dataMapReq.dataMap.putLong("currentRestSeconds", state.value.currentExerciseRest!!)
                 repository.sendWorkout2Wear(
                     dataMapReq,
                     overrideDeadWatch

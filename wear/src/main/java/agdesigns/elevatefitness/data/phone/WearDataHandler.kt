@@ -155,6 +155,8 @@ class WearDataHandler @Inject constructor(
             updatedWorkout = updatedWorkout.copy(note = dataMap.getString("note"))
         if (dataMap.containsKey("restTimestamp"))
             updatedWorkout = updatedWorkout.copy(restTimestamp = dataMap.getLong("restTimestamp"))
+        if (dataMap.containsKey("currentRestSeconds"))
+            updatedWorkout = updatedWorkout.copy(currentRestSeconds = dataMap.getLong("currentRestSeconds"))
         if (dataMap.containsKey("exerciseIncrement"))
             updatedWorkout = updatedWorkout.copy(exerciseIncrement = dataMap.getFloat("exerciseIncrement"))
         if (dataMap.containsKey("nextExerciseName"))

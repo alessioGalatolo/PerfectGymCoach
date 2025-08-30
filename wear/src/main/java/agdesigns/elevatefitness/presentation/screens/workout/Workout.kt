@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -33,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -77,8 +80,15 @@ fun Workout(
         viewModel.onEvent(WorkoutEvent.StopActivity)
         navigator.navigateUp()
     }
+    val haptics = LocalHapticFeedback.current
     val workoutState by viewModel.state.collectAsState()
     val listState = rememberScalingLazyListState()
+    LaunchedEffect(workoutState.workoutEnded) {
+        if (workoutState.workoutEnded) {
+            viewModel.onEvent(WorkoutEvent.StopActivity)
+            navigator.navigateUp()
+        }
+    }
 
     val currentRestMillis: Long? by remember { derivedStateOf {
         if (workoutState.restTimestamp != null)
@@ -89,6 +99,9 @@ fun Workout(
             )
         else null
     }}
+    val currentRestSeconds: Long? by remember { derivedStateOf {
+        currentRestMillis?.div(1000L)
+    } }
     // FIXME: if exercise is changed then rests change then progression is weird
     val restProgression by remember {
         derivedStateOf {
@@ -96,7 +109,7 @@ fun Workout(
                 // rest can be 0, avoid div by 0
                 if (workoutState.rest[max(0, workoutState.setsDone - 1)] > 0) {
                     currentRestMillis?.toFloat()
-                        ?.div(workoutState.rest[max(0, workoutState.setsDone - 1)] * 1000)
+                        ?.div((workoutState.currentExerciseRest?.toInt() ?: workoutState.rest[max(0, workoutState.setsDone - 1)]) * 1000)
                 } else
                     null
             } else
@@ -114,7 +127,6 @@ fun Workout(
                 VignetteImage(workoutState.imageBitmap!!.asImageBitmap())
             }
             if ((restProgression ?: 0f) > 0f) {
-                // TODO: add vibration on counter finish
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                     progress = { restProgression ?: 1f }, // should not happen but sometimes is null
@@ -157,8 +169,18 @@ fun Workout(
                             )
                         )
                     }
+                    LaunchedEffect(currentRestSeconds) {
+                        currentRestSeconds?.let {
+                            if (it < 4L) {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            }
+                            if (it < 2) {
+                                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            }
+                        }
+                    }
                     Text(
-                        text = ((currentRestMillis ?: 0L) / 1000).toInt().toString(),
+                        text = (currentRestSeconds.toString()),
                         style = MaterialTheme.typography.displayLarge
                     )
                     TextButton({
@@ -170,6 +192,9 @@ fun Workout(
                     }
                 }
             } else if (workoutState.exerciseName.isNotEmpty()) {
+                LaunchedEffect(Unit) {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
                 ScreenScaffold(
                     modifier = Modifier.background(Color.Transparent),
                     scrollState = listState,
@@ -179,6 +204,7 @@ fun Workout(
                     edgeButton = {
                         EdgeButton(
                             onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                                 viewModel.onEvent(WorkoutEvent.CompleteSet)
                             },
                             modifier =

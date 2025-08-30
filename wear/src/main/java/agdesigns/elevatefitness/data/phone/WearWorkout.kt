@@ -8,6 +8,7 @@ data class WearWorkout(
     val weight: Float? = null,
     val note: String? = null,
     val restTimestamp: Long? = null,
+    val currentRestSeconds: Long? = null,
     val exerciseIncrement: Float? = null,
     val nextExerciseName: String? = null,
     val equipmentResKey: String? = null,

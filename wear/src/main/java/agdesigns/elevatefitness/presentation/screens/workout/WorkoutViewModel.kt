@@ -35,6 +35,7 @@ data class WorkoutState(
     val weight: Float = 0f,
     val rest: List<Int> = emptyList(),
     val restTimestamp: ZonedDateTime? = null,
+    val currentExerciseRest: Long? = null,
     val note: String = "",
     val currentTime: ZonedDateTime = ZonedDateTime.now(),
     val currentReps: Int = 0,
@@ -44,7 +45,8 @@ data class WorkoutState(
     val equipment: Equipment? = null,
     val tareBarbell: Float = 0f,
     val tareIndex: Int = 0,
-    val imperialSystem: Boolean = false
+    val imperialSystem: Boolean = false,
+    val workoutEnded: Boolean = false
 )
 
 sealed class WorkoutEvent {
@@ -90,6 +92,7 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                 }
                 Log.d("WorkoutViewModel", "got wear workout: $workout")
                 val equipment = Equipment.fromResKey(workout.equipmentResKey)
+                Log.d("WorkoutViewModel", "Received workout.currentRestSeconds ${workout.currentRestSeconds}")
                 _state.update {
                     it.copy(
                         exerciseName = workout.exerciseName ?: state.value.exerciseName,
@@ -104,6 +107,7 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                                 ZoneId.systemDefault()
                             )
                         } ?: state.value.restTimestamp,
+                        currentExerciseRest = workout.currentRestSeconds ?: state.value.currentExerciseRest,
                         currentReps = currentReps,
                         exerciseIncrement = exerciseIncrement,
                         nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName,
@@ -121,17 +125,18 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
             }
         }
         viewModelScope.launch {
-            repository.isPhoneAlive().collect {
-                // reset state
-                if (!it) {
-                    _state.value = WorkoutState()
-                }
-            }
+            // FIXME: slow heartbeat means state is constantly reset
+//            repository.isPhoneAlive().collect {
+//                // reset state
+//                if (!it) {
+//                    _state.value = WorkoutState()
+//                }
+//            }
         }
         viewModelScope.launch {
             repository.observeWorkoutInterrupted().collect {
                 if (it) {
-                    _state.value = WorkoutState()
+                    _state.value = WorkoutState(workoutEnded = true)
                 }
             }
         }
