@@ -21,7 +21,9 @@ import androidx.compose.ui.unit.dp
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.point
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
@@ -32,6 +34,7 @@ import com.patrykandpatrick.vico.compose.common.component.shapeComponent
 import com.patrykandpatrick.vico.compose.common.fill
 import com.patrykandpatrick.vico.compose.common.insets
 import com.patrykandpatrick.vico.compose.common.shape.toVicoShape
+import com.patrykandpatrick.vico.compose.common.vicoTheme
 import com.patrykandpatrick.vico.core.cartesian.FadingEdges
 import com.patrykandpatrick.vico.core.cartesian.Scroll
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
@@ -42,6 +45,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.ColumnCartesianLayerModel
 import com.patrykandpatrick.vico.core.cartesian.decoration.HorizontalLine
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
 import com.patrykandpatrick.vico.core.common.Fill
 import com.patrykandpatrick.vico.core.common.Position
@@ -49,9 +53,14 @@ import com.patrykandpatrick.vico.core.common.component.LineComponent
 import com.patrykandpatrick.vico.core.common.data.ExtraStore
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 
-
+// Used to set the average value line in chart
 val MeanLineKey = ExtraStore.Key<Double>()
-val BestColumnKey = ExtraStore.Key<Double>()
+// index of best column so that it can be highlighted
+val BestColumnKey = ExtraStore.Key<Int>()
+// index of "current" column (e.g., current workout) so that it can be highlighted
+val CurrentColumnKey = ExtraStore.Key<Int>()
+// same as above but for lines and is a list
+val highlightSeriesKey = ExtraStore.Key<List<Int>>()
 
 /**
  * Draws an horizontal line for e.g., the mean value
@@ -185,7 +194,12 @@ class ColumnWithTopIndicatorShape(
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun columnProviderWithBest(baseShape: CornerBasedShape, baseColor: Color, thickness: Dp) =
+fun columnProviderWithHighlight(
+    baseShape: CornerBasedShape,
+    baseColor: Color,
+    thickness: Dp = 25.dp,
+    highlightKey: ExtraStore.Key<Int> = BestColumnKey
+) =
     object : ColumnCartesianLayer.ColumnProvider {
         val normal: LineComponent = rememberLineComponent(
             fill = fill(baseColor),
@@ -205,9 +219,76 @@ private fun columnProviderWithBest(baseShape: CornerBasedShape, baseColor: Color
             entry: ColumnCartesianLayerModel.Entry,
             seriesIndex: Int,
             extraStore: ExtraStore,
-        ) = if (entry.y >= (extraStore.getOrNull(BestColumnKey) ?: Double.MAX_VALUE)) best else normal
+        ) = if (entry.x.toInt() == (extraStore.getOrNull(highlightKey) ?: -1)) best else normal
 
         override fun getWidestSeriesColumn(seriesIndex: Int, extraStore: ExtraStore) = normal
+    }
+
+/**
+ * Provides normal lines for all except series index in "highlightSeriesKey" which is special line and point
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun lineProviderWithHighlight(
+    seriesKey: ExtraStore.Key<List<Int>> = highlightSeriesKey,
+) =
+    object : LineCartesianLayer.LineProvider {
+        val primaryColor = vicoTheme.lineCartesianLayerColors[0]
+        val secondaryColor = vicoTheme.lineCartesianLayerColors[1]
+        val tertiaryColor = vicoTheme.lineCartesianLayerColors[2]
+
+
+        val highlight: LineCartesianLayer.Line = LineCartesianLayer.rememberLine(
+            fill = LineCartesianLayer.LineFill.single(fill(primaryColor)),
+            areaFill = null,
+            pointProvider =
+                LineCartesianLayer.PointProvider.single(
+                    LineCartesianLayer.point(rememberShapeComponent(
+                        fill(primaryColor),
+                        MaterialTheme.shapes.extraSmall.toVicoShape()
+                    ), size = 16.dp)  // double default size
+                ),
+        )
+
+        val mainLine = LineCartesianLayer.rememberLine(
+                fill = LineCartesianLayer.LineFill.single(fill(secondaryColor)),
+                areaFill = null,
+                pointProvider =
+                    LineCartesianLayer.PointProvider.single(
+                        LineCartesianLayer.point(
+                            rememberShapeComponent(
+                                fill(secondaryColor),
+                                CorneredShape.Pill
+                            )
+                        )
+                    ),
+            )
+
+        val otherLine = LineCartesianLayer.rememberLine(
+            fill = LineCartesianLayer.LineFill.single(fill(tertiaryColor)),
+            areaFill = null,
+            pointProvider =
+                LineCartesianLayer.PointProvider.single(
+                    LineCartesianLayer.point(
+                        rememberShapeComponent(
+                            fill(tertiaryColor),
+                            CorneredShape.Pill
+                        )
+                    )
+                ),
+        )
+
+        override fun getLine(
+            seriesIndex: Int,
+            extraStore: ExtraStore
+        ): LineCartesianLayer.Line {
+            val highlightIndices = extraStore.getOrNull(seriesKey) ?: emptyList()
+            if (highlightIndices.contains(seriesIndex)) {
+                return highlight
+            }
+            // FIXME: wrong behaviour if series is: [(0, main), (1, highlight), (2, otherLine) <-- this gets mainLine]
+            return listOf(mainLine, otherLine)[seriesIndex % 2]
+        }
     }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -239,7 +320,7 @@ fun PillChart(
         chart = rememberCartesianChart(
             rememberColumnCartesianLayer(
                 rangeProvider = CartesianLayerRangeProvider.auto(),
-                columnProvider = columnProviderWithBest(baseShape, baseColor, thickness),
+                columnProvider = columnProviderWithHighlight(baseShape, baseColor, thickness),
                 columnCollectionSpacing = columnCollectionSpacing
             ),
             fadingEdges = if (scrollable)

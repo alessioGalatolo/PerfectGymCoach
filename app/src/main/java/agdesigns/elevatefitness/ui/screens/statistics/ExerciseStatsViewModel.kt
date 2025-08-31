@@ -122,6 +122,8 @@ class ExerciseStatsViewModel @Inject constructor(private val repository: Reposit
                 state.value.imperialSystem
             )
             val volumeAllIndex2Date = volumeProgressionAll.mapIndexed { index, pair -> index to pair.first }.toMap()
+            val maxVolumeAll = volumeProgressionAll.maxOfOrNull { it.second } ?: 0f
+            val maxVolumeAllIndex = volumeProgressionAll.indexOfLast { it.second == maxVolumeAll }
             viewModelScope.launch {
                 if (volumeProgressionAll.isEmpty())
                     return@launch
@@ -135,7 +137,7 @@ class ExerciseStatsViewModel @Inject constructor(private val repository: Reposit
                     extras {
                         val nonZeroVolumeEntries = volumeProgressionAll.filter { it.second > 0 }.size
                         it[MeanLineKey] = volumeProgressionAll.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
-                        it[BestColumnKey] = volumeProgressionAll.maxOfOrNull { it.second }?.toDouble() ?: 0.0
+                        it[BestColumnKey] = maxVolumeAllIndex
                     }
                 }
             }
@@ -146,6 +148,8 @@ class ExerciseStatsViewModel @Inject constructor(private val repository: Reposit
                 state.value.imperialSystem
             )
             val volumeMonthIndex2Date = volumeProgressionMonth.mapIndexed { index, pair -> index to pair.first }.toMap()
+            val maxVolumeMonth = volumeProgressionMonth.maxOfOrNull { it.second } ?: 0f
+            val maxVolumeMonthIndex = volumeProgressionMonth.indexOfLast { it.second == maxVolumeMonth }
             viewModelScope.launch {
                 if (volumeProgressionMonth.isEmpty())
                     return@launch
@@ -159,7 +163,7 @@ class ExerciseStatsViewModel @Inject constructor(private val repository: Reposit
                     extras {
                         val nonZeroVolumeEntries = volumeProgressionMonth.filter { it.second > 0 }.size
                         it[MeanLineKey] = volumeProgressionMonth.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
-                        it[BestColumnKey] = volumeProgressionMonth.maxOfOrNull { it.second }?.toDouble() ?: 0.0
+                        it[BestColumnKey] = maxVolumeMonthIndex
                     }
                 }
             }

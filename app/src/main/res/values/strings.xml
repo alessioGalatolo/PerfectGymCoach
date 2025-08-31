@@ -769,4 +769,5 @@
     <string name="rename_plan">New name of the plan</string>
     <string name="average">Average</string>
     <string name="_1rm_calculation_method">1RM Calculation method</string>
+    <string name="this_workout">This workout</string>
 </resources>

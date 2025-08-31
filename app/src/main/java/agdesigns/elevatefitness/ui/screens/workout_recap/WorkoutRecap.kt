@@ -11,14 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -33,28 +31,53 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
+import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
+import agdesigns.elevatefitness.ui.common.highlightSeriesKey
+import agdesigns.elevatefitness.ui.common.lineProviderWithHighlight
+import android.util.Log
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.withLink
-import com.jaikeerthick.composable_graphs.composables.line.LineGraph
-import com.jaikeerthick.composable_graphs.composables.line.model.LineData
-import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphColors
-import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphFillType
-import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphStyle
-import com.jaikeerthick.composable_graphs.composables.line.style.LineGraphVisibility
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.point
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
+import com.patrykandpatrick.vico.compose.common.component.shapeComponent
+import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.compose.common.insets
+import com.patrykandpatrick.vico.compose.common.rememberHorizontalLegend
+import com.patrykandpatrick.vico.compose.common.rememberVerticalLegend
+import com.patrykandpatrick.vico.compose.common.shape.toVicoShape
+import com.patrykandpatrick.vico.compose.common.vicoTheme
+import com.patrykandpatrick.vico.core.cartesian.Scroll
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.core.common.LegendItem
+import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import com.patrykandpatrick.vico.core.common.shape.Shape
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlin.math.ceil
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import java.time.format.DateTimeFormatter
 
 
 @Destination<WorkoutOnlyGraph>(style = FullscreenDialogTransition::class)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun WorkoutRecap(
     navigator: DestinationsNavigator,
@@ -68,8 +91,6 @@ fun WorkoutRecap(
     InfoDialog(dialogueIsOpen = volumeDialogIsOpen.value,
         toggleDialogue = { volumeDialogIsOpen.value = !volumeDialogIsOpen.value })
     {
-        val context = LocalContext.current
-
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = LocalContentColor.current)) {
                 append(stringResource(R.string.volume_info))
@@ -100,14 +121,20 @@ fun WorkoutRecap(
         recapState.workoutRecord != null
     ){
         val records = recapState.olderRecords
-        val graphsYaxis = listOf (
-            Pair(Pair(stringResource(R.string.volume), if (recapState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)),
-                records.map {
-                    maybeKgToLb(it.volume.toFloat(), recapState.imperialSystem)
-                }),
-            Pair(Pair(stringResource(R.string.calories), "kcal"), records.map { it.calories }),
-            Pair(Pair(stringResource(R.string.workout_time), "s"), records.map { it.durationSeconds }),
-            Pair(Pair(stringResource(R.string.workout_active_time), "s"), records.map { it.activeTimeSeconds })
+        val legend = listOf (
+            listOf(
+                "${stringResource(R.string.volume)} (${if (recapState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)})",
+                stringResource(R.string.this_workout)
+            ),
+            listOf(
+                "${stringResource(R.string.calories)} (kcal)",
+                stringResource(R.string.this_workout)
+            ),
+            listOf(
+                "${stringResource(R.string.workout_time)} (s)",
+                "${stringResource(R.string.workout_active_time)} (s)",
+                stringResource(R.string.this_workout),
+            )
         )
         Scaffold(topBar = {
             TopAppBar (title = {
@@ -141,89 +168,92 @@ fun WorkoutRecap(
                     )
                 }
                 item{
-                    val pagerState = rememberPagerState(pageCount = { graphsYaxis.size })
+                    val pagerState = rememberPagerState(pageCount = { 3 })
                     if (records.size > 1){
                         HorizontalPager(state = pagerState) { page ->
                             ElevatedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                                 val formatter = DateTimeFormatter.ofPattern("d MMM")
-                                Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                                    val clickedValue: MutableState<LineData> = remember {
-                                        mutableStateOf(
-                                            LineData(
-                                                recapState.workoutRecord!!.startDate!!.format(
-                                                    formatter
-                                                ),
-                                                graphsYaxis[page].second.last()
-                                                //                                            recapState.workoutRecord!!.volume
-                                            )
-                                        )
-                                    }
-                                    Row(
-                                        modifier = Modifier
-                                            .padding(all = 25.dp)
-                                    ) {
-                                        Text(
-                                            text = "${graphsYaxis[page].first.first}: ",
-                                            fontStyle = Italic
-                                        )
-                                        Text(
-                                            // FIXME: why are we outputting the date here?
-                                            text = (clickedValue.value.x.ifBlank { "-" }) +
-                                                    ", ${clickedValue.value.y} " +
-                                                    graphsYaxis[page].first.second,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                    val maxDatesInXAxis = 6
-                                    val interval =
-                                        ceil(records.size.toDouble() / maxDatesInXAxis).toInt()
-
-                                    val data = records.mapIndexed { index, record ->
-                                        val xLabel = if (index % interval == 0)
-                                            record.startDate!!.format(formatter)
-                                        else
-                                            ""
-                                        LineData(x = xLabel, y = graphsYaxis[page].second[index])
-                                    }
-                                    // FIXME: sometimes plot goes out of bounds
-                                    // example values that go out of bounds:
-                                    // 0.25, 0.0625, 0.0625, 1... (out), 2... (out)
-                                    LineGraph(
-                                        data = data,
-                                        onPointClick = { point ->
-                                            clickedValue.value = point
-                                        },
-                                        style = LineGraphStyle(
-                                            visibility = LineGraphVisibility(
-                                                isYAxisLabelVisible = true,
-                                                isXAxisLabelVisible = true,
-                                                isCrossHairVisible = true,
-                                                isGridVisible = true
-                                            ),
-                                            // FIXME: replace colors with theme accents
-                                            colors = LineGraphColors(
-                                                lineColor = MaterialTheme.colorScheme.primary,
-                                                pointColor = MaterialTheme.colorScheme.primary,
-                                                clickHighlightColor = Color(0x75388E3C), // was PointHighlight2 but now it's internal
-                                                fillType = LineGraphFillType.Gradient(
-                                                    brush = Brush.verticalGradient(
-                                                        listOf(
-                                                            MaterialTheme.colorScheme.secondary,
-                                                            Color(0x00FFFFFF)  // was Gradient2
-                                                        )
-                                                    )
-                                                )
-                                            )
+                                val legendItemLabelComponent = rememberTextComponent(
+                                    vicoTheme.textColor
+                                )
+                                val colors = vicoTheme.lineCartesianLayerColors.drop(1)
+                                val primaryColor = vicoTheme.lineCartesianLayerColors[0]
+                                val cartesianLayer = when (page) {
+                                    // calories chart is column, others are lines
+                                    1 -> rememberColumnCartesianLayer(
+                                        columnProvider = columnProviderWithHighlight(
+                                            baseShape = MaterialTheme.shapes.extraSmall,
+                                            baseColor = MaterialTheme.colorScheme.secondary,
+                                            highlightKey = CurrentColumnKey
                                         )
                                     )
+                                    else -> rememberLineCartesianLayer(
+                                        lineProviderWithHighlight()
+                                    )
                                 }
+                                CartesianChartHost(
+                                    chart = rememberCartesianChart(
+                                        cartesianLayer,
+                                        startAxis = VerticalAxis.rememberStart(),
+                                        bottomAxis = HorizontalAxis.rememberBottom(
+                                            valueFormatter = CartesianValueFormatter { _, value, _ ->
+                                                recapState.index2date[value.toInt()]?.format(formatter) ?: ""
+                                            }
+                                        ),
+                                        legend =
+                                            rememberHorizontalLegend(
+                                                items = { extraStore ->
+                                                    legend[page].forEachIndexed { index, label ->
+                                                        val highlights = extraStore.getOrNull(
+                                                            highlightSeriesKey
+                                                        ) ?: emptyList()
+                                                        val color = if (highlights.contains(index)) {
+                                                            primaryColor
+                                                        } else {
+                                                            colors[index % colors.size]
+                                                        }
+                                                        val shape = if (
+                                                            // calories chart has opposite shapes
+                                                            (page == 1 && !highlights.contains(index))
+                                                            || (page != 1 && highlights.contains(index))
+                                                        ) {
+                                                            // FIXME: should use material extraSmall but doesn't work
+                                                            CorneredShape.rounded(2f)
+                                                        } else
+                                                            CorneredShape.Pill
+                                                        add(
+                                                            LegendItem(
+                                                                shapeComponent(
+                                                                    fill = fill(color),
+                                                                    shape = shape
+                                                                ),
+                                                                legendItemLabelComponent,
+                                                                label,
+                                                            )
+                                                        )
+                                                    }
+                                                },
+                                                padding = insets(top = 16.dp),
+                                            ),
+                                    ),
+                                    modelProducer = when (page) {
+                                        0 -> recapState.volumeChartProducer
+                                        1 -> recapState.caloriesChartProducer
+                                        2 -> recapState.timeChartProducer
+                                        else -> recapState.volumeChartProducer // should not happen
+                                    },
+                                    modifier = Modifier.padding(8.dp),
+                                    scrollState = rememberVicoScrollState(
+                                        scrollEnabled = false, // TODO: should not enable scroll inside a horizontal pager
+                                        initialScroll = Scroll.Absolute.End // FIXME: scroll to current workout instead
+                                    ),
+                                )
                             }
                         }
                         Column(Modifier.fillMaxWidth()) {
                             HorizontalPagerIndicator(
                                 pagerState = pagerState,
-                                pageCount = graphsYaxis.size,
+                                pageCount = pagerState.pageCount,
                                 modifier = Modifier
                                     .padding(8.dp)
                                     .align(Alignment.CenterHorizontally)

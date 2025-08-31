@@ -197,6 +197,8 @@ class StatisticsViewModel @Inject constructor(
                 state.value.useImperialSystem
             )
             val volumeIndex2Date = volumeProgression.mapIndexed { index, pair -> index to pair.first }.toMap()
+            val maxVolume = volumeProgression.maxOfOrNull { it.second }
+            val maxIndex = volumeProgression.indexOfLast { it.second == maxVolume }
             viewModelScope.launch {
                 if (volumeProgression.isEmpty())
                     return@launch
@@ -210,7 +212,7 @@ class StatisticsViewModel @Inject constructor(
                     extras {
                         val nonZeroVolumeEntries = volumeProgression.filter { it.second > 0 }.size
                         it[MeanLineKey] = volumeProgression.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
-                        it[BestColumnKey] = volumeProgression.maxOfOrNull { it.second }?.toDouble() ?: 0.0
+                        it[BestColumnKey] = maxIndex
                     }
                 }
             }
