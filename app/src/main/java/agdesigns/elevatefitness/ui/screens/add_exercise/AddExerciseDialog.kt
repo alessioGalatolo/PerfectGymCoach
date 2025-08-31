@@ -26,8 +26,8 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
-import agdesigns.elevatefitness.ui.components.InfoDialog
-import agdesigns.elevatefitness.ui.components.ResetExerciseProbabilityDialog
+import agdesigns.elevatefitness.ui.common.InfoDialog
+import agdesigns.elevatefitness.ui.common.ResetExerciseProbabilityDialog
 import agdesigns.elevatefitness.ui.screens.home.components.ValueSuggestionRow
 import agdesigns.elevatefitness.ui.screens.workout.components.TextFieldWithButtons
 import androidx.compose.foundation.text.input.rememberTextFieldState

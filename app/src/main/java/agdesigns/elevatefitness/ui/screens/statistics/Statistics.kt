@@ -8,10 +8,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
-import agdesigns.elevatefitness.ui.components.GroupedCard
-import agdesigns.elevatefitness.ui.screens.statistics.components.MeanLineKey
-import agdesigns.elevatefitness.ui.screens.statistics.components.PillChart
-import agdesigns.elevatefitness.ui.screens.statistics.components.rememberHorizontalLine
+import agdesigns.elevatefitness.ui.common.GroupedCard
+import agdesigns.elevatefitness.ui.common.MeanLineKey
+import agdesigns.elevatefitness.ui.common.PillChart
+import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.getStickyHeader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.*
@@ -43,8 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.jaikeerthick.composable_graphs.composables.bar.BarGraph
-import com.jaikeerthick.composable_graphs.composables.bar.model.BarData
 import com.jaikeerthick.composable_graphs.composables.donut.DonutChart
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartStyle
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartType

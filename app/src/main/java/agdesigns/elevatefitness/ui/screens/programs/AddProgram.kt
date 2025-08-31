@@ -26,11 +26,10 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
-import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
-import agdesigns.elevatefitness.ui.components.InsertNameDialog
-import agdesigns.elevatefitness.ui.components.WorkoutCard
+import agdesigns.elevatefitness.ui.common.InsertNameDialog
+import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.runtime.*
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination

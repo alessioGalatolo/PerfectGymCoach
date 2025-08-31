@@ -22,8 +22,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.FadeTransition
-import agdesigns.elevatefitness.ui.components.ResumeWorkout
-import agdesigns.elevatefitness.ui.components.WorkoutCard
+import agdesigns.elevatefitness.ui.common.ResumeWorkout
+import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph

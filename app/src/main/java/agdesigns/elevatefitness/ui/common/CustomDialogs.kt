@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.ui.components
+package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.Column

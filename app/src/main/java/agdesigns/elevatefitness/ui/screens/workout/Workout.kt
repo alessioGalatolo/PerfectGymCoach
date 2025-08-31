@@ -29,7 +29,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
-import agdesigns.elevatefitness.ui.components.*
 import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import com.google.accompanist.pager.HorizontalPagerIndicator
@@ -42,6 +41,10 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.service.NotificationListener
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
+import agdesigns.elevatefitness.ui.common.CancelWorkoutDialog
+import agdesigns.elevatefitness.ui.common.FullScreenImageCard
+import agdesigns.elevatefitness.ui.common.InputOtherEquipmentDialog
+import agdesigns.elevatefitness.ui.common.RequestNotificationAccessDialog
 import agdesigns.elevatefitness.ui.screens.workout.components.ExercisePage
 import agdesigns.elevatefitness.ui.screens.workout.components.WorkoutBottomBar
 import agdesigns.elevatefitness.utils.hasNotificationAccess
@@ -272,8 +275,19 @@ fun SharedTransitionScope.Workout(
     InputOtherEquipmentDialog(
         dialogIsOpen = workoutState.otherEquipmentDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
-        weightUnit = if (workoutState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-        updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(maybeLbToKg(tare, workoutState.imperialSystem))) }
+        weightUnit = if (workoutState.imperialSystem) stringResource(R.string.lb) else stringResource(
+            R.string.kg
+        ),
+        updateTare = { tare ->
+            viewModel.onEvent(
+                WorkoutEvent.UpdateTare(
+                    maybeLbToKg(
+                        tare,
+                        workoutState.imperialSystem
+                    )
+                )
+            )
+        }
     )
 
     val pagerState = rememberPagerState(

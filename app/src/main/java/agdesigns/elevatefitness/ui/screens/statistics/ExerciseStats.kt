@@ -14,12 +14,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
-import agdesigns.elevatefitness.ui.components.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
 import agdesigns.elevatefitness.ui.screens.statistics.ExerciseStatsEvent.ChangeOneRepMaxFormula
 import agdesigns.elevatefitness.utils.getStickyHeader
-import agdesigns.elevatefitness.ui.screens.statistics.components.MeanLineKey
-import agdesigns.elevatefitness.ui.screens.statistics.components.PillChart
-import agdesigns.elevatefitness.ui.screens.statistics.components.rememberHorizontalLine
+import agdesigns.elevatefitness.ui.common.MeanLineKey
+import agdesigns.elevatefitness.ui.common.PillChart
+import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState

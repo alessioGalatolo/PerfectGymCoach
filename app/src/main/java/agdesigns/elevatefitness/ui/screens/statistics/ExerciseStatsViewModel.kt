@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
-import agdesigns.elevatefitness.ui.screens.statistics.components.BestColumnKey
-import agdesigns.elevatefitness.ui.screens.statistics.components.MeanLineKey
+import agdesigns.elevatefitness.ui.common.BestColumnKey
+import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
 import agdesigns.elevatefitness.utils.estimate1RM
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData

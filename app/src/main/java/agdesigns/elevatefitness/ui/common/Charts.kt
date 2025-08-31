@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.ui.screens.statistics.components
+package agdesigns.elevatefitness.ui.common
 
 import android.text.Layout
 import androidx.compose.foundation.shape.CornerBasedShape
@@ -46,11 +46,8 @@ import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
 import com.patrykandpatrick.vico.core.common.Fill
 import com.patrykandpatrick.vico.core.common.Position
 import com.patrykandpatrick.vico.core.common.component.LineComponent
-import com.patrykandpatrick.vico.core.common.component.ShapeComponent
-import com.patrykandpatrick.vico.core.common.component.TextComponent
 import com.patrykandpatrick.vico.core.common.data.ExtraStore
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
-import java.text.DecimalFormat
 
 
 val MeanLineKey = ExtraStore.Key<Double>()

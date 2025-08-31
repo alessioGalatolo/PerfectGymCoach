@@ -26,14 +26,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
-import agdesigns.elevatefitness.ui.components.InfoDialog
+import agdesigns.elevatefitness.ui.common.InfoDialog
 import com.agdesignes.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
-import agdesigns.elevatefitness.ui.components.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.LinkAnnotation

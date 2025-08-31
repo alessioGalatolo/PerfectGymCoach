@@ -50,13 +50,11 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
-import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
-import agdesigns.elevatefitness.ui.components.InsertNameDialog
-import agdesigns.elevatefitness.ui.screens.programs.ProgramsEvent
+import agdesigns.elevatefitness.ui.common.InsertNameDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu

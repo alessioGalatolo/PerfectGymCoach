@@ -1,8 +1,6 @@
-package agdesigns.elevatefitness.ui.components
+package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
-import com.agdesignes.shared.R as sharedR
-import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import com.agdesignes.shared.maybeKgToLb

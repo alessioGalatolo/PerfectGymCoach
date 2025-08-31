@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.ui.components
+package agdesigns.elevatefitness.ui.common
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
