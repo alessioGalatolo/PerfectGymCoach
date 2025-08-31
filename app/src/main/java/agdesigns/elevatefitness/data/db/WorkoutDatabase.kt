@@ -171,7 +171,6 @@ class ExerciseDataMigrator(private val context: Context) {
                     needsMigration = false,
                     userDefined = true
                 )
-
             }
             db.exerciseDao.updateExercise(newExercise)
         }

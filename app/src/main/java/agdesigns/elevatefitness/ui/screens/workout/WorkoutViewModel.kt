@@ -270,7 +270,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 note = it.note,
                                 reps = it.reps.toList(),
                                 rest = it.rest,
-                                supersetExercise = it.supersetExercise
+                                supersetExercise = it.supersetExercise,
+                                userDefined = it.userDefined
                             )
                         }
                         // add workout exercises to db

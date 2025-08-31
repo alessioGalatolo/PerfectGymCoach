@@ -326,12 +326,14 @@ fun SharedTransitionScope.Workout(
     // title for top app bar, do not share bounds for animation
     val titleTopBar = @Composable { Text(
         currentExercise?.name?.plus(variation) ?: stringResource(R.string.end_of_workout),
+        maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     ) }
     // title below image, share bounds for animation
     val title = @Composable { Text(
         currentExercise?.name?.plus(variation) ?: stringResource(R.string.end_of_workout),
         overflow = TextOverflow.Ellipsis,
+        maxLines = 3,
         modifier = Modifier.sharedBounds(
             sharedStateTitle,
             animatedVisibilityScope,

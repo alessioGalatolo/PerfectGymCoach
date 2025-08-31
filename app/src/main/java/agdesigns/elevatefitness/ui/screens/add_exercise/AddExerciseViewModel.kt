@@ -113,6 +113,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 note = state.value.note,
                                 variation = "",
                                 variationResKey = state.value.variationResKey,
+                                userDefined = state.value.exercise!!.userDefined
                             )
                         )
                     }

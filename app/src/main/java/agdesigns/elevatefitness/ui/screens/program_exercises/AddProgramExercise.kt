@@ -314,8 +314,9 @@ fun AddProgramExercise(
                                 }
                             }
                             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
+                                val variation = if (exercise.variation.isBlank()) "" else " (${exercise.variation})"
                                 Text(
-                                    text = exercise.name + exercise.variation,
+                                    text = exercise.name + variation,
                                     style = MaterialTheme.typography.titleLarge
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
