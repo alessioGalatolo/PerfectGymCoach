@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.jaikeerthick.composable_graphs.composables.donut.DonutChart
@@ -116,7 +117,7 @@ fun Statistics(
         Column (
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(top = innerPadding.calculateTopPadding()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Time Frame Selector
@@ -145,11 +146,8 @@ fun Statistics(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item {
-                        Spacer(Modifier.height(0.dp))
-                    }
                     // Overview Cards
                     item(stickyHeaders2Id[headers[1]]) {
                         Text(
@@ -448,9 +446,9 @@ fun Statistics(
                                 }
                             }
                         }
-                        item {
-                            Spacer(Modifier.height(8.dp))
-                        }
+                    }
+                    item {
+                        Spacer(Modifier.navigationBarsPadding())
                     }
                 }
             }
@@ -485,7 +483,7 @@ private fun TimeFrameSelector(
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     },
             ) {
-                Text(stringResource(timeFrame.displayResource))
+                Text(stringResource(timeFrame.displayResource), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

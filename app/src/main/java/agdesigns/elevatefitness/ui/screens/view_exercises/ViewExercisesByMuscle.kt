@@ -164,7 +164,8 @@ fun ExercisesByMuscle(
                     }
                 }
                 item {
-                    Spacer(Modifier.navigationBarsPadding())
+                    // We want 16.dp at the bottom, we have 8 from here and 8 from spacedBy
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.card_space_between)))
                 }
             }
         }

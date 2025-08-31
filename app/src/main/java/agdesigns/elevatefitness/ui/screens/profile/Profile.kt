@@ -80,7 +80,6 @@ fun Profile(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         item {
             Spacer(Modifier.statusBarsPadding())
@@ -273,7 +272,7 @@ fun Profile(
             }
         }
         item {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.navigationBarsPadding())
         }
     }
 }

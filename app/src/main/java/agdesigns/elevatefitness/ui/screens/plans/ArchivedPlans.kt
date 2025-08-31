@@ -140,6 +140,9 @@ fun ArchivedPlans(
                     )
                     Spacer(Modifier.height(4.dp))
                 }
+                item {
+                    Spacer(Modifier.height(8.dp))
+                }
             }
         }
     }

@@ -60,6 +60,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.ui.Alignment
@@ -146,7 +147,6 @@ fun AddWorkoutPlan(
             )
         }, floatingActionButton = {
             LargeFloatingActionButton (
-                modifier = Modifier.navigationBarsPadding(),
                 onClick = {
                     viewModel.onEvent(PlansEvent.TogglePlanDialogue)
                 },
@@ -182,7 +182,7 @@ fun AddWorkoutPlan(
             // if you have some plans
             LazyColumn(
                 contentPadding = innerPadding,
-                modifier = Modifier.padding(horizontal=16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp)
             ) {
                 itemsIndexed(items = addWorkoutState.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
                 { index, plan ->
@@ -319,7 +319,6 @@ fun AddWorkoutPlan(
                 item{
                     var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode
                     finalSpacerSize += 16.dp
-                    Spacer(modifier = Modifier.navigationBarsPadding())
                     Spacer(Modifier.height(finalSpacerSize))
                 }
             }

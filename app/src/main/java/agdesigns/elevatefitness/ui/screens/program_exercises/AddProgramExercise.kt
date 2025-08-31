@@ -88,7 +88,6 @@ fun AddProgramExercise(
             )
         }, floatingActionButton = {
             LargeFloatingActionButton (
-                modifier = Modifier.navigationBarsPadding(),
                 onClick = {
                     navigator.navigate(
                         ExercisesByMuscleDestination(
@@ -353,7 +352,6 @@ fun AddProgramExercise(
                     item{
                         var finalSpacerSize = 96.dp + 8.dp// large fab size + its padding FIXME: not hardcode
                         finalSpacerSize += 16.dp
-                        Spacer(modifier = Modifier.navigationBarsPadding())
                         Spacer(Modifier.height(finalSpacerSize))
                     }
                 }

@@ -295,7 +295,7 @@ fun History(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
                 WorkoutCalendarCards(
@@ -340,142 +340,141 @@ fun History(
                 }
 
                 var weekIteration = ZonedDateTime.now().year
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        for (record in recordMap.value.toSortedMap(compareByDescending { it })) {
-                            if (record.key != weekIteration) {
-                                // Week header with subtle styling
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DateRange,
-                                        contentDescription = stringResource(R.string.week_icon),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.week_i, record.key),
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    HorizontalDivider(
-                                        modifier = Modifier.weight(1f),
-                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                    )
-                                }
-                                weekIteration = record.key
+                for (record in recordMap.value.toSortedMap(compareByDescending { it })) {
+                    if (record.key != weekIteration) {
+                        item {
+                            // Week header with subtle styling
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DateRange,
+                                    contentDescription = stringResource(R.string.week_icon),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.week_i, record.key),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                )
                             }
+                            weekIteration = record.key
+                        }
+                    }
 
-                            // Workout cards with enhanced styling
-                            val sortedRecords = record.value.sortedByDescending { it.startDate }
-                            sortedRecords.forEachIndexed { index, workout ->
-                                OutlinedCard(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                        .clickable {
-                                            navigator.navigate(
-                                                WorkoutRecapDestination(workoutId = workout.workoutId)
-                                            )
-                                        },
+                    // Workout cards with enhanced styling
+                    val sortedRecords = record.value.sortedByDescending { it.startDate }
+                    sortedRecords.forEachIndexed { index, workout ->
+                        item {
+                            OutlinedCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .clickable {
+                                        navigator.navigate(
+                                            WorkoutRecapDestination(workoutId = workout.workoutId)
+                                        )
+                                    },
 //                                    colors = CardDefaults.cardColors(
 //                                        containerColor = MaterialTheme.colorScheme.surface
 //                                    )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
                                 ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp)
+                                    // Workout name and date
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Top
                                     ) {
-                                        // Workout name and date
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.Top
-                                        ) {
-                                            Text(
-                                                text = getProgramDisplayName(workout.name),
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                fontWeight = FontWeight.SemiBold,
-                                                modifier = Modifier.weight(1f)
-                                            )
+                                        Text(
+                                            text = getProgramDisplayName(workout.name),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.weight(1f)
+                                        )
 
-                                            val formatter = DateTimeFormatter.ofPattern("MMM d, HH:mm")
-                                            val date = workout.startDate!!.format(formatter)
-                                            Text(
-                                                text = date,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                            )
-                                        }
+                                        val formatter = DateTimeFormatter.ofPattern("MMM d, HH:mm")
+                                        val date = workout.startDate!!.format(formatter)
+                                        Text(
+                                            text = date,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                    }
 
-                                        Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                                        // Workout stats in a grid
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            // Volume stat
-                                            StatCard(
-                                                icon = Icons.Default.FitnessCenter,
-                                                label = stringResource(R.string.volume),
-                                                value = "${maybeKgToLb(workout.volume, historyState.useImperialSystem)} ${if (historyState.useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)}",
-                                                modifier = Modifier.weight(1f)
-                                            )
+                                    // Workout stats in a grid
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        // Volume stat
+                                        StatCard(
+                                            icon = Icons.Default.FitnessCenter,
+                                            label = stringResource(R.string.volume),
+                                            value = "${
+                                                maybeKgToLb(
+                                                    workout.volume,
+                                                    historyState.useImperialSystem
+                                                )
+                                            } ${
+                                                if (historyState.useImperialSystem) stringResource(R.string.lb) else stringResource(
+                                                    R.string.kg
+                                                )
+                                            }",
+                                            modifier = Modifier.weight(1f)
+                                        )
 
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
 
-                                            // Calories stat
-                                            StatCard(
-                                                icon = Icons.Default.LocalFireDepartment,
-                                                label = stringResource(R.string.calories),
-                                                value = stringResource(
-                                                    R.string.calories_kcal,
-                                                    workout.calories.toInt()
-                                                ),
-                                                modifier = Modifier.weight(1f)
-                                            )
+                                        // Calories stat
+                                        StatCard(
+                                            icon = Icons.Default.LocalFireDepartment,
+                                            label = stringResource(R.string.calories),
+                                            value = stringResource(
+                                                R.string.calories_kcal,
+                                                workout.calories.toInt()
+                                            ),
+                                            modifier = Modifier.weight(1f)
+                                        )
 
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
 
-                                            // Duration stat
-                                            StatCard(
-                                                icon = Icons.Default.Schedule,
-                                                label = stringResource(R.string.duration),
-                                                value = stringResource(
-                                                    R.string.i_minutes,
-                                                    (workout.durationSeconds / 60).toInt()
-                                                ),
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
+                                        // Duration stat
+                                        StatCard(
+                                            icon = Icons.Default.Schedule,
+                                            label = stringResource(R.string.duration),
+                                            value = stringResource(
+                                                R.string.i_minutes,
+                                                (workout.durationSeconds / 60).toInt()
+                                            ),
+                                            modifier = Modifier.weight(1f)
+                                        )
                                     }
                                 }
-
-                                if (index < sortedRecords.size - 1) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                }
                             }
-
-                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.navigationBarsPadding())
                 }
             }
         }

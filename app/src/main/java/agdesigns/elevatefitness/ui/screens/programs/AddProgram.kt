@@ -101,7 +101,7 @@ fun AddProgram(
             )
         }, floatingActionButton = {
             LargeFloatingActionButton (
-                modifier = Modifier.navigationBarsPadding(),
+//                modifier = Modifier.navigationBarsPadding(),
                 onClick = {
                     viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
                 },
@@ -199,7 +199,6 @@ fun AddProgram(
                     item{
                         var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode
                         finalSpacerSize += 8.dp
-                        Spacer(modifier = Modifier.navigationBarsPadding())
                         Spacer(Modifier.height(finalSpacerSize))
                     }
                 }

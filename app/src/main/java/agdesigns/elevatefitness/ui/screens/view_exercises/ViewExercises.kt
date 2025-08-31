@@ -264,7 +264,7 @@ fun ViewExercises(
                         }
                     }
                     item {
-                        Spacer(Modifier.navigationBarsPadding())
+                        Spacer(Modifier.height(8.dp))
                     }
                 }
                 AnimatedVisibility(
