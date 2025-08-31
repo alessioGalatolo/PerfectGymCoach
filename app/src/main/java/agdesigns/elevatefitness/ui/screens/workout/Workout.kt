@@ -31,7 +31,6 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
-import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.Theme
@@ -43,6 +42,7 @@ import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CancelWorkoutDialog
 import agdesigns.elevatefitness.ui.common.FullScreenImageCard
+import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.InputOtherEquipmentDialog
 import agdesigns.elevatefitness.ui.common.RequestNotificationAccessDialog
 import agdesigns.elevatefitness.ui.screens.workout.components.ExercisePage

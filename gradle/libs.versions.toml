@@ -3,8 +3,7 @@
 compose_bom = "2025.06.01"
 material3 = "1.4.0-alpha18"  # handle material 3 seperately to get latest
 activity_compose = "1.10.1"  # back handler, etc.
-accompanist_legacy = "0.34.0"  # when there was the pager indicator
-accompanist = "0.37.3"  # non-legacy version
+accompanist = "0.37.3"
 coil = "3.2.0"
 # facilitators
 destinations = "2.2.0"
@@ -57,7 +56,6 @@ compose-plugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "co
 room = { id = "androidx.room", version.ref = "room" }
 
 [libraries]
-accompanist = { group = "com.google.accompanist", name = "accompanist-pager-indicators", version.ref = "accompanist_legacy" }
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose_bom" }
 compose-ui = { group = "androidx.compose.ui", name = "ui" }

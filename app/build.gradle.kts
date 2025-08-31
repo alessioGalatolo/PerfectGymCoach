@@ -91,7 +91,6 @@ dependencies {
     implementation(libs.graphs)
     implementation(libs.palette.ktx)
     implementation(libs.coil.compose)
-    implementation(libs.accompanist)
 
     implementation(libs.gson)
     implementation(libs.datastore.preferences)

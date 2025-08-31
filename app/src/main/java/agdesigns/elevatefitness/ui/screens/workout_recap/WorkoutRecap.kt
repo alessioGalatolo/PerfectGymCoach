@@ -27,12 +27,12 @@ import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import com.agdesignes.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
-import com.google.accompanist.pager.HorizontalPagerIndicator
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
 import agdesigns.elevatefitness.ui.common.lineProviderWithHighlight
