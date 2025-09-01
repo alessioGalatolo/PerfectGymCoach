@@ -119,7 +119,8 @@ fun WorkoutCard(
                 val modifier = if (index == pagerState.currentPage)
                     exerciseModifier
                 else Modifier
-                val exerciseText = it.name + it.variation
+                val variation = if (it.variation.isNotBlank()) " (${it.variation})" else ""
+                val exerciseText = it.name + variation
                 Text(text = exerciseText,
                     // exerciseModifier needs to go after because we're adding padding
                     modifier = Modifier
