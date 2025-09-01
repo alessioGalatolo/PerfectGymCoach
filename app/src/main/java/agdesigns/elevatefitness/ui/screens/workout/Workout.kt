@@ -90,7 +90,8 @@ import kotlin.math.max
     start = true,
     style = FadeTransition::class,
     deepLinks = [
-        DeepLink(uriPattern="elevatefitness://autoopenworkout")
+        DeepLink(uriPattern="elevatefitness://autoopenworkout"),
+        DeepLink(uriPattern="elevatefitness://workout/{programId}"),
     ]
 )
 @OptIn(

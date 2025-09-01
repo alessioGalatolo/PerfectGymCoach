@@ -32,7 +32,7 @@
         </service>
         <activity
             android:name=".MainActivity"
-            android:launchMode="singleTop"
+            android:launchMode="standard"
             android:exported="true"
             android:theme="@style/Theme.ElevateFitness">
 
@@ -56,6 +56,14 @@
                 <data
                     android:scheme="elevatefitness"
                     android:host="autoopenworkout" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="elevatefitness"
+                    android:host="workout" />
             </intent-filter>
         </activity>
     </application>

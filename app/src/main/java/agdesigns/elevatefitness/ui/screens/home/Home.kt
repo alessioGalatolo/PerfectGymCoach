@@ -29,6 +29,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.plans.GeneratePlanButton
+import android.content.Intent
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -37,7 +39,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
+import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
@@ -77,10 +84,54 @@ fun SharedTransitionScope.Home(
             )
         )
     }
+    val context = LocalContext.current
 
     LaunchedEffect(homeState.currentWorkout){
         delay(200)  // FIXME: done in order to avoid double dialog showing
         resumeWorkoutDialogOpen = homeState.currentWorkout != null
+    }
+    // add dynamic launcher shortcuts based on current plan
+    LaunchedEffect(homeState.currentPlan, homeState.programs) {
+        val shortcuts = homeState.programs?.filter {
+            // filter out upcoming workout so that it can be put on the top with custom icon
+            it.programId != homeState.currentWorkout
+        }?.map {
+            ShortcutInfoCompat.Builder(context, "start_workout_dyn_${it.programId}")
+                .setShortLabel(getProgramDisplayName(it.name, context))
+//                .setLongLabel(context.getString(R.string.shortcut_start_workout_long))
+                .setIcon(IconCompat.createWithResource(context, R.drawable.weight_icon))
+                .setIntent(Intent(Intent.ACTION_VIEW, "elevatefitness://workout/${it.programId}".toUri()).apply {
+                    setPackage(context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                })
+                .build()
+        }?.toMutableList() ?: mutableListOf()
+
+        if (homeState.currentWorkout != null) {
+            val program = homeState.programs?.find { it.programId == homeState.currentWorkout!! }
+            if (program != null) {
+                shortcuts.add(0,
+                    ShortcutInfoCompat.Builder(context, "start_workout_dyn_${program.programId}")
+                        .setShortLabel(getProgramDisplayName(program.name, context))
+                        // FIXME: add icon
+//                .setLongLabel(context.getString(R.string.shortcut_start_workout_long))
+                        .setIcon(IconCompat.createWithResource(context, R.drawable.weight_icon))
+                        .setIntent(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                "elevatefitness://workout/${program.programId}".toUri()
+                            ).apply {
+                                setPackage(context.packageName)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            })
+                        .build()
+                )
+            }
+        }
+        Log.d("Home", "shortcuts: $shortcuts")
+        // Replaces existing dynamic shortcuts
+        if (shortcuts.isNotEmpty())
+            ShortcutManagerCompat.setDynamicShortcuts(context, shortcuts.toList())
     }
     Scaffold(
         // use a primary container to put emphasis on upcoming workout in elevated card
