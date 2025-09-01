@@ -27,6 +27,7 @@ import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.plans.GeneratePlanButton
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -44,6 +45,7 @@ import com.ramcosta.composedestinations.generated.destinations.AddProgramExercis
 import com.ramcosta.composedestinations.generated.destinations.AddWorkoutPlanDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.delay
 
 
 @Destination<BottomNavigationGraph>(start = true, style = FadeTransition::class)
@@ -77,7 +79,7 @@ fun SharedTransitionScope.Home(
     }
 
     LaunchedEffect(homeState.currentWorkout){
-//        delay(200)  // FIXME: done in order to avoid double dialog showing
+        delay(200)  // FIXME: done in order to avoid double dialog showing
         resumeWorkoutDialogOpen = homeState.currentWorkout != null
     }
     Scaffold(
@@ -102,24 +104,21 @@ fun SharedTransitionScope.Home(
         }
     ) { innerPadding ->
         if (homeState.currentPlan == null) {
-            Column(modifier = Modifier.padding(innerPadding)) {
-                Text(
-                    stringResource(id = R.string.empty_home),
-                    modifier = Modifier.padding(16.dp)
-                )
+            EmptyScreenInfo(
+                icon = Icons.Default.Home,
+                iconDescriptionRes = R.string.home,
+                titleRes = R.string.empty_home,
+                subtitleRes = R.string.empty_home_subtitle
+            ) {
                 GeneratePlanButton(navigator)
             }
         } else if (homeState.programs?.isEmpty() == true) {
-            Column (horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(innerPadding)) {
-                Icon(
-                    imageVector = Icons.Outlined.Description,
-                    contentDescription = "",
-                    modifier = Modifier.size(160.dp)
-                )
-                Text(
-                    stringResource(id = R.string.empty_home_program),
-                    modifier = Modifier.padding(16.dp)
-                )
+            EmptyScreenInfo(
+                icon = Icons.Outlined.Description,
+                iconDescriptionRes = R.string.empty_home_program,
+                titleRes = R.string.empty_no_programs,
+                subtitleRes = R.string.empty_home_program
+            ) {
                 Button(onClick = {
                     navigator.navigate(
                         AddProgramDestination(
@@ -139,7 +138,6 @@ fun SharedTransitionScope.Home(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) { Text(stringResource(R.string.change_workout_plan)) }
                 Spacer(modifier = Modifier.height(8.dp))
-
             }
         } else if (homeState.programs?.isNotEmpty() == true
             && homeState.currentProgram != null

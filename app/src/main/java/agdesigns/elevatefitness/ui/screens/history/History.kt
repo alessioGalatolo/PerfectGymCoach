@@ -29,6 +29,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecordAndName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import com.agdesignes.shared.maybeKgToLb
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
@@ -245,49 +246,12 @@ fun History(
     val recordsMapMap = historyState.workoutRecords
     // TODO: add change of plan header
     if (recordsMapMap.isEmpty()) {
-        // Empty state with improved styling
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Card(
-                modifier = Modifier.padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ),
-                shape = CircleShape
-            ) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = stringResource(R.string.empty_history_icon),
-                    modifier = Modifier
-                        .size(120.dp)
-                        .padding(24.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(id = R.string.empty_history),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = stringResource(R.string.start_your_fitness_journey_today),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center
-            )
-        }
+        EmptyScreenInfo(
+            icon = Icons.Default.History,
+            iconDescriptionRes = R.string.empty_history_icon,
+            titleRes = R.string.empty_history,
+            subtitleRes = R.string.start_your_fitness_journey_today
+        )
     } else {
         val currentYear = ZonedDateTime.now().year
         val listState = rememberLazyListState()

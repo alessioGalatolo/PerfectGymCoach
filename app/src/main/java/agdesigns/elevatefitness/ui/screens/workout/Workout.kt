@@ -41,6 +41,7 @@ import agdesigns.elevatefitness.service.NotificationListener
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CancelWorkoutDialog
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.FullScreenImageCard
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.InputOtherEquipmentDialog
@@ -1039,7 +1040,6 @@ fun SharedTransitionScope.Workout(
             },
             floatingActionButton = {
                 Column(
-                    Modifier.navigationBarsPadding(),
                     verticalArrangement = Arrangement.Bottom,
                     horizontalAlignment = Alignment.End
                 ) {  // FIXME: not really happy about the double FABs
@@ -1073,25 +1073,18 @@ fun SharedTransitionScope.Workout(
                     }
                 }
             }) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+            EmptyScreenInfo(
+                Icons.Default.FitnessCenter,
+                R.string.empty_exercises,
+                R.string.empty_exercises,
+                R.string.workout_empty_exercises,
+                modifier = Modifier.padding(innerPadding)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.FitnessCenter,
-                    contentDescription = "",
-                    modifier = Modifier.size(160.dp)
-                )
-                Text(
-                    stringResource(id = R.string.workout_empty_exercises),
-                    modifier = Modifier.padding(16.dp)
-                )
                 Text(
                     stringResource(R.string.note_empty_workout),
-                    modifier = Modifier.padding(16.dp)
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(40.dp)  // big padding to avoid being under fab
                 )
             }
         }

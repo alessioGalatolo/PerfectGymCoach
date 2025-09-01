@@ -136,9 +136,12 @@
     <string name="manage_workout_plans">Manage workout plans</string>
     <string name="empty_plans">This is where your workout plans will be shown, use the button below to create one!</string>
     <string name="empty_programs">This is where your programs (single day schedule) will be shown, use the button below to create one!</string>
-    <string name="empty_exercises">This is where your exercises will be shown, use the button below to add one!</string>
-    <string name="empty_home">You have yet to create a workout plan, use the button below to create one!</string>
-    <string name="empty_home_program">The workout plan you have selected as current has no programs (single day schedule) inside. Use the button below to select a different plan or to add a program</string>
+    <string name="empty_exercises">No exercises in program!</string>
+    <string name="empty_exercises_desc">This is where your exercises will be shown, use the button below to add one!</string>
+    <string name="empty_home">You have no workout plans!</string>
+    <string name="empty_home_subtitle">You can create your workout plan with the button below or let us help you create one for you</string>
+    <string name="empty_no_programs">No programs in plan!</string>
+    <string name="empty_home_program">The workout plan you have selected as current has no programs (single day schedule) inside</string>
     <string name="i_more_exercises">+%1$s more exercises</string>
     <string name="change_workout_plan">Change workout plan</string>
     <string name="change_programs">Change programs</string>

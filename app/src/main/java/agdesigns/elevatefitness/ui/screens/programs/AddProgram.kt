@@ -28,6 +28,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
 import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.runtime.*
@@ -115,23 +116,12 @@ fun AddProgram(
         }, content = { innerPadding ->
             if (addProgramState.programs.isEmpty()) {
                 // if you have no programs
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Description,
-                        contentDescription = "",
-                        modifier = Modifier.size(160.dp)
-                    )
-                    Text(
-                        stringResource(id = R.string.empty_programs),
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
+                EmptyScreenInfo(
+                    Icons.Default.Description,
+                    R.string.empty_no_programs,
+                    titleRes = R.string.empty_no_programs,
+                    subtitleRes = R.string.empty_home_program
+                )
             } else {
                 // if you have some programs
                 LazyColumn(

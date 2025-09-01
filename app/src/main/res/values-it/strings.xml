@@ -136,9 +136,12 @@
     <string name="manage_workout_plans">Gestisci i piani di allenamento</string>
     <string name="empty_plans">Qui verranno mostrati i tuoi piani di allenamento, usa il pulsante qui sotto per crearne uno!</string>
     <string name="empty_programs">Qui verranno mostrati i tuoi programmi (programmazione giornaliera), usa il pulsante qui sotto per crearne uno!</string>
-    <string name="empty_exercises">Qui verranno mostrati i tuoi esercizi, usa il pulsante qui sotto per aggiungerne uno!</string>
-    <string name="empty_home">Devi ancora creare un piano di allenamento, usa il pulsante qui sotto per crearne uno!</string>
-    <string name="empty_home_program">Il piano di allenamento che hai selezionato come attuale non ha programmi (programmazione giornaliera) al suo interno. Usa il pulsante qui sotto per selezionare un altro piano o per aggiungere un programma</string>
+    <string name="empty_exercises">Nessun esercizio nel programma!</string>
+    <string name="empty_exercises_desc">Qui verranno mostrati gli esercizi, usa il pulsante qua sotto per aggiungerne uno</string>
+    <string name="empty_home">Non hai nessun piano di allenamento!</string>
+    <string name="empty_home_subtitle">Puoi creare un nuovo piano con il pulsante qua sotto o puoi lasciare che sia creato per te</string>
+    <string name="empty_no_programs">Nessun programma nel piano!</string>
+    <string name="empty_home_program">Il piano di allenamento che hai selezionato come attuale non ha programmi (giorni di allenamento) al suo interno</string>
     <string name="i_more_exercises">+ altri %1$s esercizi</string>
     <string name="change_workout_plan">Cambia piano di allenamento</string>
     <string name="change_programs">Cambia programmi</string>

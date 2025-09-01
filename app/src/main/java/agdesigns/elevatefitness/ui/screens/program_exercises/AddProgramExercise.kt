@@ -41,6 +41,7 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.ExercisesEvent
 import agdesigns.elevatefitness.ui.common.ExercisesViewModel
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -106,23 +107,12 @@ fun AddProgramExercise(
         }, content = { innerPadding ->
             if (addProgramState.programExercisesAndInfo.isEmpty()) {
                 // if you have no exercises
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.FitnessCenter,
-                        contentDescription = "",
-                        modifier = Modifier.size(160.dp)
-                    )
-                    Text(
-                        stringResource(id = R.string.empty_exercises),
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
+                EmptyScreenInfo(
+                    Icons.Filled.FitnessCenter,
+                    R.string.empty_exercises,
+                    titleRes = R.string.empty_exercises,
+                    subtitleRes = R.string.empty_exercises_desc
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),

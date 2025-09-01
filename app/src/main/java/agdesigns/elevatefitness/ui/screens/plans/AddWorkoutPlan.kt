@@ -54,6 +54,7 @@ import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Button
@@ -160,22 +161,12 @@ fun AddWorkoutPlan(
         }) { innerPadding ->
         if (addWorkoutState.workoutPlanMapPrograms.isEmpty()) {
             // if you have no plans
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+            EmptyScreenInfo(
+                icon = Icons.Default.ContentPaste,
+                iconDescriptionRes = R.string.empty_home,
+                titleRes = R.string.empty_home,
+                subtitleRes = R.string.empty_plans
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.ContentPaste,
-                    contentDescription = "",
-                    modifier = Modifier.size(160.dp)
-                )
-                Text(
-                    stringResource(id = R.string.empty_plans),
-                    modifier = Modifier.padding(16.dp)
-                )
                 GeneratePlanButton(navigator)
             }
         } else {
