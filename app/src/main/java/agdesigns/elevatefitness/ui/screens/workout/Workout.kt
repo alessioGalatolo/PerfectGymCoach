@@ -315,6 +315,12 @@ fun SharedTransitionScope.Workout(
         }
     }
 
+    LaunchedEffect(workoutState.autoAdvancePage) {
+        if (workoutState.autoAdvancePage != null) {
+            pagerState.animateScrollToPage(workoutState.autoAdvancePage!!)
+            viewModel.onEvent(WorkoutEvent.ResetAutoAdvancePage)
+        }
+    }
     val workoutTimeMillis by remember {
         derivedStateOf {
             workoutState.startDate?.toInstant()?.toEpochMilli()?.let {

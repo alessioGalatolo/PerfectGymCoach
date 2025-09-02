@@ -58,7 +58,8 @@ data class WorkoutState(
     val currentPage: Int = 0,  // needed to know which is the current exercise
     val setsDone: Int = 0,
     val hasRecordedExercise: Boolean = false, // used to add a flag in cancel workout
-    val autoStartFailed: Boolean = false  // autoStart was not able to find a workout program, navigate up
+    val autoStartFailed: Boolean = false,  // autoStart was not able to find a workout program, navigate up
+    val autoAdvancePage: Int? = null
 )
 
 sealed class WorkoutEvent{
@@ -124,6 +125,8 @@ sealed class WorkoutEvent{
     data object InterruptWearWorkout : WorkoutEvent()
 
     data object AutoStartWorkout : WorkoutEvent()
+
+    data object ResetAutoAdvancePage : WorkoutEvent()
 }
 
 @HiltViewModel
@@ -190,7 +193,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 // tare on watch can be lb/kg
                 val tareKg = maybeLbToKg(tare, state.value.imperialSystem)
                 // Need to store these in state otherwise TryCompleteSet may fail
-                _state.update { it.copy(
+                _state.update { state -> state.copy(
                     repsBottomBar = reps.toString(),
                     weightBottomBar = weight.toString(),
                     tare = tareKg
@@ -199,6 +202,10 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     // user has done all sets and is adding another one from watch
                     onEvent(WorkoutEvent.AddSetToExercise(state.value.currentPage))
                     exercise = state.value.workoutExercises[state.value.currentPage]
+                }
+                if (state.value.setsDone == exercise.rest.size-1) {
+                    // user has finished sets for exercise, go next
+                    _state.update { state -> state.copy(autoAdvancePage = state.currentPage+1) }
                 }
                 onEvent(WorkoutEvent.TryCompleteSet(
                     state.value.currentPage,
@@ -622,6 +629,9 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.InterruptWearWorkout -> {
                 repository.stopWearWorkout()
             }
+            is WorkoutEvent.ResetAutoAdvancePage -> {
+                _state.update { it.copy(autoAdvancePage = null) }
+            }
         }
         return true
     }
@@ -664,6 +674,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 dataMapReq.dataMap.putString("equipmentResKey", exercise.equipment.equipmentResKey)
                 // not necessary but can help verify exercise needs barbell choice
                 dataMapReq.dataMap.putBoolean("imperialSystem", state.value.imperialSystem)
+                dataMapReq.dataMap.putBoolean("isOnFinishPage", false)
                 if (state.value.restTimestamp != null)
                     dataMapReq.dataMap.putLong("restTimestamp", state.value.restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
                 if (state.value.currentExerciseRest != null)
@@ -685,7 +696,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             } else if (state.value.currentPage == state.value.workoutExercises.size) {
                 if (state.value.workoutExercises.isNotEmpty()) {
                     // likely on finish page
-                    // TODO send data
+                    val dataMapReq = PutDataMapRequest.create("/phone2watch")
+                    dataMapReq.dataMap.putBoolean("isOnFinishPage", true)
 
                 } else {
                     // if it's empty it's either uninitialised or empty workout
