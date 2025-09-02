@@ -53,6 +53,7 @@ import com.ramcosta.composedestinations.generated.destinations.AddWorkoutPlanDes
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
+import kotlin.math.min
 
 
 @Destination<BottomNavigationGraph>(start = true, style = FadeTransition::class)
@@ -130,8 +131,15 @@ fun SharedTransitionScope.Home(
         }
         Log.d("Home", "shortcuts: $shortcuts")
         // Replaces existing dynamic shortcuts
-        if (shortcuts.isNotEmpty())
-            ShortcutManagerCompat.setDynamicShortcuts(context, shortcuts.toList())
+        if (shortcuts.isNotEmpty()) {
+            ShortcutManagerCompat.removeAllDynamicShortcuts(context)
+            ShortcutManagerCompat.setDynamicShortcuts(context, shortcuts.subList(
+                0, min(
+                    shortcuts.size,
+                    ShortcutManagerCompat.getMaxShortcutCountPerActivity(context)
+                )
+            ))
+        }
     }
     Scaffold(
         // use a primary container to put emphasis on upcoming workout in elevated card
