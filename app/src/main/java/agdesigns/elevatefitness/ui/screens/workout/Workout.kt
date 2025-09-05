@@ -46,6 +46,7 @@ import agdesigns.elevatefitness.ui.common.FullScreenImageCard
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.InputOtherEquipmentDialog
 import agdesigns.elevatefitness.ui.common.RequestNotificationAccessDialog
+import agdesigns.elevatefitness.ui.screens.workout.components.EnterIntensityAndFinishDialog
 import agdesigns.elevatefitness.ui.screens.workout.components.ExercisePage
 import agdesigns.elevatefitness.ui.screens.workout.components.WorkoutBottomBar
 import agdesigns.elevatefitness.utils.hasNotificationAccess
@@ -450,12 +451,14 @@ fun SharedTransitionScope.Workout(
         viewModel.onEvent(WorkoutEvent.UpdateTare(tareCandidate ?: 0f))
     }
 
-
-    // TODO: instead of having the use select the intensity in the last page, have a slider in a dialog that pops up
-    val workoutIntensity = rememberSaveable { mutableStateOf(WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY) }
-
+    EnterIntensityAndFinishDialog(
+        dialogIsOpen = workoutState.enterIntensityDialogOpen,
+        lastIntensity = workoutState.lastWorkoutIntensity,
+        dismissDialog = { viewModel.onEvent(WorkoutEvent.ToggleEnterIntensityDialog) },
+        completeWorkout = { viewModel.onEvent(WorkoutEvent.FinishWorkout(it)) }
+    )
     val completeWorkout: () -> Unit = {
-        viewModel.onEvent(WorkoutEvent.FinishWorkout(workoutIntensity.value))
+        viewModel.onEvent(WorkoutEvent.ToggleEnterIntensityDialog)
     }
 
     val pagerPageCount by remember { derivedStateOf {
@@ -500,7 +503,10 @@ fun SharedTransitionScope.Workout(
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = stringResource(R.string.close_icon),
-                        tint = if (needsDarkColor) Color.Gray else Color.White
+                        tint = if (needsDarkColor)
+                            Color.Black
+                        else
+                            Color.White
                     )
                 }
             },
@@ -508,16 +514,30 @@ fun SharedTransitionScope.Workout(
                 Row(verticalAlignment = CenterVertically) {
                     val needsDarkColor = (brightImage.value && !appBarShown) ||
                             (appBarShown && !useDarkTheme)
-                    Text(timer(), style = MaterialTheme.typography.titleLarge,
-                        color = if (needsDarkColor) Color.Black else Color.White)  // FIXME should use default colors
-                    if (workoutState.startDate != null) {
-                        TextButton(onClick = {
-                        if (pagerState.currentPage == pagerPageCount-1)
-                            completeWorkout()
+                    Text(
+                        timer(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = if (needsDarkColor)
+                            Color.Black
                         else
-                            scope.launch{ pagerState.animateScrollToPage(pagerPageCount-1) }
-                        }) {
-                            Text(stringResource(R.string.finish), color = if (needsDarkColor) Color.Gray else Color.White)
+                            Color.White
+                    )
+                    if (workoutState.startDate != null) {
+                        Spacer(Modifier.width(4.dp))
+                        FilledIconButton(onClick = {
+                            completeWorkout()
+                        }, shapes = IconButtonDefaults.shapes(
+                            MaterialTheme.shapes.small,
+                            MaterialTheme.shapes.extraLarge
+                        )) {
+                            Icon(
+                                Icons.Default.DoneAll,
+                                stringResource(R.string.finish),
+//                                tint = if (needsDarkColor)
+//                                    Color.Black
+//                                else
+//                                    Color.White
+                            )
                         }
                     }
                 }
@@ -610,7 +630,6 @@ fun SharedTransitionScope.Workout(
                     addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
                     restCounterMillis = restCounterMillis,
                     restCounterProgress = progressAnim.value,
-                    workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { probability ->
                         scope.launch {
                             // if already snackbarring, dismiss it before a new one.
@@ -1019,7 +1038,6 @@ fun SharedTransitionScope.Workout(
                     removeExercise = { },
                     restCounterMillis = null,
                     restCounterProgress = null,
-                    workoutIntensity = workoutIntensity,
                     updateExerciseProbability = { _ -> }
                 )
             },

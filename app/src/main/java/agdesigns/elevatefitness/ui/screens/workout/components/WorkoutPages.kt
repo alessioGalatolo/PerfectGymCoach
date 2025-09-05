@@ -80,7 +80,6 @@ fun ExercisePage(
     ongoingRecord: ExerciseRecordAndEquipment?,
     restCounterMillis: Long?,
     restCounterProgress: Float?,
-    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     useImperialSystem: Boolean,
     tare: Float,
     updateExerciseProbability: (Int) -> Unit,
@@ -153,7 +152,7 @@ fun ExercisePage(
         ) { page ->
             if (page == workoutExercises.size) {
                 // page for finishing the workout
-                WorkoutFinishPage(workoutTimeMillis, workoutIntensity, workoutId, fabHeight, bottomPadding, navigator)
+                WorkoutFinishPage(workoutTimeMillis, workoutId, fabHeight, bottomPadding, navigator)
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
                     if (workoutExercises[page].note.isNotBlank()) {
@@ -487,7 +486,6 @@ fun ExercisePage(
 @Composable
 fun WorkoutFinishPage(
     workoutTimeMillis: Long,
-    workoutIntensity: MutableState<WorkoutRecord.WorkoutIntensity>,
     workoutId: Long,
     fabHeight: Dp,
     bottomPadding: Dp,
@@ -495,6 +493,7 @@ fun WorkoutFinishPage(
 ) {
     Column(
         Modifier
+            .fillMaxWidth()
             .padding(horizontal = 8.dp)
             .padding(top = 8.dp)){
         Text(
@@ -504,65 +503,6 @@ fun WorkoutFinishPage(
             ), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(32.dp))
         Text(stringResource(R.string.workout_completion_tip), style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
-        Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically){
-            Text(stringResource(R.string.how_intense_was_this_workout)/*, Modifier.weight(1f)*/)
-            var expanded by remember { mutableStateOf(false) }
-            Spacer(Modifier.width(16.dp))
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier/*.weight(1f)*/
-                    .widthIn(1.dp, Dp.Infinity)
-                    .heightIn(1.dp, Dp.Infinity)
-            ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = ""/*selectedOptionText.description.substringBefore("(")*/,
-                    onValueChange = {},
-                    leadingIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .padding(8.dp)){
-                            repeat(WorkoutRecord.WorkoutIntensity.entries.size){
-                                Icon(Icons.Default.FitnessCenter,
-                                    stringResource(R.string.fitness_center_icon_intensity),
-                                    tint = if (it < workoutIntensity.value.ordinal+1) LocalContentColor.current else Color.Transparent)
-                            }
-                        }
-                    },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    colors = ExposedDropdownMenuDefaults.textFieldColors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        errorContainerColor = Color.Transparent
-                    ),
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                ) {
-                    WorkoutRecord.WorkoutIntensity.entries.forEachIndexed { index, selectionOption ->
-                        DropdownMenuItem(
-                            text = {},
-                            leadingIcon = {
-                                Row {
-                                    repeat(index+1){
-                                        Icon(Icons.Default.FitnessCenter, null)
-                                    }
-                                }
-                            },
-                            onClick = {
-                                workoutIntensity.value = selectionOption
-                                expanded = false
-                            },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                        )
-                    }
-                }
-            }
-        }
         Spacer(Modifier.height(16.dp))
         val currentWorkoutString = stringResource(R.string.current_workout)
         TextButton(onClick = { navigator.navigate(

@@ -154,7 +154,7 @@
     <string name="archived_plans_title">Piani archiviati</string>
     <string name="plan_archived">Piano archiviato</string>
     <string name="undo">Annulla</string>
-    <string name="generate_a_new_plan">Genera un nuovo piano</string>
+    <string name="generate_a_new_plan">Genera un nuovo piano (beta)</string>
     <!-- View archived plans -->
     <string name="you_don_t_have_any_archived_plans">Non hai nessun piano archiviato!</string>
     <string name="plan_restored">Piano ripristinato!</string>
@@ -307,7 +307,7 @@
     <string name="help_icon_info">Aiuto/Info</string>
     <string name="volume_lifted">Volume sollevato</string>
     <string name="total_time">"Tempo totale: "</string>
-    <string name="workout_history">Storico allenamenti</string>
+    <string name="workout_history">Esercizi completati</string>
 
     <!-- exercises data -->
     <!-- Chest Exercises -->
@@ -769,4 +769,6 @@
     <string name="average">Media</string>
     <string name="_1rm_calculation_method">Metodo per calcolare 1RM</string>
     <string name="this_workout">Questo allenamento</string>
+    <string name="workout_intensity_info">Selezione un valore per finire l\'allenamento. Questo valore verrà utilizzato per avere una stima migliore delle calorie consumate</string>
+    <string name="workout_intensity_intensity_info">. La freccia indice l\'intensità selezionate nell\'ultimo allenamento.</string>
 </resources>

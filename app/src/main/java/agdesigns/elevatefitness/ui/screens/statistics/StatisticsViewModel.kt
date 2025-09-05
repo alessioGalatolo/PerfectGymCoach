@@ -625,29 +625,29 @@ class StatisticsViewModel @Inject constructor(
         val now = ZonedDateTime.now()
         return listOf(
             // Current week
-            WorkoutRecord(1, 101, now.minusDays(1), WorkoutIntensity.NORMAL_INTENSITY, 3600, 1000.0, 3200, 350f),
-            WorkoutRecord(2, 101, now.minusDays(2), WorkoutIntensity.HIGH_INTENSITY, 4500, 1500.0, 4000, 450f),
-            WorkoutRecord(3, 101, now.minusDays(5), WorkoutIntensity.LOW_INTENSITY, 3000, 700.0, 2500, 290f),
+            WorkoutRecord(1, 101, now.minusDays(1), WorkoutIntensity.NORMAL_INTENSITY, 50f, 3600, 1000.0, 3200, 350f),
+            WorkoutRecord(2, 101, now.minusDays(2), WorkoutIntensity.HIGH_INTENSITY, 100f, 4500, 1500.0, 4000, 450f),
+            WorkoutRecord(3, 101, now.minusDays(5), WorkoutIntensity.LOW_INTENSITY, 0f, 3000, 700.0, 2500, 290f),
 
             // This month
-            WorkoutRecord(4, 102, now.minusDays(10), WorkoutIntensity.NORMAL_INTENSITY, 3900, 1200.0, 3300, 400f),
-            WorkoutRecord(5, 102, now.minusDays(18), WorkoutIntensity.HIGH_INTENSITY, 3600, 1300.0, 3000, 420f),
+            WorkoutRecord(4, 102, now.minusDays(10), WorkoutIntensity.NORMAL_INTENSITY, 50f, 3900, 1200.0, 3300, 400f),
+            WorkoutRecord(5, 102, now.minusDays(18), WorkoutIntensity.HIGH_INTENSITY, 100f, 3600, 1300.0, 3000, 420f),
 
             // Last 3 months
-            WorkoutRecord(6, 103, now.minusMonths(1).plusDays(2), WorkoutIntensity.LOW_INTENSITY, 2800, 800.0, 2300, 310f),
-            WorkoutRecord(7, 103, now.minusMonths(1).plusDays(5), WorkoutIntensity.NORMAL_INTENSITY, 3500, 1000.0, 2900, 370f),
-            WorkoutRecord(8, 104, now.minusMonths(2).plusDays(4), WorkoutIntensity.HIGH_INTENSITY, 4000, 1400.0, 3600, 460f),
-            WorkoutRecord(9, 104, now.minusMonths(3).plusDays(3), WorkoutIntensity.NORMAL_INTENSITY, 3000, 700.0, 2600, 300f),
+            WorkoutRecord(6, 103, now.minusMonths(1).plusDays(2), WorkoutIntensity.LOW_INTENSITY, 0f, 2800, 800.0, 2300, 310f),
+            WorkoutRecord(7, 103, now.minusMonths(1).plusDays(5), WorkoutIntensity.NORMAL_INTENSITY, 50f, 3500, 1000.0, 2900, 370f),
+            WorkoutRecord(8, 104, now.minusMonths(2).plusDays(4), WorkoutIntensity.HIGH_INTENSITY, 100f, 4000, 1400.0, 3600, 460f),
+            WorkoutRecord(9, 104, now.minusMonths(3).plusDays(3), WorkoutIntensity.NORMAL_INTENSITY, 50f, 3000, 700.0, 2600, 300f),
 
             // Edge of year cutoff
-            WorkoutRecord(10, 105, now.minusYears(1).plusDays(1), WorkoutIntensity.HIGH_INTENSITY, 4200, 1350.0, 3700, 440f),
+            WorkoutRecord(10, 105, now.minusYears(1).plusDays(1), WorkoutIntensity.HIGH_INTENSITY, 100f, 4200, 1350.0, 3700, 440f),
 
             // Ancient workouts
-            WorkoutRecord(11, 105, now.minusYears(2), WorkoutIntensity.NORMAL_INTENSITY, 3600, 1000.0, 3100, 340f),
+            WorkoutRecord(11, 105, now.minusYears(2), WorkoutIntensity.NORMAL_INTENSITY, 50f, 3600, 1000.0, 3100, 340f),
 
             // Invalid
-            WorkoutRecord(12, 106, null, WorkoutIntensity.LOW_INTENSITY, 3600, 800.0, 3000, 300f), // null date
-            WorkoutRecord(13, 106, now.minusDays(4), WorkoutIntensity.LOW_INTENSITY, 0, 800.0, 3000, 300f) // zero duration
+            WorkoutRecord(12, 106, null, WorkoutIntensity.LOW_INTENSITY, 0f, 3600, 800.0, 3000, 300f), // null date
+            WorkoutRecord(13, 106, now.minusDays(4), WorkoutIntensity.LOW_INTENSITY, 0f, 0, 800.0, 3000, 300f) // zero duration
         )
     }
 }

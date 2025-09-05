@@ -45,7 +45,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -85,7 +85,7 @@ abstract class WorkoutDatabase: RoomDatabase() {
                         // Check if migration is needed every time database opens
                         checkAndPerformDataMigration(context)
                     }
-                }).addMigrations(MIGRATION_1_2)
+                }).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }
@@ -125,6 +125,13 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         db.execSQL("ALTER TABLE workoutexercise ADD COLUMN imageResKey TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE workoutexercise ADD COLUMN descriptionResKey TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE workoutexercise ADD COLUMN userDefined INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE workoutrecord ADD COLUMN intensityPercent REAL NOT NULL DEFAULT 50.0")
+        // TODO: migrate existing values or maybe not? (old intensity is not used anywhere)
     }
 }
 

@@ -45,7 +45,6 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
     val state: StateFlow<RecapState> = _state.asStateFlow()
 
     private var retrieveWorkoutRecordJob: Job? = null
-    private var retrieveRecordsJob: MutableList<Job> = mutableListOf()
 
     init {
         viewModelScope.launch {
@@ -70,8 +69,8 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
                             ) }
                             combine(
                                 repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId),
-                                repository.getWorkoutExerciseRecordsAndInfo(event.workoutId)
-,                               repository.getWorkoutRecord(event.workoutId)
+                                repository.getWorkoutExerciseRecordsAndInfo(event.workoutId),
+                                repository.getWorkoutRecord(event.workoutId)
                             ) { olderRecords, exerciseRecords, workoutRecord ->
                                 val sortedRecords = olderRecords
                                     .filter { it.durationSeconds > 0 }
@@ -120,35 +119,7 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
                                 ) }
 
                             }.collect()
-                            for (job in retrieveRecordsJob) {
-                                job.cancel()
-                            }
-                            retrieveRecordsJob = mutableListOf()
-                            retrieveRecordsJob.add(this.launch {
-                                repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId).collect{ olderRecords ->
-                                    _state.update { it.copy(
-                                        olderRecords = olderRecords.filter { it1 -> it1.durationSeconds > 0 }
-                                            .sortedBy { it1 -> it1.startDate }
-                                    ) }
-                                }
-                            })
-                            retrieveRecordsJob.add(this.launch {
-                                repository.getWorkoutRecord(event.workoutId).collect { workoutRecord ->
-                                    _state.update { it.copy(
-                                        workoutRecord = workoutRecord
-                                    ) }
-                                }
-                            })
-                            retrieveRecordsJob.add(this.launch {
-                                repository.getWorkoutExerciseRecordsAndInfo(event.workoutId).collect{ exerciseRecords ->
-                                    _state.update { it.copy(
-                                        exerciseRecords = exerciseRecords.distinct().sortedBy { it1 -> it1.exerciseInWorkout }
-                                    ) }
-                                }
-                            })
                         }
-
-
                     }
                 }
             }

@@ -154,7 +154,7 @@
     <string name="archived_plans_title">Archived plans</string>
     <string name="plan_archived">Plan archived</string>
     <string name="undo">Undo</string>
-    <string name="generate_a_new_plan">Generate a new plan</string>
+    <string name="generate_a_new_plan">Generate a new plan (beta)</string>
     <!-- View archived plans -->
     <string name="you_don_t_have_any_archived_plans">You don\'t have any archived plans!</string>
     <string name="plan_restored">Plan restored!</string>
@@ -773,4 +773,7 @@
     <string name="average">Average</string>
     <string name="_1rm_calculation_method">1RM Calculation method</string>
     <string name="this_workout">This workout</string>
+    <string name="workout_intensity_info">Select a value to finish the workout. This will be used to have a better estimate of the consumed calories</string>
+    <!-- This will be appended to the above so it needs to start with ". " -->
+    <string name="workout_intensity_intensity_info">. Arrow points to the intensity from the last workout.</string>
 </resources>

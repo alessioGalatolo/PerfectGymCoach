@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.data.db.entity
 
 import agdesigns.elevatefitness.R
 import android.os.Parcelable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -23,7 +24,9 @@ data class WorkoutRecord(
     @PrimaryKey(autoGenerate = true) val workoutId: Long = 0L,
     val extProgramId: Long,
     val startDate: ZonedDateTime? = null,
+    @Deprecated("Use intensityPercent instead")
     val intensity: WorkoutIntensity = WorkoutIntensity.NORMAL_INTENSITY,
+    val intensityPercent: Float = 50f,
     val durationSeconds: Long = 0L, // seconds
     val volume: Double = 0.0,
     val activeTimeSeconds: Long = 0L,
@@ -52,7 +55,10 @@ data class WorkoutRecordStart(
 @Parcelize
 data class WorkoutRecordFinish(
     val workoutId: Long,
+    @Deprecated("Use intensityPercent instead")
     val intensity: WorkoutRecord.WorkoutIntensity,
+    @ColumnInfo(defaultValue = "50.0")
+    val intensityPercent: Float,
     val durationSeconds: Long,
     val volume: Double,
     val activeTimeSeconds: Long,
@@ -64,7 +70,10 @@ data class WorkoutRecordAndName(
     @PrimaryKey(autoGenerate = true) val workoutId: Long = 0L,
     val extProgramId: Long,
     val startDate: ZonedDateTime?,
+    @Deprecated("Use intensityPercent instead")
     val intensity: WorkoutRecord.WorkoutIntensity,
+    @ColumnInfo(defaultValue = "50.0")
+    val intensityPercent: Float,
     val durationSeconds: Long = 0L, // seconds
     val volume: Float = 0f,
     val activeTimeSeconds: Long = 0L,

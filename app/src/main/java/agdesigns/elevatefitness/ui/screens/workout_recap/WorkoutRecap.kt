@@ -375,26 +375,30 @@ fun WorkoutRecap(
                         }
                     }
                 }
-                item {
-                    Text(
-                        stringResource(R.string.workout_history),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .padding(vertical = 8.dp)
-                            .padding(horizontal = 16.dp))
-                }
-                ExerciseRecordsList(
-                    recapState.imperialSystem,
-                    exerciseRecordsWithImage = recapState.exerciseRecords,
-                    onRecordClick = { recordId ->
-                        val exerciseId = recapState.exerciseRecords.find { it.recordId == recordId }?.extExerciseId
-                        if (exerciseId != null) {
-                            navigator.navigate(
-                                ExerciseStatsDestination(exerciseId = exerciseId)
-                            )
-                        }
+                if (recapState.exerciseRecords.isNotEmpty()) {
+                    item {
+                        Text(
+                            stringResource(R.string.workout_history),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .padding(horizontal = 16.dp)
+                        )
                     }
-                )
+                    ExerciseRecordsList(
+                        recapState.imperialSystem,
+                        exerciseRecordsWithImage = recapState.exerciseRecords,
+                        onRecordClick = { recordId ->
+                            val exerciseId =
+                                recapState.exerciseRecords.find { it.recordId == recordId }?.extExerciseId
+                            if (exerciseId != null) {
+                                navigator.navigate(
+                                    ExerciseStatsDestination(exerciseId = exerciseId)
+                                )
+                            }
+                        }
+                    )
+                }
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                 }

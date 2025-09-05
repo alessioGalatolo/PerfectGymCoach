@@ -11,6 +11,19 @@ import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import com.agdesignes.shared.Equipment
 import java.util.Locale
 
+fun getMetFromIntensity(intensity: Float): Float {
+    // input: intensity 0-100
+    // output: a reasonable MET value for a workout at that intensity
+    // assume workout met 3-8
+    return 3f + 0.05f * intensity
+}
+
+fun getIntensityFromMet(met: Float): Float {
+    // input: a reasonable MET value for a workout
+    // output: intensity 0-100
+    return (met - 3f) / 0.05f
+}
+
 fun Context.getLocalizedString(
     @StringRes resId: Int,
     locale: Locale

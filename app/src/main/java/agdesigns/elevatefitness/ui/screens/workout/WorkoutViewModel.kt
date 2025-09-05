@@ -13,6 +13,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import agdesigns.elevatefitness.utils.computeVolume
+import agdesigns.elevatefitness.utils.getMetFromIntensity
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -34,6 +35,7 @@ import kotlin.math.min
 data class WorkoutState(
     val cancelWorkoutDialogOpen: Boolean = false,
     val otherEquipmentDialogOpen: Boolean = false,
+    val enterIntensityDialogOpen: Boolean = false,
     val requestNotificationAccessDialogOpen: Boolean = false,
     val cantRequestNotificationAccess: Boolean = true,
     val programId: Long = 0L,
@@ -59,7 +61,8 @@ data class WorkoutState(
     val setsDone: Int = 0,
     val hasRecordedExercise: Boolean = false, // used to add a flag in cancel workout
     val autoStartFailed: Boolean = false,  // autoStart was not able to find a workout program, navigate up
-    val autoAdvancePage: Int? = null
+    val autoAdvancePage: Int? = null,
+    val lastWorkoutIntensity: Float? = null,
 )
 
 sealed class WorkoutEvent{
@@ -67,7 +70,7 @@ sealed class WorkoutEvent{
 
     data object StartRetrievingExercises: WorkoutEvent()
 
-    data class FinishWorkout(val workoutIntensity: WorkoutRecord.WorkoutIntensity): WorkoutEvent()
+    data class FinishWorkout(val workoutIntensity: Float): WorkoutEvent()
 
     data object ResumeWorkout: WorkoutEvent()
 
@@ -85,6 +88,8 @@ sealed class WorkoutEvent{
     data object ToggleCancelWorkoutDialog : WorkoutEvent()
 
     data object ToggleRequestNotificationAccessDialog : WorkoutEvent()
+
+    data object ToggleEnterIntensityDialog : WorkoutEvent()
 
     data object DontRequestNotificationAgain : WorkoutEvent()
 
@@ -240,6 +245,13 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     )
                 }
             }
+            is WorkoutEvent.ToggleEnterIntensityDialog -> {
+                _state.update {
+                    it.copy(
+                        enterIntensityDialogOpen = !state.value.enterIntensityDialogOpen
+                    )
+                }
+            }
             is WorkoutEvent.DontRequestNotificationAgain -> {
                 viewModelScope.launch {
                     repository.setDontWantNotificationAccess(true)
@@ -249,6 +261,13 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                 if (retrieveExercises == null) { // only retrieve once
                     _state.update { it.copy(programId = event.programId) }
                     retrieveExercises = viewModelScope.launch {
+                        // get records to gather last workout's intensity
+                        val records = repository.getWorkoutRecordsByProgram(event.programId).first()
+                        if (records.isNotEmpty()) {
+                            _state.update { state -> state.copy(
+                                lastWorkoutIntensity = records.sortedBy { it.startDate }.last().intensityPercent
+                            ) }
+                        }
                         // get workout id
                         _state.update { it.copy(
                             workoutId = repository.addWorkoutRecord(
@@ -397,15 +416,18 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     val exercises = repository.getWorkoutExerciseRecordsAndInfo(state.value.workoutId).first().distinct()
                     val workoutTimeMillis = state.value.currentTime.toInstant().toEpochMilli() - state.value.startDate!!.toInstant().toEpochMilli()
                     val workoutTimeSeconds = workoutTimeMillis / 1000
+                    // event.workoutIntensity is 0-100, need to convert within reasonable met values
+                    val intensityMet = getMetFromIntensity(event.workoutIntensity)
                     repository.completeWorkoutRecord(
                         WorkoutRecordFinish(
                             workoutId = state.value.workoutId,
-                            intensity = event.workoutIntensity,
+                            intensity = WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY, // deprecated
+                            intensityPercent = event.workoutIntensity,
                             durationSeconds = workoutTimeSeconds,
                             volume = exercises.sumOf { computeVolume(it.weights, it.reps, it.tare).toDouble() },
                             activeTimeSeconds = max(0L, workoutTimeSeconds -
                                     exercises.sumOf { it.rest.sum() }),
-                            calories = event.workoutIntensity.metValue *
+                            calories = intensityMet *
                                     repository.getUserWeight().first() *
                                     workoutTimeSeconds / 3600
                         )
