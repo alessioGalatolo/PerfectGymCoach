@@ -92,10 +92,9 @@ fun SharedTransitionScope.Home(
         resumeWorkoutDialogOpen = homeState.currentWorkout != null
     }
     // add dynamic launcher shortcuts based on current plan
-    LaunchedEffect(homeState.currentPlan, homeState.programs) {
-        val shortcuts = homeState.programs?.filter {
-            // filter out upcoming workout so that it can be put on the top with custom icon
-            it.programId != homeState.currentWorkout
+    LaunchedEffect(homeState.currentProgram, homeState.programs) {
+        val shortcuts = homeState.programs?.filterIndexed {
+            index, program -> index != homeState.currentProgram
         }?.map {
             ShortcutInfoCompat.Builder(context, "start_workout_dyn_${it.programId}")
                 .setShortLabel(getProgramDisplayName(it.name, context))
@@ -108,15 +107,13 @@ fun SharedTransitionScope.Home(
                 .build()
         }?.toMutableList() ?: mutableListOf()
 
-        if (homeState.currentWorkout != null) {
-            val program = homeState.programs?.find { it.programId == homeState.currentWorkout!! }
+        if (homeState.currentProgram != null) {
+            val program = homeState.programs?.getOrNull(homeState.currentProgram!!)
             if (program != null) {
                 shortcuts.add(0,
                     ShortcutInfoCompat.Builder(context, "start_workout_dyn_${program.programId}")
                         .setShortLabel(getProgramDisplayName(program.name, context))
-                        // FIXME: add icon
-//                .setLongLabel(context.getString(R.string.shortcut_start_workout_long))
-                        .setIcon(IconCompat.createWithResource(context, R.drawable.weight_icon))
+                        .setIcon(IconCompat.createWithResource(context, R.drawable.icon_event_upcoming))
                         .setIntent(
                             Intent(
                                 Intent.ACTION_VIEW,
