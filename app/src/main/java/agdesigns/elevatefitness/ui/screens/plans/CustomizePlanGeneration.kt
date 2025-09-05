@@ -17,21 +17,20 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
 import agdesigns.elevatefitness.navigation.GeneratePlanGraph
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.max
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.ViewGeneratedPlanDestination
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 @Destination<GeneratePlanGraph>(start = true, style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -48,9 +47,20 @@ fun CustomizePlanGeneration(
     val expertiseLevel = rememberSaveable { mutableStateOf(WorkoutPlanDifficulty.BEGINNER) }
     val workoutSplit = rememberSaveable { mutableStateOf(WorkoutPlanSplit.BRO) }
 
-    // FIXME: maybe replace with predictivebackhandler?
-    BackHandler(pagerState.currentPage > 0) {
-        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+    PredictiveBackHandler(enabled = pagerState.currentPage > 0 || pagerState.isScrollInProgress) { progress ->
+        // This block is executed when the back gesture begins.
+        try {
+            progress.collect { backEvent ->
+                pagerState.scrollToPage(
+                    pagerState.currentPage,
+                    -backEvent.progress.coerceIn(-0.49f, 0.49f)
+                )
+            }
+            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+            // This block is executed if the gesture completes successfully.
+        } catch (e: CancellationException) {
+            pagerState.animateScrollToPage(pagerState.currentPage)
+        }
     }
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -70,13 +80,12 @@ fun CustomizePlanGeneration(
             HorizontalPager(
                 state = pagerState,
                 userScrollEnabled = false,
-                modifier = Modifier.fillMaxSize().padding(innerPadding)
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())
             ) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp)
                 ) {
                     when (it) {
                         0 -> goalChoicePage { choice ->
@@ -101,6 +110,9 @@ fun CustomizePlanGeneration(
                             )
                         }
                     }
+                    item {
+                        Spacer(Modifier.height(max(0.dp,innerPadding.calculateBottomPadding()-16.dp)))
+                    }
                 }
             }
         }
@@ -121,7 +133,7 @@ fun LazyListScope.goalChoicePage(completeGoal: (WorkoutPlanGoal) -> Unit){
             Text(
                 stringResource(R.string.what_is_your_goal_when_training),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(vertical = 16.dp)
+                modifier = Modifier.padding(16.dp)
             )
         }
     }
@@ -130,7 +142,7 @@ fun LazyListScope.goalChoicePage(completeGoal: (WorkoutPlanGoal) -> Unit){
         val image = goalImages.values.elementAt(index)
         ElevatedCard(Modifier.clickable {
             completeGoal(goal)
-        }) {
+        }.padding(horizontal = 16.dp)) {
             AsyncImage(
                 model = image,
                 contentDescription = stringResource(R.string.goal_i_image, goal),
@@ -164,7 +176,7 @@ fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) 
             Text(
                 stringResource(R.string.what_is_your_expertise_level),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(vertical = 16.dp)
+                modifier = Modifier.padding(16.dp)
             )
         }
     }
@@ -173,7 +185,7 @@ fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) 
         val image = expertiseImages.values.elementAt(index)
         ElevatedCard(Modifier.clickable {
             completeExpertise(level)
-        }) {
+        }.padding(horizontal = 16.dp)) {
             AsyncImage(
                 model = image,
                 contentDescription = stringResource(R.string.goal_i_image, level),
@@ -209,7 +221,7 @@ fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
             Text(
                 stringResource(R.string.how_many_times_per_week_do_you_want_to_exercise),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(vertical = 16.dp)
+                modifier = Modifier.padding(16.dp)
             )
         }
     }
@@ -219,7 +231,7 @@ fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
         val image = workoutImages.values.elementAt(index)
         ElevatedCard(Modifier.clickable {
             completeSplit(split)
-        }) {
+        }.padding(horizontal = 16.dp)) {
             AsyncImage(
                 model = image,
                 contentDescription = stringResource(R.string.goal_i_image, split),
