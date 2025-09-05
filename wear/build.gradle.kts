@@ -8,14 +8,14 @@ plugins {
 
 android {
     namespace = "agdesigns.elevatefitness"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 30
-        targetSdk = 35
-        versionCode = 5  // cannot match app version
-        versionName = "0.0.2b" // match phone app version + eventual revisions
+        targetSdk = 36
+        versionCode = 7  // cannot match app version
+        versionName = "0.0.3" // match phone app version + eventual revisions
     }
 
     buildTypes {

@@ -15,14 +15,14 @@ room {
 
 android {
     namespace = "agdesigns.elevatefitness"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 2
-        versionName = "0.0.2"
+        targetSdk = 36
+        versionCode = 6
+        versionName = "0.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
