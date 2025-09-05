@@ -37,36 +37,6 @@ fun hasNotificationAccess(context: Context): Boolean {
     return enabledNotificationListeners.isNotEmpty() && enabledNotificationListeners.contains(packageName)
 }
 
-fun isMajorMover(muscle: Exercise.Muscle): Boolean {
-    return when (muscle) {
-        Exercise.Muscle.CHEST,
-        Exercise.Muscle.BACK,
-        Exercise.Muscle.SHOULDERS,
-        Exercise.Muscle.QUADRICEPS -> true
-        else -> false
-    }
-}
-
-fun isFreeWeight(equipment: Equipment): Boolean {
-    return when (equipment) {
-        Equipment.BARBELL,
-        Equipment.DUMBBELL,
-        Equipment.BODY_WEIGHT -> true
-        else -> false
-    }
-}
-
-fun exerciseIsCompound(exercise: Exercise): Boolean {
-    if (!isFreeWeight(exercise.equipment))
-        return false
-    if (!isMajorMover(exercise.primaryMuscle))
-        return false
-    if (exercise.secondaryMuscles.size > 1)
-        return true
-    return false
-}
-
-
 fun getStickyHeader(
     layoutInfo: LazyListLayoutInfo,
     id2StickyHeader: Map<Int, String>,

@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 fun CustomizePlanGeneration(
     navigator: DestinationsNavigator
 ) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState(), { false })
     val snackbarHostState = remember { SnackbarHostState() }
     val totalPageCount = 3
     val pagerState = rememberPagerState(pageCount = { totalPageCount })
@@ -70,10 +70,9 @@ fun CustomizePlanGeneration(
             HorizontalPager(
                 state = pagerState,
                 userScrollEnabled = false,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize().padding(innerPadding)
             ) {
                 LazyColumn(
-                    contentPadding = innerPadding,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier
                         .fillMaxSize()
@@ -117,54 +116,39 @@ fun LazyListScope.goalChoicePage(completeGoal: (WorkoutPlanGoal) -> Unit){
         WorkoutPlanGoal.ENDURANCE to R.drawable.plank,
         WorkoutPlanGoal.CARDIO to R.drawable.sit_ups
     )
-    // fixme: would like this to be a stickyHeader but it is currently bugged
-    item {
-        Text(
-            stringResource(R.string.what_is_your_goal_when_training),
-            style = MaterialTheme.typography.titleLarge
-        )
+    stickyHeader {
+        Surface(Modifier.fillMaxWidth()) {
+            Text(
+                stringResource(R.string.what_is_your_goal_when_training),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+        }
     }
     items(goalImages.size) { index ->
         val goal = goalImages.keys.elementAt(index)
         val image = goalImages.values.elementAt(index)
-        if (goal == WorkoutPlanGoal.CARDIO || goal == WorkoutPlanGoal.ENDURANCE) {
-            Card {
-                AsyncImage(
-                    model = image,
-                    contentDescription = stringResource(R.string.goal_i_image, goal),
-                    contentScale = ContentScale.Inside,
-                    colorFilter = ColorFilter.tint(Color.Black, BlendMode.Color),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-                Text(
-                    text = stringResource(
-                        R.string.goal_i_not_available,
-                        stringResource(goal.descResource)
-                    ),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+        ElevatedCard(Modifier.clickable {
+            completeGoal(goal)
+        }) {
+            AsyncImage(
+                model = image,
+                contentDescription = stringResource(R.string.goal_i_image, goal),
+//                contentScale = ContentScale.FillWidth,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            )
+            Text(
+                text = stringResource(goal.descResource),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(16.dp)
+            )
         }
-        else {
-            ElevatedCard(Modifier.clickable {
-                completeGoal(goal)
-            }) {
-                AsyncImage(
-                    model = image,
-                    contentDescription = stringResource(R.string.goal_i_image, goal),
-                    contentScale = ContentScale.FillWidth,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-                Text(
-                    text = stringResource(goal.descResource),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
+    }
+    item {
+        Spacer(Modifier.height(0.dp))
     }
 }
 
@@ -176,10 +160,13 @@ fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) 
         WorkoutPlanDifficulty.ADVANCED to R.drawable.muscle_up
     )
     stickyHeader {
-        Text(
-            stringResource(R.string.what_is_your_expertise_level),
-            style = MaterialTheme.typography.titleLarge
-        )
+        Surface(Modifier.fillMaxWidth()) {
+            Text(
+                stringResource(R.string.what_is_your_expertise_level),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+        }
     }
     items(expertiseImages.size) { index ->
         val level = expertiseImages.keys.elementAt(index)
@@ -193,6 +180,7 @@ fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) 
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(200.dp)
             )
             Text(
                 text = stringResource(level.expertiseResource),
@@ -200,6 +188,9 @@ fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) 
                 modifier = Modifier.padding(16.dp)
             )
         }
+    }
+    item {
+        Spacer(Modifier.height(0.dp))
     }
 }
 
@@ -214,10 +205,13 @@ fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
     )
 
     stickyHeader {
-        Text(
-            stringResource(R.string.how_many_times_per_week_do_you_want_to_exercise),
-            style = MaterialTheme.typography.titleLarge
-        )
+        Surface(Modifier.fillMaxWidth()) {
+            Text(
+                stringResource(R.string.how_many_times_per_week_do_you_want_to_exercise),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+        }
     }
 
     items(workoutImages.size) { index ->
@@ -229,9 +223,10 @@ fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
             AsyncImage(
                 model = image,
                 contentDescription = stringResource(R.string.goal_i_image, split),
-                contentScale = ContentScale.FillWidth,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(200.dp)
             )
             Text(
                 text = stringResource(split.splitResource),
@@ -239,5 +234,8 @@ fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
                 modifier = Modifier.padding(16.dp)
             )
         }
+    }
+    item {
+        Spacer(Modifier.height(0.dp))
     }
 }
