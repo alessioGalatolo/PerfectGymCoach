@@ -197,7 +197,8 @@ fun WorkoutRecap(
                                         startAxis = VerticalAxis.rememberStart(),
                                         bottomAxis = HorizontalAxis.rememberBottom(
                                             valueFormatter = CartesianValueFormatter { _, value, _ ->
-                                                recapState.index2date[value.toInt()]?.format(formatter) ?: ""
+                                                recapState.index2date[value.toInt()]?.format(formatter)
+                                                    ?: value.toString() // fall back to value, empty string crashes stuff
                                             }
                                         ),
                                         legend =

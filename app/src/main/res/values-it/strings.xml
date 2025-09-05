@@ -770,5 +770,5 @@
     <string name="_1rm_calculation_method">Metodo per calcolare 1RM</string>
     <string name="this_workout">Questo allenamento</string>
     <string name="workout_intensity_info">Selezione un valore per finire l\'allenamento. Questo valore verrà utilizzato per avere una stima migliore delle calorie consumate</string>
-    <string name="workout_intensity_intensity_info">. La freccia indice l\'intensità selezionate nell\'ultimo allenamento.</string>
+    <string name="workout_intensity_intensity_info">. La freccia indica l\'intensità selezionata nell\'ultimo allenamento.</string>
 </resources>

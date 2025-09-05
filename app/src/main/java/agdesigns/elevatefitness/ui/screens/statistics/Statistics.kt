@@ -207,10 +207,10 @@ fun Statistics(
                                     DecimalFormat("#.## ${if (state.useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)}")
                                 ),
                                 xValueFormatter = CartesianValueFormatter { _, value, _ ->
-                                    val index = value.toInt().coerceIn(0, state.volumeIndex2Date.keys.max())
+                                    val index = value.toInt().coerceIn(0, state.volumeIndex2Date.keys.maxOrNull())
                                     state.volumeIndex2Date[index]?.format(
                                         DateTimeFormatter.ofPattern("MMM dd")
-                                    ) ?: ""
+                                    ) ?: value.toString() // fall back to value otherwise empty string will crash stuff
                                 },
                                 decorations = listOf(
                                     rememberHorizontalLine(

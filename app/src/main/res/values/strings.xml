@@ -482,7 +482,8 @@
     <string name="exercise_variation_preacher">Preacher</string>
     <string name="exercise_variation_scott">Scott</string>
 
-    <string name="exercise_cable_curl_name">Cable curl</string>
+    <!-- TODO: remove "with bar" after migration-->
+    <string name="exercise_cable_curl_name">Cable curl (with bar)</string>
     <string name="exercise_cable_curl_description">Attach a straight bar to a low pulley cable machine. Stand facing the machine, grab the bar with both hands, palms facing up. Curl the bar towards your chest, keeping your elbows stationary, then slowly lower the bar back down.</string>
     <string name="exercise_variation_bar">Bar</string>
     <string name="exercise_variation_rope">Rope</string>

@@ -133,7 +133,7 @@ fun ExerciseStats(
                                 value.toInt().coerceIn(0, state.indices2dates.keys.max())
                             state.indices2dates[index]?.format(
                                 DateTimeFormatter.ofPattern("MMM dd")
-                            ) ?: ""
+                            ) ?: value.toString() // fallback to value, empty string creates problems
                         }
                         if (state.indices2dates.isNotEmpty()) {
                             // Volume progression
@@ -158,10 +158,10 @@ fun ExerciseStats(
                                 xValueFormatter = CartesianValueFormatter { _, value, _ ->
                                     val index =
                                         value.toInt()
-                                            .coerceIn(0, state.volumeMonthIndex2Date.keys.max())
+                                            .coerceIn(0, state.volumeMonthIndex2Date.keys.maxOrNull())
                                     state.volumeMonthIndex2Date[index]?.format(
                                         DateTimeFormatter.ofPattern("MMM dd")
-                                    ) ?: ""
+                                    ) ?: value.toString() // fallback to value, empty string creates problems
                                 },
                                 markerDecimalFormat = DecimalFormat(
                                     "#.## $unit"
