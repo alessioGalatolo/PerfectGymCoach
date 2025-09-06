@@ -110,10 +110,10 @@
     <!-- Create a new exercise dialog -->
     <string name="create_a_new_exercise">Crea un nuovo esercizio</string>
     <string name="enter_exercise_name">Inserisci il nome dell\'esercizio</string>
-    <string name="select_equipment">Seleziona attrezzatura</string>
-    <string name="select_difficulty">Seleziona difficoltà</string>
-    <string name="select_primary_muscle">Seleziona muscolo principale</string>
-    <string name="select_secondary_muscle_s">Seleziona muscoli secondari</string>
+    <string name="select_equipment">Attrezzatura</string>
+    <string name="select_difficulty">Difficoltà</string>
+    <string name="select_primary_muscle">Muscolo principale</string>
+    <string name="select_secondary_muscle_s">Muscoli secondari</string>
 
     <!-- History -->
     <string name="weekly_overview">Panoramica settimanale</string>
@@ -771,4 +771,5 @@
     <string name="this_workout">Questo allenamento</string>
     <string name="workout_intensity_info">Selezione un valore per finire l\'allenamento. Questo valore verrà utilizzato per avere una stima migliore delle calorie consumate</string>
     <string name="workout_intensity_intensity_info">. La freccia indica l\'intensità selezionata nell\'ultimo allenamento.</string>
+    <string name="select_secondary_muscle_subtitle">Facoltativo - Seleziona altri muscoli allenati</string>
 </resources>

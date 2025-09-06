@@ -7,7 +7,9 @@ import android.content.res.Configuration
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
+import androidx.compose.ui.unit.LayoutDirection
 import com.agdesignes.shared.Equipment
 import java.util.Locale
 
@@ -22,6 +24,15 @@ fun getIntensityFromMet(met: Float): Float {
     // input: a reasonable MET value for a workout
     // output: intensity 0-100
     return (met - 3f) / 0.05f
+}
+
+operator fun PaddingValues.plus(paddingValues: PaddingValues): PaddingValues {
+    return PaddingValues(
+        top = this.calculateTopPadding() + paddingValues.calculateTopPadding(),
+        bottom = this.calculateBottomPadding() + paddingValues.calculateBottomPadding(),
+        start = this.calculateLeftPadding(LayoutDirection.Ltr) + paddingValues.calculateLeftPadding(LayoutDirection.Ltr),
+        end = this.calculateRightPadding(LayoutDirection.Ltr) + paddingValues.calculateRightPadding(LayoutDirection.Ltr)
+    )
 }
 
 fun Context.getLocalizedString(

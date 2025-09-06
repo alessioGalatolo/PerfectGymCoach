@@ -110,10 +110,10 @@
     <!-- Create a new exercise dialog -->
     <string name="create_a_new_exercise">Create a new Exercise</string>
     <string name="enter_exercise_name">Enter exercise name</string>
-    <string name="select_equipment">Select equipment</string>
-    <string name="select_difficulty">Select difficulty</string>
-    <string name="select_primary_muscle">Select primary muscle</string>
-    <string name="select_secondary_muscle_s">Select secondary muscle(s)</string>
+    <string name="select_equipment">Equipment</string>
+    <string name="select_difficulty">Difficulty</string>
+    <string name="select_primary_muscle">Primary muscle</string>
+    <string name="select_secondary_muscle_s">Secondary muscle(s)</string>
 
     <!-- History -->
     <string name="weekly_overview">Weekly Overview</string>
@@ -777,4 +777,5 @@
     <string name="workout_intensity_info">Select a value to finish the workout. This will be used to have a better estimate of the consumed calories</string>
     <!-- This will be appended to the above so it needs to start with ". " -->
     <string name="workout_intensity_intensity_info">. Arrow points to the intensity from the last workout.</string>
+    <string name="select_secondary_muscle_subtitle">Optional - Select additional muscles worked</string>
 </resources>
