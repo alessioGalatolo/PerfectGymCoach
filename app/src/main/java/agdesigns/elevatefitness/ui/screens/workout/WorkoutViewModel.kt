@@ -570,13 +570,11 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.ReplaceExercise -> {
                 viewModelScope.launch {
-                    // Wait for the condition to be met by observing changes to state.value.workoutExercises
-                    snapshotFlow { state.value.workoutExercises }
-                        .mapNotNull { exercises ->
-                            if (exercises.size > event.originalSize) {
-                                exercises.last().workoutExerciseId // Return the ID if condition met
+                    state.mapNotNull { stateFlow ->
+                            if (stateFlow.workoutExercises.size > event.originalSize) {
+                                stateFlow.workoutExercises.last().workoutExerciseId
                             } else {
-                                null // Otherwise, return null to keep waiting
+                                null
                             }
                         }
                         .first() // Get the first non-null emission (meaning the condition is met)
