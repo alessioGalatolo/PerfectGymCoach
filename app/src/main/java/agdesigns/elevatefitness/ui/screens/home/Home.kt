@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -140,7 +141,7 @@ fun SharedTransitionScope.Home(
     }
     Scaffold(
         // use a primary container to put emphasis on upcoming workout in elevated card
-        containerColor = MaterialTheme.colorScheme.surfaceDim,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         floatingActionButton = {
             if (homeState.currentPlan == null) {
                 LargeFloatingActionButton(
@@ -222,8 +223,10 @@ fun SharedTransitionScope.Home(
                     Text(
                         text = stringResource(id = R.string.coming_next),
                         fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.header_to_content_padding)))
                     // animate card, image and text separately
                     val cardKey = rememberSharedContentState("card_${currentProgram.programId}")
                     val imageKey = rememberSharedContentState("img_${currentProgram.programId}")
@@ -245,7 +248,7 @@ fun SharedTransitionScope.Home(
                         navigator = navigator,
                         // FIXME: suboptimal solution
                         cardModifier = Modifier
-                            .padding(16.dp)
+                            .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
                             .sharedBounds(
                                 sharedContentState = cardKey,
                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -267,16 +270,18 @@ fun SharedTransitionScope.Home(
                     )
                 }
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.section_spacing)))
                 }
                 if (otherPrograms.isNotEmpty()) {
                     item {
                         Text(
                             text = stringResource(id = R.string.other_programs),
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.header_to_content_padding)))
                     }
                     itemsIndexed(items = otherPrograms, key = { _, it -> it.programId }) { index, program ->
                         val exs = homeState.exercisesAndInfo[program.programId]?.sortedBy {
@@ -295,7 +300,7 @@ fun SharedTransitionScope.Home(
                         Card(
                             shape = cardShape,
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                containerColor = MaterialTheme.colorScheme.surface
                             ),
                             modifier = Modifier
                                 .sharedBounds(
@@ -484,7 +489,7 @@ fun SharedTransitionScope.Home(
 
                         // Consistent spacing
                         if (index != otherPrograms.size - 1) {
-                            Spacer(modifier = Modifier.height(1.dp)) // Minimal gap for cohesion
+                            Spacer(modifier = Modifier.height(2.dp)) // Minimal gap for cohesion
                         }
                     }
                 }

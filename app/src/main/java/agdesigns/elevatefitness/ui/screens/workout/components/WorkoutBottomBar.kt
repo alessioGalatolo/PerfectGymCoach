@@ -131,7 +131,7 @@ fun WorkoutBottomBar(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RowScope.TextFieldWithButtons(
     prompt: String,
@@ -157,6 +157,7 @@ fun RowScope.TextFieldWithButtons(
                 ))
         }
         OutlinedTextField(
+            shape = MaterialTheme.shapes.large,
             value = text(),
             onValueChange = onNewText,
             singleLine = true,

@@ -36,7 +36,7 @@ import com.ramcosta.composedestinations.generated.destinations.AddProgramExercis
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun WorkoutCard(
     navigator: DestinationsNavigator,
@@ -66,7 +66,8 @@ fun WorkoutCard(
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     expanded = true
-                })
+                }
+            )
     )
     {
         Column {
@@ -164,6 +165,7 @@ fun WorkoutCard(
                 if (exercises.isNotEmpty()) {
                     // FIXME: doesn't animate when quickstart
                     Button(
+                        shapes = ButtonDefaults.shapes(),
                         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                         onClick = {
                             navigator.navigate(

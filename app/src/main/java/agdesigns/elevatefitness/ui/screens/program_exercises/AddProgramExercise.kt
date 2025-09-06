@@ -58,7 +58,9 @@ import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscle
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun AddProgramExercise(
     navigator: DestinationsNavigator,
@@ -73,12 +75,23 @@ fun AddProgramExercise(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
                 title = { Text(getProgramDisplayName(programName)) },
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(
+                        onClick = { navigator.navigateUp() },
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.go_back_icon)

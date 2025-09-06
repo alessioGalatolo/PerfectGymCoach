@@ -30,8 +30,10 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
+import agdesigns.elevatefitness.ui.screens.history.components.WorkoutCalendarCards
 import com.agdesignes.shared.maybeKgToLb
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -51,190 +53,6 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.collections.iterator
 
-
-@Composable
-fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listState: LazyListState) {
-    if (recordsMap.isNotEmpty()) {
-        val weekField = WeekFields.of(Locale.getDefault()).weekOfYear()
-        val currentWeek = ZonedDateTime.now().get(weekField)
-        val scope = rememberCoroutineScope()
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .statusBarsPadding()
-        ) {
-            // Section header with improved styling
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.weekly_overview),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Icon(
-                    imageVector = Icons.Default.CalendarMonth,
-                    contentDescription = stringResource(R.string.calendar),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                reverseLayout = true,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                for (week in currentWeek downTo 1) {
-                    item {
-                        val weekRecords = recordsMap[week] ?: emptyList()
-                        if (weekRecords.isEmpty()) {
-                            // Empty week card with subtle styling
-                            Card(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(140.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                ),
-                                border = BorderStroke(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.week_i, week),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = FontWeight.Medium
-                                    )
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    Icon(
-                                        imageVector = Icons.Default.Remove,
-                                        contentDescription = stringResource(R.string.no_workouts),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Text(
-                                        text = stringResource(R.string.rest_week),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                    )
-                                }
-                            }
-                        } else {
-                            // Active week card with enhanced styling
-                            Card(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(140.dp)
-                                    .clickable {
-                                        scope.launch {
-                                            listState.animateScrollToItem(
-                                                index = recordsMap.toSortedMap()
-                                                    .tailMap(week).keys.size
-                                            )
-                                        }
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                                ),
-                                elevation = CardDefaults.cardElevation(
-                                    defaultElevation = 6.dp,
-                                    hoveredElevation = 8.dp
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    // Header
-                                    Text(
-                                        text = stringResource(R.string.week_i, week),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-
-                                    // Achievement icon
-                                    val (icon, iconColor) = when {
-                                        weekRecords.size >= 5 -> Icons.Default.Whatshot to MaterialTheme.colorScheme.onPrimaryContainer
-                                        weekRecords.size >= 3 -> Icons.Default.RocketLaunch to MaterialTheme.colorScheme.onPrimaryContainer
-                                        weekRecords.size >= 2 -> Icons.Default.SelfImprovement to MaterialTheme.colorScheme.onPrimaryContainer
-                                        else -> Icons.Default.SentimentVerySatisfied to MaterialTheme.colorScheme.onPrimaryContainer
-                                    }
-
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = stringResource(R.string.achievement_icon),
-                                        tint = iconColor,
-                                        modifier = Modifier.size(28.dp)
-                                    )
-
-                                    // Workout indicators
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.Center
-                                    ) {
-                                        repeat(minOf(weekRecords.size, 7)) { index ->
-                                            Icon(
-                                                imageVector = Icons.Default.FitnessCenter,
-                                                contentDescription = stringResource(
-                                                    R.string.workout_i_icon,
-                                                    index + 1
-                                                ),
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.size(12.dp)
-                                            )
-                                            if (index < minOf(weekRecords.size, 7) - 1) {
-                                                Spacer(modifier = Modifier.width(2.dp))
-                                            }
-                                        }
-                                    }
-
-                                    // Workout count
-                                    Text(
-                                        text = stringResource(
-                                            R.string.workout_count,
-                                            weekRecords.size,
-                                            if (weekRecords.size != 1) "s" else ""
-                                        ),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
@@ -258,8 +76,8 @@ fun History(
 
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
                 WorkoutCalendarCards(
@@ -311,7 +129,8 @@ fun History(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
+                                    .padding(horizontal = 16.dp)
+                                    .padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -342,17 +161,15 @@ fun History(
                     sortedRecords.forEachIndexed { index, workout ->
                         item {
                             OutlinedCard(
+                                shape = MaterialTheme.shapes.large,
+                                onClick = {
+                                    navigator.navigate(
+                                        WorkoutRecapDestination(workoutId = workout.workoutId)
+                                    )
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .clickable {
-                                        navigator.navigate(
-                                            WorkoutRecapDestination(workoutId = workout.workoutId)
-                                        )
-                                    },
-//                                    colors = CardDefaults.cardColors(
-//                                        containerColor = MaterialTheme.colorScheme.surface
-//                                    )
+                                    .padding(horizontal = 16.dp),
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -406,7 +223,7 @@ fun History(
                                             modifier = Modifier.weight(1f)
                                         )
 
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(16.dp))
 
                                         // Calories stat
                                         StatCard(
@@ -419,7 +236,7 @@ fun History(
                                             modifier = Modifier.weight(1f)
                                         )
 
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(16.dp))
 
                                         // Duration stat
                                         StatCard(
@@ -445,6 +262,7 @@ fun History(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun StatCard(
     icon: ImageVector,
@@ -455,7 +273,7 @@ private fun StatCard(
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(8.dp)
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(
             modifier = Modifier.padding(12.dp),

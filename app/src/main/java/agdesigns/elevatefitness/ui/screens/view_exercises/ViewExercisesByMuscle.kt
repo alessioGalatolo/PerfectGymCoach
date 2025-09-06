@@ -28,6 +28,8 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.utils.plus
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.ui.res.stringResource
 import com.ramcosta.composedestinations.annotation.Destination
@@ -35,7 +37,9 @@ import com.ramcosta.composedestinations.generated.destinations.ViewExercisesDest
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun ExercisesByMuscle(
     navigator: DestinationsNavigator,
@@ -66,16 +70,29 @@ fun ExercisesByMuscle(
 
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            LargeTopAppBar(title = { Text(stringResource(
+            LargeTopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                title = {
+                    Text(stringResource(
                 R.string.add_exercise_to_i,
                 getProgramDisplayName(programName)
             )) },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(
+                        onClick = { navigator.navigateUp() },
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.go_back_icon)
@@ -85,9 +102,13 @@ fun ExercisesByMuscle(
             )
         }, content = { innerPadding ->
             LazyColumn(
-                contentPadding = innerPadding,
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.card_space_between)),
-                modifier = Modifier.padding(horizontal = 16.dp)) {
+                contentPadding = innerPadding + PaddingValues(
+                    bottom = dimensionResource(R.dimen.screen_edge_padding)
+                ),
+                verticalArrangement = Arrangement.spacedBy(
+                    dimensionResource(R.dimen.grouped_cards_between_cards)
+                )
+            ) {
                 item {
                     // search bar
                     val searchBarState = rememberSearchBarState()
@@ -108,7 +129,11 @@ fun ExercisesByMuscle(
                         }
                     }
                     SearchBarDefaults.InputField(
-                        modifier = Modifier.padding(vertical = 16.dp),
+                        colors = SearchBarDefaults.inputFieldColors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        modifier = Modifier.padding(dimensionResource(R.dimen.screen_edge_padding)),
                         searchBarState = searchBarState,
                         textFieldState = textFieldState,
                         readOnly = true,
@@ -127,15 +152,34 @@ fun ExercisesByMuscle(
                             Icon(Icons.Default.Search, contentDescription = null)
                         }
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                items(items = Exercise.Muscle.entries.toTypedArray(), key = { it.ordinal }) {
+                itemsIndexed(
+                    items = Exercise.Muscle.entries.toTypedArray(),
+                    key = { _, it -> it.ordinal }
+                ) { index, muscle ->
+                    val shape = when (index) {
+                        0 -> MaterialTheme.shapes.large.copy(
+                            bottomEnd = MaterialTheme.shapes.extraSmall.bottomEnd,
+                            bottomStart = MaterialTheme.shapes.extraSmall.bottomStart
+                        )
+                        Exercise.Muscle.entries.size - 1 -> MaterialTheme.shapes.extraLarge.copy(
+                            topEnd = MaterialTheme.shapes.extraSmall.topEnd,
+                            topStart = MaterialTheme.shapes.extraSmall.topStart
+                        )
+                        else -> MaterialTheme.shapes.extraSmall
+                    }
                     Card(
+                        shape = shape,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
                         onClick = {
                             navigator.navigate(
                                 ViewExercisesDestination(
                                     programId = programId,
                                     workoutId = workoutId,
-                                    muscleOrdinal = it.ordinal,
+                                    muscleOrdinal = muscle.ordinal,
                                     programName = programName,
                                     returnAfterAdding = returnAfterAdding
                                 )
@@ -145,7 +189,7 @@ fun ExercisesByMuscle(
                     ) {
                         Row (Modifier.padding(dimensionResource(R.dimen.card_inner_padding))){
                             Image(
-                                painter = painterResource(it.imageRes),
+                                painter = painterResource(muscle.imageRes),
                                 contentDescription = stringResource(R.string.image_highlighting_the_muscle),
                                 modifier = Modifier
                                     // Set image size to 40 dp
@@ -154,18 +198,13 @@ fun ExercisesByMuscle(
                                     .clip(CircleShape)
                             )
 
-
                             Column(modifier = Modifier.align(Alignment.CenterVertically)) {
-                                Text(text = stringResource(it.muscleNameResource), fontWeight = FontWeight.Bold)
+                                Text(text = stringResource(muscle.muscleNameResource), fontWeight = FontWeight.Bold)
 //                                Spacer(modifier = Modifier.height(4.dp))
 //                                Text(text = "Some exercise names...") // TODO
                             }
                         }
                     }
-                }
-                item {
-                    // We want 16.dp at the bottom, we have 8 from here and 8 from spacedBy
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.card_space_between)))
                 }
             }
         }

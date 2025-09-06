@@ -505,7 +505,10 @@ fun SharedTransitionScope.Workout(
             snackbarHostState = snackbarHostState,
             topAppBarNavigationIcon = { appBarShown ->
                 val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
-                IconButton(onClick = onClose) {
+                IconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = onClose
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = stringResource(R.string.close_icon),
@@ -925,7 +928,9 @@ fun SharedTransitionScope.Workout(
             snackbarHostState = snackbarHostState,
             topAppBarNavigationIcon = { appBarShown ->
                 val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
-                IconButton(onClick = { /* just a placeholder, won't be clicked anyway */}) {
+                IconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = { /* just a placeholder, won't be clicked anyway */}) {
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = stringResource(R.string.close_icon),

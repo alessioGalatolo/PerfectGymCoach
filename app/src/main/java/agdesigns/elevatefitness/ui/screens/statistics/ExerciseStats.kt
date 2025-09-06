@@ -21,10 +21,12 @@ import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
+import agdesigns.elevatefitness.utils.plus
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,7 +40,9 @@ import java.text.DecimalFormat
 import java.time.format.DateTimeFormatter
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun ExerciseStats(
     navigator: DestinationsNavigator,
@@ -63,10 +67,21 @@ fun ExerciseStats(
         }
     }
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             TopAppBar(title = { Text(title) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(
+                        onClick = { navigator.navigateUp() },
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.go_back_icon)
@@ -111,7 +126,9 @@ fun ExerciseStats(
                 }
                 LazyColumn(
                     state = listState,
-                    contentPadding = innerPadding,
+                    contentPadding = innerPadding + PaddingValues(
+                        bottom = dimensionResource(R.dimen.screen_edge_padding)
+                    ),
                     modifier = Modifier
                         .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,

@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -38,6 +39,7 @@ fun EmptyScreenInfo(
     // Empty state with improved styling
     Column(
         modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .fillMaxSize()
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
@@ -46,7 +48,7 @@ fun EmptyScreenInfo(
         Card(
             modifier = Modifier.padding(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
             shape = CircleShape
         ) {
@@ -56,7 +58,7 @@ fun EmptyScreenInfo(
                 modifier = Modifier
                     .size(120.dp)
                     .padding(24.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
             )
         }
 

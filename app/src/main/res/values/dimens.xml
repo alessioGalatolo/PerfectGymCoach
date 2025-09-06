@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="card_inner_padding">8.dp</dimen>
+    <dimen name="grouped_cards_between_cards">2.dp</dimen>
+    <dimen name="close_content_padding">8.dp</dimen>
+    <dimen name="screen_edge_padding">16.dp</dimen>
+    <dimen name="section_spacing">16.dp</dimen>
+    <dimen name="header_to_content_padding">8.dp</dimen>
+    <dimen name="card_inner_padding">16.dp</dimen>
     <dimen name="card_space_between">8.dp</dimen>
     <dimen name="card_outside_padding">16.dp</dimen>
 </resources>

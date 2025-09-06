@@ -38,6 +38,8 @@ import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.ExercisesEvent
 import agdesigns.elevatefitness.ui.common.ExercisesState
 import agdesigns.elevatefitness.ui.common.ExercisesViewModel
+import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentIcon
+import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentImage
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -47,10 +49,12 @@ import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
 import com.ramcosta.composedestinations.generated.destinations.CreateExerciseDialogDestination
@@ -64,7 +68,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ceil
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
-@OptIn(ExperimentalMaterial3Api::class
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
 fun ViewExercises(
@@ -119,12 +123,23 @@ fun ViewExercises(
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
                 title = { Text(stringResource(Exercise.Muscle.entries[muscleOrdinal].muscleNameResource)) },
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(
+                        onClick = { navigator.navigateUp() },
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.go_back_icon)
@@ -148,6 +163,10 @@ fun ViewExercises(
                         val inputField =
                             @Composable {
                                 SearchBarDefaults.InputField(
+                                    colors = SearchBarDefaults.inputFieldColors(
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface
+                                    ),
                                     outputTransformation = PredictiveBackOutputTransformation(
                                         backProgress
                                     ),
@@ -195,40 +214,61 @@ fun ViewExercises(
                                 )
                             }
                         // TODO: store recent searches
-                        SearchBar(state = searchBarState, inputField = inputField, modifier = Modifier.padding(horizontal = 16.dp))
-                        ExpandedFullScreenSearchBar(state = searchBarState, inputField = inputField) {
-                            EquipmentFilterChips(
-                                exercisesState = exercisesState,
-                                filterExerciseEquipment = { equipment ->
-                                    viewModel.onEvent(ExercisesEvent.FilterExerciseEquipment(equipment))
-                                }
-                            )
-                            val lazyListState = rememberLazyListState()
-                            LaunchedEffect(exercisesState.exercisesToDisplay) {
-                                scope.launch {
-                                    lazyListState.animateScrollToItem(0)
-                                }
-                            }
-                            if (textFieldState.text.isNotEmpty()) {
-                                LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    items(
-                                        exercisesState.exercisesToDisplay ?: emptyList(),
-                                        key = { it.name }
-                                    ) { exercise ->
-                                        ExerciseCard(exercise, longPressImage, isLongPressing) {
-                                            navigator.navigate(
-                                                AddExerciseDialogDestination(
-                                                    programId = programId,
-                                                    workoutId = workoutId,
-                                                    exerciseId = exercise.exerciseId,
-                                                    programName = programName,
-                                                    returnAfterAdding = returnAfterAdding
-                                                )
+                        SearchBar(
+                            state = searchBarState,
+                            inputField = inputField,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        ExpandedFullScreenSearchBar(
+                            colors = SearchBarDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            state = searchBarState,
+                            inputField = inputField
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer)
+                            ) {
+                                EquipmentFilterChips(
+                                    exercisesState = exercisesState,
+                                    filterExerciseEquipment = { equipment ->
+                                        viewModel.onEvent(
+                                            ExercisesEvent.FilterExerciseEquipment(
+                                                equipment
                                             )
-                                        }
+                                        )
                                     }
-                                    item {
-                                        Spacer(Modifier.height(16.dp))
+                                )
+                                val lazyListState = rememberLazyListState()
+                                LaunchedEffect(exercisesState.exercisesToDisplay) {
+                                    scope.launch {
+                                        lazyListState.animateScrollToItem(0)
+                                    }
+                                }
+                                if (textFieldState.text.isNotEmpty()) {
+                                    LazyColumn(
+                                        state = lazyListState,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        items(
+                                            exercisesState.exercisesToDisplay ?: emptyList(),
+                                            key = { it.name }
+                                        ) { exercise ->
+                                            ExerciseCard(exercise, longPressImage, isLongPressing) {
+                                                navigator.navigate(
+                                                    AddExerciseDialogDestination(
+                                                        programId = programId,
+                                                        workoutId = workoutId,
+                                                        exerciseId = exercise.exerciseId,
+                                                        programName = programName,
+                                                        returnAfterAdding = returnAfterAdding
+                                                    )
+                                                )
+                                            }
+                                        }
+                                        item {
+                                            Spacer(Modifier.height(16.dp))
+                                        }
                                     }
                                 }
                             }
@@ -323,6 +363,8 @@ fun EquipmentFilterChips(
         itemsIndexed(
             items = Equipment.entries.drop(1),
             { _, it -> it.ordinal }) { index, equipment ->
+            val equipmentIcon = getEquipmentIcon(equipment)
+            val equipmentImage = getEquipmentImage(equipment)
             FilterChip(
                 selected = equipment == exercisesState.equipToFiler,
                 onClick = {
@@ -342,7 +384,24 @@ fun EquipmentFilterChips(
                         )
                     }
                 } else {
-                    null
+                    if (equipmentIcon != null) {
+                        {
+                            Icon(
+                                equipmentIcon,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else {
+                        {
+                            AsyncImage(
+                                model = equipmentImage,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                            )
+                        }
+                    }
                 }
             )
         }
@@ -352,6 +411,7 @@ fun EquipmentFilterChips(
     }
 }
 
+@Suppress("SimplifiableCallChain")
 @Composable
 fun LazyItemScope.ExerciseCard(
     exercise: Exercise,

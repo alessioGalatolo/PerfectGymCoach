@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.ImeAction
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
@@ -101,12 +102,24 @@ fun AddExerciseDialog(
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            TopAppBar(title = { Text(addExerciseState.exercise?.name ?: "") },
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                title = { Text(addExerciseState.exercise?.name ?: "") },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(
+                        onClick = { navigator.navigateUp() },
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = stringResource(R.string.close_icon)
@@ -115,7 +128,7 @@ fun AddExerciseDialog(
                 }, actions = {
                     val keyboardController = LocalSoftwareKeyboardController.current
                     val fillString = stringResource(R.string.fill_every_field)
-                    TextButton(onClick = {
+                    FilledTonalButton(onClick = {
                         if (!viewModel.onEvent(AddExerciseEvent.TryAddExercise))
                             scope.launch {
                                 keyboardController?.hide()
@@ -193,6 +206,7 @@ fun AddExerciseDialog(
                     }
                     item {
                         OutlinedTextField(
+                            shape = MaterialTheme.shapes.large,
                             value = addExerciseState.note,
                             onValueChange = { viewModel.onEvent(AddExerciseEvent.UpdateNotes(it)) },
                             label = { Text(stringResource(R.string.notes)) },
@@ -207,8 +221,7 @@ fun AddExerciseDialog(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 8.dp),
+                                    .padding(dimensionResource(R.dimen.screen_edge_padding)),
                                 verticalAlignment = CenterVertically
                             ) {
                                 val expanded = rememberSaveable { mutableStateOf(false) }

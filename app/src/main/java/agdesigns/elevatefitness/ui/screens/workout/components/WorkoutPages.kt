@@ -749,9 +749,9 @@ fun BarbellSelector(
                                     text = optionText,
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = if (isSelected)
-                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                        MaterialTheme.colorScheme.inverseOnSurface
                                     else
-                                        MaterialTheme.colorScheme.onSurface,
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                                 )
                             }

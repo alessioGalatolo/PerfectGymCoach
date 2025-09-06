@@ -68,7 +68,6 @@ fun InsertNameDialog(
                 Text(text = stringResource(R.string.enter_name_for, prompt.lowercase()))
             },
             text = {
-
                 TextField(value = text,
                     onValueChange = { text = it },
                     modifier = Modifier

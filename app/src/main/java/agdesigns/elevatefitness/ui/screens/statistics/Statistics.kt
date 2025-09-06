@@ -13,6 +13,7 @@ import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.getStickyHeader
+import agdesigns.elevatefitness.utils.plus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ElevatedCard
@@ -31,13 +33,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -103,8 +107,13 @@ fun Statistics(
             }
     }
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
                 title = {
                     Text(
                         text = titleText
@@ -146,6 +155,7 @@ fun Statistics(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp) + WindowInsets.navigationBars.asPaddingValues(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Overview Cards
@@ -447,9 +457,6 @@ fun Statistics(
                             }
                         }
                     }
-                    item {
-                        Spacer(Modifier.navigationBarsPadding())
-                    }
                 }
             }
         }
@@ -476,6 +483,9 @@ private fun TimeFrameSelector(
                 checked = timeFrame == selectedTimeFrame,
                 onCheckedChange = { onTimeFrameSelected(timeFrame) },
                 modifier = modifier,
+                colors = ToggleButtonDefaults.toggleButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                ),
                 shapes =
                     when (index) {
                         0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
@@ -507,48 +517,41 @@ private fun LazyListScope.overviewCards(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             MetricCard(
+                title = stringResource(R.string.total_volume),
+                value = "${totalVolume.toInt()} ${if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)}",
+                icon = Icons.Default.Scale,
+                iconColor = MaterialTheme.colorScheme.secondary,
+                containerColor = Color(0xFFD0E8FF), // pastel blue
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(Modifier.height(dimensionResource(R.dimen.close_content_padding)))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding)),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            MetricCard(
                 title = stringResource(R.string.total_workouts),
                 value = totalWorkouts.toString(),
                 icon = Icons.Default.FitnessCenter,
                 iconColor = MaterialTheme.colorScheme.primary,
+                containerColor = Color(0xFFD0F0C0), // pastel green
                 modifier = Modifier.weight(1f)
 
             )
             Spacer(Modifier.width(8.dp))
             MetricCard(
-                title = stringResource(R.string.total_volume),
-                value = "${totalVolume.toInt()} ${if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)}",
-                icon = Icons.Default.Scale,
-                iconColor = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-    item {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            MetricCard(
                 title = stringResource(R.string.avg_duration),
                 value = "${avgDuration / 60}m",
                 icon = Icons.Default.Timer,
                 iconColor = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(8.dp))
-            MetricCard(
-                title = stringResource(R.string.calories),
-                value = "${totalCalories.toInt()} kcal",
-                icon = Icons.Default.LocalFireDepartment,
-                iconColor = Color(0xFFFF6B35),
+                containerColor = Color(0xFFEADCF8), // pastel purple
                 modifier = Modifier.weight(1f)
             )
         }
-    }
-    item {
+        Spacer(Modifier.height(dimensionResource(R.dimen.close_content_padding)))
         Row(
             Modifier
                 .fillMaxWidth()
@@ -560,19 +563,20 @@ private fun LazyListScope.overviewCards(
                 value = "${avgCalories.toInt()}",
                 icon = Icons.Default.LocalFireDepartment,
                 iconColor = Color(0xFFFF6B35),
+                containerColor = Color(0xFFFFD6D6), // reuse pastel pink/red
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))
             MetricCard(
-                title = stringResource(R.string.current_streak),
-                value = stringResource(R.string.streak_in_days, currentStreak),
-                icon = Icons.Default.Whatshot,
-                iconColor = Color(0xFFFF9500),
+                title = stringResource(R.string.calories),
+                value = "${totalCalories.toInt()} kcal",
+                icon = Icons.Default.LocalFireDepartment,
+                iconColor = Color(0xFFFF6B35),
+                containerColor = Color(0xFFFFD6D6), // pastel pink/red
                 modifier = Modifier.weight(1f)
             )
         }
-    }
-    item {
+        Spacer(Modifier.height(dimensionResource(R.dimen.close_content_padding)))
         Row(
             Modifier
                 .fillMaxWidth()
@@ -584,26 +588,43 @@ private fun LazyListScope.overviewCards(
                 value = stringResource(R.string.streak_in_days, longestStreak),
                 icon = Icons.Default.EmojiEvents,
                 iconColor = Color(0xFFFFD700),
+                containerColor = Color(0xFFFFF5BA), // pastel yellow
                 modifier = Modifier.weight(1f)
             )
-//            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(8.dp))
+            MetricCard(
+                title = stringResource(R.string.current_streak),
+                value = stringResource(R.string.streak_in_days, currentStreak),
+                icon = Icons.Default.Whatshot,
+                iconColor = Color(0xFFFF9500),
+                containerColor = Color(0xFFFFF5BA), // reuse pastel yellow
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
+
 
 @Composable
 private fun MetricCard(
     title: String,
     value: String,
+    containerColor: Color,
     icon: ImageVector,
     iconColor: Color,
     modifier: Modifier = Modifier
 ) {
-    OutlinedCard(modifier.height(100.dp)) {
+    Card(
+        modifier.height(100.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor
+        )
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -626,7 +647,8 @@ private fun MetricCard(
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                // same color as containerColor but darker
+                color = Color.Black.copy(alpha = 0.6f),
                 fontWeight = FontWeight.Bold
             )
         }

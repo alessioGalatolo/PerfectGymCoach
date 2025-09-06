@@ -107,9 +107,7 @@ fun SharedTransitionScope.FullScreenImageCard(
                 // FIXME: low level transition needed because compose likes to hide its functions
                 // TODO: check if new compose exposes something useful for this
                 val transparentColor = MaterialTheme.colorScheme.surface.copy(alpha = 1f)
-                val tonedColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
-                    BottomAppBarDefaults.ContainerElevation
-                )
+                val tonedColor = MaterialTheme.colorScheme.surfaceContainer
                 val backgroundColor by remember { derivedStateOf { lerp(
                         transparentColor, // start from base color e.g., white to remove transparency instantly
                         tonedColor,  // transition to right color slowly together with text
@@ -148,7 +146,8 @@ fun SharedTransitionScope.FullScreenImageCard(
 
                     // puts background in the whole screen
                     Surface(
-                        Modifier
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        modifier = Modifier
                             .fillMaxSize()
                             .padding(top = contentBelowImage)) {}
                     Column(
@@ -162,6 +161,7 @@ fun SharedTransitionScope.FullScreenImageCard(
                             .height(contentBelowImage)
                             .zIndex(1f)) // FIXME: necessary?
                         Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = ReversedCornersShape(deviceCornerRadius),
                             modifier = Modifier.fillMaxSize()
                         ) {

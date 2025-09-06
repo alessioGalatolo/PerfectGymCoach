@@ -14,6 +14,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.navigation.GeneratePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -46,7 +47,11 @@ fun ViewGeneratedPlan(
             Spacer(Modifier.height(8.dp))
 
             // TODO: circle on messages
-            Text(stringResource(R.string.generating_plan_waiting_text), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.generating_plan_waiting_text),
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
         }
     } else {
         navigator.navigateUp()

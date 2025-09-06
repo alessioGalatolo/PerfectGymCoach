@@ -32,11 +32,13 @@ import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
 import agdesigns.elevatefitness.ui.common.lineProviderWithHighlight
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
@@ -137,23 +139,34 @@ fun WorkoutRecap(
             )
         )
         Scaffold(topBar = {
-            TopAppBar (title = {
-                Text(stringResource(R.string.workout_recap))
-            }, navigationIcon = {
-                IconButton(onClick = {
-                    navigator.navigateUp()
-                    navigator.navigateUp()
-                    navigator.navigate(
-                        HistoryDestination()
-                    )
-                }) {
+            TopAppBar (
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                title = {
+                    Text(stringResource(R.string.workout_recap))
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            navigator.navigateUp()
+                            navigator.navigateUp()
+                            navigator.navigate(
+                                HistoryDestination()
+                            )
+                        },
+                        shapes = IconButtonDefaults.shapes()
+                ) {
                     Icon(Icons.Default.Close, stringResource(R.string.close_icon))
                 }
             })
         }) { innerPadding ->
             LazyColumn(
                 contentPadding = innerPadding,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ){
                 item {
@@ -270,8 +283,24 @@ fun WorkoutRecap(
                 }
                 if (recapState.workoutRecord != null) {
                     item {
-                        OutlinedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
-                            Column(Modifier.padding(dimensionResource(R.dimen.card_outside_padding))) {
+                        Text(
+                            stringResource(R.string.s_header1_highlights),
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(vertical = 8.dp)
+                        )
+                    }
+                    item {
+                        GroupedCard(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            items = listOf({
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -281,11 +310,19 @@ fun WorkoutRecap(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Icon(
-                                            Icons.Outlined.LocalFireDepartment,
-                                            stringResource(R.string.calories_burned),
-                                            Modifier.size(50.dp)
-                                        )
+                                        Card(
+                                            shape = MaterialTheme.shapes.extraExtraLarge,
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                            ),
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.LocalFireDepartment,
+                                                stringResource(R.string.calories_burned),
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(50.dp).padding(8.dp)
+                                            )
+                                        }
                                         Spacer(Modifier.width(8.dp))
                                         Text(
                                             stringResource(
@@ -304,7 +341,7 @@ fun WorkoutRecap(
                                         )
                                     }
                                 }
-//                                HorizontalDivider()
+                            }, {
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -314,11 +351,19 @@ fun WorkoutRecap(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Icon(
-                                            painterResource(R.drawable.weight_icon),
-                                            stringResource(R.string.volume_lifted),
-                                            Modifier.size(50.dp)
-                                        )
+                                        Card(
+                                            shape = MaterialTheme.shapes.extraExtraLarge,
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                            ),
+                                        ) {
+                                            Icon(
+                                                painterResource(R.drawable.weight_icon),
+                                                stringResource(R.string.volume_lifted),
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(50.dp).padding(8.dp)
+                                            )
+                                        }
                                         Spacer(Modifier.width(8.dp))
                                         Text(
                                             stringResource(R.string.total_volume) +
@@ -336,16 +381,25 @@ fun WorkoutRecap(
                                         Icon(Icons.AutoMirrored.Filled.HelpOutline, stringResource(R.string.help_icon_info))
                                     }
                                 }
-//                                HorizontalDivider()
+                            }, {
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Start
                                 ) {
-                                    Icon(
-                                        Icons.Outlined.Schedule, stringResource(R.string.workout_time),
-                                        Modifier.size(50.dp)
-                                    )
+                                    Card(
+                                        shape = MaterialTheme.shapes.extraExtraLarge,
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                        ),
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Schedule,
+                                            stringResource(R.string.workout_time),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(50.dp).padding(8.dp)
+                                        )
+                                    }
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         stringResource(R.string.total_time) +
@@ -354,16 +408,25 @@ fun WorkoutRecap(
                                                 )
                                     )
                                 }
-//                                HorizontalDivider()
+                            }, {
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Start
                                 ) {
-                                    Icon(
-                                        Icons.Outlined.PendingActions, stringResource(R.string.workout_active_time),
-                                        Modifier.size(50.dp)
-                                    )
+                                    Card(
+                                        shape = MaterialTheme.shapes.extraExtraLarge,
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                        ),
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.PendingActions,
+                                            stringResource(R.string.workout_active_time),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(50.dp).padding(8.dp)
+                                        )
+                                    }
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         stringResource(R.string.workout_active_time) + ": " +
@@ -372,8 +435,8 @@ fun WorkoutRecap(
                                                 )
                                     )
                                 }
-                            }
-                        }
+                            })
+                        )
                     }
                 }
                 if (recapState.exerciseRecords.isNotEmpty()) {
@@ -381,9 +444,10 @@ fun WorkoutRecap(
                         Text(
                             stringResource(R.string.workout_history),
                             fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .padding(vertical = 8.dp)
                                 .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp)
                         )
                     }
                     ExerciseRecordsList(

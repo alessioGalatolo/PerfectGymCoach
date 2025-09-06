@@ -57,7 +57,9 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
 @Destination<ChangePlanGraph>(style = FullscreenDialogTransition::class)
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun CreateExerciseDialog(
     navigator: DestinationsNavigator,
@@ -93,7 +95,13 @@ fun CreateExerciseDialog(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(
+                        onClick = { navigator.navigateUp() },
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = stringResource(R.string.close_icon)
@@ -116,14 +124,8 @@ fun CreateExerciseDialog(
                                 navigator.navigateUp()
                             }
                         },
-                        modifier = Modifier.align(CenterVertically)
+                        modifier = Modifier.align(CenterVertically).padding(4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Save,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.save))
                     }
                 },
@@ -603,7 +605,7 @@ private fun SecondaryMuscleCard(
 }
 
 @Composable
-private fun getEquipmentIcon(equipment: Equipment): ImageVector? {
+fun getEquipmentIcon(equipment: Equipment): ImageVector? {
     return when (equipment) {
         Equipment.BARBELL -> Icons.Outlined.FitnessCenter
         Equipment.MACHINE -> Icons.Outlined.PrecisionManufacturing

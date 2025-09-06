@@ -26,6 +26,7 @@ import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
+import androidx.compose.foundation.background
 import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
@@ -79,6 +80,7 @@ fun Profile(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(horizontal = 16.dp),
     ) {
         item {

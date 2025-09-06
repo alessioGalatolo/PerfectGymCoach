@@ -33,7 +33,9 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
 @Destination<GeneratePlanGraph>(start = true, style = FullscreenDialogTransition::class)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun CustomizePlanGeneration(
     navigator: DestinationsNavigator
@@ -63,13 +65,25 @@ fun CustomizePlanGeneration(
         }
     }
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.generate_a_new_plan)) },
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                title = { Text(stringResource(R.string.generate_a_new_plan)) },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(
+                        onClick = { navigator.navigateUp() },
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = stringResource(R.string.close_icon)
@@ -129,7 +143,10 @@ fun LazyListScope.goalChoicePage(completeGoal: (WorkoutPlanGoal) -> Unit){
         WorkoutPlanGoal.CARDIO to R.drawable.sit_ups
     )
     stickyHeader {
-        Surface(Modifier.fillMaxWidth()) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 stringResource(R.string.what_is_your_goal_when_training),
                 style = MaterialTheme.typography.titleLarge,
@@ -172,7 +189,10 @@ fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) 
         WorkoutPlanDifficulty.ADVANCED to R.drawable.muscle_up
     )
     stickyHeader {
-        Surface(Modifier.fillMaxWidth()) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 stringResource(R.string.what_is_your_expertise_level),
                 style = MaterialTheme.typography.titleLarge,
@@ -217,7 +237,10 @@ fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
     )
 
     stickyHeader {
-        Surface(Modifier.fillMaxWidth()) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 stringResource(R.string.how_many_times_per_week_do_you_want_to_exercise),
                 style = MaterialTheme.typography.titleLarge,
