@@ -57,7 +57,6 @@ fun ViewGeneratedPlan(
         navigator.navigateUp()
         navigator.navigate(
             AddProgramDestination(
-                generationState.generatedPlan!!.name,
                 generationState.generatedPlan!!.planId
             )
         )

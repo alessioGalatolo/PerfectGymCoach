@@ -576,7 +576,6 @@ fun LazyItemScope.PlanCard(
                 .clickable {
                     navigator.navigate(
                         AddProgramDestination(
-                            planName = plan.name,
                             planId = plan.planId
                         )
                     )
@@ -791,7 +790,6 @@ fun LazyItemScope.SecondaryPlanCard(
                 .clickable {
                     navigator.navigate(
                         AddProgramDestination(
-                            planName = plan.name,
                             planId = plan.planId
                         )
                     )

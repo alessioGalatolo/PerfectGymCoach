@@ -179,7 +179,6 @@ fun SharedTransitionScope.Home(
                 Button(onClick = {
                     navigator.navigate(
                         AddProgramDestination(
-                            planName = "", // FIXME: empty plan name
                             planId = homeState.currentPlan!!,
                             openDialogNow = true
                         )
@@ -508,7 +507,6 @@ fun SharedTransitionScope.Home(
                         TextButton(onClick = {
                             navigator.navigate(
                                 AddProgramDestination(
-                                    planName = "", // FIXME: empty plan name
                                     planId = homeState.currentPlan!!
                                 )
                             )

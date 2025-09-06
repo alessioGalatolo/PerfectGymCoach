@@ -67,7 +67,6 @@ fun AddExerciseDialog(
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     // TODO: if user changed a value and goes back without saving, show an alert
-    // FIXME: I don't like how ui reacts to ime
     assert((workoutId != 0L && exerciseId != 0L) || (programId != 0L))
     val addExerciseState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -165,7 +164,8 @@ fun AddExerciseDialog(
                 LazyColumn(
                     contentPadding = innerPadding,
                     modifier = Modifier
-                        .fillMaxSize(),
+                        .fillMaxSize()
+                        .imePadding(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     item {

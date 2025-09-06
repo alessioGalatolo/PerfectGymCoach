@@ -13,6 +13,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -20,6 +22,7 @@ import javax.inject.Inject
 
 data class ProgramsState(
     val programs: List<WorkoutProgram> = emptyList(),
+    val planName: String = "",
     val exercisesAndInfo: Map<Long, List<ProgramExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialog: Boolean = false,
     val openChangeNameDialog: Boolean = false,
@@ -31,7 +34,7 @@ sealed class ProgramsEvent{
 
     data class ToggleChangeNameDialog(val programId: Long = 0) : ProgramsEvent()
 
-    data class GetPrograms(val planId: Long): ProgramsEvent()
+    data class InitProgramView(val planId: Long): ProgramsEvent()
 
     data class AddProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
 
@@ -53,12 +56,16 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
 
     fun onEvent(event: ProgramsEvent){
         when (event) {
-            is ProgramsEvent.GetPrograms -> {
+            is ProgramsEvent.InitProgramView -> {
                 getProgramsJob?.cancel()
                 getProgramsJob = viewModelScope.launch {
-                    repository.getPrograms(event.planId).collect { programs ->
+                    combine(
+                        repository.getPlan(event.planId),
+                        repository.getPrograms(event.planId)
+                    ) { plan, programs ->
                         _state.update { it.copy(
-                            programs = programs.sortedBy { prog -> prog.orderInWorkoutPlan }
+                            programs = programs.sortedBy { prog -> prog.orderInWorkoutPlan },
+                            planName = plan.name
                         ) }
                         getProgramExercisesJob?.cancel()
                         getProgramExercisesJob = this.launch {
@@ -69,7 +76,8 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                                 ) }
                             }
                         }
-                    }
+
+                    }.collect()
                 }
             }
             is ProgramsEvent.AddProgram -> {

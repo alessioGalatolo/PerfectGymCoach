@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,13 +43,12 @@ import kotlinx.coroutines.android.awaitFrame
 @Composable
 fun AddProgram(
     navigator: DestinationsNavigator,
-    planName: String,
     planId: Long,
     openDialogNow: Boolean = false,
     viewModel: ProgramsViewModel = hiltViewModel()
 ) {
     val addProgramState by viewModel.state.collectAsState()
-    viewModel.onEvent(ProgramsEvent.GetPrograms(planId))
+    viewModel.onEvent(ProgramsEvent.InitProgramView(planId))
     InsertNameDialog(
         prompt = stringResource(R.string.new_program_prompt),
         dialogueIsOpen = addProgramState.openAddProgramDialog,
@@ -95,7 +93,7 @@ fun AddProgram(
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
                 title = { Text(
-                    getPlanDisplayName(planName)
+                    getPlanDisplayName(addProgramState.planName)
                 ) },
                 navigationIcon = {
                     IconButton(
