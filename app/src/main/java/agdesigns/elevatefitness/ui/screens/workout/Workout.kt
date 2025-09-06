@@ -1,7 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.workout
 
 import android.text.format.DateUtils
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -36,7 +35,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
-import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.service.NotificationListener
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
@@ -59,6 +57,8 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.util.Log
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -81,6 +81,7 @@ import com.ramcosta.composedestinations.annotation.parameters.DeepLink
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -228,19 +229,24 @@ fun SharedTransitionScope.Workout(
             retrieveMediaJob?.cancel()
         }
     }
-    val onClose = {
-        if (workoutState.startDate == null)
-            // workout has not started, just go up
-            navigator.navigateUp()
-        else
-            // ask confirmation
-            viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog)
-        Unit
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    val onClose: () -> Unit = {
+        backDispatcher?.onBackPressed()
     }
-    BackHandler(
-        enabled = startWorkout.value || workoutState.startDate != null || resumeWorkout,
-        onBack = onClose
-    )
+    // used to animate dialog alpha for predictive back
+    var cancelWorkoutDialogProgress by rememberSaveable { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(
+        enabled = (startWorkout.value || workoutState.startDate != null || resumeWorkout) && cancelWorkoutDialogProgress < 0.5f,
+    ) { backFlow ->
+        try {
+            backFlow.collect { back ->
+                cancelWorkoutDialogProgress = back.progress
+            }
+            cancelWorkoutDialogProgress = 1f
+        } catch (e: CancellationException) {
+            cancelWorkoutDialogProgress = 0f
+        }
+    }
     LaunchedEffect(startWorkout.value) {
         if (startWorkout.value) {
             viewModel.onEvent(WorkoutEvent.StartWorkout)
@@ -269,8 +275,8 @@ fun SharedTransitionScope.Workout(
         }
     )
     CancelWorkoutDialog(
-        dialogueIsOpen = workoutState.cancelWorkoutDialogOpen,
-        toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleCancelWorkoutDialog) },
+        dialogueOpenProgress = cancelWorkoutDialogProgress,
+        dismissDialog = { cancelWorkoutDialogProgress = 0f },
         cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navigator.navigateUp() },
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) },
         hasRecords = workoutState.hasRecordedExercise

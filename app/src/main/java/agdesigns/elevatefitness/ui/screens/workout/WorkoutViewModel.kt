@@ -33,7 +33,6 @@ import java.time.ZonedDateTime
 import kotlin.math.min
 
 data class WorkoutState(
-    val cancelWorkoutDialogOpen: Boolean = false,
     val otherEquipmentDialogOpen: Boolean = false,
     val enterIntensityDialogOpen: Boolean = false,
     val requestNotificationAccessDialogOpen: Boolean = false,
@@ -84,8 +83,6 @@ sealed class WorkoutEvent{
         val exerciseInWorkout: Int,
         val exerciseRest: Long
     ): WorkoutEvent()
-
-    data object ToggleCancelWorkoutDialog : WorkoutEvent()
 
     data object ToggleRequestNotificationAccessDialog : WorkoutEvent()
 
@@ -231,13 +228,6 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
 
     fun onEvent(event: WorkoutEvent): Boolean{
         when (event) {
-            is WorkoutEvent.ToggleCancelWorkoutDialog -> {
-                _state.update {
-                    it.copy(
-                        cancelWorkoutDialogOpen = !state.value.cancelWorkoutDialogOpen
-                    )
-                }
-            }
             is WorkoutEvent.ToggleRequestNotificationAccessDialog -> {
                 _state.update {
                     it.copy(

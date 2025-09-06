@@ -1,11 +1,21 @@
 package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,9 +27,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -27,6 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.android.awaitFrame
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
@@ -137,37 +151,75 @@ fun ResumeWorkout(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CancelWorkoutDialog(
-    dialogueIsOpen: Boolean,
-    toggleDialog: () -> Unit,
+    dialogueOpenProgress: Float,
+    dismissDialog: () -> Unit,
     cancelWorkout: () -> Unit,
     deleteData: () -> Unit,
     hasRecords: Boolean
 ) {
     val (cancelData, onStateChange) = remember { mutableStateOf(false) }
-    if (dialogueIsOpen) {
-        AlertDialog(
-            onDismissRequest = {
-                toggleDialog()
-            },
-            title = {
-                Text(text = stringResource(R.string.cancel_workout_title))
-            },
-            text = {
-                Column {
-                    Text(text = stringResource(R.string.cancel_workout_info))
-                    if (hasRecords)
+
+    BackHandler(enabled = dialogueOpenProgress == 1f) {
+        dismissDialog()
+    }
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = dialogueOpenProgress,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "dialog_progress"
+    )
+    if (animatedProgress > 0f) {
+        // custom implementation of alert dialog otherwise it doesn't work well with predictive back
+        Box (
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f * animatedProgress))
+                .zIndex(10f) // should be above everything
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    dismissDialog()
+                }
+                .sizeIn(minWidth = 280.dp, maxWidth = 560.dp),  // default for alert dialog
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier
+                    .padding(36.dp)
+                    .alpha(0.5f + (0.5f * animatedProgress))
+                    .scale(0.8f + (0.2f * animatedProgress)), // Optional scale effect
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = stringResource(R.string.cancel_workout_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.cancel_workout_info),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    if (hasRecords) {
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .height(56.dp)
                                 .toggleable(
                                     value = cancelData,
                                     onValueChange = { onStateChange(!cancelData) },
                                     role = Role.Checkbox
                                 )
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 24.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
@@ -180,30 +232,33 @@ fun CancelWorkoutDialog(
                                 modifier = Modifier.padding(start = 16.dp)
                             )
                         }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        toggleDialog()
-                        if (cancelData)
-                            deleteData()
-                        cancelWorkout()
                     }
-                ) {
-                    Text(stringResource(R.string.cancel_workout_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        toggleDialog()
+                    FlowRow(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(
+                            onClick = {
+                                dismissDialog()
+                            }
+                        ) {
+                            Text(stringResource(R.string.cancel_workout_cancel))
+                        }
+
+                        TextButton(
+                            onClick = {
+                                dismissDialog()
+                                if (cancelData)
+                                    deleteData()
+                                cancelWorkout()
+                            }
+                        ) {
+                            Text(stringResource(R.string.cancel_workout_confirm))
+                        }
                     }
-                ) {
-                    Text(stringResource(R.string.cancel_workout_cancel))
                 }
             }
-        )
+        }
     }
 }
 
