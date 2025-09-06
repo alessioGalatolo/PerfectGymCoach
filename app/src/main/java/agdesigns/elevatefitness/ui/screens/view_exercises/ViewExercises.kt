@@ -39,9 +39,13 @@ import agdesigns.elevatefitness.ui.common.ExercisesEvent
 import agdesigns.elevatefitness.ui.common.ExercisesState
 import agdesigns.elevatefitness.ui.common.ExercisesViewModel
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -56,6 +60,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.agdesignes.shared.Equipment
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.ceil
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class
@@ -83,11 +89,28 @@ fun ViewExercises(
                 exercisesState.exercisesFilterEquip
         }
     }
-    var searchText by rememberSaveable { mutableStateOf("") }
-    // TODO: it would be really nice to have this as the predictivebackhandler
-    BackHandler (exercisesState.searchQuery.isNotBlank()) {
-        viewModel.onEvent(ExercisesEvent.FilterExercise(""))
-        searchText = ""
+
+    val searchBarState = rememberSearchBarState()
+    val textFieldState = rememberTextFieldState()
+    LaunchedEffect(textFieldState.text) {
+        viewModel.onEvent(ExercisesEvent.FilterExercise(
+            textFieldState.text.toString()
+        ))
+    }
+    var backProgress by remember { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(
+        enabled = exercisesState.searchQuery.isNotBlank(),
+    ) { backFlow ->
+        try {
+            backFlow.collect { back ->
+                backProgress = back.progress
+            }
+            textFieldState.clearText()
+            backProgress = 0f
+        } catch (e: CancellationException) {
+            backProgress = 0f
+        }
+
     }
 
     val toFocus = rememberSaveable { mutableStateOf(focusSearch) }
@@ -121,18 +144,13 @@ fun ViewExercises(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     item{
-                        val searchBarState = rememberSearchBarState()
-                        val textFieldState = rememberTextFieldState()
-
-                        LaunchedEffect(textFieldState.text) {
-                            searchText = textFieldState.text.toString()
-                            viewModel.onEvent(ExercisesEvent.FilterExercise(searchText))
-                        }
 
                         val inputField =
                             @Composable {
                                 SearchBarDefaults.InputField(
-                                    modifier = Modifier,
+                                    outputTransformation = PredictiveBackOutputTransformation(
+                                        backProgress
+                                    ),
                                     searchBarState = searchBarState,
                                     textFieldState = textFieldState,
                                     onSearch = {
@@ -414,6 +432,15 @@ fun LazyItemScope.ExerciseCard(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+data class PredictiveBackOutputTransformation(private val backProgress: Float) : OutputTransformation {
+    override fun TextFieldBuffer.transformOutput() {
+        val removeLength = ceil(length * backProgress).toInt()
+        if (removeLength > 0) {
+            delete(length - removeLength, length)
         }
     }
 }
