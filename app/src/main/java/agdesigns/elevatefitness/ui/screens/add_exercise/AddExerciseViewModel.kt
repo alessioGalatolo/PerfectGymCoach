@@ -112,7 +112,10 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 rest = state.value.restArray.map { it.toInt() },
                                 note = state.value.note,
                                 variation = "",
-                                variationResKey = state.value.variationResKey,
+                                variationResKey = if (state.value.variationResKey != "no_variation")
+                                    state.value.variationResKey
+                                else
+                                    "",
                                 userDefined = state.value.exercise!!.userDefined
                             )
                         )
