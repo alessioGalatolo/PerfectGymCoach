@@ -772,4 +772,7 @@
     <string name="workout_intensity_info">Selezione un valore per finire l\'allenamento. Questo valore verrà utilizzato per avere una stima migliore delle calorie consumate</string>
     <string name="workout_intensity_intensity_info">. La freccia indica l\'intensità selezionata nell\'ultimo allenamento.</string>
     <string name="select_secondary_muscle_subtitle">Facoltativo - Seleziona altri muscoli allenati</string>
+    <string name="recent_searches">Ricerche recenti</string>
+    <string name="history_icon_recent_search">Icona ricerca recente</string>
+    <string name="results">Risultati</string>
 </resources>

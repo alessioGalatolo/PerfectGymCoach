@@ -35,9 +35,12 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.common.ExerciseSearchResult
 import agdesigns.elevatefitness.ui.common.ExercisesEvent
 import agdesigns.elevatefitness.ui.common.ExercisesState
 import agdesigns.elevatefitness.ui.common.ExercisesViewModel
+import agdesigns.elevatefitness.ui.common.GroupedCard
+import agdesigns.elevatefitness.ui.common.SearchField
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentIcon
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentImage
 import androidx.activity.compose.BackHandler
@@ -54,6 +57,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
@@ -66,6 +71,7 @@ import com.agdesignes.shared.Equipment
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ceil
+import kotlin.math.min
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class
@@ -85,31 +91,31 @@ fun ViewExercises(
     val scope = rememberCoroutineScope()
     // i.e., when use hits "search"
     var showSearchResultOnMainScreen by remember { mutableStateOf(false) }
-    val exercisesOnMainScreen by remember {
+    val exercisesOnMainScreen by remember(
+        exercisesState.searchResults,
+        exercisesState.exercisesFilterEquip,
+        showSearchResultOnMainScreen
+    ) {
         derivedStateOf {
             if (showSearchResultOnMainScreen)
-                exercisesState.exercisesToDisplay
+                exercisesState.searchResults?.map{ it.exercise }
             else
                 exercisesState.exercisesFilterEquip
         }
     }
 
     val searchBarState = rememberSearchBarState()
-    val textFieldState = rememberTextFieldState()
-    LaunchedEffect(textFieldState.text) {
-        viewModel.onEvent(ExercisesEvent.FilterExercise(
-            textFieldState.text.toString()
-        ))
-    }
+
     var backProgress by remember { mutableFloatStateOf(0f) }
     PredictiveBackHandler(
         enabled = exercisesState.searchQuery.isNotBlank(),
     ) { backFlow ->
         try {
             backFlow.collect { back ->
-                backProgress = back.progress
+                backProgress = (back.progress * 2f).coerceIn(0f, 1f)
             }
-            textFieldState.clearText()
+            showSearchResultOnMainScreen = false
+            viewModel.searchFieldState.clearText()
             backProgress = 0f
         } catch (e: CancellationException) {
             backProgress = 0f
@@ -152,7 +158,6 @@ fun ViewExercises(
             var isLongPressing = remember { mutableStateOf(false) }
             var longPressImage = remember { mutableIntStateOf(R.drawable.finish_workout) }
 
-            // fixme: padding should be of box but items do not go under the navigation bar in that case
             Box (contentAlignment = Center) {
                 LazyColumn(
                     contentPadding = innerPadding,
@@ -163,6 +168,10 @@ fun ViewExercises(
                         val inputField =
                             @Composable {
                                 SearchBarDefaults.InputField(
+                                    // TODO: capitalize first char
+//                                    inputTransformation = InputTransformation {
+//
+//                                    },
                                     colors = SearchBarDefaults.inputFieldColors(
                                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                                         focusedContainerColor = MaterialTheme.colorScheme.surface
@@ -171,11 +180,16 @@ fun ViewExercises(
                                         backProgress
                                     ),
                                     searchBarState = searchBarState,
-                                    textFieldState = textFieldState,
+                                    textFieldState = viewModel.searchFieldState,
                                     onSearch = {
                                         scope.launch {
                                             searchBarState.animateToCollapsed()
                                             showSearchResultOnMainScreen = true
+                                            viewModel.onEvent(
+                                                ExercisesEvent.AddRecentSearch(
+                                                    viewModel.searchFieldState.text.toString()
+                                                )
+                                            )
                                         }
                                     },
                                     placeholder = { Text(stringResource(R.string.search_exercise)) },
@@ -200,9 +214,9 @@ fun ViewExercises(
                                         }
                                     },
                                     trailingIcon = {
-                                        if (textFieldState.text.isNotEmpty()) {
+                                        if (viewModel.searchFieldState.text.isNotEmpty()) {
                                             IconButton(onClick = {
-                                                textFieldState.clearText()
+                                                viewModel.searchFieldState.clearText()
                                                 showSearchResultOnMainScreen = false
                                             }) {
                                                 Icon(Icons.Default.Close, contentDescription = stringResource(
@@ -213,7 +227,6 @@ fun ViewExercises(
                                     }
                                 )
                             }
-                        // TODO: store recent searches
                         SearchBar(
                             state = searchBarState,
                             inputField = inputField,
@@ -227,7 +240,9 @@ fun ViewExercises(
                             inputField = inputField
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer)
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.surfaceContainer)
                             ) {
                                 EquipmentFilterChips(
                                     exercisesState = exercisesState,
@@ -240,35 +255,100 @@ fun ViewExercises(
                                     }
                                 )
                                 val lazyListState = rememberLazyListState()
-                                LaunchedEffect(exercisesState.exercisesToDisplay) {
+                                LaunchedEffect(exercisesState.searchResults) {
                                     scope.launch {
                                         lazyListState.animateScrollToItem(0)
                                     }
                                 }
-                                if (textFieldState.text.isNotEmpty()) {
-                                    LazyColumn(
-                                        state = lazyListState,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(
-                                            exercisesState.exercisesToDisplay ?: emptyList(),
-                                            key = { it.name }
-                                        ) { exercise ->
-                                            ExerciseCard(exercise, longPressImage, isLongPressing) {
-                                                navigator.navigate(
-                                                    AddExerciseDialogDestination(
-                                                        programId = programId,
-                                                        workoutId = workoutId,
-                                                        exerciseId = exercise.exerciseId,
-                                                        programName = programName,
-                                                        returnAfterAdding = returnAfterAdding
-                                                    )
-                                                )
-                                            }
-                                        }
+                                LazyColumn(
+                                    state = lazyListState,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    if (exercisesState.recentSearches.isNotEmpty()) {
                                         item {
-                                            Spacer(Modifier.height(16.dp))
+                                            // show recent searches
+                                            Text(
+                                                stringResource(R.string.recent_searches),
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier
+                                                    .padding(horizontal = 16.dp)
+                                                    .padding(top = 16.dp)
+                                            )
+                                            val maxSuggestions = remember(
+                                                exercisesState.searchResults,
+                                                exercisesState.recentSearches
+                                            ) {
+                                                if (exercisesState.searchResults != null && exercisesState.searchResults!!.isNotEmpty()) {
+                                                    min(2, exercisesState.recentSearches.size)
+                                                } else {
+                                                    exercisesState.recentSearches.size
+                                                }
+                                            }
+                                            // TODO: put as lazylistscope so that item placement can be animated
+                                            GroupedCard(
+                                                modifier = Modifier.padding(vertical = 8.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.surface
+                                                ),
+                                                items = exercisesState.recentSearches.subList(0, maxSuggestions).map {
+                                                    @Composable {
+                                                        Row(Modifier.fillMaxWidth()) {
+                                                            Icon(
+                                                                Icons.Default.History,
+                                                                stringResource(R.string.history_icon_recent_search)
+                                                            )
+                                                            Spacer(Modifier.width(8.dp))
+                                                            Text(it)
+                                                        }
+                                                    }
+                                                },
+                                                onClicks = exercisesState.recentSearches.map {
+                                                    {
+                                                        viewModel.searchFieldState.edit {
+                                                            replace(
+                                                                0,
+                                                                viewModel.searchFieldState.text.length,
+                                                                it
+                                                            )
+                                                        }
+                                                        showSearchResultOnMainScreen = true
+                                                        scope.launch {
+                                                            searchBarState.animateToCollapsed()
+                                                        }
+                                                    }
+                                                }
+                                            )
                                         }
+                                    }
+                                    if (exercisesState.searchResults != null && exercisesState.searchResults!!.isNotEmpty()) {
+                                        item {
+                                            Text(
+                                                stringResource(R.string.results),
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(horizontal = 16.dp)
+                                            )
+                                        }
+                                    }
+                                    items(
+                                        exercisesState.searchResults ?: emptyList(),
+                                        key = { it.exercise.exerciseId }
+                                    ) { result ->
+                                        ExerciseCard(result.exercise, result, longPressImage, isLongPressing) {
+                                            navigator.navigate(
+                                                AddExerciseDialogDestination(
+                                                    programId = programId,
+                                                    workoutId = workoutId,
+                                                    exerciseId = result.exercise.exerciseId,
+                                                    programName = programName,
+                                                    returnAfterAdding = returnAfterAdding
+                                                )
+                                            )
+                                        }
+                                    }
+                                    item {
+                                        Spacer(Modifier.height(16.dp))
                                     }
                                 }
                             }
@@ -290,10 +370,11 @@ fun ViewExercises(
                             }
                         )
                     }
-                    items(exercisesOnMainScreen ?: emptyList(),
-                        key = { it.name }
-                    ) { exercise ->
-                        ExerciseCard(exercise, longPressImage, isLongPressing) {
+                    itemsIndexed(exercisesOnMainScreen ?: emptyList(),
+                        key = { _, it -> it.exerciseId }
+                    ) { index, exercise ->
+                        val result = if (showSearchResultOnMainScreen) exercisesState.searchResults!![index] else null
+                        ExerciseCard(exercise, result, longPressImage, isLongPressing) {
                             navigator.navigate(
                                 AddExerciseDialogDestination(
                                     programId = programId,
@@ -415,6 +496,7 @@ fun EquipmentFilterChips(
 @Composable
 fun LazyItemScope.ExerciseCard(
     exercise: Exercise,
+    result: ExerciseSearchResult?, // if user is searching, highlight this text
     longPressImage: MutableIntState,
     isLongPressing: MutableState<Boolean>,
     onExerciseClick: () -> Unit
@@ -456,7 +538,10 @@ fun LazyItemScope.ExerciseCard(
                 .clip(RoundedCornerShape(12.dp))
         )
         Column (Modifier.padding(8.dp)){
-            Text(text = exercise.name, style = MaterialTheme.typography.titleLarge)
+            val nameRanges = result?.highlights
+                ?.filter { it.field == SearchField.Name && it.index == null }
+                ?.flatMap { it.ranges }
+            Text(text = getTextWithSearchHighlight(exercise.name, nameRanges), style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = buildAnnotatedString {
                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
@@ -479,22 +564,73 @@ fun LazyItemScope.ExerciseCard(
                     append(secondaryMuscles)
                 })
             }
-            // TODO: add option to have variations already expanded
             if (exercise.variations.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Row (Modifier.fillMaxWidth()){
-                    Text(text = stringResource(
-                        R.string.i_variations_available,
-                        exercise.variations.size
-                    ),
-                        fontStyle = FontStyle.Italic
-                    )
+                Text(
+                    text = stringResource(R.string.i_variations_available, exercise.variations.size) + ": ",
+                    fontStyle = FontStyle.Italic
+                )
+                exercise.variations.forEachIndexed { index, variation ->
+                    val vRanges = result?.highlights
+                        ?.filter { it.field == SearchField.Variation && it.index == index }
+                        ?.flatMap { it.ranges }
+                    Text(text = getTextWithSearchHighlight(variation, vRanges))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
+
+@Composable
+fun getTextWithSearchHighlight(
+    text: String,
+    ranges: List<IntRange>?,
+    highlightStyle: SpanStyle = SpanStyle(
+        fontWeight = FontWeight.SemiBold,
+        background = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+        color = MaterialTheme.colorScheme.onSecondaryContainer
+    )
+): AnnotatedString {
+    if (text.isEmpty() || ranges?.isEmpty() ?: true) return AnnotatedString(text)
+
+    val max = text.length
+
+    // 1) Clamp to [0, length] and convert inclusive IntRange to [start, endExclusive)
+    val intervals = ranges.mapNotNull { r ->
+        val start = r.first.coerceAtLeast(0)
+        val endExclusive = (r.last + 1).coerceAtMost(max) // +1 because IntRange is inclusive
+        if (start >= endExclusive) null else start to endExclusive
+    }.sortedWith(compareBy<Pair<Int, Int>> { it.first }.thenBy { it.second })
+
+    if (intervals.isEmpty()) return AnnotatedString(text)
+
+    // 2) Merge overlapping/adjacent intervals so we never double-style or step backward
+    val merged = mutableListOf<Pair<Int, Int>>()
+    for ((s, e) in intervals) {
+        if (merged.isEmpty() || s > merged.last().second) {
+            merged += s to e
+        } else {
+            val last = merged.removeAt(merged.lastIndex)
+            merged += last.first to maxOf(last.second, e)
+        }
+    }
+
+    // 3) Build the annotated string safely
+    val b = AnnotatedString.Builder()
+    var cursor = 0
+    for ((s, e) in merged) {
+        if (cursor < s) b.append(text.substring(cursor, s))
+        b.pushStyle(highlightStyle)
+        b.append(text.substring(s, e))
+        b.pop()
+        cursor = e
+    }
+    if (cursor < max) b.append(text.substring(cursor, max))
+    return b.toAnnotatedString()
+}
+
+
 
 data class PredictiveBackOutputTransformation(private val backProgress: Float) : OutputTransformation {
     override fun TextFieldBuffer.transformOutput() {

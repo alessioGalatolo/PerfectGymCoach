@@ -778,4 +778,7 @@
     <!-- This will be appended to the above so it needs to start with ". " -->
     <string name="workout_intensity_intensity_info">. Arrow points to the intensity from the last workout.</string>
     <string name="select_secondary_muscle_subtitle">Optional - Select additional muscles worked</string>
+    <string name="recent_searches">Recent searches</string>
+    <string name="history_icon_recent_search">Recent search icon</string>
+    <string name="results">Results</string>
 </resources>

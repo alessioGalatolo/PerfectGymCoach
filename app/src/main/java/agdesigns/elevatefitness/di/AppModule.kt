@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.di
 
 import agdesigns.elevatefitness.data.Repository
+import agdesigns.elevatefitness.data.SearchesRepository
 import agdesigns.elevatefitness.data.wearos.WatchMessageReceiver
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
 import android.content.Context
@@ -41,4 +42,8 @@ object AppModule {
     @Provides
     fun provideWearMessageReceiver(@ApplicationContext context: Context
     ): WatchMessageReceiver = WatchMessageReceiver(context)
+
+    @Singleton
+    @Provides
+    fun provideSearchesRepository(@ApplicationContext context: Context) = SearchesRepository(context)
 }

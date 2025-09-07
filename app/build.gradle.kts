@@ -7,10 +7,30 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.proto)
 }
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+protobuf {
+    protoc {
+        artifact = libs.protobuf.protoc.get().toString()
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+//                TODO: kotlin compiling does not work atm
+//                create("kotlin") {
+//                    option("lite")
+//                }
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
 }
 
 android {
@@ -94,6 +114,9 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.datastore.preferences)
+    implementation(libs.datastore.proto)
+    implementation(libs.protobuf.kotlin.lite)
+    implementation(libs.protobuf.protoc)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
