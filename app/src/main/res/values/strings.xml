@@ -262,7 +262,7 @@
     <string name="thumbup_icon_like_ex">Like this exercise</string>
     <string name="current_exercise">Current</string>
     <string name="part_of_superset">" - Part of superset"</string>
-    <string name="current_workout">Current workout</string>
+    <string name="current_workout">current workout</string>
     <string name="barbell">"Barbell: "</string>
     <string name="barbell_custom_value">%1$s (Custom value)</string>
     <string name="lb">lb</string>
@@ -293,7 +293,7 @@
     <string name="play_icon">Play</string>
     <string name="skipnext_icon_track">Next track</string>
     <string name="please_enter_valid_numbers">Please enter valid numbers</string>
-    <string name="current_and_future_workouts">Current and future workouts</string>
+    <string name="current_and_future_workouts">current and future workouts</string>
     <string name="add_an_exercise_to_current_and_future_workouts_of_this_program">Add an exercise to current and future workouts of this program</string>
     <string name="add_an_exercise_to_current_workout">Add an exercise to current workout</string>
     <string name="learn_more">Learn more.</string>

@@ -167,6 +167,7 @@ fun SharedTransitionScope.Home(
                 titleRes = R.string.empty_home,
                 subtitleRes = R.string.empty_home_subtitle
             ) {
+                Spacer(modifier = Modifier.height(8.dp))
                 GeneratePlanButton(navigator)
             }
         } else if (homeState.programs?.isEmpty() == true) {

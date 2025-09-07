@@ -262,7 +262,7 @@
     <string name="thumbup_icon_like_ex">Mi piace questo esercizio</string>
     <string name="current_exercise">Attuale</string>
     <string name="part_of_superset">" - Parte di un superset"</string>
-    <string name="current_workout">Allenamento attuale</string>
+    <string name="current_workout">allenamento attuale</string>
     <string name="barbell">"Bilanciere: "</string>
     <string name="barbell_custom_value">%1$s (Valore personalizzato)</string>
     <string name="lb">lb</string>
@@ -293,7 +293,7 @@
     <string name="play_icon">Riproduci</string>
     <string name="skipnext_icon_track">Brano successivo</string>
     <string name="please_enter_valid_numbers">Per favore inserisci numeri validi</string>
-    <string name="current_and_future_workouts">Allenamenti attuali e futuri</string>
+    <string name="current_and_future_workouts">allenamento attuale e futuri</string>
     <string name="add_an_exercise_to_current_and_future_workouts_of_this_program">Aggiungi un esercizio agli allenamenti attuali e futuri di questo programma</string>
     <string name="add_an_exercise_to_current_workout">Aggiungi un esercizio all\'allenamento attuale</string>
     <string name="learn_more">Scopri di più.</string>

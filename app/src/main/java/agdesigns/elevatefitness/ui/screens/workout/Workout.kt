@@ -1059,9 +1059,14 @@ fun SharedTransitionScope.Workout(
         // program is empty, prompt to add an exercise
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
                     title = {},
                     navigationIcon = {
                         IconButton(onClick = { navigator.navigateUp() }) {
@@ -1078,7 +1083,7 @@ fun SharedTransitionScope.Workout(
                 Column(
                     verticalArrangement = Arrangement.Bottom,
                     horizontalAlignment = Alignment.End
-                ) {  // FIXME: not really happy about the double FABs
+                ) {
                     SmallFloatingActionButton(onClick = {
                         navigator.navigate(
                             ExercisesByMuscleDestination(
@@ -1087,8 +1092,9 @@ fun SharedTransitionScope.Workout(
                                 programId = programId
                             )
                         )
-                    }, Modifier.padding(bottom = 24.dp),
-                        containerColor = MaterialTheme.colorScheme.secondary) {
+                    },
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    containerColor = MaterialTheme.colorScheme.secondary) {
                         Icon(Icons.Default.Edit,
                             stringResource(R.string.add_an_exercise_to_current_and_future_workouts_of_this_program)
                         )
