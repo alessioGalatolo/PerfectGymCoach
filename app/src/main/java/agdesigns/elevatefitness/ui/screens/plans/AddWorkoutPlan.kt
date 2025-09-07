@@ -314,13 +314,15 @@ fun AddWorkoutPlan(
                             )
                         )
                     } else {
-                        SecondaryPlanCard(
-                            navigator = navigator,
-                            cardPosition = when (index) {
+                        val cardPosition = if (addWorkoutState.workoutPlanMapPrograms.size == 2) CardPositionInGroup.ONLY_ONE else
+                            when (index) {
                                 1 -> CardPositionInGroup.FIRST
                                 addWorkoutState.workoutPlanMapPrograms.size-1 -> CardPositionInGroup.LAST
                                 else -> CardPositionInGroup.MIDDLE
-                            },
+                            }
+                        SecondaryPlanCard(
+                            navigator = navigator,
+                            cardPosition = cardPosition,
                             plan = plan.first,
                             programs = plan.second,
                             canBeSwiped = index != 0,
@@ -642,9 +644,10 @@ fun LazyItemScope.PlanCard(
 }
 
 enum class CardPositionInGroup {
-    FIRST,
-    MIDDLE,
-    LAST
+    FIRST,  // smooth corners top, sharp bottom
+    MIDDLE, // sharp top, sharp bottom
+    LAST, // sharp top, smooth corners bottom
+    ONLY_ONE  // smooth top, smooth bottom
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -778,6 +781,7 @@ fun LazyItemScope.SecondaryPlanCard(
                 topEnd = MaterialTheme.shapes.extraSmall.topEnd,
                 topStart = MaterialTheme.shapes.extraSmall.topStart
             )
+            CardPositionInGroup.ONLY_ONE -> MaterialTheme.shapes.extraLarge
         }
         Card(
             colors = CardDefaults.cardColors(
@@ -809,7 +813,9 @@ fun LazyItemScope.SecondaryPlanCard(
             }
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)) {
+                .padding(horizontal = 8.dp)
+                .padding(bottom = 16.dp)
+            ) {
                 if (primaryActionIcon != null) {
                     OutlinedButton(onPrimaryAction,
                         shapes = ButtonDefaults.shapes(),
