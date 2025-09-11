@@ -14,6 +14,8 @@ import agdesigns.elevatefitness.ui.common.PillChart
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.getStickyHeader
 import agdesigns.elevatefitness.utils.plus
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
@@ -142,16 +144,22 @@ fun Statistics(
                     }
                 )
             }
-            if (state.isLoading) {
+            // There are two loading components, this one shows when scrolled completely at the top
+            // This displaces the list below. The other component instead overlaps with the list when
+            // it is scrolled for a nicer effect
+            AnimatedVisibility(
+                visible = state.isLoading && titleText == headers[0],
+            ) {
                 Column(
-                    Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     ContainedLoadingIndicator()
                     Text(stringResource(state.progressTextRes))
                 }
-            } else {
+            }
+            Box {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
@@ -214,13 +222,21 @@ fun Statistics(
                             PillChart(
                                 modelProducer = state.volumeChartProducer,
                                 markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
-                                    DecimalFormat("#.## ${if (state.useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)}")
+                                    DecimalFormat(
+                                        "#.## ${
+                                            if (state.useImperialSystem) stringResource(
+                                                R.string.lb
+                                            ) else stringResource(R.string.kg)
+                                        }"
+                                    )
                                 ),
                                 xValueFormatter = CartesianValueFormatter { _, value, _ ->
-                                    val index = value.toInt().coerceIn(0, state.volumeIndex2Date.keys.maxOrNull())
+                                    val index = value.toInt()
+                                        .coerceIn(0, state.volumeIndex2Date.keys.maxOrNull())
                                     state.volumeIndex2Date[index]?.format(
                                         DateTimeFormatter.ofPattern("MMM dd")
-                                    ) ?: value.toString() // fall back to value otherwise empty string will crash stuff
+                                    )
+                                        ?: value.toString() // fall back to value otherwise empty string will crash stuff
                                 },
                                 decorations = listOf(
                                     rememberHorizontalLine(
@@ -443,7 +459,10 @@ fun Statistics(
                                             Row {
                                                 Icon(
                                                     Icons.Default.Circle,
-                                                    stringResource(R.string.circle_icon_colored, nameDataPair.second.color),
+                                                    stringResource(
+                                                        R.string.circle_icon_colored,
+                                                        nameDataPair.second.color
+                                                    ),
                                                     tint = nameDataPair.second.color
                                                 )
                                                 Spacer(Modifier.width(8.dp))
@@ -455,6 +474,20 @@ fun Statistics(
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+                Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer)) {
+                    AnimatedVisibility(
+                        visible = state.isLoading && titleText != headers[0],
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            ContainedLoadingIndicator()
+                            Text(stringResource(state.progressTextRes))
                         }
                     }
                 }

@@ -121,7 +121,11 @@
     <string name="week_i">Settimana %1$s</string>
     <string name="no_workouts">Nessun allenamento</string>
     <string name="rest_week">Settimana di riposo</string>
-    <string name="workout_count">%1$s allenamento%2$s</string>
+    <plurals name="workout_count">
+        <item quantity="one">%1$s allenamento</item>
+        <item quantity="other">%1$s allenamenti</item>
+        <item quantity="many">%1$s allenamenti</item>
+    </plurals>
     <string name="start_your_fitness_journey_today">Inizia oggi il tuo percorso fitness!</string>
     <string name="volume">Volume</string>
     <string name="calories">Calorie</string>

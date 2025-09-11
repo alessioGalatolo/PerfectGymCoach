@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -211,10 +212,10 @@ fun WorkoutCalendarCards(recordsMap: Map<Int, List<WorkoutRecordAndName>>, listS
 
                                     // Workout count
                                     Text(
-                                        text = stringResource(
-                                            R.string.workout_count,
+                                        text = pluralStringResource(
+                                            R.plurals.workout_count,
                                             weekRecords.size,
-                                            if (weekRecords.size != 1) "s" else ""
+                                            weekRecords.size
                                         ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
