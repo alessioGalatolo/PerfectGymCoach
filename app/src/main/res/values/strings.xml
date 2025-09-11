@@ -781,4 +781,7 @@
     <string name="recent_searches">Recent searches</string>
     <string name="history_icon_recent_search">Recent search icon</string>
     <string name="results">Results</string>
+    <string name="system_default">System default</string>
+    <string name="language">Language:</string>
+    <string name="inapp_language_selector_not_supported">Sorry, changing in-app language is not supported on this android version. You need to change your system language</string>
 </resources>

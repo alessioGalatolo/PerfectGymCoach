@@ -10,7 +10,11 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.core.os.LocaleListCompat
 import com.agdesignes.shared.Equipment
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserException
+import java.io.IOException
 import java.util.Locale
 
 fun getMetFromIntensity(intensity: Float): Float {
@@ -51,6 +55,43 @@ fun Context.getLocalizedString(
 
     return localizedContext.getString(resId)
 }
+
+
+// credits to ltp from stackoverflow when people still used stackoverflow
+fun Context.getLocaleListFromXml(): LocaleListCompat {
+    val tagsList = mutableListOf<CharSequence>()
+    try {
+        val xpp: XmlPullParser = resources.getXml(R.xml.locales_config)
+        while (xpp.eventType != XmlPullParser.END_DOCUMENT) {
+            if (xpp.eventType == XmlPullParser.START_TAG) {
+                if (xpp.name == "locale") {
+                    tagsList.add(xpp.getAttributeValue(0))
+                }
+            }
+            xpp.next()
+        }
+    } catch (e: XmlPullParserException) {
+        e.printStackTrace()
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+
+    return LocaleListCompat.forLanguageTags(tagsList.joinToString(","))
+}
+
+
+fun Context.getLangPreferenceDropdownEntries(): Map<String, String> {
+    val localeList = getLocaleListFromXml()
+    val map = mutableMapOf<String, String>()
+
+    for (a in 0 until localeList.size()) {
+        localeList[a].let {
+            map.put(it?.toLanguageTag() ?: "und", it?.getDisplayName(it)?.replaceFirstChar { it.uppercase() } ?: "---")
+        }
+    }
+    return map
+}
+
 
 
 fun hasNotificationAccess(context: Context): Boolean {

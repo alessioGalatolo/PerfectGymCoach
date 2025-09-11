@@ -775,4 +775,7 @@
     <string name="recent_searches">Ricerche recenti</string>
     <string name="history_icon_recent_search">Icona ricerca recente</string>
     <string name="results">Risultati</string>
+    <string name="system_default">Default sistema</string>
+    <string name="language">Lingua:</string>
+    <string name="inapp_language_selector_not_supported">Ci dispiace ma cambiare la lingua in app non è supportato su questa versione android. Devi cambiarla dal menù del sistema</string>
 </resources>

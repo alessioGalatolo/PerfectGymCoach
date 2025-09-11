@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
+import android.os.Build
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,6 +24,7 @@ data class ProfileState(
     val incrementDumbbell: Float = 0f,
     val incrementMachine: Float = 0f,
     val incrementCable: Float = 0f,
+    val language: String? = null
 )
 
 sealed class ProfileEvent{
@@ -49,6 +51,8 @@ sealed class ProfileEvent{
     data class UpdateIncrementCable(val newIncrement: Float): ProfileEvent()
 
     data class SwitchImperialSystem(val newValue: Boolean): ProfileEvent()
+
+    data class ChangeLanguage(val newLanguage: String?): ProfileEvent()
 }
 
 @HiltViewModel
@@ -70,7 +74,8 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
                 repository.getBarbellIncrement(),
                 repository.getDumbbellIncrement(),
                 repository.getMachineIncrement(),
-                repository.getCableIncrement()
+                repository.getCableIncrement(),
+                repository.getLanguage()
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -85,7 +90,8 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
                         incrementBarbell = values[8] as Float,
                         incrementDumbbell = values[9] as Float,
                         incrementMachine = values[10] as Float,
-                        incrementCable = values[11] as Float
+                        incrementCable = values[11] as Float,
+                        language = values[12] as String?
                     )
                 }
             }.collect()
@@ -152,6 +158,17 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
             is ProfileEvent.UpdateIncrementMachine -> {
                 viewModelScope.launch {
                     repository.setMachineIncrement(event.newIncrement)
+                }
+            }
+            is ProfileEvent.ChangeLanguage -> {
+                viewModelScope.launch {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (event.newLanguage != null) {
+                            repository.setLanguage(event.newLanguage)
+                        } else {
+                            repository.resetLanguage()
+                        }
+                    }
                 }
             }
         }

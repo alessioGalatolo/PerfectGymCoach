@@ -26,6 +26,8 @@ import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
+import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
+import android.os.Build
 import androidx.compose.foundation.background
 import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
@@ -35,6 +37,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
@@ -156,12 +159,16 @@ fun Profile(
 
         // Preferences Section
         item {
-            ProfileSection(title = stringResource(R.string.preferences_title)) {
-                PreferencesContent(
-                    profileState = profileState,
-                    viewModel = viewModel
-                )
-            }
+            Text(
+                stringResource(R.string.preferences_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            PreferencesContent(
+                profileState = profileState,
+                viewModel = viewModel
+            )
         }
 
         // Equipment Increments Section
@@ -666,79 +673,165 @@ fun PreferencesContent(
     profileState: ProfileState,
     viewModel: ProfileViewModel,
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    // get locales from .xml config and add system default
+    val locales = context.getLangPreferenceDropdownEntries().plus(
+        Pair(
+            "und",
+            stringResource(R.string.system_default)
+    ))
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Imperial System Switch
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = stringResource(R.string.use_imperial_system),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(
-                checked = profileState.imperialSystem,
-                onCheckedChange = { viewModel.onEvent(ProfileEvent.SwitchImperialSystem(it)) }
-            )
-        }
+        GroupedCard(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
+            items = listOf({
+                // Imperial System Switch
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.use_imperial_system),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = profileState.imperialSystem,
+                        onCheckedChange = { viewModel.onEvent(ProfileEvent.SwitchImperialSystem(it)) }
+                    )
+                }
+            }, {
+                // Dark Theme Dropdown
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.theme),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
 
-        // Dark Theme Dropdown
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = stringResource(R.string.theme),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-
-            Row(
-                Modifier
-                    .padding(horizontal = 8.dp)
-                    .weight(5.8f),
-                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-            ) {
-                // FIXME: "Same as system" overflows
-                Theme.entries.forEachIndexed { index, theme ->
-                    val modifier = if (theme == profileState.theme)
-                        Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
-                    else Modifier.weight(1f)
-
-                    var textAlign = when (index) {
-                        0 -> TextAlign.End
-                        Theme.entries.lastIndex -> TextAlign.Start
-                        else -> TextAlign.Center
-                    }
-                    if (theme == profileState.theme) {
-                        textAlign = TextAlign.Center
-                    }
-                    ToggleButton(
-                        checked = theme == profileState.theme,
-                        onCheckedChange = {
-                            viewModel.onEvent(ProfileEvent.UpdateTheme(theme))
-                        },
-                        modifier = modifier,
-                        shapes =
-                            when (index) {
-                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                Theme.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                            },
+                    Row(
+                        Modifier
+                            .padding(horizontal = 8.dp)
+                            .weight(5.8f),
+                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
                     ) {
-                        Text(
-                            stringResource(theme.displayRes),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = textAlign,
-                        )
+                        // FIXME: "Same as system" overflows
+                        Theme.entries.forEachIndexed { index, theme ->
+                            val modifier = if (theme == profileState.theme)
+                                Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
+                            else Modifier.weight(1f)
+
+                            var textAlign = when (index) {
+                                0 -> TextAlign.End
+                                Theme.entries.lastIndex -> TextAlign.Start
+                                else -> TextAlign.Center
+                            }
+                            if (theme == profileState.theme) {
+                                textAlign = TextAlign.Center
+                            }
+                            ToggleButton(
+                                checked = theme == profileState.theme,
+                                onCheckedChange = {
+                                    viewModel.onEvent(ProfileEvent.UpdateTheme(theme))
+                                },
+                                modifier = modifier,
+                                shapes =
+                                    when (index) {
+                                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                        Theme.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                    },
+                            ) {
+                                Text(
+                                    stringResource(theme.displayRes),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = textAlign,
+                                )
+                            }
+                        }
                     }
                 }
-            }
-        }
+            }, {
+                // select language
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.language),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(8.dp))
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        // LocaleManager is only available for tiramisu+
+                        // compat version does not work very well with compose
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it }) {
+                            OutlinedTextField(
+                                value = locales[profileState.language] ?: stringResource(R.string.system_default),
+                                onValueChange = { },
+                                readOnly = true,
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                        expanded = expanded
+                                    )
+                                },
+                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                modifier = Modifier.menuAnchor(
+                                    ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                    true
+                                )
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }) {
+                                    locales.forEach { locale ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    locale.value,
+                                                    style = MaterialTheme.typography.bodyLarge
+                                                )
+                                            },
+                                            onClick = {
+                                                expanded = false
+                                                if (locale.key != "und") {
+                                                    viewModel.onEvent(
+                                                        ProfileEvent.ChangeLanguage(
+                                                            locale.key
+                                                        )
+                                                    )
+                                                } else {
+                                                    viewModel.onEvent(ProfileEvent.ChangeLanguage(null))
+                                                }
+                                            },
+                                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Text(
+                                stringResource(R.string.inapp_language_selector_not_supported),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+            })
+        )
     }
 }
 

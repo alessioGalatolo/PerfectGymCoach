@@ -42,6 +42,7 @@ compose_plugin = "2.2.10"
 ksp = "2.2.10-2.0.2"
 hilt_plugin = "2.57.1"
 protobuf_plugin = "0.9.5"
+appcompat = "1.7.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android_application" }
@@ -105,3 +106,4 @@ ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitV
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 # For Material 3 theming in Jetpack Compose.
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }

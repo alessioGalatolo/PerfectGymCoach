@@ -31,12 +31,16 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import agdesigns.elevatefitness.utils.getLocalizedString
+import android.app.LocaleManager
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
+import android.os.LocaleList
 import android.util.Log
 import androidx.annotation.AnyRes
 import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import androidx.datastore.core.DataMigration
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -58,6 +62,7 @@ import java.time.ZonedDateTime
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.jvm.java
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = "settings",
@@ -89,6 +94,7 @@ class Repository @Inject constructor(
     private val incrementDumbbell = floatPreferencesKey("Increment dumbbell")
     private val incrementMachine = floatPreferencesKey("Increment machine")
     private val incrementCable = floatPreferencesKey("Increment cable")
+    private val language = stringPreferencesKey("Language")
 
     /*
      * Wear connection
@@ -592,6 +598,21 @@ class Repository @Inject constructor(
             it[currentWorkout] = newValue
     }
 
+    fun getLanguage(): Flow<String?> = dataStore.data.map{ it[language] }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    suspend fun setLanguage(newValue: String) {
+        val localeManager = context.getSystemService(LocaleManager::class.java)
+        localeManager.applicationLocales = LocaleList.forLanguageTags(newValue)
+        dataStore.edit { it[language] = newValue }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    suspend fun resetLanguage() {
+        val localeManager = context.getSystemService(LocaleManager::class.java)
+        localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
+        dataStore.edit { it.remove(language) }
+    }
     /*
      * Utils
      */
