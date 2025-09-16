@@ -63,8 +63,32 @@ class ProgramExercisesViewModel @Inject constructor(
                 }
             }
             is ProgramExercisesEvent.ReorderExercises -> {
-                // TODO: check that doesn't break supersets (probably does)
                 viewModelScope.launch {
+                    // check if exercise were in superset
+                    // we assume programExerciseReorders.size = 2 for the following logic, log if not
+                    // we also assume that an exercise can only be move forward or backwards by 1 place
+                    if (event.programExerciseReorders.size > 2) {
+                        Log.w("ProgramExercisesViewModel", "When reordering exercises, got programExerciseReorders.size ${event.programExerciseReorders.size}")
+                    }
+                    // it's okay if swapping between two superset exercises
+                    val ex1 = state.value.programExercises[event.programExerciseReorders[0].orderInProgram]
+                    val ex2 = state.value.programExercises[event.programExerciseReorders[1].orderInProgram]
+                    if (ex1.supersetExercise == ex2.programExerciseId && ex2.supersetExercise == ex1.programExerciseId){
+                        return@launch
+                    }
+                    // reset both exercise's supersets
+                    repository.updateExerciseSuperset(
+                        listOf(
+                            UpdateExerciseSuperset(
+                                ex1.programExerciseId,
+                                null
+                            ),
+                            UpdateExerciseSuperset(
+                                ex2.programExerciseId,
+                                null
+                            )
+                        )
+                    )
                     repository.reorderProgramExercises(event.programExerciseReorders)
                 }
             }
