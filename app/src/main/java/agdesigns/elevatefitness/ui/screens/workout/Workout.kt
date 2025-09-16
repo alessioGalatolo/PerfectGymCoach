@@ -57,17 +57,28 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.net.toUri
 import androidx.wear.remote.interactions.RemoteActivityHelper
@@ -1080,41 +1091,145 @@ fun SharedTransitionScope.Workout(
                 )
             },
             floatingActionButton = {
-                Column(
-                    verticalArrangement = Arrangement.Bottom,
-                    horizontalAlignment = Alignment.End
-                ) {
-                    SmallFloatingActionButton(onClick = {
-                        navigator.navigate(
-                            ExercisesByMuscleDestination(
-                                programName = context.getString(R.string.current_and_future_workouts),  // FIXME: all workouts?
-                                workoutId = workoutState.workoutId,
-                                programId = programId
-                            )
-                        )
-                    },
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    containerColor = MaterialTheme.colorScheme.secondary) {
-                        Icon(Icons.Default.Edit,
-                            stringResource(R.string.add_an_exercise_to_current_and_future_workouts_of_this_program)
-                        )
-                    }
-                    LargeFloatingActionButton(onClick = {
-                        navigator.navigate(
-                            ExercisesByMuscleDestination(
-                                programName = context.getString(R.string.current_workout),
-                                workoutId = workoutState.workoutId,
-                            )
-                        )
-                    }) {
-                        Icon(
+                val items =
+                    listOf(
+                        FabItemData(
                             Icons.Default.Add,
-                            stringResource(R.string.add_an_exercise_to_current_workout),
-                            Modifier.size(FloatingActionButtonDefaults.LargeIconSize)
+                            R.string.empty_workout_add_text,
+                        ) {
+                            navigator.navigate(
+                                ExercisesByMuscleDestination(
+                                    programName = context.getString(R.string.current_workout),
+                                    workoutId = workoutState.workoutId,
+                                )
+                            )
+                        },
+                        FabItemData(
+                            Icons.Default.Edit,
+                            R.string.empty_workout_edit_text,
+
+                        ) {
+                            navigator.navigate(
+                                ExercisesByMuscleDestination(
+                                    programName = context.getString(R.string.current_and_future_workouts),  // FIXME: all workouts?
+                                    workoutId = workoutState.workoutId,
+                                    programId = programId
+                                )
+                            )
+                        }
+                    )
+
+                var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
+
+                BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
+
+                FloatingActionButtonMenu(
+                    expanded = fabMenuExpanded,
+                    button = {
+                        if (fabMenuExpanded) {
+                            ToggleFloatingActionButton(
+                                modifier =
+                                    Modifier
+                                        .semantics {
+                                            traversalIndex = -1f
+                                            stateDescription =
+                                                if (fabMenuExpanded)
+                                                    context.getString(R.string.expanded)
+                                                else
+                                                    context.getString(R.string.collapsed)
+                                            contentDescription =
+                                                context.getString(R.string.toggle_menu)
+                                        }
+                                        .animateFloatingActionButton(
+                                            visible = fabMenuExpanded,
+                                            alignment = Alignment.BottomEnd,
+                                        ),
+                                checked = fabMenuExpanded,
+                                onCheckedChange = { fabMenuExpanded = !fabMenuExpanded },
+                            ) {
+                                val imageVector by remember {
+                                    derivedStateOf {
+                                        if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add
+                                    }
+                                }
+                                Icon(
+                                    painter = rememberVectorPainter(imageVector),
+                                    contentDescription = null,
+                                    tint = if (fabMenuExpanded)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else
+                                        MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.animateIcon({ checkedProgress }),
+                                )
+                            }
+                        } else {
+                            // TODO: currently official API has a bug and doesn't show a button
+                            //  when not expanded, this is temporary fix
+                            FloatingActionButton({
+                                fabMenuExpanded = true
+                            }) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    stringResource(R.string.add_an_exercise_to_current_workout),
+                                )
+                            }
+                        }
+                    },
+                ) {
+                    items.forEachIndexed { i, item ->
+                        FloatingActionButtonMenuItem(
+                            modifier =
+                                Modifier.semantics {
+                                    isTraversalGroup = true
+                                    // Add a custom a11y action to allow closing the menu when focusing
+                                    // the last menu item, since the close button comes before the first
+                                    // menu item in the traversal order.
+                                    if (i == items.size - 1) {
+                                        customActions =
+                                            listOf(
+                                                CustomAccessibilityAction(
+                                                    label = context.getString(R.string.close_menu),
+                                                    action = {
+                                                        fabMenuExpanded = false
+                                                        true
+                                                    },
+                                                )
+                                            )
+                                    }
+                                },
+                            onClick = {
+                                fabMenuExpanded = false
+                                item.onClick()
+                            },
+                            icon = { Icon(item.icon, contentDescription = null) },
+                            text = { Text(text = stringResource(item.textResId)) },
                         )
                     }
                 }
-            }) { innerPadding ->
+//                Column(
+//                    verticalArrangement = Arrangement.Bottom,
+//                    horizontalAlignment = Alignment.End
+//                ) {
+//                    SmallFloatingActionButton(onClick = {
+//                    },
+//                    modifier = Modifier.padding(bottom = 16.dp),
+//                    containerColor = MaterialTheme.colorScheme.secondary) {
+//                        Icon(Icons.Default.Edit,
+//                            stringResource(R.string.add_an_exercise_to_current_and_future_workouts_of_this_program)
+//                        )
+//                    }
+//                    MediumFloatingActionButton(onClick = {
+//
+//                    }) {
+//                        Icon(
+//                            Icons.Default.Add,
+//                            stringResource(R.string.add_an_exercise_to_current_workout),
+//                            modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize)
+//                        )
+//                    }
+//                }
+            })
+        { innerPadding ->
             EmptyScreenInfo(
                 Icons.Default.FitnessCenter,
                 R.string.empty_exercises,
@@ -1132,3 +1247,9 @@ fun SharedTransitionScope.Workout(
         }
     }
 }
+
+data class FabItemData(
+    val icon: ImageVector,
+    val textResId: Int,
+    val onClick: () -> Unit
+)

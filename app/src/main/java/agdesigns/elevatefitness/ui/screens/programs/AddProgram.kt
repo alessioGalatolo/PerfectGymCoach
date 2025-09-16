@@ -112,8 +112,7 @@ fun AddProgram(
                 scrollBehavior = scrollBehavior
             )
         }, floatingActionButton = {
-            LargeFloatingActionButton (
-//                modifier = Modifier.navigationBarsPadding(),
+            MediumFloatingActionButton (
                 onClick = {
                     viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog)
                 },
@@ -121,7 +120,7 @@ fun AddProgram(
                 Icon(
                     Icons.Filled.Add,
                     contentDescription = stringResource(R.string.add_program),
-                    modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
+                    modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize)
                 )
             }
         }, content = { innerPadding ->

@@ -797,4 +797,11 @@
     <string name="preferences">Preferences:</string>
     <string name="plans_and_workouts">Plans and workouts:</string>
     <string name="backup_restore_info">Here you can backup and restore your data. Importing plans and workouts will trigger an app restart if successful. Restoring a backup will overwrite current data.</string>
+    <string name="expanded">Expanded</string>
+    <string name="collapsed">Collapsed</string>
+    <string name="toggle_menu">Toggle menu</string>
+    <string name="close_menu">Close menu</string>
+    <string name="empty_workout_add_text">Add only to current workout</string>
+    <string name="empty_workout_edit_text">Modify workout program</string>
+    <string name="search_and_add_exercise">Search and add exercise</string>
 </resources>

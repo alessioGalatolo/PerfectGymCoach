@@ -60,7 +60,7 @@ import kotlin.math.min
 @Destination<BottomNavigationGraph>(start = true, style = FadeTransition::class)
 @Composable
 @OptIn(ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class,
-    ExperimentalMaterial3Api::class
+    ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class
 )
 fun SharedTransitionScope.Home(
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -144,7 +144,7 @@ fun SharedTransitionScope.Home(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         floatingActionButton = {
             if (homeState.currentPlan == null) {
-                LargeFloatingActionButton(
+                MediumFloatingActionButton(
                     onClick = {
                         navigator.navigate(
                             AddWorkoutPlanDestination(openDialogNow = true)
@@ -154,7 +154,9 @@ fun SharedTransitionScope.Home(
                     Icon(
                         imageVector = Icons.Filled.Add,
                         contentDescription = null,
-                        modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize)
+                        modifier = Modifier.size(
+                            FloatingActionButtonDefaults.MediumIconSize
+                        )
                     )
                 }
             }
@@ -184,7 +186,10 @@ fun SharedTransitionScope.Home(
                             openDialogNow = true
                         )
                     )
-                }, modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)) {
+                }, modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 16.dp)
+                ) {
                     Text(stringResource(id = R.string.add_program))
                 }
                 TextButton(

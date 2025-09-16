@@ -389,6 +389,7 @@ fun ViewExercises(
                     item {
                         Box(Modifier.fillMaxWidth()) {
                             Button(
+                                shapes = ButtonDefaults.shapes(),
                                 modifier = Modifier.align(Center),
                                 onClick = {
                                     navigator.navigate(

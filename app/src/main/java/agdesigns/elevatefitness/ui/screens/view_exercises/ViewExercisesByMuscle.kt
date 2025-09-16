@@ -29,6 +29,9 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.utils.plus
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.ui.res.stringResource
@@ -38,10 +41,11 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
+    ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )
 @Composable
-fun ExercisesByMuscle(
+fun SharedTransitionScope.ExercisesByMuscle(
+    animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     programName: String,
     programId: Long = 0,
@@ -71,7 +75,12 @@ fun ExercisesByMuscle(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+            .sharedBounds(
+                rememberSharedContentState("fab2view"),
+                animatedVisibilityScope
+            ),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LargeTopAppBar(

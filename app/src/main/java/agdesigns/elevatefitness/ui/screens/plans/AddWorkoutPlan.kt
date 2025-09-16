@@ -63,6 +63,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MediumFloatingActionButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxState
@@ -162,7 +163,7 @@ fun AddWorkoutPlan(
                 scrollBehavior = scrollBehavior
             )
         }, floatingActionButton = {
-            LargeFloatingActionButton (
+            MediumFloatingActionButton (
                 onClick = {
                     viewModel.onEvent(PlansEvent.TogglePlanDialogue)
                 },
@@ -170,7 +171,7 @@ fun AddWorkoutPlan(
                 Icon(
                     Icons.Filled.Add,
                     contentDescription = stringResource(R.string.add_icon_workout_plan),
-                    modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
+                    modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize),
                 )
             }
         }) { innerPadding ->

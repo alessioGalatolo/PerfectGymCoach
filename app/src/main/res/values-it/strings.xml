@@ -792,4 +792,11 @@
     <string name="preferences">Preferenze:</string>
     <string name="plans_and_workouts">Piani e workout:</string>
     <string name="backup_restore_info">Qui puoi fare il backup e ripristino dei tuoi dati. Dopo aver importato con successo i piani e i workout, l\'app verrà riavviata. Ripristinare un backup sovrascriverà i dati correnti.</string>
+    <string name="expanded">Espanso</string>
+    <string name="collapsed">Collassato</string>
+    <string name="toggle_menu">Apri menu</string>
+    <string name="close_menu">Chiudi menu</string>
+    <string name="empty_workout_add_text">Aggiungi solo a questo allenamento</string>
+    <string name="empty_workout_edit_text">Modifica questo programma</string>
+    <string name="search_and_add_exercise">Cerca e aggiungi esercizio</string>
 </resources>

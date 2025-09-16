@@ -44,7 +44,11 @@ import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.ExercisesEvent
 import agdesigns.elevatefitness.ui.common.ExercisesViewModel
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import coil3.compose.AsyncImage
@@ -59,10 +63,11 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
+    ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )
 @Composable
-fun AddProgramExercise(
+fun SharedTransitionScope.AddProgramExercise(
+    animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     programName: String,
     programId: Long,
@@ -72,6 +77,8 @@ fun AddProgramExercise(
     val addProgramState by viewModel.state.collectAsState()
     viewModel.onEvent(ExercisesEvent.GetProgramExercises(programId))
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val listState = rememberLazyListState()
+    val expandedFab by remember { derivedStateOf { !listState.isScrollInProgress } }
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     Scaffold(
@@ -100,8 +107,20 @@ fun AddProgramExercise(
                 },
                 scrollBehavior = scrollBehavior
             )
-        }, floatingActionButton = {
-            LargeFloatingActionButton (
+        },
+        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                text = {
+                    Text(stringResource(R.string.search_and_add_exercise))
+                },
+                icon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = stringResource(R.string.add_exercise),
+                    )
+                },
+                expanded = expandedFab,
                 onClick = {
                     navigator.navigate(
                         ExercisesByMuscleDestination(
@@ -110,13 +129,11 @@ fun AddProgramExercise(
                         )
                     )
                 },
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.add_exercise),
-                    modifier = Modifier.size(FloatingActionButtonDefaults.LargeIconSize),
+                modifier = Modifier.sharedBounds(
+                    rememberSharedContentState("fab2view"),
+                    animatedVisibilityScope
                 )
-            }
+            )
         }, content = { innerPadding ->
             if (addProgramState.programExercisesAndInfo.isEmpty()) {
                 // if you have no exercises
@@ -129,6 +146,7 @@ fun AddProgramExercise(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
+                    state = listState,
                     contentPadding = innerPadding,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -354,7 +372,7 @@ fun AddProgramExercise(
 //                        }
                     }
                     item{
-                        var finalSpacerSize = 96.dp + 8.dp// large fab size + its padding FIXME: not hardcode
+                        var finalSpacerSize = 56.dp + 8.dp// large fab size + its padding FIXME: not hardcode
                         finalSpacerSize += 16.dp
                         Spacer(Modifier.height(finalSpacerSize))
                     }
