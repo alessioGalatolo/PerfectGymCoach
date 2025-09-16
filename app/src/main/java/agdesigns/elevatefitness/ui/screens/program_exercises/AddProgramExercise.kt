@@ -42,8 +42,6 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
-import agdesigns.elevatefitness.ui.common.ExercisesEvent
-import agdesigns.elevatefitness.ui.common.ExercisesViewModel
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -71,11 +69,10 @@ fun SharedTransitionScope.AddProgramExercise(
     navigator: DestinationsNavigator,
     programName: String,
     programId: Long,
-    viewModel: ExercisesViewModel = hiltViewModel()
+    viewModel: ProgramExercisesViewModel = hiltViewModel()
 ) {
-    // FIXME: this is the same viewModel as ViewExercises and it doesn't make sense
-    val addProgramState by viewModel.state.collectAsState()
-    viewModel.onEvent(ExercisesEvent.GetProgramExercises(programId))
+    val state by viewModel.state.collectAsState()
+    viewModel.onEvent(ProgramExercisesEvent.GetProgramExercises(programId))
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val listState = rememberLazyListState()
     val expandedFab by remember { derivedStateOf { !listState.isScrollInProgress } }
@@ -135,7 +132,7 @@ fun SharedTransitionScope.AddProgramExercise(
                 )
             )
         }, content = { innerPadding ->
-            if (addProgramState.programExercisesAndInfo.isEmpty()) {
+            if (state.programExercises.isEmpty()) {
                 // if you have no exercises
                 EmptyScreenInfo(
                     Icons.Filled.FitnessCenter,
@@ -150,8 +147,9 @@ fun SharedTransitionScope.AddProgramExercise(
                     contentPadding = innerPadding,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    itemsIndexed(items = addProgramState.programExercisesAndInfo,
-                        key = { _, it -> it.programExerciseId }) { index, exercise ->
+                    itemsIndexed(items = state.programExercises,
+                        key = { _, it -> it.programExerciseId }) { index, programExercise ->
+                        val exercise = remember(index) { state.exercises[index] }
                         val brightImage = remember { mutableStateOf(false) }
                         var expanded by remember { mutableStateOf(false) }
                         if (index != 0){
@@ -165,7 +163,7 @@ fun SharedTransitionScope.AddProgramExercise(
                                         indication = null,
                                         onClick = {
                                             viewModel.onEvent(
-                                                ExercisesEvent.UpdateSuperset(
+                                                ProgramExercisesEvent.UpdateSuperset(
                                                     index,
                                                     index - 1
                                                 )
@@ -173,7 +171,7 @@ fun SharedTransitionScope.AddProgramExercise(
                                         }, onLongClick = {})
                                     .wrapContentHeight()
                             ){
-                                val linked = exercise.supersetExercise == addProgramState.programExercisesAndInfo[index-1].programExerciseId
+                                val linked = programExercise.supersetExercise == state.programExercises[index-1].programExerciseId
                                 val orientation = remember { Animatable(0f) }
                                 val scale = remember { Animatable(1f) }
                                 LaunchedEffect(linked) {
@@ -211,9 +209,9 @@ fun SharedTransitionScope.AddProgramExercise(
                                     onClick = {
                                         navigator.navigate(
                                             AddExerciseDialogDestination(
-                                                programId = exercise.extProgramId,
-                                                exerciseId = exercise.extExerciseId,
-                                                programExerciseId = exercise.programExerciseId,
+                                                programId = programExercise.extProgramId,
+                                                exerciseId = programExercise.extExerciseId,
+                                                programExerciseId = programExercise.programExerciseId,
                                                 continueAdding = false
                                             )
                                         )
@@ -228,7 +226,7 @@ fun SharedTransitionScope.AddProgramExercise(
                                 AsyncImage(
                                     ImageRequest.Builder(context)
                                         .allowHardware(false)
-                                        .data(exercise.image)
+                                        .data(exercise?.image ?: R.drawable.finish_workout)
                                         .crossfade(true)
                                         .listener { _, result ->
                                             val image = result.image.toBitmap()
@@ -269,9 +267,16 @@ fun SharedTransitionScope.AddProgramExercise(
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.move_up)) },
                                             onClick = {
-                                                viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
-                                                    ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram-1),
-                                                    ProgramExerciseReorder(addProgramState.programExercisesAndInfo[index-1].programExerciseId, exercise.orderInProgram)
+                                                viewModel.onEvent(ProgramExercisesEvent.ReorderExercises(
+                                                    listOf(
+                                                        ProgramExerciseReorder(
+                                                            programExercise.programExerciseId,
+                                                            programExercise.orderInProgram-1
+                                                        ),
+                                                        ProgramExerciseReorder(
+                                                            state.programExercises[index-1].programExerciseId,
+                                                            programExercise.orderInProgram
+                                                        )
                                                 )))
                                                 expanded = false
                                             },
@@ -285,13 +290,20 @@ fun SharedTransitionScope.AddProgramExercise(
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.move_down)) },
                                             onClick = {
-                                                viewModel.onEvent(ExercisesEvent.ReorderExercises(listOf(
-                                                    ProgramExerciseReorder(exercise.programExerciseId, exercise.orderInProgram+1),
-                                                    ProgramExerciseReorder(addProgramState.programExercisesAndInfo[index+1].programExerciseId, exercise.orderInProgram)
+                                                viewModel.onEvent(ProgramExercisesEvent.ReorderExercises(
+                                                    listOf(
+                                                        ProgramExerciseReorder(
+                                                            programExercise.programExerciseId,
+                                                            programExercise.orderInProgram+1
+                                                        ),
+                                                        ProgramExerciseReorder(
+                                                            state.programExercises[index+1].programExerciseId,
+                                                            programExercise.orderInProgram
+                                                        )
                                                 )))
                                                 expanded = false
                                             },
-                                            enabled = index+1 < addProgramState.programExercisesAndInfo.size,
+                                            enabled = index+1 < state.programExercises.size,
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Outlined.ArrowDownward,
@@ -303,9 +315,9 @@ fun SharedTransitionScope.AddProgramExercise(
                                             onClick = {
                                                 navigator.navigate(
                                                     AddExerciseDialogDestination(
-                                                        programId = exercise.extProgramId,
-                                                        exerciseId = exercise.extExerciseId,
-                                                        programExerciseId = exercise.programExerciseId,
+                                                        programId = programExercise.extProgramId,
+                                                        exerciseId = programExercise.extExerciseId,
+                                                        programExerciseId = programExercise.programExerciseId,
                                                         continueAdding = false
                                                     )
                                                 )
@@ -320,8 +332,8 @@ fun SharedTransitionScope.AddProgramExercise(
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.remove)) },
                                             onClick = {
-                                                viewModel.onEvent(ExercisesEvent.DeleteExercise(
-                                                    exercise.programExerciseId
+                                                viewModel.onEvent(ProgramExercisesEvent.DeleteExercise(
+                                                    programExercise.programExerciseId
                                                 ))
                                                 expanded = false
                                             },
@@ -335,9 +347,9 @@ fun SharedTransitionScope.AddProgramExercise(
                                 }
                             }
                             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                                val variation = if (exercise.variation.isBlank()) "" else " (${exercise.variation})"
+                                val variation = if (programExercise.variation.isBlank()) "" else " (${programExercise.variation})"
                                 Text(
-                                    text = exercise.name + variation,
+                                    text = (exercise?.name ?: "") + variation,
                                     style = MaterialTheme.typography.titleLarge
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -346,26 +358,26 @@ fun SharedTransitionScope.AddProgramExercise(
                                         append(stringResource(R.string.sets))
                                         append(": ")
                                     }
-                                    append(exercise.reps.size.toString())
+                                    append(programExercise.reps.size.toString())
                                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                                         append(" • ")
                                         append(stringResource(R.string.reps))
                                         append(": ")
                                     }
-                                    append(exercise.reps.joinToString(", "))
+                                    append(programExercise.reps.joinToString(", "))
                                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                                         append(" • ")
                                         append(stringResource(R.string.rest))
                                         append(": ")
                                     }
-                                    append(exercise.rest.joinToString("s, ") + "s")
+                                    append(programExercise.rest.joinToString("s, ") + "s")
                                 })
-                                if (exercise.note.isNotBlank())
+                                if (programExercise.note.isNotBlank())
                                     Text(text = buildAnnotatedString {
                                         withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                                             append(stringResource(R.string.note))
                                         }
-                                        append(exercise.note)
+                                        append(programExercise.note)
                                     })
                             }
                         }

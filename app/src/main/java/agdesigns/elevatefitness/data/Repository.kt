@@ -209,6 +209,13 @@ class Repository @Inject constructor(
             it.map { exercise -> resolveResources(exercise) }
         }
 
+    fun getProgramExercisesWithExercise(programId: Long): Flow<List<Pair<ProgramExercise, Exercise?>>> =
+        db.programExerciseDao.getProgramExercisesWithExercise(programId).map {
+            it.map{
+                resolveResources(it.programExercise) to
+                        it.exercise?.let { resolveResources(it) }
+            }
+        }
     fun getProgramExercisesAndInfo(programIds: List<Long>): Flow<List<ProgramExerciseAndInfo>> =
         db.programExerciseDao.getExercisesAndInfo(programIds).map {
             it.map { exercise -> resolveResources(exercise) }

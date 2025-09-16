@@ -35,12 +35,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
-import agdesigns.elevatefitness.ui.common.ExerciseSearchResult
-import agdesigns.elevatefitness.ui.common.ExercisesEvent
-import agdesigns.elevatefitness.ui.common.ExercisesState
-import agdesigns.elevatefitness.ui.common.ExercisesViewModel
 import agdesigns.elevatefitness.ui.common.GroupedCard
-import agdesigns.elevatefitness.ui.common.SearchField
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentIcon
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentImage
 import androidx.activity.compose.BackHandler

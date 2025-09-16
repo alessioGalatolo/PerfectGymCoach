@@ -2,11 +2,13 @@ package agdesigns.elevatefitness.data.db.entity
 
 import android.os.Parcelable
 import androidx.room.ColumnInfo
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
+import androidx.room.Relation
 import com.agdesignes.shared.Equipment
 import kotlinx.parcelize.Parcelize
 
@@ -102,3 +104,8 @@ data class ProgramExerciseAndInfo (
     val imageResource: Int
         get() = getImageResource(imageResKey)
 }
+
+data class ProgramExerciseWithExercise(
+    @Embedded val programExercise: ProgramExercise,
+    @Embedded val exercise: Exercise? // nullable
+)

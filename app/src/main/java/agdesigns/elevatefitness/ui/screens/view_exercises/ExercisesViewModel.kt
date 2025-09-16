@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.ui.common
+package agdesigns.elevatefitness.ui.screens.view_exercises
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,7 +9,6 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
-import agdesigns.elevatefitness.ui.screens.view_exercises.matchExercise
 import android.util.Log
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.snapshotFlow
@@ -57,21 +56,11 @@ data class ExercisesState(
 )
 
 sealed class ExercisesEvent{
-    data class ReorderExercises(val programExerciseReorders: List<ProgramExerciseReorder>): ExercisesEvent()
-
-    data class DeleteExercise(val programExerciseId: Long): ExercisesEvent()
-
-    data class GetProgramExercises(val programId: Long): ExercisesEvent()
-
     data class GetExercises(val muscle: Exercise.Muscle): ExercisesEvent()
-
-    data class AddProgramExercise(val programExercise: ProgramExercise): ExercisesEvent()
 
     data class FilterExercise(val query: String, val forceRefilter: Boolean = false): ExercisesEvent()
 
     data class FilterExerciseEquipment(val query: Equipment): ExercisesEvent()
-
-    data class UpdateSuperset(val index1: Int, val index2: Int): ExercisesEvent()
 
     data class AddRecentSearch(val search: String): ExercisesEvent()
 }
@@ -87,7 +76,6 @@ class ExercisesViewModel @Inject constructor(
     val searchFieldState: TextFieldState = TextFieldState()
 
     private var getExercisesJob: Job? = null
-    private var getProgramExercisesJob: Job? = null
     private var searchJob: Job? = null
 
     init {
@@ -113,22 +101,6 @@ class ExercisesViewModel @Inject constructor(
 
     fun onEvent(event: ExercisesEvent){
         when (event) {
-            is ExercisesEvent.AddProgramExercise -> {
-                viewModelScope.launch {
-                    repository.addProgramExercise(event.programExercise)
-                }
-            }
-            is ExercisesEvent.GetProgramExercises -> {
-                // FIXME: It is very confusing to have a viewmodel for multiple screens, should really split these...
-                getProgramExercisesJob?.cancel()
-                getProgramExercisesJob = viewModelScope.launch {
-                    repository.getProgramExercisesAndInfo(event.programId).collect { programExercisesAndInfo ->
-                        _state.update { it.copy(
-                            programExercisesAndInfo = programExercisesAndInfo.sortedBy { it2 -> it2.orderInProgram }
-                        ) }
-                    }
-                }
-            }
             is ExercisesEvent.GetExercises -> {
                 getExercisesJob?.cancel()
                 getExercisesJob = viewModelScope.launch {
@@ -154,7 +126,12 @@ class ExercisesViewModel @Inject constructor(
                     exercisesFilterEquip = filtered,
                     equipToFiler = event.query
                 ) }
-                onEvent(ExercisesEvent.FilterExercise(state.value.searchQuery, forceRefilter = true))
+                onEvent(
+                    ExercisesEvent.FilterExercise(
+                        state.value.searchQuery,
+                        forceRefilter = true
+                    )
+                )
             }
             is ExercisesEvent.FilterExercise -> {
                 // do not execute on main thread
@@ -183,63 +160,6 @@ class ExercisesViewModel @Inject constructor(
                         )
                     }
                     Log.d("ExercisesViewModel", "Filtered exercises for query ${event.query}")
-                }
-            }
-            is ExercisesEvent.ReorderExercises -> {
-                // TODO: check that doesn't break supersets (probably does)
-                viewModelScope.launch {
-                    repository.reorderProgramExercises(event.programExerciseReorders)
-                }
-            }
-            is ExercisesEvent.DeleteExercise -> {
-                viewModelScope.launch {
-                    repository.deleteProgramExercise(event.programExerciseId)
-                }
-            }
-            is ExercisesEvent.UpdateSuperset -> {
-                val exercise1 = state.value.programExercisesAndInfo[event.index1]
-                val exercise2 = state.value.programExercisesAndInfo[event.index2]
-                val exercisesToUpdate = mutableListOf<UpdateExerciseSuperset>()
-                if (exercise1.supersetExercise != null){
-                    val otherExercise = state.value.programExercisesAndInfo.find {
-                        it.programExerciseId == exercise1.supersetExercise
-                    }
-                    if (otherExercise != null)
-                        exercisesToUpdate.add(
-                            UpdateExerciseSuperset(
-                                otherExercise.programExerciseId,
-                                null
-                            )
-                        )
-                }
-                if (exercise2.supersetExercise != null){
-                    val otherExercise = state.value.programExercisesAndInfo.find {
-                        it.programExerciseId == exercise2.supersetExercise
-                    }
-                    if (otherExercise != null)
-                        exercisesToUpdate.add(
-                            UpdateExerciseSuperset(
-                                otherExercise.programExerciseId,
-                                null
-                            )
-                        )
-                }
-                exercisesToUpdate.add(
-                    UpdateExerciseSuperset(
-                        exercise1.programExerciseId,
-                        if (exercise1.supersetExercise != exercise2.programExerciseId) exercise2.programExerciseId else null
-                    )
-                )
-                exercisesToUpdate.add(
-                    UpdateExerciseSuperset(
-                        exercise2.programExerciseId,
-                        if (exercise2.supersetExercise != exercise1.programExerciseId) exercise1.programExerciseId else null
-                    )
-                )
-                viewModelScope.launch {
-                    repository.updateExerciseSuperset(
-                        exercisesToUpdate
-                    )
                 }
             }
             is ExercisesEvent.AddRecentSearch -> {

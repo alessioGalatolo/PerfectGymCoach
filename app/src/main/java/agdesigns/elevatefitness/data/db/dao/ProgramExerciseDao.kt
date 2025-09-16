@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.data.db.dao
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
+import agdesigns.elevatefitness.data.db.entity.ProgramExerciseWithExercise
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
 import androidx.room.Dao
 import androidx.room.Insert
@@ -35,6 +36,11 @@ interface ProgramExerciseDao {
             "WHERE programexercise.extProgramId = :programId")
     fun getExercisesAndInfo(programId: Long): Flow<List<ProgramExerciseAndInfo>>
 
+    @Query("SELECT programexercise.*, exercise.* " +
+            "FROM programexercise " +
+            "LEFT JOIN exercise ON programexercise.extExerciseId = exercise.exerciseId " +
+            "WHERE programexercise.extProgramId = :programId")
+    fun getProgramExercisesWithExercise(programId: Long): Flow<List<ProgramExerciseWithExercise>>
 
     @Query("SELECT programexercise.*, exercise.image, exercise.imageResKey, exercise.equipment, exercise.name, exercise.nameResKey, exercise.description, exercise.descriptionResKey, exercise.userDefined " +
             "FROM programexercise " +

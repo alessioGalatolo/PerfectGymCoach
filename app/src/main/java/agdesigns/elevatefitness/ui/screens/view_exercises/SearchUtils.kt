@@ -1,9 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.view_exercises
 
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.ui.common.ExerciseSearchResult
-import agdesigns.elevatefitness.ui.common.FieldHighlight
-import agdesigns.elevatefitness.ui.common.SearchField
 import java.text.Normalizer
 import kotlin.text.get
 
