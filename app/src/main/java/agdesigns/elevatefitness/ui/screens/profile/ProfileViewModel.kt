@@ -1,11 +1,15 @@
 package agdesigns.elevatefitness.ui.screens.profile
 
+import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.BackupRepository
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
 import android.os.Build
+import android.net.Uri
+import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,7 +28,10 @@ data class ProfileState(
     val incrementDumbbell: Float = 0f,
     val incrementMachine: Float = 0f,
     val incrementCable: Float = 0f,
-    val language: String? = null
+    val language: String? = null,
+    val isBackupLoading: Boolean = false,
+    val isPreferencesBackupLoading: Boolean = false,
+    val backupOutcomeResId: Int? = null
 )
 
 sealed class ProfileEvent{
@@ -53,29 +60,42 @@ sealed class ProfileEvent{
     data class SwitchImperialSystem(val newValue: Boolean): ProfileEvent()
 
     data class ChangeLanguage(val newLanguage: String?): ProfileEvent()
+
+    data class ExportDatabase(val fileUri: Uri): ProfileEvent()
+
+    data class ImportDatabase(val fileUri: Uri): ProfileEvent()
+
+    data class ExportPreferences(val fileUri: Uri): ProfileEvent()
+
+    data class ImportPreferences(val fileUri: Uri): ProfileEvent()
+
+    data object ResetOutcomeMessage: ProfileEvent()
 }
 
 @HiltViewModel
-class ProfileViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class ProfileViewModel @Inject constructor(
+    private val backupRepository: BackupRepository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
             combine(
-                repository.getUserWeight(),
-                repository.getUserHeight(),
-                repository.getUserSex(),
-                repository.getUserName(),
-                repository.getUserYear(),
-                repository.getImperialSystem(),
-                repository.getTheme(),
-                repository.getBodyweightIncrement(),
-                repository.getBarbellIncrement(),
-                repository.getDumbbellIncrement(),
-                repository.getMachineIncrement(),
-                repository.getCableIncrement(),
-                repository.getLanguage()
+                preferences.getUserWeight(),
+                preferences.getUserHeight(),
+                preferences.getUserSex(),
+                preferences.getUserName(),
+                preferences.getUserYear(),
+                preferences.getImperialSystem(),
+                preferences.getTheme(),
+                preferences.getBodyweightIncrement(),
+                preferences.getBarbellIncrement(),
+                preferences.getDumbbellIncrement(),
+                preferences.getMachineIncrement(),
+                preferences.getCableIncrement(),
+                preferences.getLanguage()
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -102,74 +122,169 @@ class ProfileViewModel @Inject constructor(private val repository: Repository): 
         when (event) {
             is ProfileEvent.UpdateName -> {
                 viewModelScope.launch {
-                    repository.setUserName(event.newName)
+                    preferences.setUserName(event.newName)
                 }
             }
             is ProfileEvent.UpdateSex -> {
                 viewModelScope.launch {
-                    repository.setUserSex(event.newSex)
+                    preferences.setUserSex(event.newSex)
                 }
             }
             is ProfileEvent.UpdateWeight -> {
                 viewModelScope.launch {
-                    repository.setUserWeight(event.newWeight)
+                    preferences.setUserWeight(event.newWeight)
                 }
             }
             is ProfileEvent.UpdateHeight -> {
                 viewModelScope.launch {
-                    repository.setUserHeight(event.newHeight)
+                    preferences.setUserHeight(event.newHeight)
                 }
             }
             is ProfileEvent.UpdateAgeYear -> {
                 viewModelScope.launch {
-                    repository.setUserYear(event.newYear)
+                    preferences.setUserYear(event.newYear)
                 }
             }
             is ProfileEvent.SwitchImperialSystem -> {
                 viewModelScope.launch {
-                    repository.setImperialSystem(event.newValue)
+                    preferences.setImperialSystem(event.newValue)
                 }
             }
             is ProfileEvent.UpdateTheme -> {
                 viewModelScope.launch {
-                    repository.setTheme(event.newTheme)
+                    preferences.setTheme(event.newTheme)
                 }
             }
             is ProfileEvent.UpdateIncrementBarbell -> {
                 viewModelScope.launch {
-                    repository.setBarbellIncrement(event.newIncrement)
+                    preferences.setBarbellIncrement(event.newIncrement)
                 }
             }
             is ProfileEvent.UpdateIncrementBodyweight -> {
                 viewModelScope.launch {
-                    repository.setBodyweightIncrement(event.newIncrement)
+                    preferences.setBodyweightIncrement(event.newIncrement)
                 }
             }
             is ProfileEvent.UpdateIncrementCable -> {
                 viewModelScope.launch {
-                    repository.setCableIncrement(event.newIncrement)
+                    preferences.setCableIncrement(event.newIncrement)
                 }
             }
             is ProfileEvent.UpdateIncrementDumbbell -> {
                 viewModelScope.launch {
-                    repository.setDumbbellIncrement(event.newIncrement)
+                    preferences.setDumbbellIncrement(event.newIncrement)
                 }
             }
             is ProfileEvent.UpdateIncrementMachine -> {
                 viewModelScope.launch {
-                    repository.setMachineIncrement(event.newIncrement)
+                    preferences.setMachineIncrement(event.newIncrement)
                 }
             }
             is ProfileEvent.ChangeLanguage -> {
                 viewModelScope.launch {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         if (event.newLanguage != null) {
-                            repository.setLanguage(event.newLanguage)
+                            preferences.setLanguage(event.newLanguage)
                         } else {
-                            repository.resetLanguage()
+                            preferences.resetLanguage()
                         }
                     }
                 }
+            }
+            is ProfileEvent.ExportDatabase -> {
+                viewModelScope.launch {
+                    _state.update { it.copy(isBackupLoading = true) }
+                    val r = backupRepository.backupDb(event.fileUri)
+                        .onSuccess {
+                            _state.update {
+                                it.copy(
+                                    isBackupLoading = false,
+                                    backupOutcomeResId = R.string.backup_success
+                                )
+                            }
+                        }
+                        .onFailure { error ->
+                            _state.update {
+                                it.copy(
+                                    isBackupLoading = false,
+                                    backupOutcomeResId = R.string.backup_error
+                                )
+                            }
+                        }
+                    Log.d("ProfileViewModel", "ExportDatabase: $r")
+                }
+            }
+            is ProfileEvent.ImportDatabase -> {
+                viewModelScope.launch {
+                    _state.update { it.copy(isBackupLoading = true) }
+                    val r = backupRepository.restoreDb(event.fileUri)
+                        .onSuccess {
+                            _state.update {
+                                it.copy(
+                                    isBackupLoading = false,
+                                    backupOutcomeResId = R.string.restore_success
+                                )
+                            }
+                        }
+                        .onFailure { error ->
+                            _state.update {
+                                it.copy(
+                                    isBackupLoading = false,
+                                    backupOutcomeResId = R.string.restore_error
+                                )
+                            }
+                        }
+                    Log.d("ProfileViewModel", "ImportDatabase: $r")
+                }
+            }
+            is ProfileEvent.ExportPreferences -> {
+                viewModelScope.launch {
+                    _state.update { it.copy(isPreferencesBackupLoading = true) }
+                    val r = backupRepository.backupPreferences(event.fileUri)
+                        .onSuccess {
+                            _state.update {
+                                it.copy(
+                                    backupOutcomeResId = R.string.backup_success,
+                                    isPreferencesBackupLoading = false
+                                )
+                            }
+                        }
+                        .onFailure {
+                            _state.update {
+                                it.copy(
+                                    backupOutcomeResId = R.string.backup_error,
+                                    isPreferencesBackupLoading = false
+                                )
+                            }
+                        }
+                    Log.d("ProfileViewModel", "ExportPreferences: $r")
+                }
+            }
+            is ProfileEvent.ImportPreferences -> {
+                viewModelScope.launch {
+                    _state.update { it.copy(isPreferencesBackupLoading = true) }
+                    val r = backupRepository.restorePreferences(event.fileUri)
+                            .onSuccess {
+                                _state.update {
+                                    it.copy(
+                                        backupOutcomeResId = R.string.restore_success,
+                                        isPreferencesBackupLoading = false
+                                    )
+                                }
+                            }
+                            .onFailure {
+                                _state.update {
+                                    it.copy(
+                                        backupOutcomeResId = R.string.restore_error,
+                                        isPreferencesBackupLoading = false
+                                    )
+                                }
+                            }
+                    Log.d("ProfileViewModel", "ImportPreferences: $r")
+                }
+            }
+            is ProfileEvent.ResetOutcomeMessage -> {
+                _state.update { it.copy(backupOutcomeResId = null) }
             }
         }
     }

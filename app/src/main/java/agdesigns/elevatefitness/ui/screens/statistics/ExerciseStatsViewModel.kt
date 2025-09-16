@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.statistics
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Exercise
@@ -53,7 +54,10 @@ sealed class ExerciseStatsEvent{
 }
 
 @HiltViewModel
-class ExerciseStatsViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class ExerciseStatsViewModel @Inject constructor(
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(ExerciseStatsState())
     val state: StateFlow<ExerciseStatsState> = _state.asStateFlow()
 
@@ -61,7 +65,7 @@ class ExerciseStatsViewModel @Inject constructor(private val repository: Reposit
 
     init {
         viewModelScope.launch {
-            repository.getImperialSystem().collect { imperialSystem ->
+            preferences.getImperialSystem().collect { imperialSystem ->
                 _state.update {
                     it.copy(
                         imperialSystem = imperialSystem

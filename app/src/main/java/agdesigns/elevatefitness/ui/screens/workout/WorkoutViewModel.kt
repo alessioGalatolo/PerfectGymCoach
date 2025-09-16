@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.workout
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
@@ -132,7 +133,10 @@ sealed class WorkoutEvent{
 }
 
 @HiltViewModel
-class WorkoutViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class WorkoutViewModel @Inject constructor(
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(WorkoutState())
     val state: StateFlow<WorkoutState> = _state.asStateFlow()
 
@@ -151,14 +155,14 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
     init {
         viewModelScope.launch {
             combine(
-                repository.getTheme(),
-                repository.getImperialSystem(),
-                repository.getBodyweightIncrement(),
-                repository.getBarbellIncrement(),
-                repository.getDumbbellIncrement(),
-                repository.getMachineIncrement(),
-                repository.getCableIncrement(),
-                repository.getDontWantNotificationAccess()
+                preferences.getTheme(),
+                preferences.getImperialSystem(),
+                preferences.getBodyweightIncrement(),
+                preferences.getBarbellIncrement(),
+                preferences.getDumbbellIncrement(),
+                preferences.getMachineIncrement(),
+                preferences.getCableIncrement(),
+                preferences.getDontWantNotificationAccess()
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -244,7 +248,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             }
             is WorkoutEvent.DontRequestNotificationAgain -> {
                 viewModelScope.launch {
-                    repository.setDontWantNotificationAccess(true)
+                    preferences.setDontWantNotificationAccess(true)
                 }
             }
             is WorkoutEvent.InitWorkout -> {
@@ -336,7 +340,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                                 startDate = currentDateTime
                             )
                         )
-                        repository.setCurrentWorkout(state.value.workoutId)
+                        preferences.setCurrentWorkout(state.value.workoutId)
                     }
                 }
             }
@@ -362,7 +366,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                     if (record == null) {
                         val exercise = state.value.workoutExercises[event.exerciseInWorkout]
                         if (exercise.equipment == Equipment.BODY_WEIGHT)
-                            _state.update { it.copy(tare = repository.getUserWeight().first()) }
+                            _state.update { it.copy(tare = preferences.getUserWeight().first()) }
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 extWorkoutId = state.value.workoutId,
@@ -418,7 +422,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             activeTimeSeconds = max(0L, workoutTimeSeconds -
                                     exercises.sumOf { it.rest.sum() }),
                             calories = intensityMet *
-                                    repository.getUserWeight().first() *
+                                    preferences.getUserWeight().first() *
                                     workoutTimeSeconds / 3600
                         )
                     )
@@ -439,13 +443,13 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                         planId = planPrograms.key.planId,
                         currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
                     ))
-                    repository.setCurrentWorkout(null)
+                    preferences.setCurrentWorkout(null)
                     _state.update { it.copy(shutDown = true) }
                 }
             }
             is WorkoutEvent.CancelWorkout -> {
                 viewModelScope.launch {
-                    repository.setCurrentWorkout(null)
+                    preferences.setCurrentWorkout(null)
                 }
             }
             is WorkoutEvent.DeleteCurrentRecords -> {
@@ -495,7 +499,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.ResumeWorkout -> {
                 if (resumeWorkoutJob == null) {
                     resumeWorkoutJob = viewModelScope.launch {
-                        val workoutId = repository.getCurrentWorkout().first()
+                        val workoutId = preferences.getCurrentWorkout().first()
                         if (workoutId != null) {
                             _state.update { it.copy(
                                 workoutId = workoutId
@@ -517,7 +521,7 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
             is WorkoutEvent.AutoStartWorkout -> {
                 if (autoStartWorkoutJob == null) {
                     autoStartWorkoutJob = viewModelScope.launch {
-                        val currentPlanId = repository.getCurrentPlan().first()
+                        val currentPlanId = preferences.getCurrentPlan().first()
                         if (currentPlanId == null) {
                             Log.e("WorkoutViewModel", "Tried to auto start workout but current plan is null.")
                             _state.update { it.copy(autoStartFailed = true) }
@@ -530,7 +534,8 @@ class WorkoutViewModel @Inject constructor(private val repository: Repository): 
                             _state.update { it.copy(autoStartFailed = true) }
                             return@launch
                         }
-                        val upcomingProgram = programs[min(currentPlan.currentProgram, programs.size-1)]
+                        val upcomingProgram = programs[min(
+                            currentPlan?.currentProgram ?: (programs.size - 1), programs.size-1)]
                         onEvent(WorkoutEvent.InitWorkout(upcomingProgram.programId))
                     }
                 }

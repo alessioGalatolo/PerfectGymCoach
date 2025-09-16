@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.ui.screens.statistics
 
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
@@ -90,7 +91,8 @@ sealed class StatisticsEvent {
 
 @HiltViewModel
 class StatisticsViewModel @Inject constructor(
-    private val repository: Repository
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(StatisticsState())
     val state: StateFlow<StatisticsState> = _state.asStateFlow()
@@ -117,7 +119,7 @@ class StatisticsViewModel @Inject constructor(
     private fun observeData() {
         viewModelScope.launch {
             combine(
-                repository.getImperialSystem(),
+                preferences.getImperialSystem(),
                 repository.getWorkoutHistory(),
                 repository.getAllExerciseRecordsAndEquipment()
             ) { useImperial, workouts, exerciseRecords ->

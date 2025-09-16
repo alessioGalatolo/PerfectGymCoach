@@ -782,4 +782,14 @@
     <string name="system_default">Default sistema</string>
     <string name="language">Lingua:</string>
     <string name="inapp_language_selector_not_supported">Ci dispiace ma cambiare la lingua in app non è supportato su questa versione android. Devi cambiarla dal menù del sistema</string>
+    <string name="backup_success">Backup eseguito con successo!</string>
+    <string name="backup_error">Impossibile eseguire il backup, sorry!</string>
+    <string name="restore_success">Backup ripristinato con successo!</string>
+    <string name="restore_error">Impossibile ripristinare il backup, sorry!</string>
+    <string name="backup_and_restore">Backup e ripristino</string>
+    <string name="backup_export">Esporta</string>
+    <string name="backup_import">Importa</string>
+    <string name="preferences">Preferenze:</string>
+    <string name="plans_and_workouts">Piani e workout:</string>
+    <string name="backup_restore_info">Qui puoi fare il backup e ripristino dei tuoi dati. Dopo aver importato con successo i piani e i workout, l\'app verrà riavviata. Ripristinare un backup sovrascriverà i dati correnti.</string>
 </resources>

@@ -31,16 +31,12 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import agdesigns.elevatefitness.utils.getLocalizedString
-import android.app.LocaleManager
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Build
-import android.os.LocaleList
 import android.util.Log
 import androidx.annotation.AnyRes
 import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
 import androidx.datastore.core.DataMigration
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -62,7 +58,6 @@ import java.time.ZonedDateTime
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.jvm.java
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = "settings",
@@ -77,25 +72,6 @@ class Repository @Inject constructor(
     private val watchMessageReceiver: WatchMessageReceiver,
     @ApplicationContext  private val context: Context
 ) {
-    private val dataStore = context.dataStore
-    private val dataStoreVersionKey = intPreferencesKey("Data store version")
-    private val currentPlan = longPreferencesKey("Current plan")
-    private val currentWorkout = longPreferencesKey("Current workout")
-    private val userWeight = floatPreferencesKey("User weight")
-    private val userHeight = floatPreferencesKey("User height")
-    private val userSex = stringPreferencesKey("User sex")
-    private val theme = stringPreferencesKey("Theme")
-    private val userName = stringPreferencesKey("User name")
-    private val userAgeYear = intPreferencesKey("User age year")
-    private val imperialSystem = booleanPreferencesKey("Imperial system user")
-    private val dontWantNotificationAccess = booleanPreferencesKey("Don't want notification access")
-    private val incrementBodyweight = floatPreferencesKey("Increment body weight")
-    private val incrementBarbell = floatPreferencesKey("Increment barbell")
-    private val incrementDumbbell = floatPreferencesKey("Increment dumbbell")
-    private val incrementMachine = floatPreferencesKey("Increment machine")
-    private val incrementCable = floatPreferencesKey("Increment cable")
-    private val language = stringPreferencesKey("Language")
-
     /*
      * Wear connection
      */
@@ -497,123 +473,6 @@ class Repository @Inject constructor(
     suspend fun resetAllExerciseProbability() = db.exerciseDao.resetAllProbabilities()
 
     /*
-     * DATA STORE (SETTINGS)
-     */
-    fun getCurrentPlan(): Flow<Long?> = dataStore.data.map{ it[currentPlan] }
-
-    suspend fun setCurrentPlan(planId: Long, overrideValue: Boolean){
-        dataStore.edit {
-            if (it[currentPlan] == null || overrideValue){
-                it[currentPlan] = planId
-            }
-        }
-
-    }
-
-
-    // TODO: move default value outside (60 kg)
-    fun getUserWeight(): Flow<Float> = dataStore.data.map{ it[userWeight] ?: 60f }
-
-    suspend fun setUserWeight(newWeight: Float) = dataStore.edit { it[userWeight] = newWeight }
-
-
-    // TODO: move default value outside
-    fun getUserHeight(): Flow<Float> = dataStore.data.map{ it[userHeight] ?: 170f }
-
-    suspend fun setUserHeight(newHeight: Float) = dataStore.edit { it[userHeight] = newHeight }
-
-
-    // TODO: move default value outside
-    fun getUserYear(): Flow<Int> = dataStore.data.map{ it[userAgeYear] ?: 2000 }
-
-    suspend fun setUserYear(newYear: Int) = dataStore.edit { it[userAgeYear] = newYear }
-
-
-    // TODO: move default value outside
-    fun getUserSex(): Flow<Sex> = dataStore.data.map{ Sex.fromResKey(it[userSex]) }
-
-    suspend fun setUserSex(newSex: Sex) = dataStore.edit { it[userSex] = newSex.nameResKey }
-
-    // TODO: move default value outside
-    fun getTheme(): Flow<Theme> = dataStore.data.map{ Theme.fromResKey(it[theme]) }
-
-    suspend fun setTheme(newTheme: Theme) = dataStore.edit { it[theme] = newTheme.nameResKey }
-
-
-    // TODO: move default value outside
-    fun getUserName(): Flow<String> = dataStore.data.map{ it[userName] ?: "" }
-
-    suspend fun setUserName(newName: String) = dataStore.edit { it[userName] = newName }
-
-
-    // TODO: move default value outside
-    fun getDontWantNotificationAccess(): Flow<Boolean> = dataStore.data.map{ it[dontWantNotificationAccess] ?: false }
-
-    suspend fun setDontWantNotificationAccess(newValue: Boolean) = dataStore.edit { it[dontWantNotificationAccess] = newValue }
-
-
-    // TODO: move default value outside
-    fun getImperialSystem(): Flow<Boolean> = dataStore.data.map{ it[imperialSystem] ?: false }
-
-    suspend fun setImperialSystem(newValue: Boolean) = dataStore.edit { it[imperialSystem] = newValue }
-
-
-    // TODO: move default value outside
-    fun getBodyweightIncrement(): Flow<Float> = dataStore.data.map{ it[incrementBodyweight] ?: 2.5f }
-
-    suspend fun setBodyweightIncrement(newValue: Float) = dataStore.edit { it[incrementBodyweight] = newValue }
-
-
-    // TODO: move default value outside
-    fun getBarbellIncrement(): Flow<Float> = dataStore.data.map{ it[incrementBarbell] ?: 2.5f }
-
-    suspend fun setBarbellIncrement(newValue: Float) = dataStore.edit { it[incrementBarbell] = newValue }
-
-
-
-    // TODO: move default value outside
-    fun getDumbbellIncrement(): Flow<Float> = dataStore.data.map{ it[incrementDumbbell] ?: 2f }
-
-    suspend fun setDumbbellIncrement(newValue: Float) = dataStore.edit { it[incrementDumbbell] = newValue }
-
-
-    // TODO: move default value outside
-    fun getMachineIncrement(): Flow<Float> = dataStore.data.map{ it[incrementMachine] ?: 5f }
-
-    suspend fun setMachineIncrement(newValue: Float) = dataStore.edit { it[incrementMachine] = newValue }
-
-
-    // TODO: move default value outside
-    fun getCableIncrement(): Flow<Float> = dataStore.data.map{ it[incrementCable] ?: 2.5f }
-
-    suspend fun setCableIncrement(newValue: Float) = dataStore.edit { it[incrementCable] = newValue }
-
-
-    fun getCurrentWorkout(): Flow<Long?> = dataStore.data.map{ it[currentWorkout] }
-
-    suspend fun setCurrentWorkout(newValue: Long?) = dataStore.edit {
-        if (newValue == null)
-            it.remove(currentWorkout)
-        else
-            it[currentWorkout] = newValue
-    }
-
-    fun getLanguage(): Flow<String?> = dataStore.data.map{ it[language] }
-
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    suspend fun setLanguage(newValue: String) {
-        val localeManager = context.getSystemService(LocaleManager::class.java)
-        localeManager.applicationLocales = LocaleList.forLanguageTags(newValue)
-        dataStore.edit { it[language] = newValue }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    suspend fun resetLanguage() {
-        val localeManager = context.getSystemService(LocaleManager::class.java)
-        localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
-        dataStore.edit { it.remove(language) }
-    }
-    /*
      * Utils
      */
     fun getBitmapFromResId(@DrawableRes resId: Int): Bitmap {
@@ -666,54 +525,4 @@ class Repository @Inject constructor(
                 instance ?: Repository(workoutDatabase, watchMessageReceiver, context).also { instance = it }
             }
     }
-}
-
-
-// v0 -> v1 datastore migration
-class V1PrefsMigration(
-    private val context: Context
-) : DataMigration<Preferences> {
-    // Keys (same ones you already use)
-    private val dataStoreVersionKey = intPreferencesKey("Data store version")
-    private val userSex = stringPreferencesKey("User sex")
-    private val theme = stringPreferencesKey("Theme")
-
-    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
-        val version = currentData[dataStoreVersionKey] ?: 0
-        return version < 1
-    }
-
-    override suspend fun migrate(currentData: Preferences): Preferences {
-        val out = currentData.toMutablePreferences()
-
-        Log.d("V1PrefsMigration", "Migrating")
-        // Map legacy userSex strings (from resources) to canonical enum names
-        val currentUserSex = currentData[userSex].orEmpty()
-        Log.d("V1PrefsMigration", "currentUserSex=$currentUserSex")
-        val sexEnumName = when (currentUserSex) {
-            context.getLocalizedString(R.string.sexes_other, Locale.ENGLISH) -> Sex.OTHER.nameResKey
-            context.getLocalizedString(R.string.sexes_male, Locale.ENGLISH) -> Sex.MALE.nameResKey
-            context.getLocalizedString(R.string.sexes_female, Locale.ENGLISH) -> Sex.FEMALE.nameResKey
-            else -> Sex.OTHER.nameResKey
-        }
-        Log.d("V1PrefsMigration", "sexEnumName=$sexEnumName")
-        out[userSex] = sexEnumName
-
-        // Map legacy theme strings (from resources) to canonical enum names
-        val currentTheme = currentData[theme].orEmpty()
-        Log.d("V1PrefsMigration", "currentTheme=$currentTheme")
-        val themeEnumName = when (currentTheme) {
-            context.getLocalizedString(R.string.themes_system, Locale.ENGLISH) -> Theme.SYSTEM.nameResKey
-            context.getLocalizedString(R.string.themes_dark, Locale.ENGLISH) -> Theme.DARK.nameResKey
-            context.getLocalizedString(R.string.themes_light, Locale.ENGLISH) -> Theme.LIGHT.nameResKey
-            else -> Theme.SYSTEM.nameResKey
-        }
-        Log.d("V1PrefsMigration", "themeEnumName=$themeEnumName")
-        out[theme] = themeEnumName
-
-        out[dataStoreVersionKey] = 1
-        return out
-    }
-
-    override suspend fun cleanUp() { /* no-op */ }
 }

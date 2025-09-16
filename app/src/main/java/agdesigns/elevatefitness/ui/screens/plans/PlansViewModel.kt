@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.plans
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
@@ -43,7 +44,10 @@ sealed class PlansEvent{
 }
 
 @HiltViewModel
-class PlansViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class PlansViewModel @Inject constructor(
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(PlansState())
     val state: StateFlow<PlansState> = _state.asStateFlow()
 
@@ -73,7 +77,7 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
     init {
         viewModelScope.launch {
             combine(
-                repository.getCurrentPlan(),
+                preferences.getCurrentPlan(),
                 repository.getPlanMapPrograms()
             ){ currentPlanId, workoutPlanMapPrograms ->
                 updatePlans(
@@ -88,7 +92,7 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
         when (event) {
             is PlansEvent.AddPlan -> {
                 viewModelScope.launch {
-                    repository.setCurrentPlan(repository.addPlan(event.workoutPlan), overrideValue = false)
+                    preferences.setCurrentPlan(repository.addPlan(event.workoutPlan), overrideValue = false)
                 }
             }
             is PlansEvent.TogglePlanDialogue -> {
@@ -104,7 +108,7 @@ class PlansViewModel @Inject constructor(private val repository: Repository): Vi
             }
             is PlansEvent.SetCurrentPlan -> {
                 viewModelScope.launch{
-                    repository.setCurrentPlan(event.planId, overrideValue = true)
+                    preferences.setCurrentPlan(event.planId, overrideValue = true)
                 }
             }
 

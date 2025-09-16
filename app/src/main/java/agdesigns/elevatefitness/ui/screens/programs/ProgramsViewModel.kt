@@ -65,7 +65,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                     ) { plan, programs ->
                         _state.update { it.copy(
                             programs = programs.sortedBy { prog -> prog.orderInWorkoutPlan },
-                            planName = plan.name
+                            planName = plan?.name ?: ""
                         ) }
                         getProgramExercisesJob?.cancel()
                         getProgramExercisesJob = this.launch {
@@ -112,7 +112,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                     // check that currentProgram in plan is not the one we are eliminating
                     val plan = repository.getPlan(state.value.programs[0].extPlanId!!).first()
                     val program = state.value.programs.first { it.programId == event.programId }
-                    if (plan.currentProgram == program.orderInWorkoutPlan ){
+                    if (plan?.currentProgram == program.orderInWorkoutPlan){
                         // it is, need to change it
                         var newCurrentProgram = if (state.value.programs.size == 1)
                             0

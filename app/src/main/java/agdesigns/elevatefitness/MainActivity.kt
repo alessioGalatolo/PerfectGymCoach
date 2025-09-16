@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.ui.theme.ElevateFitnessTheme
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -27,7 +28,7 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject
-    lateinit var repository: Repository
+    lateinit var preferences: PreferenceRepository
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +38,7 @@ class MainActivity : ComponentActivity() {
         ComposeView(this).consumeWindowInsets = true
 
         setContent {
-            val userPreference = repository.getTheme().collectAsState(initial = Theme.SYSTEM)
+            val userPreference = preferences.getTheme().collectAsState(initial = Theme.SYSTEM)
             val systemTheme = isSystemInDarkTheme()
             val darkTheme by remember { derivedStateOf {
                 when (userPreference.value) {

@@ -1,6 +1,7 @@
 [versions]
 # Jetpack compose
 compose_bom = "2025.08.01"
+kotlinx_json = "1.9.0"
 material3 = "1.5.0-alpha03"  # handle material 3 seperately to get latest
 activity_compose = "1.10.1"  # back handler, etc.
 accompanist = "0.37.3"
@@ -38,6 +39,7 @@ protobuf = "4.32.0"
 android_application = "8.13.0"
 android_library = "8.13.0"
 kotlin_android = "2.2.10"
+kotlin_serialization = "2.2.10"
 compose_plugin = "2.2.10"
 ksp = "2.2.10-2.0.2"
 hilt_plugin = "2.57.1"
@@ -49,6 +51,7 @@ android-application = { id = "com.android.application", version.ref = "android_a
 android-library = { id = "com.android.library", version.ref = "android_library" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin_android" }
 kotlin-parcelize = { id = "kotlin-parcelize" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin_serialization" }
 kotlin-kapt = { id = "kotlin-kapt" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt_plugin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
@@ -62,6 +65,7 @@ compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = 
 compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx_json" }
 test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest"}
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-icons = { group = "androidx.compose.material", name = "material-icons-extended" }

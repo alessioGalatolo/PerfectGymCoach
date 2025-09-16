@@ -1,10 +1,19 @@
 package agdesigns.elevatefitness.di
 
+import agdesigns.elevatefitness.data.BackupRepository
+import agdesigns.elevatefitness.data.DatabaseBackupManager
+import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.SearchesRepository
+import agdesigns.elevatefitness.data.V1PrefsMigration
+import agdesigns.elevatefitness.data.V2PrefsMigration
 import agdesigns.elevatefitness.data.wearos.WatchMessageReceiver
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,6 +28,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    private const val PREFS_FILE = "app_prefs"
+
+
     @Singleton
     @Provides
     fun providesCoroutineScope(): CoroutineScope {
@@ -26,7 +38,7 @@ object AppModule {
         return CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 
-    @Singleton // Tell Dagger-Hilt to create a singleton accessible everywhere in ApplicationCompenent (i.e. everywhere in the application)
+    @Singleton
     @Provides
     fun provideWorkoutPlanDatabase(
         @ApplicationContext app: Context,
@@ -35,7 +47,10 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideRepository(db: WorkoutDatabase, watchMessageReceiver: WatchMessageReceiver, @ApplicationContext context: Context
+    fun provideRepository(
+        db: WorkoutDatabase,
+        watchMessageReceiver: WatchMessageReceiver,
+        @ApplicationContext context: Context
     ): Repository = Repository.Companion.getInstance(db, watchMessageReceiver, context)
 
     @Singleton
@@ -46,4 +61,40 @@ object AppModule {
     @Singleton
     @Provides
     fun provideSearchesRepository(@ApplicationContext context: Context) = SearchesRepository(context)
+
+    @Singleton
+    @Provides
+    fun provideBackupRepository(backupManager: DatabaseBackupManager) = BackupRepository(
+        backupManager
+    )
+
+    @Singleton
+    @Provides
+    fun provideBackupManager(
+        @ApplicationContext context: Context,
+        dataStore: DataStore<Preferences>,
+        database: WorkoutDatabase
+    ): DatabaseBackupManager = DatabaseBackupManager(context, dataStore, database)
+
+    @Provides
+    @Singleton
+    fun providePreferencesDataStore(
+        @ApplicationContext context: Context
+    ): DataStore<Preferences> {
+        return PreferenceDataStoreFactory.create(
+//            corruptionHandler = ReplaceFileCorruptionHandler(
+//                produceNewData = { emptyPreferences() }
+//            ),
+            // Optional: SharedPreferences migration
+            migrations = listOf(V1PrefsMigration(context), V2PrefsMigration(context)),
+            produceFile = { context.preferencesDataStoreFile(PREFS_FILE) }
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun providePreferenceRepository(
+        dataStore: DataStore<Preferences>,
+        @ApplicationContext context: Context
+    ): PreferenceRepository = PreferenceRepository(dataStore, context)
 }

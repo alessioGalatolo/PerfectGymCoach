@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.proto)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 room {
@@ -105,6 +106,7 @@ dependencies {
     implementation(libs.compose.destinations.core)
     implementation(libs.compose.destinations.bottom.sheet)
     implementation(libs.wear.remote.interactions)
+    implementation(libs.kotlinx.serialization.json)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)

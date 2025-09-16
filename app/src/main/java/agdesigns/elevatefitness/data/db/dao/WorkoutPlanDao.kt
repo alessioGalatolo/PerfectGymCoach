@@ -19,7 +19,7 @@ interface WorkoutPlanDao {
     fun getPlans(): Flow<List<WorkoutPlan>>
 
     @Query("SELECT * FROM `plan` WHERE `plan`.planId LIKE :planId")
-    fun getPlan(planId: Long): Flow<WorkoutPlan>
+    fun getPlan(planId: Long): Flow<WorkoutPlan?>
 
     @Query(
         "SELECT * FROM `plan` " +

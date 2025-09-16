@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.utils
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.Exercise.Muscle
@@ -212,6 +213,7 @@ fun selectFullBodyExercises(
  */
 suspend fun generatePlan(
     repository: Repository,
+    preferences: PreferenceRepository,
     goalChoice: WorkoutPlanGoal,
     expertiseLevel: WorkoutPlanDifficulty,
     workoutSplit: WorkoutPlanSplit
@@ -243,7 +245,7 @@ suspend fun generatePlan(
     }
 
     // ---------- Deprioritise exercises used in current plan ----------
-    repository.getCurrentPlan().first()?.let { currentPlanId ->
+    preferences.getCurrentPlan().first()?.let { currentPlanId ->
         val programsMap = repository.getProgramsMapExercises(currentPlanId).first() // Map<ProgramId, List<ProgramExercise>>
         val oldExerciseIds = programsMap.values.flatten().map { it.extExerciseId }.toSet()
         for ((_, list) in muscle2Exercises) {

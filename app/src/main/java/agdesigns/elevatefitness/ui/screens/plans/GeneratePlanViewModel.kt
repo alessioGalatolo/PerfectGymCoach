@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.plans
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
@@ -36,7 +37,10 @@ sealed class GeneratePlanEvent{
 }
 
 @HiltViewModel
-class GeneratePlanViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class GeneratePlanViewModel @Inject constructor(
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(GeneratePlanState())
     val state: StateFlow<GeneratePlanState> = _state.asStateFlow()
 
@@ -66,7 +70,7 @@ class GeneratePlanViewModel @Inject constructor(private val repository: Reposito
             }
         }
         viewModelScope.launch {
-            repository.getCurrentPlan().collect {
+            preferences.getCurrentPlan().collect {
                 updatePlans(currentPlanId = it)
             }
         }
@@ -79,16 +83,16 @@ class GeneratePlanViewModel @Inject constructor(private val repository: Reposito
                     generatePlanJob = viewModelScope.launch {
                         val planId = generatePlan(
                             repository,
+                            preferences,
                             event.goalChoice,
                             event.expertiseLevel,
                             event.workoutSplit
                         )
-                        repository.setCurrentPlan(planId, true)  // FIXME: I don't remember why I would need override
+                        preferences.setCurrentPlan(planId, true)  // FIXME: I don't remember why I would need override
 
                         _state.update { it.copy(
                             generatedPlan = repository.getPlan(planId).first()
                         ) }
-                        // todo: set planId as currentPlan
                     }
                 }
             }

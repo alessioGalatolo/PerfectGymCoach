@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.history
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
@@ -24,13 +25,16 @@ sealed class HistoryEvent{
 }
 
 @HiltViewModel
-class HistoryViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class HistoryViewModel @Inject constructor(
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(HistoryState())
     val state: StateFlow<HistoryState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            repository.getImperialSystem().collect { imperialSystem ->
+            preferences.getImperialSystem().collect { imperialSystem ->
                 _state.update { it.copy(useImperialSystem = imperialSystem) }
             }
         }

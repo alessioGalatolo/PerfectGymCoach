@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.workout_recap
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
@@ -40,7 +41,10 @@ sealed class RecapEvent{
 }
 
 @HiltViewModel
-class RecapViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class RecapViewModel @Inject constructor(
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(RecapState())
     val state: StateFlow<RecapState> = _state.asStateFlow()
 
@@ -48,7 +52,7 @@ class RecapViewModel @Inject constructor(private val repository: Repository): Vi
 
     init {
         viewModelScope.launch {
-            repository.getImperialSystem().collect{ imperialSystem ->
+            preferences.getImperialSystem().collect{ imperialSystem ->
                 _state.update { it.copy(
                     imperialSystem = imperialSystem
                 ) }

@@ -787,4 +787,14 @@
     <string name="system_default">System default</string>
     <string name="language">Language:</string>
     <string name="inapp_language_selector_not_supported">Sorry, changing in-app language is not supported on this android version. You need to change your system language</string>
+    <string name="backup_success">Backup successful!</string>
+    <string name="backup_error">Couldn\'t create a backup, sorry!</string>
+    <string name="restore_success">Backup restored successfully!</string>
+    <string name="restore_error">Couldn\'t restore the backup, sorry!</string>
+    <string name="backup_and_restore">Backup and restore</string>
+    <string name="backup_export">Export</string>
+    <string name="backup_import">Import</string>
+    <string name="preferences">Preferences:</string>
+    <string name="plans_and_workouts">Plans and workouts:</string>
+    <string name="backup_restore_info">Here you can backup and restore your data. Importing plans and workouts will trigger an app restart if successful. Restoring a backup will overwrite current data.</string>
 </resources>

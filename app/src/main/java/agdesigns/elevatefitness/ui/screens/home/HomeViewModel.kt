@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.home
 
+import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
@@ -10,6 +11,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -32,7 +34,10 @@ sealed class HomeEvent{
 }
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val repository: Repository,
+    private val preferences: PreferenceRepository
+): ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
@@ -43,18 +48,21 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
 
     init {
         viewModelScope.launch {
-            repository.getCurrentPlan().collect { currentPlan ->
-                _state.update { it.copy(currentPlan = currentPlan) }
-                if (currentPlan != null) {
+            preferences.getCurrentPlan().collect { currentPlanId ->
+                _state.update { it.copy(currentPlan = currentPlanId) }
+                val currentPlan = currentPlanId?.let { repository.getPlan(it).first() }
+                if (currentPlanId != null && currentPlan != null) {
                     collectCurrentProgram?.cancel()
                     collectCurrentProgram = this.launch {
-                        repository.getPlan(currentPlan).collect { currentPlan ->
-                            _state.update { it.copy(currentProgram = currentPlan.currentProgram) }
+                        repository.getPlan(currentPlanId).collect { currentPlan ->
+                            currentPlan?.let {
+                                _state.update { it.copy(currentProgram = currentPlan.currentProgram) }
+                            }
                         }
                     }
                     collectProgramsJob?.cancel()
                     collectProgramsJob = this.launch {
-                        repository.getPrograms(currentPlan).collect { programs ->
+                        repository.getPrograms(currentPlanId).collect { programs ->
                             _state.update { it.copy(
                                 programs = programs.sortedBy { it1 -> it1.orderInWorkoutPlan }
                             ) }
@@ -69,12 +77,22 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
                             }
                         }
                     }
+                } else {
+                    // current plan is null, very likely means there are no plans in db
+                    // however, if user restores db without preferences plans are there
+                    val plans = repository.getPlans().first()
+                    if (plans.isNotEmpty()) {
+                        val lastPlan = plans.minByOrNull { it.creationDate }
+                        if (lastPlan != null) {
+                            preferences.setCurrentPlan(lastPlan.planId, overrideValue = false)
+                        }
+                    }
                 }
 
             }
         }
         viewModelScope.launch {
-            repository.getCurrentWorkout().collect{ workout ->
+            preferences.getCurrentWorkout().collect{ workout ->
                 _state.update { it.copy(
                     currentWorkout = workout
                 ) }
@@ -95,7 +113,7 @@ class HomeViewModel @Inject constructor(private val repository: Repository): Vie
         when(event){
             is HomeEvent.ResetCurrentWorkout -> {
                 viewModelScope.launch {
-                    repository.setCurrentWorkout(null)
+                    preferences.setCurrentWorkout(null)
                 }
             }
         }

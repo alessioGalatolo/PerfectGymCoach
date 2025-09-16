@@ -27,19 +27,24 @@ import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
+import agdesigns.elevatefitness.utils.plus
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
@@ -50,7 +55,12 @@ import kotlin.math.roundToInt
 
 @Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalComposeUiApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 fun Profile(
     destinationsNavigator: DestinationsNavigator,
     viewModel: ProfileViewModel = hiltViewModel()
@@ -78,210 +88,323 @@ fun Profile(
     ) {
         Text(stringResource(R.string.bmi_info))
     }
+    val createDocForDbBackup = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(mimeType = "application/x-sqlite3")
+    ) { uri ->
+        uri?.let { viewModel.onEvent(ProfileEvent.ExportDatabase(it)) }
+    }
 
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(horizontal = 16.dp),
-    ) {
-        item {
-            Spacer(Modifier.statusBarsPadding())
+    val openDocForDbRestore = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.onEvent(ProfileEvent.ImportDatabase(it)) }
+    }
+    val createDocForPreferencesBackup = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(mimeType = "application/json")
+    ) { uri ->
+        uri?.let { viewModel.onEvent(ProfileEvent.ExportPreferences(uri)) }
+    }
+    val openDocForPreferencesRestore = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.onEvent(ProfileEvent.ImportPreferences(it)) }
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarMessage = profileState.backupOutcomeResId?.let { stringResource(it) }
+    LaunchedEffect(snackbarMessage) {
+        snackbarMessage?.let {
+            snackbarHostState.showSnackbar(it)
         }
-        // Header Section
-        item {
-            ProfileHeader(
-                name = profileState.name,
-                editName = editName,
-                nameValue = name,
-                onNameChange = { name = it },
-                onEditToggle = {
-                    editName = !editName
-                    if (!editName) {
+        viewModel.onEvent(ProfileEvent.ResetOutcomeMessage)
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        LazyColumn(
+            contentPadding = innerPadding.plus(PaddingValues(vertical = 16.dp)),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(horizontal = 16.dp),
+        ) {
+            // Header Section
+            item {
+                ProfileHeader(
+                    name = profileState.name,
+                    editName = editName,
+                    nameValue = name,
+                    onNameChange = { name = it },
+                    onEditToggle = {
+                        editName = !editName
+                        if (!editName) {
+                            viewModel.onEvent(ProfileEvent.UpdateName(name))
+                        }
+                    },
+                    onNameSubmit = {
+                        keyboardController?.hide()
+                        editName = false
                         viewModel.onEvent(ProfileEvent.UpdateName(name))
                     }
-                },
-                onNameSubmit = {
-                    keyboardController?.hide()
-                    editName = false
-                    viewModel.onEvent(ProfileEvent.UpdateName(name))
-                }
-            )
-        }
+                )
+            }
 
-        // Personal Information Section
-        item {
-            ProfileSection(title = stringResource(R.string.personal_information_title)) {
-                PersonalInfoContent(
-                    profileState = profileState,
-                    editYear = editYear,
-                    userYear = userYear,
-                    validUserYear = validUserYear,
-                    onUserYearChange = { userYear = it },
-                    onEditYearToggle = {
-                        editYear = !editYear
-                        if (!editYear) {
+            // Personal Information Section
+            item {
+                ProfileSection(title = stringResource(R.string.personal_information_title)) {
+                    PersonalInfoContent(
+                        profileState = profileState,
+                        editYear = editYear,
+                        userYear = userYear,
+                        validUserYear = validUserYear,
+                        onUserYearChange = { userYear = it },
+                        onEditYearToggle = {
+                            editYear = !editYear
+                            if (!editYear) {
+                                if (validUserYear) {
+                                    viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
+                                } else {
+                                    userYear = profileState.userYear.toString()
+                                }
+                            }
+                        },
+                        onYearSubmit = {
                             if (validUserYear) {
+                                keyboardController?.hide()
                                 viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
+                                editYear = false
+                                focusManager.clearFocus()
+                            }
+                        },
+                        onEditSex = {
+                            viewModel.onEvent(ProfileEvent.UpdateSex(it))
+                        }
+                    )
+                }
+            }
+
+            // Physical Measurements Section
+            item {
+                ProfileSection(title = stringResource(R.string.physical_measurements_title)) {
+                    PhysicalMeasurementsContent(
+                        profileState = profileState,
+                        viewModel = viewModel,
+                        keyboardController = keyboardController,
+                        focusManager = focusManager,
+                        onBmiInfoClick = { bmiDialogueShown = true }
+                    )
+                }
+            }
+
+            // Preferences Section
+            item {
+                Text(
+                    stringResource(R.string.preferences_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
+                )
+                PreferencesContent(
+                    profileState = profileState,
+                    viewModel = viewModel
+                )
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.backup_and_restore),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
+                )
+                GroupedCard(items = listOf(
+                    {
+                        Text(
+                            stringResource(R.string.backup_restore_info),
+                            style = MaterialTheme.typography.bodySmallEmphasized,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }, {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.plans_and_workouts),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (profileState.isBackupLoading) {
+                                CircularWavyProgressIndicator()
                             } else {
-                                userYear = profileState.userYear.toString()
+                                Row {
+                                    TextButton(onClick = {
+                                        createDocForDbBackup.launch("backup.db")
+                                    }) {
+                                        Text(stringResource(R.string.backup_export))
+                                    }
+                                    TextButton(onClick = {
+                                        openDocForDbRestore.launch(
+                                            arrayOf(
+                                                "application/x-sqlite3",
+                                                "application/octet-stream",
+                                                "*/*"
+                                            )
+                                        )
+                                    }) {
+                                        Text(stringResource(R.string.backup_import))
+                                    }
+                                }
                             }
                         }
-                    },
-                    onYearSubmit = {
-                        if (validUserYear) {
-                            keyboardController?.hide()
-                            viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
-                            editYear = false
-                            focusManager.clearFocus()
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.preferences),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (profileState.isPreferencesBackupLoading) {
+                                CircularWavyProgressIndicator()
+                            } else {
+                                Row {
+                                    TextButton(onClick = {
+                                        createDocForPreferencesBackup.launch("settings.preferences_pb")
+                                    }) {
+                                        Text(stringResource(R.string.backup_export))
+                                    }
+                                    TextButton(onClick = {
+                                        openDocForPreferencesRestore.launch(
+                                            arrayOf(
+                                                "application/json",
+                                                "application/octet-stream",
+                                                "*/*"
+                                            )
+                                        )
+                                    }) {
+                                        Text(stringResource(R.string.backup_import))
+                                    }
+                                }
+                            }
                         }
-                    },
-                    onEditSex = {
-                        viewModel.onEvent(ProfileEvent.UpdateSex(it))
                     }
-                )
+                ), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow))
             }
-        }
 
-        // Physical Measurements Section
-        item {
-            ProfileSection(title = stringResource(R.string.physical_measurements_title)) {
-                PhysicalMeasurementsContent(
-                    profileState = profileState,
-                    viewModel = viewModel,
-                    keyboardController = keyboardController,
-                    focusManager = focusManager,
-                    onBmiInfoClick = { bmiDialogueShown = true }
-                )
-            }
-        }
-
-        // Preferences Section
-        item {
-            Text(
-                stringResource(R.string.preferences_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            PreferencesContent(
-                profileState = profileState,
-                viewModel = viewModel
-            )
-        }
-
-        // Equipment Increments Section
-        item {
-            Text(
-                stringResource(R.string.equipment_increments_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            GroupedCard(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                items = listOf(
-                    {
-                        IncrementRow(
-                            label = stringResource(R.string.barbell_increment),
-                            value = profileState.incrementBarbell,
-                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
-                            keyboardController = keyboardController,
-                            focusManager = focusManager
-                        )
-                    }, {
-                        IncrementRow(
-                            label = stringResource(R.string.bodyweight_increment),
-                            value = profileState.incrementBodyweight,
-                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
-                            keyboardController = keyboardController,
-                            focusManager = focusManager
-                        )
-                    }, {
-                        IncrementRow(
-                            label = stringResource(R.string.cable_increment),
-                            value = profileState.incrementCable,
-                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
-                            keyboardController = keyboardController,
-                            focusManager = focusManager
-                        )
-                    }, {
-                        IncrementRow(
-                            label = stringResource(R.string.dumbbell_increment),
-                            value = profileState.incrementDumbbell,
-                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
-                            keyboardController = keyboardController,
-                            focusManager = focusManager
-                        )
-                    }, {
-                        IncrementRow(
-                            label = stringResource(R.string.machine_increment),
-                            value = profileState.incrementMachine,
-                            unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
-                            keyboardController = keyboardController,
-                            focusManager = focusManager
-                        )
-                    }
-                )
-            )
-        }
-        item {
-            val uriHandler = LocalUriHandler.current
-            val urls = listOf(
-                "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
-                "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
-                "https://github.com/alessioGalatolo/PerfectGymCoach"
-            )
-            Text(
-                stringResource(R.string.feedback_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            GroupedCard(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                items = listOf(
-                    { ExternalLink(
-                        title = stringResource(R.string.bug_report_title),
-                        description = stringResource(R.string.bug_report_info),
-                        leadingIcon = Icons.Default.BugReport
-                    ) },
-                    { ExternalLink(
-                        title = stringResource(R.string.feature_requests_title),
-                        description = stringResource(R.string.feature_request_info),
-                        leadingIcon = Icons.Default.Feedback
-                    ) },
-                    { ExternalLink(
-                        title = stringResource(R.string.source_code_title),
-                        description = stringResource(R.string.source_code_info),
-                        leadingIcon = Icons.Default.Code
-                    ) }
-                ),
-                onClicks = urls.map { { uriHandler.openUri(it) } }
-            )
-        }
-        item {
-            ProfileSection(title = stringResource(R.string.acknowledgements_title)) {
+            // Equipment Increments Section
+            item {
                 Text(
-                    stringResource(R.string.acknowledgements),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    stringResource(R.string.equipment_increments_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
+                )
+                GroupedCard(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    items = listOf(
+                        {
+                            IncrementRow(
+                                label = stringResource(R.string.barbell_increment),
+                                value = profileState.incrementBarbell,
+                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
+                                keyboardController = keyboardController,
+                                focusManager = focusManager
+                            )
+                        }, {
+                            IncrementRow(
+                                label = stringResource(R.string.bodyweight_increment),
+                                value = profileState.incrementBodyweight,
+                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
+                                keyboardController = keyboardController,
+                                focusManager = focusManager
+                            )
+                        }, {
+                            IncrementRow(
+                                label = stringResource(R.string.cable_increment),
+                                value = profileState.incrementCable,
+                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
+                                keyboardController = keyboardController,
+                                focusManager = focusManager
+                            )
+                        }, {
+                            IncrementRow(
+                                label = stringResource(R.string.dumbbell_increment),
+                                value = profileState.incrementDumbbell,
+                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
+                                keyboardController = keyboardController,
+                                focusManager = focusManager
+                            )
+                        }, {
+                            IncrementRow(
+                                label = stringResource(R.string.machine_increment),
+                                value = profileState.incrementMachine,
+                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
+                                keyboardController = keyboardController,
+                                focusManager = focusManager
+                            )
+                        }
+                    )
                 )
             }
-        }
-        item {
-            Spacer(Modifier.navigationBarsPadding())
+            item {
+                val uriHandler = LocalUriHandler.current
+                val urls = listOf(
+                    "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
+                    "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
+                    "https://github.com/alessioGalatolo/PerfectGymCoach"
+                )
+                Text(
+                    stringResource(R.string.feedback_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
+                )
+                GroupedCard(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    items = listOf(
+                        { ExternalLink(
+                            title = stringResource(R.string.bug_report_title),
+                            description = stringResource(R.string.bug_report_info),
+                            leadingIcon = Icons.Default.BugReport
+                        ) },
+                        { ExternalLink(
+                            title = stringResource(R.string.feature_requests_title),
+                            description = stringResource(R.string.feature_request_info),
+                            leadingIcon = Icons.Default.Feedback
+                        ) },
+                        { ExternalLink(
+                            title = stringResource(R.string.source_code_title),
+                            description = stringResource(R.string.source_code_info),
+                            leadingIcon = Icons.Default.Code
+                        ) }
+                    ),
+                    onClicks = urls.map { { uriHandler.openUri(it) } }
+                )
+            }
+            item {
+                ProfileSection(title = stringResource(R.string.acknowledgements_title)) {
+                    Text(
+                        stringResource(R.string.acknowledgements),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -367,7 +490,7 @@ fun ProfileSection(
         text = title,
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(bottom = 16.dp)
+        modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
     )
     Card(
         modifier = Modifier.fillMaxWidth(),
