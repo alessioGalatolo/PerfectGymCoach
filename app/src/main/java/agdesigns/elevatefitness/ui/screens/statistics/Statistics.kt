@@ -191,105 +191,70 @@ fun Statistics(
                         useImperial = state.useImperialSystem
                     )
 
-                    // Volume Progress Chart
-                    item(stickyHeaders2Id[headers[2]]) {
-                        Text(
-                            headers[2],
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 8.dp)
-                                .fillMaxWidth()
-                        )
-                    }
-                    item {
-                        var selectedValue by remember { mutableStateOf("") }
-                        ElevatedCard(
+                    if (state.allExerciseRecords.isNotEmpty() || state.allWorkouts.isNotEmpty()) {
+                        // Volume Progress Chart
+                        item(stickyHeaders2Id[headers[2]]) {
+                            Text(
+                                headers[2],
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
+                        item {
+                            var selectedValue by remember { mutableStateOf("") }
+                            ElevatedCard(
 //                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        ) {
-                            if (selectedValue.isNotEmpty()) {
-                                Text(
-                                    stringResource(R.string.selected_value_i, selectedValue),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(16.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            ) {
+                                if (selectedValue.isNotEmpty()) {
+                                    Text(
+                                        stringResource(R.string.selected_value_i, selectedValue),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                }
+                                // TODO: add volume by muscle group
+                                PillChart(
+                                    modelProducer = state.volumeChartProducer,
+                                    markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                        DecimalFormat(
+                                            "#.## ${
+                                                if (state.useImperialSystem) stringResource(
+                                                    R.string.lb
+                                                ) else stringResource(R.string.kg)
+                                            }"
+                                        )
+                                    ),
+                                    xValueFormatter = CartesianValueFormatter { _, value, _ ->
+                                        val index = value.toInt()
+                                            .coerceIn(0, state.volumeIndex2Date.keys.maxOrNull())
+                                        state.volumeIndex2Date[index]?.format(
+                                            DateTimeFormatter.ofPattern("MMM dd")
+                                        )
+                                            ?: value.toString() // fall back to value otherwise empty string will crash stuff
+                                    },
+                                    decorations = listOf(
+                                        rememberHorizontalLine(
+                                            MeanLineKey,
+                                            stringResource(R.string.average)
+                                        )
+                                    ),
+                                    modifier = Modifier.padding(8.dp),
+                                    scrollable = state.selectedTimeFrame == TimeFrame.ALL_TIME
                                 )
                             }
-                            // TODO: add volume by muscle group
-                            PillChart(
-                                modelProducer = state.volumeChartProducer,
-                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
-                                    DecimalFormat(
-                                        "#.## ${
-                                            if (state.useImperialSystem) stringResource(
-                                                R.string.lb
-                                            ) else stringResource(R.string.kg)
-                                        }"
-                                    )
-                                ),
-                                xValueFormatter = CartesianValueFormatter { _, value, _ ->
-                                    val index = value.toInt()
-                                        .coerceIn(0, state.volumeIndex2Date.keys.maxOrNull())
-                                    state.volumeIndex2Date[index]?.format(
-                                        DateTimeFormatter.ofPattern("MMM dd")
-                                    )
-                                        ?: value.toString() // fall back to value otherwise empty string will crash stuff
-                                },
-                                decorations = listOf(
-                                    rememberHorizontalLine(
-                                        MeanLineKey,
-                                        stringResource(R.string.average)
-                                    )
-                                ),
-                                modifier = Modifier.padding(8.dp),
-                                scrollable = state.selectedTimeFrame == TimeFrame.ALL_TIME
-                            )
                         }
-                    }
 
-                    // Workout Frequency Chart
-                    item(stickyHeaders2Id[headers[3]]) {
-                        Text(
-                            headers[3],
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 8.dp)
-                                .fillMaxWidth()
-                        )
-                    }
-                    item {
-                        ElevatedCard(
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        ) {
-                            PillChart(
-                                state.frequencyChartProducer,
-                                baseShape = MaterialTheme.shapes.small,
-                                baseColor = MaterialTheme.colorScheme.tertiary,
-                                xValueFormatter = CartesianValueFormatter { _, value, _ ->
-                                    Instant
-                                        .ofEpochMilli(value.toLong())
-                                        .atZone(ZoneId.systemDefault()).format(
-                                            DateTimeFormatter.ofPattern("MMM yyyy")
-                                        )
-                                },
-                                scrollable = true,
-                                modifier = Modifier.padding(8.dp)
-                            )
-                        }
-                    }
-
-                    // Muscle Group Distribution
-                    if (state.muscleGroupDistribution.isNotEmpty()) {
-                        item(stickyHeaders2Id[headers[4]]) {
+                        // Workout Frequency Chart
+                        item(stickyHeaders2Id[headers[3]]) {
                             Text(
-                                headers[4],
+                                headers[3],
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium,
@@ -304,171 +269,208 @@ fun Statistics(
                             ElevatedCard(
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             ) {
-                                val pieData = state.muscleGroupDistribution.map { pair ->
-                                    PieData(
-                                        label = stringResource(pair.first),
-                                        value = pair.second
-                                    )
-                                }
-                                Row(Modifier.padding(16.dp)) {
-                                    PieChart(
-                                        modifier = Modifier
-                                            .height(150.dp)
-                                            .wrapContentWidth()
-                                            .weight(1f)
-                                            .padding(8.dp),
-                                        data = pieData
-                                    )
-                                    Spacer(Modifier.width(32.dp))
-                                    Column {
-                                        for (data in pieData) {
-                                            Row {
-                                                Icon(
-                                                    Icons.Default.Circle,
-                                                    stringResource(
-                                                        R.string.circle_icon_colored,
-                                                        data.color
-                                                    ),
-                                                    tint = data.color
-                                                )
-                                                Spacer(Modifier.width(8.dp))
-                                                Text("${data.label}: ${data.value.toInt()}%")
+                                PillChart(
+                                    state.frequencyChartProducer,
+                                    baseShape = MaterialTheme.shapes.small,
+                                    baseColor = MaterialTheme.colorScheme.tertiary,
+                                    xValueFormatter = CartesianValueFormatter { _, value, _ ->
+                                        Instant
+                                            .ofEpochMilli(value.toLong())
+                                            .atZone(ZoneId.systemDefault()).format(
+                                                DateTimeFormatter.ofPattern("MMM yyyy")
+                                            )
+                                    },
+                                    scrollable = true,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        }
+
+                        // Muscle Group Distribution
+                        if (state.muscleGroupDistribution.isNotEmpty()) {
+                            item(stickyHeaders2Id[headers[4]]) {
+                                Text(
+                                    headers[4],
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .padding(top = 8.dp)
+                                        .fillMaxWidth()
+                                )
+                            }
+                            item {
+                                ElevatedCard(
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                ) {
+                                    val pieData = state.muscleGroupDistribution.map { pair ->
+                                        PieData(
+                                            label = stringResource(pair.first),
+                                            value = pair.second
+                                        )
+                                    }
+                                    Row(Modifier.padding(16.dp)) {
+                                        PieChart(
+                                            modifier = Modifier
+                                                .height(150.dp)
+                                                .wrapContentWidth()
+                                                .weight(1f)
+                                                .padding(8.dp),
+                                            data = pieData
+                                        )
+                                        Spacer(Modifier.width(32.dp))
+                                        Column {
+                                            for (data in pieData) {
+                                                Row {
+                                                    Icon(
+                                                        Icons.Default.Circle,
+                                                        stringResource(
+                                                            R.string.circle_icon_colored,
+                                                            data.color
+                                                        ),
+                                                        tint = data.color
+                                                    )
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text("${data.label}: ${data.value.toInt()}%")
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // Top Exercises
-                    if (state.topExercises.isNotEmpty()) {
-                        item(stickyHeaders2Id[headers[5]]) {
-                            Text(
-                                text = headers[5],
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                        item {
-                            GroupedCard(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                onClicks = state.topExercises.map { exercise ->
-                                    {
-                                        navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
-                                    }
-                                },
-                                items = state.topExercises.map { exercise ->
-                                    {
-                                        ExerciseStatItem(
-                                            exercise = exercise,
-                                            useImperial = state.useImperialSystem
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-
-                    // Recent Personal Records
-                    if (state.recentPRs.isNotEmpty()) {
-                        item(stickyHeaders2Id[headers[6]]) {
-                            Text(
-                                headers[6],
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                        item {
-                            GroupedCard(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                                ),
-                                items = state.recentPRs.map { pr ->
-                                    {
-                                        PersonalRecordItem(
-                                            pr = pr,
-                                            useImperial = state.useImperialSystem
-                                        )
-                                    }
-                                },
-                                onClicks = state.recentPRs.map {
-                                    {
-                                        navigator.navigate(ExerciseStatsDestination(it.exerciseId))
-                                    }
-                                }
-                            )
-                        }
-                    }
-
-                    // Equipment Usage
-                    if (state.equipmentUsage.isNotEmpty()) {
-                        item(stickyHeaders2Id[headers[7]]) {
-                            Text(
-                                headers[7],
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 8.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                        item {
-                            ElevatedCard(
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
+                        // Top Exercises
+                        if (state.topExercises.isNotEmpty()) {
+                            item(stickyHeaders2Id[headers[5]]) {
+                                Text(
+                                    text = headers[5],
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
                                     modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .padding(top = 8.dp)
                                         .fillMaxWidth()
-                                        .padding(16.dp)
+                                )
+                            }
+                            item {
+                                GroupedCard(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                    ),
+                                    onClicks = state.topExercises.map { exercise ->
+                                        {
+                                            navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
+                                        }
+                                    },
+                                    items = state.topExercises.map { exercise ->
+                                        {
+                                            ExerciseStatItem(
+                                                exercise = exercise,
+                                                useImperial = state.useImperialSystem
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        // Recent Personal Records
+                        if (state.recentPRs.isNotEmpty()) {
+                            item(stickyHeaders2Id[headers[6]]) {
+                                Text(
+                                    headers[6],
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .padding(top = 8.dp)
+                                        .fillMaxWidth()
+                                )
+                            }
+                            item {
+                                GroupedCard(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    ),
+                                    items = state.recentPRs.map { pr ->
+                                        {
+                                            PersonalRecordItem(
+                                                pr = pr,
+                                                useImperial = state.useImperialSystem
+                                            )
+                                        }
+                                    },
+                                    onClicks = state.recentPRs.map {
+                                        {
+                                            navigator.navigate(ExerciseStatsDestination(it.exerciseId))
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        // Equipment Usage
+                        if (state.equipmentUsage.isNotEmpty()) {
+                            item(stickyHeaders2Id[headers[7]]) {
+                                Text(
+                                    headers[7],
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .padding(top = 8.dp)
+                                        .fillMaxWidth()
+                                )
+                            }
+                            item {
+                                ElevatedCard(
+                                    modifier = Modifier.padding(horizontal = 16.dp)
                                 ) {
-                                    DonutChart(
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
                                         modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+                                        DonutChart(
+                                            modifier = Modifier
 //                                        .fillMaxWidth()
-                                            .height(150.dp)
-                                            .weight(1f)
-                                            .align(Alignment.CenterVertically),
-                                        data = state.equipmentUsage.map { it.second },
-                                        type = DonutChartType.Normal,
-                                        style = DonutChartStyle(sliceType = DonutSliceType.Rounded),
-                                    )
-                                    Spacer(Modifier.width(32.dp))
-                                    Column(Modifier.align(Alignment.CenterVertically)) {
-                                        for (nameDataPair in state.equipmentUsage) {
-                                            Row {
-                                                Icon(
-                                                    Icons.Default.Circle,
-                                                    stringResource(
-                                                        R.string.circle_icon_colored,
-                                                        nameDataPair.second.color
-                                                    ),
-                                                    tint = nameDataPair.second.color
-                                                )
-                                                Spacer(Modifier.width(8.dp))
-                                                Text(
-                                                    "${stringResource(nameDataPair.first)}: ${nameDataPair.second.value.toInt()}",
-                                                )
+                                                .height(150.dp)
+                                                .weight(1f)
+                                                .align(Alignment.CenterVertically),
+                                            data = state.equipmentUsage.map { it.second },
+                                            type = DonutChartType.Normal,
+                                            style = DonutChartStyle(sliceType = DonutSliceType.Rounded),
+                                        )
+                                        Spacer(Modifier.width(32.dp))
+                                        Column(Modifier.align(Alignment.CenterVertically)) {
+                                            for (nameDataPair in state.equipmentUsage) {
+                                                Row {
+                                                    Icon(
+                                                        Icons.Default.Circle,
+                                                        stringResource(
+                                                            R.string.circle_icon_colored,
+                                                            nameDataPair.second.color
+                                                        ),
+                                                        tint = nameDataPair.second.color
+                                                    )
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text(
+                                                        "${stringResource(nameDataPair.first)}: ${nameDataPair.second.value.toInt()}",
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -651,7 +653,7 @@ private fun MetricCard(
         modifier.height(100.dp),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = containerColor
+            containerColor = containerColor.copy(0.5f)  // alpha fixes bad visibility in dark mode
         )
     ) {
         Column(

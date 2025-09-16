@@ -127,7 +127,9 @@ fun AddExerciseDialog(
                 }, actions = {
                     val keyboardController = LocalSoftwareKeyboardController.current
                     val fillString = stringResource(R.string.fill_every_field)
-                    FilledTonalButton(onClick = {
+                    FilledTonalButton(
+                        shapes = ButtonDefaults.shapes(),
+                        onClick = {
                         if (!viewModel.onEvent(AddExerciseEvent.TryAddExercise))
                             scope.launch {
                                 keyboardController?.hide()

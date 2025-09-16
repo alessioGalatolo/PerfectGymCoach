@@ -184,7 +184,7 @@ fun SharedTransitionScope.Home(
                             openDialogNow = true
                         )
                     )
-                }) {
+                }, modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)) {
                     Text(stringResource(id = R.string.add_program))
                 }
                 TextButton(

@@ -291,7 +291,7 @@ fun WorkoutRecap(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
-                                .padding(vertical = 8.dp)
+                                .padding(top = 8.dp)
                         )
                     }
                     item {
@@ -313,13 +313,13 @@ fun WorkoutRecap(
                                         Card(
                                             shape = MaterialTheme.shapes.extraExtraLarge,
                                             colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
                                             ),
                                         ) {
                                             Icon(
                                                 Icons.Outlined.LocalFireDepartment,
                                                 stringResource(R.string.calories_burned),
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                tint = MaterialTheme.colorScheme.tertiary,
                                                 modifier = Modifier.size(50.dp).padding(8.dp)
                                             )
                                         }
@@ -354,13 +354,13 @@ fun WorkoutRecap(
                                         Card(
                                             shape = MaterialTheme.shapes.extraExtraLarge,
                                             colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
                                             ),
                                         ) {
                                             Icon(
                                                 painterResource(R.drawable.weight_icon),
                                                 stringResource(R.string.volume_lifted),
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                tint = MaterialTheme.colorScheme.tertiary,
                                                 modifier = Modifier.size(50.dp).padding(8.dp)
                                             )
                                         }
@@ -390,13 +390,13 @@ fun WorkoutRecap(
                                     Card(
                                         shape = MaterialTheme.shapes.extraExtraLarge,
                                         colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
                                         ),
                                     ) {
                                         Icon(
                                             Icons.Outlined.Schedule,
                                             stringResource(R.string.workout_time),
-                                            tint = MaterialTheme.colorScheme.primary,
+                                            tint = MaterialTheme.colorScheme.tertiary,
                                             modifier = Modifier.size(50.dp).padding(8.dp)
                                         )
                                     }
@@ -417,13 +417,13 @@ fun WorkoutRecap(
                                     Card(
                                         shape = MaterialTheme.shapes.extraExtraLarge,
                                         colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
                                         ),
                                     ) {
                                         Icon(
                                             Icons.Outlined.PendingActions,
                                             stringResource(R.string.workout_active_time),
-                                            tint = MaterialTheme.colorScheme.primary,
+                                            tint = MaterialTheme.colorScheme.tertiary,
                                             modifier = Modifier.size(50.dp).padding(8.dp)
                                         )
                                     }

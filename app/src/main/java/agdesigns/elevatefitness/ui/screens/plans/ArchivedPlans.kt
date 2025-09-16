@@ -28,6 +28,7 @@ import agdesigns.elevatefitness.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -79,24 +80,12 @@ fun ArchivedPlans(
             )
         }) { innerPadding ->
         if (archiveState.archivedPlans.isEmpty()) {
-            // if you have no archived plans (should never happen as navigating here assumes archived plans)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ContentPaste,
-                    contentDescription = "",
-                    modifier = Modifier.size(160.dp)
-                )
-                Text(
-                    stringResource(R.string.you_don_t_have_any_archived_plans),
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+            // if you have no archived plans (happens if unarchiving all plans)
+            EmptyScreenInfo(
+                Icons.Default.ContentPaste,
+                R.string.you_don_t_have_any_archived_plans,
+                R.string.you_don_t_have_any_archived_plans
+            )
         } else {
             // if you have some archived plans
             LazyColumn(

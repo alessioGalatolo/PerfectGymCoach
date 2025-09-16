@@ -409,15 +409,27 @@ fun AddWorkoutPlan(
                     item {
                         if (addWorkoutState.workoutPlanMapPrograms.size <= 1) {
                             Column (Modifier.fillMaxWidth()){
-                                Text(stringResource(R.string.other_plans), fontWeight = FontWeight.Bold)
+                                Text(
+                                    stringResource(R.string.other_plans),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(
+                                        top = dimensionResource(R.dimen.header_to_content_padding)
+                                    ).padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                                )
                             }
-                            Spacer(Modifier.height(8.dp))
+                        } else {
+                            Spacer(
+                                Modifier.height(
+                                    dimensionResource(R.dimen.header_to_content_padding)
+                                )
+                            )
                         }
                         // Archived chat card
                         Card(
                             modifier = Modifier.padding(
                                 horizontal = dimensionResource(R.dimen.screen_edge_padding)
-                            ).padding(top = 16.dp - dimensionResource(R.dimen.grouped_cards_between_cards)),
+                            ).padding(top = 8.dp),
 //                            colors = CardDefaults.cardColors(
 //                                containerColor = MaterialTheme.colorScheme.surface
 //                            ),
