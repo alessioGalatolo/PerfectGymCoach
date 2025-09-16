@@ -21,6 +21,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
+import agdesigns.elevatefitness.ui.common.SelectableCard
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyRow
@@ -89,7 +90,9 @@ fun CreateExerciseDialog(
                             stringResource(R.string.create_a_new_exercise),
                             style = MaterialTheme.typography.headlineSmall,
                             maxLines = 1,
-                            autoSize = TextAutoSize.StepBased()
+                            autoSize = TextAutoSize.StepBased(
+                                maxFontSize = MaterialTheme.typography.headlineSmall.fontSize
+                            )
                         )
                         Spacer(Modifier.width(16.dp))
                     }
@@ -113,6 +116,7 @@ fun CreateExerciseDialog(
                     val fillString = stringResource(R.string.fill_every_field)
 
                     FilledTonalButton(
+                        shapes = ButtonDefaults.shapes(),
                         enabled = exerciseState.name.isNotBlank(),
                         onClick = {
                             if (!viewModel.onEvent(CreateExerciseEvent.TryCreateExercise)) {
@@ -291,7 +295,6 @@ private fun DifficultySection(
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
         ) {
-            // FIXME: "Same as system" overflows
             Exercise.ExerciseDifficulty.entries.forEachIndexed { index, difficulty ->
                 val modifier = if (difficulty == selectedDifficulty)
                     Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
@@ -418,7 +421,7 @@ private fun SectionHeader(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun EquipmentCard(
     equipment: Equipment,
@@ -427,7 +430,8 @@ private fun EquipmentCard(
 ) {
     val equipmentIcon = getEquipmentIcon(equipment)
     val equipmentImageId = getEquipmentImage(equipment)
-    Card(
+    SelectableCard(
+        selected = isSelected,
         onClick = onClick,
         modifier = Modifier
             .width(120.dp)
@@ -436,7 +440,7 @@ private fun EquipmentCard(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.surfaceDim
             }
         ),
         border = if (isSelected) {
@@ -490,14 +494,15 @@ private fun EquipmentCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MuscleCard(
     muscle: Exercise.Muscle,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
+    SelectableCard(
+        selected = isSelected,
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
@@ -507,7 +512,7 @@ private fun MuscleCard(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.surfaceDim
             }
         ),
         border = if (isSelected) {
@@ -545,7 +550,7 @@ private fun MuscleCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SecondaryMuscleCard(
     muscle: Exercise.Muscle,
@@ -553,7 +558,8 @@ private fun SecondaryMuscleCard(
     onClick: () -> Unit,
     height: Dp = 80.dp
 ) {
-    Card(
+    SelectableCard(
+        selected = isSelected,
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
