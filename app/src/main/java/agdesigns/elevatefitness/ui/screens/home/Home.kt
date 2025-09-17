@@ -28,6 +28,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
+import agdesigns.elevatefitness.ui.common.SharedElementKey
+import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.plans.GeneratePlanButton
 import android.content.Intent
 import android.util.Log
@@ -232,11 +234,6 @@ fun SharedTransitionScope.Home(
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.header_to_content_padding)))
-                    // animate card, image and text separately
-                    val cardKey = rememberSharedContentState("card_${currentProgram.programId}")
-                    val imageKey = rememberSharedContentState("img_${currentProgram.programId}")
-                    val exerciseNameKey =
-                        rememberSharedContentState("exName_${currentProgram.programId}")
                     val roundedCornersShape = CardDefaults.shape
                     WorkoutCard(
                         program = currentProgram,
@@ -255,22 +252,50 @@ fun SharedTransitionScope.Home(
                         cardModifier = Modifier
                             .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
                             .sharedBounds(
-                                sharedContentState = cardKey,
+                                sharedContentState = rememberSharedContentState(
+                                    SharedElementKey(
+                                        "Workout",
+                                        SharedElementType.Bounds,
+                                        idLong = currentProgram.programId
+                                    )
+                                ),
                                 animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    MotionScheme.expressive().slowSpatialSpec()
+                                }
 //                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
                             ),
                         imageModifier = Modifier
                             .sharedBounds(
-                                sharedContentState = imageKey,
+                                sharedContentState =
+                                    rememberSharedContentState(
+                                        SharedElementKey(
+                                            "Workout",
+                                            SharedElementType.Image,
+                                            idLong = currentProgram.programId
+                                        )
+                                    ),
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
                                 // need false otherwise image is not clipped with rounded corners during transition
-                                renderInOverlayDuringTransition = false
+                                renderInOverlayDuringTransition = false,
+                                boundsTransform = { _, _ ->
+                                    MotionScheme.expressive().slowSpatialSpec()
+                                }
                             ),
                         exerciseModifier = Modifier
                             .sharedBounds(
-                                sharedContentState = exerciseNameKey,
+                                sharedContentState = rememberSharedContentState(
+                                    SharedElementKey(
+                                        "Workout",
+                                        SharedElementType.Title,
+                                        idLong = currentProgram.programId
+                                    )
+                                ),
                                 animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    MotionScheme.expressive().slowSpatialSpec()
+                                }
                             )
                     )
                 }
@@ -309,10 +334,20 @@ fun SharedTransitionScope.Home(
                             ),
                             modifier = Modifier
                                 .sharedBounds(
-                                    sharedContentState = rememberSharedContentState("card_${program.programId}"),
+                                    sharedContentState = rememberSharedContentState(
+                                        SharedElementKey(
+                                            "Workout",
+                                            SharedElementType.Bounds,
+                                            idLong = program.programId
+                                        )
+                                    ),
                                     animatedVisibilityScope = animatedVisibilityScope,
+                                    boundsTransform = { _, _ ->
+                                        MotionScheme.expressive().slowSpatialSpec()
+                                    }
                                 )
                                 .fillMaxWidth()
+                                .clip(cardShape)
                                 .combinedClickable(
                                     onLongClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -349,9 +384,16 @@ fun SharedTransitionScope.Home(
                                             modifier = Modifier
                                                 .sharedBounds(
                                                     sharedContentState = rememberSharedContentState(
-                                                        "img_${program.programId}"
+                                                        SharedElementKey(
+                                                            "Workout",
+                                                            SharedElementType.Image,
+                                                            idLong = program.programId
+                                                        )
                                                     ),
                                                     animatedVisibilityScope = animatedVisibilityScope,
+                                                    boundsTransform = { _, _ ->
+                                                        MotionScheme.expressive().slowSpatialSpec()
+                                                    }
                                                 )
                                                 .size(80.dp) // Smaller image for less emphasis
                                                 .clip(RoundedCornerShape(8.dp))
@@ -414,8 +456,17 @@ fun SharedTransitionScope.Home(
 
                                             val modifier = if (exercise.orderInProgram == pagerState.currentPage) {
                                                 Modifier.sharedBounds(
-                                                    sharedContentState = rememberSharedContentState("exName_${program.programId}"),
+                                                    sharedContentState = rememberSharedContentState(
+                                                        SharedElementKey(
+                                                            "Workout",
+                                                            SharedElementType.Title,
+                                                            idLong = program.programId
+                                                        )
+                                                    ),
                                                     animatedVisibilityScope = animatedVisibilityScope,
+                                                    boundsTransform = { _, _ ->
+                                                        MotionScheme.expressive().slowSpatialSpec()
+                                                    }
                                                 )
                                             } else Modifier
 

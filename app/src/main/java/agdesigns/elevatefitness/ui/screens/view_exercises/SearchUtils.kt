@@ -2,7 +2,6 @@ package agdesigns.elevatefitness.ui.screens.view_exercises
 
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import java.text.Normalizer
-import kotlin.text.get
 
 private fun normalizeForSearch(input: String): String =
     Normalizer.normalize(input, Normalizer.Form.NFD)

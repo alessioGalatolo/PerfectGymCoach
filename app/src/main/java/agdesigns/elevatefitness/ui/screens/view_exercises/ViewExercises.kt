@@ -36,9 +36,10 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
+import agdesigns.elevatefitness.ui.common.SharedElementKey
+import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentIcon
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentImage
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -46,7 +47,6 @@ import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.delete
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -54,7 +54,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
 import com.ramcosta.composedestinations.generated.destinations.CreateExerciseDialogDestination
@@ -63,16 +62,19 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.agdesignes.shared.Equipment
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ceil
 import kotlin.math.min
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalSharedTransitionApi::class
 )
 @Composable
-fun ViewExercises(
+fun SharedTransitionScope.ViewExercises(
+    animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     programId: Long = 0L,
     workoutId: Long = 0L,
@@ -82,6 +84,7 @@ fun ViewExercises(
     returnAfterAdding: Boolean = false,
     viewModel: ExercisesViewModel = hiltViewModel()
 ) {
+    val sharedTransitionScope: SharedTransitionScope = this
     val exercisesState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     // i.e., when use hits "search"
@@ -286,7 +289,10 @@ fun ViewExercises(
                                                 colors = CardDefaults.cardColors(
                                                     containerColor = MaterialTheme.colorScheme.surface
                                                 ),
-                                                items = exercisesState.recentSearches.subList(0, maxSuggestions).map {
+                                                items = exercisesState.recentSearches.subList(
+                                                    0,
+                                                    maxSuggestions
+                                                ).map {
                                                     @Composable {
                                                         Row(Modifier.fillMaxWidth()) {
                                                             Icon(
@@ -330,16 +336,37 @@ fun ViewExercises(
                                         exercisesState.searchResults ?: emptyList(),
                                         key = { it.exercise.exerciseId }
                                     ) { result ->
-                                        ExerciseCard(result.exercise, result, longPressImage, isLongPressing) {
-                                            navigator.navigate(
-                                                AddExerciseDialogDestination(
-                                                    programId = programId,
-                                                    workoutId = workoutId,
-                                                    exerciseId = result.exercise.exerciseId,
-                                                    programName = programName,
-                                                    returnAfterAdding = returnAfterAdding
+                                        ExerciseCard(
+                                            result.exercise,
+                                            result,
+                                            longPressImage,
+                                            isLongPressing,
+                                        ) {
+                                            scope.launch {
+                                                // Going directly to other screen from expanded search
+                                                // can create problems with back and transitions, go back first
+                                                searchBarState.animateToCollapsed()
+                                                showSearchResultOnMainScreen = true
+                                                viewModel.onEvent(
+                                                    ExercisesEvent.AddRecentSearch(
+                                                        viewModel.searchFieldState.text.toString()
+                                                    )
                                                 )
-                                            )
+                                                awaitFrame()
+                                                awaitFrame()
+                                                awaitFrame()
+                                                awaitFrame()
+                                                awaitFrame()
+                                                navigator.navigate(
+                                                    AddExerciseDialogDestination(
+                                                        previewExercise = result.exercise,
+                                                        programId = programId,
+                                                        workoutId = workoutId,
+                                                        programName = programName,
+                                                        returnAfterAdding = returnAfterAdding,
+                                                    )
+                                                )
+                                            }
                                         }
                                     }
                                     item {
@@ -369,14 +396,21 @@ fun ViewExercises(
                         key = { _, it -> it.exerciseId }
                     ) { index, exercise ->
                         val result = if (showSearchResultOnMainScreen) exercisesState.searchResults!![index] else null
-                        ExerciseCard(exercise, result, longPressImage, isLongPressing) {
+                        ExerciseCard(
+                            exercise,
+                            result,
+                            longPressImage,
+                            isLongPressing,
+                            sharedTransitionScope,
+                            animatedVisibilityScope
+                        ) {
                             navigator.navigate(
                                 AddExerciseDialogDestination(
+                                    previewExercise = exercise,
                                     programId = programId,
                                     workoutId = workoutId,
-                                    exerciseId = exercise.exerciseId,
                                     programName = programName,
-                                    returnAfterAdding = returnAfterAdding
+                                    returnAfterAdding = returnAfterAdding,
                                 )
                             )
                         }
@@ -488,6 +522,7 @@ fun EquipmentFilterChips(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Suppress("SimplifiableCallChain")
 @Composable
 fun LazyItemScope.ExerciseCard(
@@ -495,7 +530,9 @@ fun LazyItemScope.ExerciseCard(
     result: ExerciseSearchResult?, // if user is searching, highlight this text
     longPressImage: MutableIntState,
     isLongPressing: MutableState<Boolean>,
-    onExerciseClick: () -> Unit
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    onExerciseClick: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -505,75 +542,135 @@ fun LazyItemScope.ExerciseCard(
         longPressImage.intValue = exercise.image
         isLongPressing.value = isPressing
     }
-    ElevatedCard(
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .fillMaxWidth()
-            .animateItem()
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = ripple(),
-                onClick = {
-                    onExerciseClick()
-                },
-                onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                })
-    ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(exercise.image)
-                .crossfade(true)
-                .build(),
-            contentScale = ContentScale.Crop,
-            contentDescription = stringResource(R.string.exercise_image),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4)
-                .align(Alignment.CenterHorizontally)
-                .clip(RoundedCornerShape(12.dp))
-        )
-        Column (Modifier.padding(8.dp)){
-            val nameRanges = result?.highlights
-                ?.filter { it.field == SearchField.Name && it.index == null }
-                ?.flatMap { it.ranges }
-            Text(text = getTextWithSearchHighlight(exercise.name, nameRanges), style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = buildAnnotatedString {
-                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                    append(stringResource(R.string.primary_muscle))
+    with (sharedTransitionScope) {
+        val sharedCardModifier = this?.let {
+            Modifier.sharedBounds(
+                rememberSharedContentState(
+                    SharedElementKey(
+                        "AddExerciseDialog",
+                        SharedElementType.Bounds,
+                        idLong = exercise.exerciseId
+                    )
+                ),
+                animatedVisibilityScope!!,
+                boundsTransform = BoundsTransform { _, _ ->
+                    MotionScheme.expressive().slowSpatialSpec()
                 }
-                append(stringResource(exercise.primaryMuscle.muscleNameResource))
-            })
-            if (exercise.secondaryMuscles.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                // don't simplify call chain, won't be able to use stringResource
-                val secondaryMuscles = exercise.secondaryMuscles.map {
-                    stringResource(it.muscleNameResource)
-                }.joinToString(
-                    ", "
+            )
+        } ?: Modifier
+        val sharedTextModifier = this?.let {
+            Modifier.sharedElement(
+                rememberSharedContentState(
+                    SharedElementKey(
+                        "AddExerciseDialog",
+                        SharedElementType.Title,
+                        idLong = exercise.exerciseId
+                    )
+                ),
+                animatedVisibilityScope!!,
+                boundsTransform = { _, _ ->
+                    MotionScheme.expressive().slowSpatialSpec()
+                }
+            )
+        } ?: Modifier
+        val sharedImageModifier = this?.let {
+            Modifier.sharedElement(
+                rememberSharedContentState(
+                    SharedElementKey(
+                        "AddExerciseDialog",
+                        SharedElementType.Image,
+                        idLong = exercise.exerciseId
+                    )
+                ),
+                animatedVisibilityScope!!,
+                boundsTransform = { _, _ ->
+                    MotionScheme.expressive().slowSpatialSpec()
+                }
+            )
+        } ?: Modifier
+
+
+
+        ElevatedCard(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .animateItem()
+                .clip(CardDefaults.shape)
+                .then(sharedCardModifier)
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(),
+                    onClick = {
+                        onExerciseClick()
+                    },
+                    onLongClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    })
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(exercise.image)
+                    .crossfade(true)
+                    .build(),
+                contentScale = ContentScale.Crop,
+                contentDescription = stringResource(R.string.exercise_image),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 4)
+                    .align(Alignment.CenterHorizontally)
+                    .then(sharedImageModifier)
+                    .clip(RoundedCornerShape(12.dp))
+            )
+            Column(Modifier.padding(8.dp)) {
+                val nameRanges = result?.highlights
+                    ?.filter { it.field == SearchField.Name && it.index == null }
+                    ?.flatMap { it.ranges }
+                Text(
+                    text = getTextWithSearchHighlight(exercise.name, nameRanges),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = sharedTextModifier
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(text = buildAnnotatedString {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(stringResource(R.string.secondary_muscles))
+                        append(stringResource(R.string.primary_muscle))
                     }
-                    append(secondaryMuscles)
+                    append(stringResource(exercise.primaryMuscle.muscleNameResource))
                 })
-            }
-            if (exercise.variations.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.i_variations_available, exercise.variations.size) + ": ",
-                    fontStyle = FontStyle.Italic
-                )
-                exercise.variations.forEachIndexed { index, variation ->
-                    val vRanges = result?.highlights
-                        ?.filter { it.field == SearchField.Variation && it.index == index }
-                        ?.flatMap { it.ranges }
-                    Text(text = getTextWithSearchHighlight(variation, vRanges))
+                if (exercise.secondaryMuscles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // don't simplify call chain, won't be able to use stringResource
+                    val secondaryMuscles = exercise.secondaryMuscles.map {
+                        stringResource(it.muscleNameResource)
+                    }.joinToString(
+                        ", "
+                    )
+                    Text(text = buildAnnotatedString {
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                            append(stringResource(R.string.secondary_muscles))
+                        }
+                        append(secondaryMuscles)
+                    })
                 }
+                if (exercise.variations.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.i_variations_available,
+                            exercise.variations.size
+                        ) + ": ",
+                        fontStyle = FontStyle.Italic
+                    )
+                    exercise.variations.forEachIndexed { index, variation ->
+                        val vRanges = result?.highlights
+                            ?.filter { it.field == SearchField.Variation && it.index == index }
+                            ?.flatMap { it.ranges }
+                        Text(text = getTextWithSearchHighlight(variation, vRanges))
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

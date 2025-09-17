@@ -42,7 +42,13 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
+import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesEvent
+import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesViewModel
+import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
+import agdesigns.elevatefitness.ui.common.SharedElementKey
+import agdesigns.elevatefitness.ui.common.SharedElementType
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -127,8 +133,13 @@ fun SharedTransitionScope.AddProgramExercise(
                     )
                 },
                 modifier = Modifier.sharedBounds(
-                    rememberSharedContentState("fab2view"),
-                    animatedVisibilityScope
+                    rememberSharedContentState(
+                        SharedElementGeneralKeys.FAP_TO_VIEW
+                    ),
+                    animatedVisibilityScope,
+                    boundsTransform = BoundsTransform { _, _ ->
+                        MotionScheme.expressive().slowSpatialSpec()
+                    }
                 )
             )
         }, content = { innerPadding ->
@@ -201,6 +212,21 @@ fun SharedTransitionScope.AddProgramExercise(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .animateItem()
+                                .padding(
+                                    horizontal = dimensionResource(R.dimen.card_outside_padding),
+                                    vertical = dimensionResource(R.dimen.card_space_between) / 2
+                                )
+                                .sharedBounds(
+                                    rememberSharedContentState(
+                                        SharedElementKey(
+                                            "AddExerciseDialog",
+                                            SharedElementType.Bounds,
+                                            idLong = exercise?.exerciseId ?: 0L
+                                        )
+                                    ),
+                                    animatedVisibilityScope
+                                )
+                                .clip(CardDefaults.shape)
                                 .combinedClickable(
                                     onLongClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -209,17 +235,13 @@ fun SharedTransitionScope.AddProgramExercise(
                                     onClick = {
                                         navigator.navigate(
                                             AddExerciseDialogDestination(
+                                                previewExercise = exercise!!,
                                                 programId = programExercise.extProgramId,
-                                                exerciseId = programExercise.extExerciseId,
                                                 programExerciseId = programExercise.programExerciseId,
                                                 continueAdding = false
                                             )
                                         )
                                     }
-                                )
-                                .padding(
-                                    horizontal = dimensionResource(R.dimen.card_outside_padding),
-                                    vertical = dimensionResource(R.dimen.card_space_between) / 2
                                 )
                         ) {
                             Box (Modifier.fillMaxWidth()){
@@ -244,6 +266,19 @@ fun SharedTransitionScope.AddProgramExercise(
                                         .fillMaxWidth()
                                         .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 3)
                                         .align(Alignment.TopCenter)
+                                        .sharedElement(
+                                            rememberSharedContentState(
+                                                SharedElementKey(
+                                                    "AddExerciseDialog",
+                                                    SharedElementType.Image,
+                                                    idLong = exercise?.exerciseId ?: 0L
+                                                )
+                                            ),
+                                            animatedVisibilityScope,
+                                            boundsTransform = BoundsTransform { _, _ ->
+                                                MotionScheme.expressive().slowSpatialSpec()
+                                            }
+                                        )
                                         .clip(RoundedCornerShape(12.dp)),
                                     contentScale = ContentScale.Crop
                                 )
@@ -315,8 +350,8 @@ fun SharedTransitionScope.AddProgramExercise(
                                             onClick = {
                                                 navigator.navigate(
                                                     AddExerciseDialogDestination(
+                                                        previewExercise = exercise!!,
                                                         programId = programExercise.extProgramId,
-                                                        exerciseId = programExercise.extExerciseId,
                                                         programExerciseId = programExercise.programExerciseId,
                                                         continueAdding = false
                                                     )
@@ -350,7 +385,20 @@ fun SharedTransitionScope.AddProgramExercise(
                                 val variation = if (programExercise.variation.isBlank()) "" else " (${programExercise.variation})"
                                 Text(
                                     text = (exercise?.name ?: "") + variation,
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleLarge,
+                                    modifier = Modifier.sharedElement(
+                                        rememberSharedContentState(
+                                            SharedElementKey(
+                                                "AddExerciseDialog",
+                                                SharedElementType.Title,
+                                                idLong = exercise?.exerciseId ?: 0L
+                                            )
+                                        ),
+                                        animatedVisibilityScope,
+                                        boundsTransform = BoundsTransform { _, _ ->
+                                            MotionScheme.expressive().slowSpatialSpec()
+                                        }
+                                    )
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(text = buildAnnotatedString {

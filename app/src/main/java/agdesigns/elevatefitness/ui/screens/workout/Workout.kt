@@ -44,6 +44,8 @@ import agdesigns.elevatefitness.ui.common.FullScreenImageCard
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.InputOtherEquipmentDialog
 import agdesigns.elevatefitness.ui.common.RequestNotificationAccessDialog
+import agdesigns.elevatefitness.ui.common.SharedElementKey
+import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.workout.components.EnterIntensityAndFinishDialog
 import agdesigns.elevatefitness.ui.screens.workout.components.ExercisePage
 import agdesigns.elevatefitness.ui.screens.workout.components.WorkoutBottomBar
@@ -146,9 +148,27 @@ fun SharedTransitionScope.Workout(
     }
 
     // for container transform animation
-    val sharedStateCard = rememberSharedContentState("card_$programId")
-    val sharedStateImg = rememberSharedContentState("img_$programId")
-    val sharedStateTitle = rememberSharedContentState("exName_$programId")
+    val sharedStateCard = rememberSharedContentState(
+        SharedElementKey(
+            "Workout",
+            SharedElementType.Bounds,
+            idLong = programId
+        )
+    )
+    val sharedStateImg = rememberSharedContentState(
+        SharedElementKey(
+            "Workout",
+            SharedElementType.Image,
+            idLong = programId
+        )
+    )
+    val sharedStateTitle = rememberSharedContentState(
+        SharedElementKey(
+            "Workout",
+            SharedElementType.Title,
+            idLong = programId
+        )
+    )
 
     val snackbarHostState = remember { SnackbarHostState() }
     if (resumeWorkout)
@@ -363,6 +383,9 @@ fun SharedTransitionScope.Workout(
         modifier = Modifier.sharedBounds(
             sharedStateTitle,
             animatedVisibilityScope,
+            boundsTransform = { _, _ ->
+                MotionScheme.expressive().slowSpatialSpec()
+            }
         )
     ) }
 
@@ -589,7 +612,10 @@ fun SharedTransitionScope.Workout(
                             .sharedBounds(
                                 sharedStateImg,
                                 animatedVisibilityScope,
-                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
+                                boundsTransform = { _, _ ->
+                                    MotionScheme.expressive().slowSpatialSpec()
+                                }
                             )
                             .graphicsLayer(
                                 shape = roundedCornersShape,
@@ -977,7 +1003,10 @@ fun SharedTransitionScope.Workout(
                             .sharedBounds(
                                 sharedStateImg,
                                 animatedVisibilityScope,
-                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape)
+                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
+                                boundsTransform = { _, _ ->
+                                    MotionScheme.expressive().slowSpatialSpec()
+                                }
                             )
                             .graphicsLayer(
                                 shape = roundedCornersShape,
@@ -1046,6 +1075,9 @@ fun SharedTransitionScope.Workout(
                             previewExercise.name, modifier = Modifier.sharedBounds(
                                 sharedStateTitle,
                                 animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    MotionScheme.expressive().slowSpatialSpec()
+                                }
                             )
                         )
                     },

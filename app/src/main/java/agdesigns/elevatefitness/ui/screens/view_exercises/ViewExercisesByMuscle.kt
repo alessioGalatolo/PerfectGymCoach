@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,6 +27,7 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -78,7 +78,9 @@ fun SharedTransitionScope.ExercisesByMuscle(
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection)
             .sharedBounds(
-                rememberSharedContentState("fab2view"),
+                rememberSharedContentState(
+                    SharedElementGeneralKeys.FAP_TO_VIEW
+                ),
                 animatedVisibilityScope
             ),
         snackbarHost = { SnackbarHost(snackbarHostState) },

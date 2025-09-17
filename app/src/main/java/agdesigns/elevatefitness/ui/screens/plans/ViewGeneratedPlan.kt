@@ -13,6 +13,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.navigation.GeneratePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import androidx.compose.foundation.background
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.ramcosta.composedestinations.annotation.Destination
@@ -38,27 +39,30 @@ fun ViewGeneratedPlan(
         )
     )
 
-    if (generationState.generatedPlan == null) {
-        Column(Modifier.fillMaxSize(),
-            Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ContainedLoadingIndicator()
-            Spacer(Modifier.height(8.dp))
-
-            // TODO: circle on messages
-            Text(
-                stringResource(R.string.generating_plan_waiting_text),
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center
+    LaunchedEffect(generationState.generatedPlan) {
+        if (generationState.generatedPlan != null) {
+            navigator.navigateUp()
+            navigator.navigate(
+                AddProgramDestination(
+                    generationState.generatedPlan!!.planId
+                )
             )
         }
-    } else {
-        navigator.navigateUp()
-        navigator.navigate(
-            AddProgramDestination(
-                generationState.generatedPlan!!.planId
-            )
+    }
+    Column(Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.surfaceContainer),
+        Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        ContainedLoadingIndicator()
+        Spacer(Modifier.height(8.dp))
+
+        // TODO: circle on messages
+        Text(
+            stringResource(R.string.generating_plan_waiting_text),
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
         )
     }
 }

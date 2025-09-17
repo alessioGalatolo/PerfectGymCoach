@@ -27,6 +27,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -55,6 +56,7 @@ fun WorkoutCard(
     ElevatedCard(
         modifier = cardModifier
             .fillMaxWidth()
+            .clip(CardDefaults.shape)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(), // FIXME: ripple goes out of card, as it fills a box shape
