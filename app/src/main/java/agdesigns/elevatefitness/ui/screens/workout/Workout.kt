@@ -43,32 +43,22 @@ import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.FullScreenImageCard
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.InputOtherEquipmentDialog
+import agdesigns.elevatefitness.ui.common.MediaViewModel
 import agdesigns.elevatefitness.ui.common.RequestNotificationAccessDialog
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
+import agdesigns.elevatefitness.ui.common.SwipeableMediaPlaying
+import agdesigns.elevatefitness.ui.common.SwipeableMediaPlayingDefaults
 import agdesigns.elevatefitness.ui.screens.workout.components.EnterIntensityAndFinishDialog
 import agdesigns.elevatefitness.ui.screens.workout.components.ExercisePage
 import agdesigns.elevatefitness.ui.screens.workout.components.WorkoutBottomBar
-import agdesigns.elevatefitness.utils.hasNotificationAccess
-import android.content.ComponentName
 import android.content.Intent
-import android.graphics.Bitmap
-import android.media.MediaMetadata
-import android.media.session.MediaController
-import android.media.session.MediaSessionManager
-import android.media.session.PlaybackState
-import android.media.session.PlaybackState.STATE_PLAYING
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -81,8 +71,8 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.traversalIndex
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -123,9 +113,11 @@ fun SharedTransitionScope.Workout(
     previewExercise: ProgramExerciseAndInfo? = null, // preview of the first exercise, used for transition
     quickStart: Boolean = false,
     resumeWorkout: Boolean = false,
-    viewModel: WorkoutViewModel = hiltViewModel()
+    viewModel: WorkoutViewModel = hiltViewModel(),
+    mediaVM: MediaViewModel = hiltViewModel()
 ) {
     val workoutState by viewModel.state.collectAsState()
+    val mediaState by mediaVM.state.collectAsStateWithLifecycle()
     LaunchedEffect(workoutState.autoStartFailed) {
         if (workoutState.autoStartFailed)
             navigator.navigateUp()
@@ -182,84 +174,6 @@ fun SharedTransitionScope.Workout(
 
     val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
 
-    // request to have notification access to show music playing
-    var alreadyRequestedPermission by rememberSaveable { mutableStateOf(false) }
-
-    var retrieveMediaJob: Job? by remember {
-        mutableStateOf(null)
-    }
-    var session: MediaController? by remember { mutableStateOf(null) }
-    var mediaTitle: String? by remember { mutableStateOf(null) }
-    val artistNotAvailableString = stringResource(R.string.artist_not_available)
-    var mediaArtist: String by remember { mutableStateOf(artistNotAvailableString) }
-    var isPlaying: Boolean by remember { mutableStateOf(false) }
-    var artworkBitmap: Bitmap? by remember { mutableStateOf(null) }
-    // Show media card and ask user if they want it with actual content
-    val shouldTeaseMediaAccess by remember { derivedStateOf {
-        !workoutState.cantRequestNotificationAccess
-                && !hasNotificationAccess(context)
-                && !alreadyRequestedPermission
-    } }
-    val teaseMediaAccessPrompt = stringResource(R.string.tease_media_access_prompt)
-    val teaseMediaAccessLearnMore = stringResource(R.string.tease_media_access_learn_more)
-    val noMusicPlayingString = stringResource(R.string.no_music_playing)
-    val noMusicPlayingInfo = stringResource(R.string.no_music_playing_info)
-    LaunchedEffect(shouldTeaseMediaAccess) {
-        if (mediaTitle == null && shouldTeaseMediaAccess) {
-            mediaTitle = teaseMediaAccessPrompt
-            mediaArtist = teaseMediaAccessLearnMore
-        } else if (!shouldTeaseMediaAccess && mediaTitle == teaseMediaAccessPrompt) {
-            // reset if we should not tease anymore (e.g., user says "do not ask again")
-            // TODO: check that if user has not granted permission and says "do not ask again", music card disappears
-            mediaTitle = null
-            mediaArtist = artistNotAvailableString
-        }
-    }
-    DisposableEffect(context) {
-        // FIXME: this looks like it belongs in a viewModel but the problem is the context
-        // TODO: perhaps move mediaTitle/Artist to viewModel and job to repository?
-        retrieveMediaJob = scope.launch {
-            while (true) {
-                if (hasNotificationAccess(context) && session == null) {
-                    val m = getSystemService(context, MediaSessionManager::class.java)!!
-                    val component = ComponentName(context, NotificationListener::class.java)
-                    session = m.getActiveSessions(component).filter {
-                        it.metadata?.description?.title != null
-                    }.getOrNull(0)
-                    if (session != null) {
-                        val callback = object : MediaController.Callback() {
-                            override fun onPlaybackStateChanged(state: PlaybackState?) {
-                                isPlaying = state?.state == STATE_PLAYING
-                            }
-
-                            override fun onMetadataChanged(metadata: MediaMetadata?) {
-                                mediaTitle = metadata?.description?.title?.toString()
-                                mediaArtist = metadata?.description?.subtitle?.toString() ?: artistNotAvailableString
-                                val newBitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                                    ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
-                                if (newBitmap != null && !newBitmap.sameAs(artworkBitmap)) {
-                                    artworkBitmap = newBitmap
-                                }
-                            }
-                        }
-                        session!!.registerCallback(callback)
-                        mediaTitle = session!!.metadata!!.description.title.toString()
-                        mediaArtist = session!!.metadata!!.description.subtitle.toString()
-                        artworkBitmap = session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                            ?: session!!.metadata!!.getBitmap(MediaMetadata.METADATA_KEY_ART)
-                        isPlaying = session!!.playbackState?.state == STATE_PLAYING
-                    } else {
-                        mediaTitle = noMusicPlayingString
-                        mediaArtist = noMusicPlayingInfo
-                    }
-                }
-                delay(100)
-            }
-        }
-        onDispose {
-            retrieveMediaJob?.cancel()
-        }
-    }
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val onClose: () -> Unit = {
         backDispatcher?.onBackPressed()
@@ -729,155 +643,26 @@ fun SharedTransitionScope.Workout(
                 )
             },
             floatingActionButton = {
-                if (mediaTitle != null) {
-                    val visibleFabHeight = 16.dp + // top inner padding
-                            16.dp + // bottom inner padding
-                            48.dp + // album art size
-                            16.dp // card bottom padding
+                if (!mediaState.needsAccess || mediaState.canAskAccess) {
+                    val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
+                            16.dp // fab bottom padding
                     var dismissed by remember { mutableStateOf(false) }
-                    LaunchedEffect(dismissed, pagerState.isScrollInProgress) {
-                        fabHeight = if (dismissed || pagerState.isScrollInProgress) 0.dp else visibleFabHeight
-                    }
+                    fabHeight = if (dismissed) 0.dp else visibleFabHeight
                     AnimatedVisibility(
                         visible = !pagerState.isScrollInProgress && !dismissed,
-                        enter = fadeIn(),
-                        exit = fadeOut()
+                        enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+                        exit = fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec())
                     ) {
-                        SwipeToDismissBox(
-                            state = rememberSwipeToDismissBoxState(),
-                            onDismiss = {
-                                dismissed = true
-                            },
-                            backgroundContent = {}
-                        ) {
-                            ElevatedCard(
-                                shape = MaterialTheme.shapes.extraLarge,
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.inverseSurface
-                                ),
-                                modifier = Modifier
-                                    .padding(start = 32.dp)
-                                    .clickable {  // weird padding as it pretends to be a fab
-                                        if (shouldTeaseMediaAccess) {
-                                            viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog)
-                                        } else {
-                                            // TODO: This has fixed the crash when clicking on the card
-                                            //  right after granting permission but results in clicks
-                                            //  that go nowhere...
-                                            val packageName = session?.packageName
-                                            if (packageName != null) {
-                                                val intent =
-                                                    context.packageManager.getLaunchIntentForPackage(
-                                                        packageName
-                                                    )
-                                                if (intent != null) {
-                                                    context.startActivity(intent)
-                                                }
-                                            }
-                                        }
-                                    }
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (artworkBitmap != null) {
-                                        AsyncImage(
-                                            artworkBitmap,
-                                            stringResource(R.string.song_artwork),
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .matchParentSize()
-                                                .blur(16.dp)
-                                        )
-                                        // Dimming scrim (dark overlay)
-                                        Box(
-                                            modifier = Modifier
-                                                .matchParentSize()
-                                                .background(Color.Black.copy(alpha = 0.3f))
-                                        )
-                                    }
-                                    Column (Modifier.padding(16.dp)) {
-                                        Row(
-                                            verticalAlignment = CenterVertically,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                        ) {
-                                            if (artworkBitmap != null) {
-                                                AsyncImage(
-                                                    artworkBitmap, stringResource(R.string.song_artwork),
-                                                    Modifier
-                                                        .size(48.dp)
-                                                        .clip(
-                                                            RoundedCornerShape(8.dp)
-                                                        )
-                                                )
-                                            } else {
-                                                Icon(
-                                                    Icons.Default.MusicNote,
-                                                    stringResource(R.string.no_song_artwork_available),
-                                                    Modifier.size(48.dp)
-                                                )
-                                            }
-                                            Spacer(Modifier.width(8.dp))
-                                            Column(Modifier.weight(1f)) {
-                                                Text(
-                                                    mediaTitle!!,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    style = MaterialTheme.typography.labelMedium
-                                                )
-                                                Text(
-                                                    mediaArtist,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    style = MaterialTheme.typography.bodySmall
-                                                )
-                                            }
-                                            // if we are just teasing, gain space by removing buttons
-                                            if (!shouldTeaseMediaAccess) {
-                                                Spacer(Modifier.width(8.dp))
-                                                FilledIconToggleButton(
-                                                    checked = isPlaying,
-                                                    onCheckedChange = {
-                                                        if (session != null) {
-                                                            if (session!!.playbackState?.state == STATE_PLAYING)
-                                                                session!!.transportControls.pause()
-                                                            else
-                                                                session!!.transportControls.play()
-                                                        }
-                                                    },
-                                                    shapes = IconButtonDefaults.toggleableShapes(),
-                                                    modifier = Modifier.size(IconButtonDefaults.smallContainerSize(
-                                                        IconButtonDefaults.IconButtonWidthOption.Wide))
-                                                ) {
-                                                    if (isPlaying) {
-                                                        Icon(Icons.Default.Pause,
-                                                            stringResource(R.string.pause_icon)
-                                                        )
-                                                    } else {
-                                                        Icon(Icons.Default.PlayArrow,
-                                                            stringResource(R.string.play_icon)
-                                                        )
-                                                    }
-                                                }
-                                                FilledTonalIconButton(
-                                                    shapes = IconButtonDefaults.shapes(),
-                                                    onClick = {
-                                                        if (session != null) {
-                                                            session!!.transportControls.skipToNext()
-                                                        }
-                                                    }
-                                                ) {
-                                                    Icon(Icons.Default.SkipNext,
-                                                        stringResource(R.string.skipnext_icon_track)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                        SwipeableMediaPlaying(
+                            onDismiss = { dismissed = true },
+                            state = mediaState,
+                            togglePlayPause = { mediaVM.togglePlayPause() },
+                            playNext = { mediaVM.playNext() },
+                            modifier = Modifier.padding(start = 32.dp), // weird padding as it pretends to be a fab
+                            openPermissionDialog = {
+                                viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog)
                             }
-                        }
+                        )
                     }
                 }
             }

@@ -532,6 +532,8 @@ fun ExerciseSettingsMenu(
         modifier = Modifier.wrapContentSize()
     ) {
         var expanded by remember { mutableStateOf(false) }
+
+        // TODO: add "show media controls" if swiped away
         IconButton(onClick = { expanded = true }) {
             Icon(
                 Icons.Default.MoreVert,

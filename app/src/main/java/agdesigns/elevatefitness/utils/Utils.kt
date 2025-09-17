@@ -4,14 +4,23 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import android.content.Context
 import android.content.res.Configuration
+import android.database.ContentObserver
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.os.LocaleListCompat
 import com.agdesignes.shared.Equipment
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
@@ -94,13 +103,22 @@ fun Context.getLangPreferenceDropdownEntries(): Map<String, String> {
 
 
 
-fun hasNotificationAccess(context: Context): Boolean {
-    val contentResolver = context.contentResolver
-    val enabledNotificationListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
-    val packageName = context.packageName
+fun notificationAccessFlow(context: Context) = callbackFlow {
+    val uri: Uri = Settings.Secure.getUriFor("enabled_notification_listeners")
+    val resolver = context.contentResolver
+    val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            trySend(Unit)
+        }
+    }
+    // initial
+    trySend(Unit)
+    resolver.registerContentObserver(uri, false, observer)
 
-    return enabledNotificationListeners.isNotEmpty() && enabledNotificationListeners.contains(packageName)
-}
+    awaitClose { resolver.unregisterContentObserver(observer) }
+}.map {
+    NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+}.distinctUntilChanged()
 
 fun getStickyHeader(
     layoutInfo: LazyListLayoutInfo,

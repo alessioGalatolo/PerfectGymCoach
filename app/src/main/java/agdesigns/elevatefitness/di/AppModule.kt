@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.di
 
 import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.DatabaseBackupManager
+import agdesigns.elevatefitness.data.MediaPlayingRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.SearchesRepository
@@ -97,4 +98,10 @@ object AppModule {
         dataStore: DataStore<Preferences>,
         @ApplicationContext context: Context
     ): PreferenceRepository = PreferenceRepository(dataStore, context)
+
+    @Provides
+    @Singleton
+    fun provideMediaPlayingRepository(
+        @ApplicationContext context: Context
+    ): MediaPlayingRepository = MediaPlayingRepository(context)
 }
