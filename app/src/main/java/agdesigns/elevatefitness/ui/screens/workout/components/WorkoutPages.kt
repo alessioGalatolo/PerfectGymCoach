@@ -270,8 +270,8 @@ fun ExercisePage(
                             Modifier.padding(dimensionResource(R.dimen.card_inner_padding)),
                             horizontalAlignment = CenterHorizontally
                         ) {
-                            Text("Rest: " +
-                                    "${workoutExercises[page].rest[
+                            Text(stringResource(R.string.rest) +
+                                    ": ${workoutExercises[page].rest[
                                             min(setsDone.value, workoutExercises[page].rest.size-1)
                                     ]}s", Modifier.align(Alignment.Start))
 
