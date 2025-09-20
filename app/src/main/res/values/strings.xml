@@ -804,4 +804,9 @@
     <string name="empty_workout_add_text">Add only to current workout</string>
     <string name="empty_workout_edit_text">Modify workout program</string>
     <string name="search_and_add_exercise">Search and add exercise</string>
+    <string name="autostart_workout_failed">Couldn\'t find a workout program to start</string>
+    <string name="complete_set_fail">Couldn\'t complete set: invalid weight or reps!</string>
+    <string name="complete_set_from_watch_fail">Tried to complete a set from watch but exercise is unknown!</string>
+    <string name="add_set_fail">Tried to add a set but current exercise is unknown!</string>
+    <string name="resume_workout_fail">Couldn\'t find the workout to resume.</string>
 </resources>

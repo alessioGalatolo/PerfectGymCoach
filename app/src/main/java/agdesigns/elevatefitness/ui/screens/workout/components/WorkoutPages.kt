@@ -1,6 +1,5 @@
 package agdesigns.elevatefitness.ui.screens.workout.components
 
-import android.text.format.DateUtils
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -13,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
@@ -26,12 +24,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
-import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
-import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
+import agdesigns.elevatefitness.ui.screens.workout.CurrentExerciseState
+import agdesigns.elevatefitness.ui.screens.workout.WorkoutPagesContent
+import agdesigns.elevatefitness.ui.screens.workout.WorkoutState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.pager.HorizontalPager
@@ -64,26 +62,19 @@ import kotlin.math.min
 )
 @Composable
 fun ExercisePage(
-    pagerState: PagerState,
-    workoutTimeMillis: Long,  // is 0L when workout has not started
-    workoutExercises: List<WorkoutExercise>,
-    workoutId: Long,
     navigator: DestinationsNavigator,
-    setsDone: State<Int>,
-    fabHeight: Dp,
+    horizontalPagerState: PagerState,
+    currentExerciseState: CurrentExerciseState,  // DO NOT USE FROM INSIDE PAGER
+    pagesContent: WorkoutPagesContent,
+    workoutState: WorkoutState,
     bottomPadding: Dp,
-    title: @Composable () -> Unit,
-    exerciseDescription: String,
-    addSet: () -> Unit,
-    updateBottomBar: (Int?, Float?) -> Unit,
-    currentExerciseRecords: List<ExerciseRecordAndEquipment>,
-    ongoingRecord: ExerciseRecordAndEquipment?,
-    restCounterMillis: Long?,
+    fabHeight: Dp,
     restCounterProgress: Float?,
-    useImperialSystem: Boolean,
-    tare: Float,
+    title: @Composable () -> Unit,
+    addSet: () -> Unit,
     updateExerciseProbability: (Int) -> Unit,
     updateTare: (Float) -> Unit,
+    updateBottomBar: (Int?, Float?) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit,
     toggleOtherEquipment: () -> Unit,
     changeExercise: (Int, Int) -> Unit,
@@ -96,7 +87,10 @@ fun ExercisePage(
     InfoDialog(
         dialogueIsOpen = infoDialogOpen,
         toggleDialogue = { infoDialogOpen = !infoDialogOpen }) {
-        Text(exerciseDescription)
+        Text(
+            pagesContent.exercises.getOrNull(horizontalPagerState.currentPage)?.description ?:
+            stringResource(R.string.exercise_description_not_available)
+        )
     }
     Column(
         Modifier.padding(top = 8.dp)
@@ -109,8 +103,8 @@ fun ExercisePage(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(
-                onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage-1) }},
-                enabled = pagerState.currentPage > 0,
+                onClick = { scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.currentPage-1) }},
+                enabled = horizontalPagerState.currentPage > 0,
                 modifier = Modifier
                     .wrapContentSize()
                     .weight(1f, false)
@@ -134,8 +128,8 @@ fun ExercisePage(
                 }
             }
             IconButton(
-                onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage+1) }},
-                enabled = pagerState.currentPage < if (workoutTimeMillis > 0L) workoutExercises.size else workoutExercises.size-1,
+                onClick = { scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.currentPage+1) }},
+                enabled = horizontalPagerState.currentPage < horizontalPagerState.pageCount-1,
                 modifier = Modifier
                     .wrapContentSize()
                     .weight(1f, false)
@@ -146,21 +140,27 @@ fun ExercisePage(
             }
         }
         HorizontalPager(
-            state = pagerState,
+            state = horizontalPagerState,
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top
         ) { page ->
-            if (page == workoutExercises.size) {
+            if (page == pagesContent.exercises.size) {
                 // page for finishing the workout
-                WorkoutFinishPage(workoutTimeMillis, workoutId, fabHeight, bottomPadding, navigator)
+                WorkoutFinishPage(
+                    currentExerciseState.workoutTimeFormatted,
+                    workoutState.workoutId,
+                    fabHeight,
+                    bottomPadding,
+                    navigator
+                )
             } else {
                 Column (Modifier.padding(horizontal = 16.dp)){
-                    if (workoutExercises[page].note.isNotBlank()) {
+                    if (pagesContent.exercises[page].note.isNotBlank()) {
                         Text(text = buildAnnotatedString {
                             withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                                 append(stringResource(R.string.note))
                             }
-                            append(workoutExercises[page].note)
+                            append(pagesContent.exercises[page].note)
                         }, modifier = Modifier.align(CenterHorizontally))
                     }
                     Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -210,17 +210,17 @@ fun ExercisePage(
                         }
                     }
                     // content
-                    if (restCounterMillis != null && restCounterProgress != null){
+                    if (currentExerciseState.restTimeSecs != null && restCounterProgress != null){
                         AdaptiveCircularTimer(
-                            restCounterMillis,
+                            currentExerciseState.restTimeSecs,
                             restCounterProgress,
                             Modifier.align(CenterHorizontally)
                         )
-                        LaunchedEffect(restCounterMillis / 1000) {
+                        LaunchedEffect(currentExerciseState.restTimeSecs) {
                             // do not vibrate on 0L as this will be called multiple times with 0L
-                            if (restCounterMillis / 1000 == 2L || restCounterMillis / 1000 == 3L) {
+                            if (currentExerciseState.restTimeSecs == 2L || currentExerciseState.restTimeSecs == 3L) {
                                 haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
-                            } else if (restCounterMillis / 1000 == 1L) {
+                            } else if (currentExerciseState.restTimeSecs == 1L) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         }
@@ -229,7 +229,7 @@ fun ExercisePage(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             stringResource(R.string.current_exercise) +
-                                    if (workoutExercises[page].supersetExercise != null) stringResource(
+                                    if (pagesContent.exercises[page].supersetExercise != null) stringResource(
                                         R.string.part_of_superset
                                     ) else "",
                             Modifier.padding(vertical = 8.dp),
@@ -237,17 +237,17 @@ fun ExercisePage(
                         )
 
                         AnimatedVisibility(
-                            visible = workoutTimeMillis > 0L,
+                            visible = workoutState.workoutStarted,
                             enter = fadeIn(),
                             exit = fadeOut()
                         ) {
                             val currentWorkoutString = stringResource(R.string.current_workout)
                             ExerciseSettingsMenu(changeExercise = {
-                                changeExercise(page, workoutExercises.size)
+                                changeExercise(page, pagesContent.exercises.size)
                                 navigator.navigate(
                                     ExercisesByMuscleDestination(
                                         programName = currentWorkoutString,
-                                        workoutId = workoutId,
+                                        workoutId = workoutState.workoutId,
                                         returnAfterAdding = true
                                     )
                                 )
@@ -257,11 +257,12 @@ fun ExercisePage(
                                 navigator.navigate(
                                     ExercisesByMuscleDestination(
                                         programName = currentWorkoutString,
-                                        workoutId = workoutId,
+                                        workoutId = workoutState.workoutId,
                                         returnAfterAdding = true
                                     )
                                 )
-                                scope.launch { pagerState.animateScrollToPage(pagerState.pageCount-1) }
+                                // FIXME: if unsuccessful add (e.g., user goes back) do not scroll
+                                scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.pageCount-1) }
                             })
                         }
                     }
@@ -271,49 +272,43 @@ fun ExercisePage(
                             horizontalAlignment = CenterHorizontally
                         ) {
                             Text(stringResource(R.string.rest) +
-                                    ": ${workoutExercises[page].rest[
-                                            min(setsDone.value, workoutExercises[page].rest.size-1)
+                                    ": ${pagesContent.exercises[page].rest[
+                                        min(pagesContent.exerciseSetsDone[page], pagesContent.exercises[page].rest.size-1)
                                     ]}s", Modifier.align(Alignment.Start))
 
                             // if barbell, allow to add barbell weight (used for volume)
                             AnimatedVisibility(
-                                visible = workoutTimeMillis > 0L &&
-                                        workoutExercises[page].equipment == Equipment.BARBELL,
+                                visible = workoutState.workoutStarted &&
+                                        pagesContent.exercises[page].equipment == Equipment.BARBELL,
                                 enter = slideInVertically() + fadeIn(),
                                 exit = slideOutVertically() + fadeOut()
                             ) {
+                                // FIXME: barbellResFromWeight should be computed in ViewModel
                                 val barbellName: String =
-                                    stringResource(barbellResFromWeight(tare)) + " " + weightAndUnit(tare, useImperialSystem, inParenthesis = true)
+                                    stringResource(barbellResFromWeight(workoutState.tares.getOrNull(page) ?: 0f)) +
+                                            " " +
+                                            weightAndUnit(
+                                                workoutState
+                                                    .tares
+                                                    .getOrNull(
+                                                        page
+                                                    ) ?: 0f,
+                                                workoutState.imperialSystem,
+                                                inParenthesis = true
+                                            )
 
                                 BarbellSelector(
                                     selectedBarbell = barbellName,
                                     toggleOtherEquipment = toggleOtherEquipment,
-                                    useImperialSystem = useImperialSystem,
+                                    useImperialSystem = workoutState.imperialSystem,
                                     onBarbellSelected = { weight -> updateTare(weight) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .align(CenterHorizontally)
                                 )
                             }
-                            workoutExercises[page].reps.forEachIndexed { setCount, repsCount ->
-                                val toBeDone = setsDone.value <= setCount
-                                val repsInRow: String
-                                val weightInRow: String
-                                if (toBeDone || setCount >= (ongoingRecord?.reps?.size ?: 0)) {
-                                    repsInRow = repsCount.toString()
-                                    val currentRecord = currentExerciseRecords.firstOrNull()
-                                    weightInRow = if (currentRecord != null && setCount < currentRecord.weights.size) {
-                                        maybeKgToLb(currentRecord.weights[setCount], useImperialSystem).toString()
-                                    } else if (currentRecord != null && ongoingRecord != null) {
-                                        maybeKgToLb(ongoingRecord.weights.last(), useImperialSystem).toString()
-                                    } else {
-                                        "..."
-                                    }
-                                } else {
-                                    // if ongoingRecord is null, it should go in the other branch anyway
-                                    repsInRow = ongoingRecord!!.reps[setCount].toString()
-                                    weightInRow = maybeKgToLb(ongoingRecord.weights[setCount], useImperialSystem).toString()
-                                }
+                            pagesContent.exerciseRepsWeightRows[page].forEachIndexed { setCount, (repsInRow, weightInRow) ->
+                                val toBeDone = setCount >= pagesContent.exerciseSetsDone[page]
                                 var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
                                 ChangeRepsWeightDialog(
                                     dialogIsOpen,
@@ -323,7 +318,7 @@ fun ExercisePage(
                                     { reps, weight ->
                                         updateValues(
                                             reps,
-                                            maybeLbToKg(weight, useImperialSystem),
+                                            maybeLbToKg(weight, workoutState.imperialSystem),
                                             page,
                                             setCount
                                         )
@@ -353,7 +348,7 @@ fun ExercisePage(
                                 ) {
                                     FilledIconToggleButton(
                                         enabled = toBeDone,
-                                        checked = setsDone.value == setCount,
+                                        checked = pagesContent.exerciseSetsDone[page] == setCount,
                                         onCheckedChange = {}
                                     ) {
                                         Text((setCount + 1).toString())
@@ -364,7 +359,7 @@ fun ExercisePage(
                                             R.string.reps_weight,
                                             repsInRow,
                                             weightInRow,
-                                            if(useImperialSystem)
+                                            if(workoutState.imperialSystem)
                                                 stringResource(R.string.lb)
                                             else
                                                 stringResource(R.string.kg)
@@ -374,7 +369,7 @@ fun ExercisePage(
                                 }
                             }
                             AnimatedVisibility(
-                                visible = workoutTimeMillis > 0L,
+                                visible = workoutState.workoutStarted,
                                 enter = slideInVertically() + fadeIn(),
                                 exit = slideOutVertically() + fadeOut()
                             ) {
@@ -385,7 +380,7 @@ fun ExercisePage(
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    if (currentExerciseRecords.isNotEmpty()) {
+                    if (pagesContent.exerciseRecords[page].isNotEmpty()) {
                         Text(
                             stringResource(R.string.history),
                             Modifier.padding(bottom = 8.dp),
@@ -393,7 +388,7 @@ fun ExercisePage(
                         )
                     }
                     var recordsToShow by remember { mutableIntStateOf(2) }
-                    currentExerciseRecords.subList(0, min(currentExerciseRecords.size, recordsToShow)).forEach { record ->  // should maybe become lazy
+                    pagesContent.exerciseRecords[page].subList(0, min(pagesContent.exerciseRecords[page].size, recordsToShow)).forEach { record ->  // should maybe become lazy
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
                                 val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
@@ -407,7 +402,7 @@ fun ExercisePage(
                                         stringResource(
                                             R.string.barbell_used,
                                             stringResource(barbellResFromWeight(record.tare)),
-                                            weightAndUnit(record.tare, useImperialSystem, true)
+                                            weightAndUnit(record.tare, workoutState.imperialSystem, true)
                                         )
                                     )
                                 } else if (record.equipment == Equipment.BODY_WEIGHT) {
@@ -415,7 +410,7 @@ fun ExercisePage(
                                     Text(
                                         stringResource(
                                             R.string.bodyweight_at_the_time,
-                                            weightAndUnit(record.tare, useImperialSystem)
+                                            weightAndUnit(record.tare, workoutState.imperialSystem)
                                         )
                                     )
                                 }
@@ -432,7 +427,7 @@ fun ExercisePage(
                                                     rep,
                                                     maybeKgToLb(
                                                         record.weights[index],
-                                                        useImperialSystem
+                                                        workoutState.imperialSystem
                                                     )
                                                 )
                                             })
@@ -446,8 +441,11 @@ fun ExercisePage(
                                             stringResource(
                                                 R.string.reps_weight,
                                                 rep,
-                                                maybeKgToLb(record.weights[index], useImperialSystem),
-                                                if (useImperialSystem)
+                                                maybeKgToLb(
+                                                    record.weights[index],
+                                                    workoutState.imperialSystem
+                                                ),
+                                                if (workoutState.imperialSystem)
                                                     stringResource(R.string.lb)
                                                 else
                                                     stringResource(R.string.kg)
@@ -461,7 +459,7 @@ fun ExercisePage(
                     }
                     // FIXME: works initially, but at some point tapping it doesn't work
                     //  and no more records are shown. This happens if records are odd
-                    if (recordsToShow < currentExerciseRecords.size) {
+                    if (recordsToShow < pagesContent.exerciseRecords[page].size) {
                         TextButton(
                             onClick = { recordsToShow += 2 },
                             modifier = Modifier.align(CenterHorizontally)
@@ -485,7 +483,7 @@ fun ExercisePage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutFinishPage(
-    workoutTimeMillis: Long,
+    workoutTimeFormatted: String,
     workoutId: Long,
     fabHeight: Dp,
     bottomPadding: Dp,
@@ -499,7 +497,7 @@ fun WorkoutFinishPage(
         Text(
             stringResource(
                 R.string.total_workout_time,
-                DateUtils.formatElapsedTime(workoutTimeMillis / 1000)
+                workoutTimeFormatted
             ), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(32.dp))
         Text(stringResource(R.string.workout_completion_tip), style = MaterialTheme.typography.titleMedium)
@@ -555,7 +553,11 @@ fun ExerciseSettingsMenu(
                 })
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.skip_exercise_this_workout_only)) },
-                onClick = removeExercise,
+                onClick = {
+                    // does not close automatically TODO: find actual issue
+                    expanded = false
+                    removeExercise()
+                },
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Delete,

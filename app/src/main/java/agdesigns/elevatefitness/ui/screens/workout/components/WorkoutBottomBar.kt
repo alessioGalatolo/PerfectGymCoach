@@ -1,7 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.workout.components
 
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.data.db.entity.Exercise
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -14,7 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
+import agdesigns.elevatefitness.ui.screens.workout.WorkoutState
+import agdesigns.elevatefitness.ui.screens.workout.CurrentExerciseState
 import androidx.compose.foundation.background
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.res.stringResource
@@ -23,18 +23,15 @@ import com.agdesignes.shared.Equipment
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WorkoutBottomBar(
+    workoutState: WorkoutState,
+    currentExerciseState: CurrentExerciseState,
     contentPadding: PaddingValues,
-    workoutStarted: Boolean,
     startWorkout: () -> Unit,
-    currentExercise: WorkoutExercise?,
     completeWorkout: () -> Unit,
     completeSet: () -> Unit,
-    setsFinished: Boolean,
     addSet: () -> Unit,
     goToNextExercise: () -> Unit,
-    repsToDisplay: String,
     updateReps: (String) -> Unit,
-    weightToDisplay: String,
     updateWeight: (String) -> Unit,
     autoStepWeight: (String, Equipment, Boolean) -> Unit
 ) {
@@ -45,7 +42,7 @@ fun WorkoutBottomBar(
             .padding(contentPadding)
             .padding(horizontal = 16.dp)
     ) {
-        if (!workoutStarted) {
+        if (!workoutState.workoutStarted) {
             // workout has not started
             Button(
                 onClick = startWorkout,
@@ -53,7 +50,7 @@ fun WorkoutBottomBar(
             ) {
                 Text(stringResource(R.string.start_workout))
             }
-        } else if (currentExercise == null) {
+        } else if (currentExerciseState.currentExercise == null) {
             // workout has started and it is on the end page
             Button(
                 onClick = completeWorkout,
@@ -61,7 +58,7 @@ fun WorkoutBottomBar(
             ) {
                 Text(stringResource(R.string.complete_workout))
             }
-        } else if (setsFinished) {
+        } else if (currentExerciseState.setsDone >= currentExerciseState.currentExercise.reps.size) {
             // workout started and the user has done all the sets in the page
             OutlinedButton(
                 onClick = addSet,
@@ -84,30 +81,30 @@ fun WorkoutBottomBar(
             ) {
                 TextFieldWithButtons(
                     stringResource(R.string.reps),
-                    text = { repsToDisplay },
+                    text = { currentExerciseState.repsBottomBar },
                     onNewText = { new -> updateReps(new) },
-                    onIncrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) + 1).toString()) },
-                    onDecrement = { updateReps(((repsToDisplay.toIntOrNull() ?: 0) - 1).toString()) },
+                    onIncrement = { updateReps(((currentExerciseState.repsBottomBar.toIntOrNull() ?: 0) + 1).toString()) },
+                    onDecrement = { updateReps(((currentExerciseState.repsBottomBar.toIntOrNull() ?: 0) - 1).toString()) },
                     contentDescription = stringResource(R.string.reps),
-                    textIsValid = { it.toUIntOrNull()?.let { it > 0U } == true}
+                    textIsValid = { currentExerciseState.repsIsValid }
                 )
                 Spacer(Modifier.width(8.dp))
                 TextFieldWithButtons(
                     stringResource(R.string.weight),
-                    text = { weightToDisplay },
+                    text = { currentExerciseState.weightBottomBar },
                     onNewText = { new -> updateWeight(new) },
                     onIncrement = { autoStepWeight(
-                        weightToDisplay,
-                        currentExercise.equipment,
+                        currentExerciseState.weightBottomBar,
+                        currentExerciseState.currentExercise.equipment,
                         false
                     )},
                     onDecrement = { autoStepWeight(
-                        weightToDisplay,
-                        currentExercise.equipment,
+                        currentExerciseState.weightBottomBar,
+                        currentExerciseState.currentExercise.equipment,
                         true
                     )},
                     contentDescription = stringResource(R.string.weight),
-                    textIsValid = { it.toFloatOrNull() != null }
+                    textIsValid = { currentExerciseState.weightIsValid }
                 )
             }
 
@@ -118,8 +115,9 @@ fun WorkoutBottomBar(
              */
             Row(Modifier.fillMaxWidth()) {
                 Button(
+                    enabled = currentExerciseState.repsIsValid && currentExerciseState.weightIsValid,
                     onClick = completeSet,
-                    Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = if (imeVisible) 48.dp else 0.dp)
                 ) {

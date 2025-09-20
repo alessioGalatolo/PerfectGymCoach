@@ -1,6 +1,5 @@
 package agdesigns.elevatefitness.ui.screens.workout
 
-import android.text.format.DateUtils
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -28,14 +27,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
-import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
-import agdesigns.elevatefitness.service.NotificationListener
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CancelWorkoutDialog
@@ -58,6 +55,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -85,8 +84,6 @@ import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscle
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import kotlin.math.max
@@ -116,13 +113,27 @@ fun SharedTransitionScope.Workout(
     viewModel: WorkoutViewModel = hiltViewModel(),
     mediaVM: MediaViewModel = hiltViewModel()
 ) {
-    val workoutState by viewModel.state.collectAsState()
+    val workoutState by viewModel.workoutState.collectAsState()
+    val pagesContent by viewModel.pagesContent.collectAsState()
+    val currentExerciseState by viewModel.currentExerciseState.collectAsState()
     val mediaState by mediaVM.state.collectAsStateWithLifecycle()
-    LaunchedEffect(workoutState.autoStartFailed) {
-        if (workoutState.autoStartFailed)
-            navigator.navigateUp()
+
+    // Init VM
+    LaunchedEffect(programId, resumeWorkout, quickStart) {
+        viewModel.onEvent(
+            WorkoutEvent.InitWorkout(
+                programId,
+                resumeWorkout,
+                quickStart
+            )
+        )
     }
+
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // TODO: move to a repository and call from VM
     LaunchedEffect(Unit) {
         // maybe open wear os app
         val openWearIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -131,12 +142,6 @@ fun SharedTransitionScope.Workout(
         }
         val remoteActivityHelper = RemoteActivityHelper(context)
         remoteActivityHelper.startRemoteActivity(openWearIntent)
-    }
-    // when exiting the screen, stop wear workout
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.onEvent(WorkoutEvent.InterruptWearWorkout)
-        }
     }
 
     // for container transform animation
@@ -162,18 +167,6 @@ fun SharedTransitionScope.Workout(
         )
     )
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    if (resumeWorkout)
-        viewModel.onEvent(WorkoutEvent.ResumeWorkout)
-    else if (programId == 0L)
-        viewModel.onEvent(WorkoutEvent.AutoStartWorkout)
-    else
-        viewModel.onEvent(WorkoutEvent.InitWorkout(programId))
-
-    val scope = rememberCoroutineScope()
-
-    val startWorkout = rememberSaveable { mutableStateOf(quickStart) }
-
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val onClose: () -> Unit = {
         backDispatcher?.onBackPressed()
@@ -181,21 +174,15 @@ fun SharedTransitionScope.Workout(
     // used to animate dialog alpha for predictive back
     var cancelWorkoutDialogProgress by rememberSaveable { mutableFloatStateOf(0f) }
     PredictiveBackHandler(
-        enabled = (startWorkout.value || workoutState.startDate != null || resumeWorkout) && cancelWorkoutDialogProgress < 0.5f,
+        enabled = (workoutState.startDate != null) && cancelWorkoutDialogProgress < 0.5f,
     ) { backFlow ->
         try {
             backFlow.collect { back ->
                 cancelWorkoutDialogProgress = back.progress
             }
             cancelWorkoutDialogProgress = 1f
-        } catch (e: CancellationException) {
+        } catch (_: CancellationException) {
             cancelWorkoutDialogProgress = 0f
-        }
-    }
-    LaunchedEffect(startWorkout.value) {
-        if (startWorkout.value) {
-            viewModel.onEvent(WorkoutEvent.StartWorkout)
-            startWorkout.value = false
         }
     }
 
@@ -247,163 +234,58 @@ fun SharedTransitionScope.Workout(
     val pagerState = rememberPagerState(
         initialPage = previewExercise?.orderInProgram ?: 0,
         pageCount = {
-        if (workoutState.startDate != null)
-            workoutState.workoutExercises.size+1
-        else
-            workoutState.workoutExercises.size
-    })
-    // communicate with viewModel so that it know current exercise
-    // FIXME: wouldn't it be easier to use currentExercise?
-    LaunchedEffect(pagerState.currentPage, workoutState.workoutExercises) {
-        viewModel.onEvent(WorkoutEvent.UpdateCurrentPage(pagerState.currentPage))
-    }
-    val currentExercise: WorkoutExercise? by remember {
-        derivedStateOf {
-            if (pagerState.currentPage < workoutState.workoutExercises.size) {
-                workoutState.workoutExercises[pagerState.currentPage]
-            } else {
-                null
+            if (workoutState.startDate != null)
+                pagesContent.exercises.size+1
+            else
+                pagesContent.exercises.size
+        }
+    )
+
+    // Collect viewModel's one-off effects without causing recomposition loops
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is WorkoutEffect.NavigateBack -> navigator.navigateUp()
+                is WorkoutEffect.ShowMessage -> snackbarHostState.showSnackbar(context.getString(effect.message))
+                is WorkoutEffect.ShowErrorAndBack -> {
+                    snackbarHostState.showSnackbar(context.getString(effect.message))
+                    navigator.navigateUp()
+                }
+                is WorkoutEffect.AdvancePage -> {
+                    pagerState.animateScrollToPage(effect.page)
+                }
             }
         }
     }
 
-    LaunchedEffect(workoutState.autoAdvancePage) {
-        if (workoutState.autoAdvancePage != null) {
-            pagerState.animateScrollToPage(workoutState.autoAdvancePage!!)
-            viewModel.onEvent(WorkoutEvent.ResetAutoAdvancePage)
-        }
+    // communicate with viewModel so that it know current exercise
+    LaunchedEffect(pagerState.currentPage) {
+        viewModel.onEvent(WorkoutEvent.UpdateCurrentPage(pagerState.currentPage))
     }
-    val workoutTimeMillis by remember {
-        derivedStateOf {
-            workoutState.startDate?.toInstant()?.toEpochMilli()?.let {
-                workoutState.currentTime.toInstant().toEpochMilli() - it
-            } ?: 0L
-        }
-    }
-    val timer = {" " + if (workoutTimeMillis > 0L) DateUtils.formatElapsedTime(workoutTimeMillis / 1000) else "" }
 
-    val variation = if ((currentExercise?.variation ?: "").isNotBlank()) " (${currentExercise?.variation})" else ""
     // title for top app bar, do not share bounds for animation
     val titleTopBar = @Composable { Text(
-        currentExercise?.name?.plus(variation) ?: stringResource(R.string.end_of_workout),
+        currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     ) }
     // title below image, share bounds for animation
-    val title = @Composable { Text(
-        currentExercise?.name?.plus(variation) ?: stringResource(R.string.end_of_workout),
-        overflow = TextOverflow.Ellipsis,
-        maxLines = 3,
-        modifier = Modifier.sharedBounds(
+    val titleModifier = if(currentExerciseState.currentExercise?.extProgramExerciseId == previewExercise?.programExerciseId)
+        Modifier.sharedBounds(
             sharedStateTitle,
             animatedVisibilityScope,
             boundsTransform = { _, _ ->
                 MotionScheme.expressive().slowSpatialSpec()
             }
         )
+    else Modifier
+
+    val title = @Composable { Text(
+        currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 3,
+        modifier = titleModifier  // FIXME: misbehaves
     ) }
-
-    val currentExerciseRecord by remember { derivedStateOf {
-        if (pagerState.currentPage < workoutState.workoutExercises.size)
-            workoutState.allRecords[
-                    workoutState.workoutExercises[pagerState.currentPage].extExerciseId
-            ] ?: emptyList()
-        else
-            emptyList()
-    }}
-
-    // record being set right now for current exercise
-    val ongoingRecord by remember { derivedStateOf {
-        currentExerciseRecord.find {
-            it.extWorkoutId == workoutState.workoutId && it.exerciseInWorkout == pagerState.currentPage
-        }
-    }}
-
-    // records for current exercise minus ongoingRecord
-    val recordsToDisplay by remember { derivedStateOf {
-        if (ongoingRecord != null)
-            currentExerciseRecord.minus(ongoingRecord!!).sortedByDescending { it.date }
-        else
-            currentExerciseRecord.sortedByDescending { it.date }
-    }}
-
-    val setsDone = remember { derivedStateOf{
-        ongoingRecord?.reps?.size ?: 0
-    }}
-    LaunchedEffect(setsDone.value, ongoingRecord){
-        // This is to fix the bug when user is resume a workout with added sets
-        // (before) on resume, only the original number of sets would be shown (instead of also the added ones)
-        if (setsDone.value > 0 && setsDone.value > (currentExercise?.reps?.size ?: Int.MAX_VALUE)) {
-            for (i in setsDone.value-1 downTo currentExercise!!.reps.size) {
-                viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage))
-            }
-        }
-    }
-
-    LaunchedEffect(setsDone.value){
-        // update viewModel so that it can be transmitted to wear os
-        viewModel.onEvent(WorkoutEvent.UpdateSetsDone(setsDone.value))
-    }
-    // once we change exercise or current set, update reps count for the upcoming set
-    LaunchedEffect(currentExercise, setsDone){
-        if (currentExercise != null && setsDone.value < currentExercise!!.reps.size) {
-            viewModel.onEvent(
-                WorkoutEvent.UpdateReps(
-                    currentExercise!!.reps[setsDone.value].toString()
-                )
-            )
-        }
-    }
-
-    // set predicted weight and tare for bottom bar
-    LaunchedEffect(recordsToDisplay, ongoingRecord, setsDone){
-        // heuristic: tare is taken from previous set if available, otherwise from previous record
-        /*
-         weight is taken in this order:
-         0. If first set, take from last record
-         1. If not first set, check last set weight:
-         1a. If == to the same set from last record, take from last record
-         2. Otherwise, check whether the weight also changed between sets in last record (e.g., pyramid)
-         2a. If not, keep weight from previous set
-         3. Otherwise, take last record increased/decreased by same amount as previous set
-         */
-        // FIXME: this heuristic is not transparent to the user that might question what these
-        // "random" changes in weight are. Perhaps it is better to always have ongoingRecord and
-        // have the rest as a suggestion
-
-        // this is the record of the last record before current workout
-        val lastOldRecord = recordsToDisplay.firstOrNull()
-
-        var weightCandidate: Float? = null
-        var oldRecordWeightCurrentSet: Float? = null
-        var oldRecordWeightPreviousSet: Float? = null
-        var ongoingRecordWeightPreviousSet: Float? = null
-        var tareCandidate: Float? = null
-        // for the weight, try to copy from last old record
-        if (lastOldRecord != null) {
-            oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone.value)
-            oldRecordWeightPreviousSet = lastOldRecord.weights.getOrNull(setsDone.value-1)
-            tareCandidate = lastOldRecord.tare
-        }
-        if (ongoingRecord != null) {
-            ongoingRecordWeightPreviousSet = ongoingRecord!!.weights.getOrNull(setsDone.value-1)
-            tareCandidate = ongoingRecord!!.tare
-        }
-        if (setsDone.value == 0) {
-            weightCandidate = oldRecordWeightCurrentSet
-        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet == ongoingRecordWeightPreviousSet) {
-            weightCandidate = oldRecordWeightCurrentSet
-        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet != oldRecordWeightCurrentSet) {
-            val delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
-            weightCandidate = oldRecordWeightCurrentSet.plus(delta ?: 0f)
-        } else {
-            weightCandidate = ongoingRecordWeightPreviousSet
-        }
-        weightCandidate = weightCandidate?.let { maybeKgToLb(it, workoutState.imperialSystem) }
-
-        viewModel.onEvent(WorkoutEvent.UpdateWeight(weightCandidate?.toString() ?: "0.0"))
-        viewModel.onEvent(WorkoutEvent.UpdateTare(tareCandidate ?: 0f))
-    }
 
     EnterIntensityAndFinishDialog(
         dialogIsOpen = workoutState.enterIntensityDialogOpen,
@@ -414,13 +296,6 @@ fun SharedTransitionScope.Workout(
     val completeWorkout: () -> Unit = {
         viewModel.onEvent(WorkoutEvent.ToggleEnterIntensityDialog)
     }
-
-    val pagerPageCount by remember { derivedStateOf {
-        if (workoutState.startDate != null)
-            workoutState.workoutExercises.size+1
-        else
-            workoutState.workoutExercises.size
-    }}
 
     var fabHeight by remember { mutableStateOf(0.dp) }
 
@@ -441,12 +316,10 @@ fun SharedTransitionScope.Workout(
     // has finished once as, depending on how do user is interacting, it may keep going
     var animationHasFinished by remember { mutableStateOf(false) }
     animationHasFinished = animationHasFinished || !animatedVisibilityScope.transition.isRunning
-    if (workoutState.workoutExercises.isNotEmpty() && animationHasFinished) {
-        val currentImageId by remember { derivedStateOf {
-            if (pagerState.currentPage == workoutState.workoutExercises.size)
-                R.drawable.finish_workout
-            else currentExercise!!.image
-        }}
+    if (pagesContent.exercises.isNotEmpty() && animationHasFinished) {
+        val currentImageId = if (pagerState.currentPage == pagesContent.exercises.size)
+            R.drawable.finish_workout
+        else currentExerciseState.currentExercise?.image  ?: R.drawable.finish_workout
         FullScreenImageCard(
             animatedVisibilityScope = animatedVisibilityScope,
             sharedState = sharedStateCard,
@@ -472,7 +345,7 @@ fun SharedTransitionScope.Workout(
                     val needsDarkColor = (brightImage.value && !appBarShown) ||
                             (appBarShown && !useDarkTheme)
                     Text(
-                        timer(),
+                        currentExerciseState.workoutTimeFormatted,
                         style = MaterialTheme.typography.titleLarge,
                         color = if (needsDarkColor)
                             Color.Black
@@ -540,7 +413,6 @@ fun SharedTransitionScope.Workout(
 
                     HorizontalPagerIndicator(
                         pagerState = pagerState,
-                        pageCount = pagerPageCount,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp),
@@ -551,45 +423,38 @@ fun SharedTransitionScope.Workout(
             brightImage = brightImage.value,
             darkTheme = useDarkTheme,
             content = { bottomPadding ->
-                val restCounterMillis: Long? = if (workoutState.restTimestamp != null && currentExercise != null)
-                    max(0L,
-                        workoutState.restTimestamp?.toInstant()?.toEpochMilli()?.minus(
-                            workoutState.currentTime.toInstant().toEpochMilli()
-                        ) ?: 0L
-                    )
-                else null
-                // restCounterMillis is updated infrequently, animate between value to have smooth progress
-                val progressAnim = remember { Animatable(1f) }
+                val progressAnim = remember(currentExerciseState.restTimestamp) { Animatable(1f) }
 
-                val targetProgress = restCounterMillis?.let {
-                    it.toFloat() / (workoutState.currentExerciseRest?.times(1000L) ?: restCounterMillis).toFloat()
-                } ?: 1f
-
-                LaunchedEffect(targetProgress) {
-                    progressAnim.animateTo(
-                        targetValue = targetProgress,
-                        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
-                    )
+                LaunchedEffect(
+                    currentExerciseState.restTimestamp,
+                    currentExerciseState.currentExerciseRest
+                ) {
+                    if (
+                        currentExerciseState.restTimestamp != null &&
+                        currentExerciseState.currentExerciseRest != null
+                    ) {
+                        progressAnim.animateTo(
+                            targetValue = 0f,
+                            animationSpec = tween(
+                                (currentExerciseState.currentExerciseRest!! * 1000).toInt(),
+                                easing = LinearEasing
+                            )
+                        )
+                    }
                 }
 
 
                 ExercisePage(
-                    bottomPadding = bottomPadding,
-                    pagerState = pagerState,
-                    workoutTimeMillis = workoutTimeMillis,
-                    workoutExercises = workoutState.workoutExercises,
-                    workoutId = workoutState.workoutId,
                     navigator = navigator,
-                    setsDone = setsDone,
-                    ongoingRecord = ongoingRecord,
-                    currentExerciseRecords = recordsToDisplay,
-                    exerciseDescription = currentExercise?.description
-                        ?: stringResource(R.string.exercise_description_not_available),
+                    horizontalPagerState = pagerState,
+                    currentExerciseState = currentExerciseState,
+                    pagesContent = pagesContent,
+                    workoutState = workoutState,
+                    bottomPadding = bottomPadding,
                     fabHeight = fabHeight,
-                    title = title,
-                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
-                    restCounterMillis = restCounterMillis,
                     restCounterProgress = progressAnim.value,
+                    title = title,
+                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
                     updateExerciseProbability = { probability ->
                         scope.launch {
                             // if already snackbarring, dismiss it before a new one.
@@ -626,8 +491,6 @@ fun SharedTransitionScope.Workout(
                         )
                     },
                     updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
-                    useImperialSystem = workoutState.imperialSystem,
-                    tare = workoutState.tare,
                     toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
                     changeExercise = { exerciseInWorkout, originalSize ->
                         scope.launch {
@@ -675,34 +538,25 @@ fun SharedTransitionScope.Workout(
                 exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
             ) {
                 WorkoutBottomBar(
+                    workoutState = workoutState,
+                    currentExerciseState = currentExerciseState,
                     contentPadding = padding,
-                    workoutStarted = workoutState.startDate != null,
                     startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
-                    currentExercise = currentExercise,
                     completeWorkout = completeWorkout,
                     completeSet = {
-                        if (!viewModel.onEvent(
-                                WorkoutEvent.TryCompleteSet(
-                                    pagerState.currentPage,
-                                    currentExercise!!.rest[setsDone.value].toLong()
-                                )
-                            )
-                        ) {
-                            scope.launch {
-                                snackbarHostState.currentSnackbarData?.dismiss()
-                                snackbarHostState.showSnackbar(context.getString(R.string.please_enter_valid_numbers))
-                            }
-                        } else if ((currentExercise?.supersetExercise ?: 0L) != 0L) {
+                        // FIXME: should only call VM.onEvent, then VM should emit a side effect if superset
+                        viewModel.onEvent(WorkoutEvent.CompleteSet)
+                        if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
                             val superExercise =
-                                workoutState.workoutExercises.find {
-                                    it.extProgramExerciseId == currentExercise!!.supersetExercise
+                                pagesContent.exercises.find {
+                                    it.extProgramExerciseId == currentExerciseState.currentExercise?.supersetExercise
                                 }
                             if (superExercise != null) {
-                                if (workoutState.workoutExercises.indexOf(
+                                if (pagesContent.exercises.indexOf(
                                         superExercise
                                     ) >
-                                    workoutState.workoutExercises.indexOf(
-                                        currentExercise
+                                    pagesContent.exercises.indexOf(
+                                        currentExerciseState.currentExercise
                                     )
                                 ) {
                                     scope.launch {
@@ -715,8 +569,8 @@ fun SharedTransitionScope.Workout(
                                 }
                             }
                         }
-                    }, setsFinished = setsDone.value >= (currentExercise?.reps?.size ?: 0),
-                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToExercise(pagerState.currentPage)) },
+                    },
+                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
                     goToNextExercise = {
                         scope.launch {
                             pagerState.animateScrollToPage(
@@ -724,9 +578,7 @@ fun SharedTransitionScope.Workout(
                             )
                         }
                     },
-                    repsToDisplay = workoutState.repsBottomBar,
                     updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
-                    weightToDisplay = workoutState.weightBottomBar,
                     updateWeight = { value ->
                         viewModel.onEvent(
                             WorkoutEvent.UpdateWeight(
@@ -805,55 +657,13 @@ fun SharedTransitionScope.Workout(
             brightImage = brightImage.value,
             darkTheme = useDarkTheme,
             content = { bottomPadding ->
-                val exampleRecord = ExerciseRecordAndEquipment(
-                    recordId = 0L,
-                    extExerciseId = 0L,
-                    extWorkoutId = 0L,
-                    exerciseInWorkout = previewExercise.orderInProgram,
-                    date = ZonedDateTime.now(),
-                    reps = previewExercise.reps,
-                    weights = previewExercise.reps.map { 0f },
-                    tare = 0f,
-                    variation = previewExercise.variation,
-                    variationResKey = previewExercise.variationResKey,
-                    rest = previewExercise.rest,
-                    equipment = previewExercise.equipment
-                )
-                val exampleExercise = WorkoutExercise(
-                    workoutExerciseId = 0L,
-                    extWorkoutId = 0L,
-                    extProgramExerciseId = 0L,
-                    extExerciseId = 0L,
-                    name = previewExercise.name,
-                    nameResKey = previewExercise.nameResKey,
-                    image = previewExercise.image,
-                    imageResKey = previewExercise.imageResKey,
-                    description = previewExercise.description,
-                    descriptionResKey = previewExercise.descriptionResKey,
-                    equipment = previewExercise.equipment,
-                    orderInProgram = previewExercise.orderInProgram,
-                    reps = previewExercise.reps,
-                    rest = previewExercise.rest,
-                    note = previewExercise.note,
-                    variation = previewExercise.variation,
-                    variationResKey = previewExercise.variationResKey,
-                    supersetExercise = previewExercise.supersetExercise
-                )
-                val workoutExercisesExample = listOf(
-                    exampleExercise,
-                    exampleExercise
-                )
                 ExercisePage(
                     bottomPadding = bottomPadding,
-                    pagerState = rememberPagerState(pageCount = { 2 }),
-                    workoutTimeMillis = 0L,
-                    workoutExercises = workoutExercisesExample,
-                    workoutId = 0L,
+                    horizontalPagerState = rememberPagerState(pageCount = { 2 }),
+                    currentExerciseState = currentExerciseState,  // FIXME: this will break stuff
+                    pagesContent = pagesContent,
+                    workoutState = workoutState,
                     navigator = navigator,
-                    setsDone = setsDone,
-                    ongoingRecord = exampleRecord,
-                    currentExerciseRecords = emptyList(),
-                    exerciseDescription = "",
                     fabHeight = 0.dp,
                     title = {
                         Text(
@@ -870,12 +680,9 @@ fun SharedTransitionScope.Workout(
                     updateBottomBar = { _, _ -> },
                     updateValues = { _, _, _, _ -> },
                     updateTare = { },
-                    useImperialSystem = false,
-                    tare = 0f,
                     toggleOtherEquipment = { },
                     changeExercise = { _, _ -> },
                     removeExercise = { },
-                    restCounterMillis = null,
                     restCounterProgress = null,
                     updateExerciseProbability = { _ -> }
                 )

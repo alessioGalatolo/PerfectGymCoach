@@ -47,19 +47,14 @@ fun SharedTransitionScope.FullScreenImageCard(
 
     val localDensity = LocalDensity.current
     val statusBarsHeight = WindowInsets.Companion.statusBars.asPaddingValues().calculateTopPadding()
-    val contentBelowImage by remember {
-        derivedStateOf{
-            max(
-                0.dp,
-                /*with(localDensity) { imageHeight.toDp() }*/ imageHeight - statusBarsHeight - 64.dp
-            ) // top app bar height FIXME: should not be hardcoded
-        }
-    }
+    val contentBelowImage = max(
+        0.dp, imageHeight - statusBarsHeight - TopAppBarDefaults.MediumAppBarCollapsedHeight
+    )
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
         rememberTopAppBarState()
     )
     val s = scrollBehavior.state
-    val belowImageFloat by remember { derivedStateOf { with(localDensity) { contentBelowImage.toPx() }}}
+    val belowImageFloat = with(localDensity) { contentBelowImage.toPx() }
     val transition by remember { derivedStateOf { 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
         minimumValue = s.heightOffsetLimit,
         maximumValue = 0f
@@ -108,11 +103,11 @@ fun SharedTransitionScope.FullScreenImageCard(
                 // TODO: check if new compose exposes something useful for this
                 val transparentColor = MaterialTheme.colorScheme.surface.copy(alpha = 1f)
                 val tonedColor = MaterialTheme.colorScheme.surfaceContainer
-                val backgroundColor by remember { derivedStateOf { lerp(
-                        transparentColor, // start from base color e.g., white to remove transparency instantly
-                        tonedColor,  // transition to right color slowly together with text
-                        FastOutLinearInEasing.transform(transition)
-                    )}}
+                val backgroundColor = lerp(
+                    transparentColor, // start from base color e.g., white to remove transparency instantly
+                    tonedColor,  // transition to right color slowly together with text
+                    FastOutLinearInEasing.transform(transition)
+                )
                 TopAppBar(
                     title = {
                         // animate text alpha with scrolling

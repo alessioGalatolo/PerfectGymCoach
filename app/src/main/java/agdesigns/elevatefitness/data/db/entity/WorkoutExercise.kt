@@ -89,3 +89,10 @@ data class WorkoutExerciseReorder(
     val workoutExerciseId: Long,
     val orderInProgram: Int
 ): Parcelable
+
+@Parcelize
+data class WorkoutExerciseUpdateSets(
+    val workoutExerciseId: Long,
+    val reps: List<Int>,
+    val rest: List<Int>
+): Parcelable

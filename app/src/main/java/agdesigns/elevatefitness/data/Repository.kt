@@ -7,8 +7,6 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
-import agdesigns.elevatefitness.data.db.entity.Sex
-import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
 import agdesigns.elevatefitness.data.wearos.WatchMessageReceiver
 import android.content.Context
@@ -23,6 +21,7 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.RemovePlan
+import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSets
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
@@ -30,14 +29,12 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
-import agdesigns.elevatefitness.utils.getLocalizedString
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.annotation.AnyRes
 import androidx.annotation.DrawableRes
-import androidx.datastore.core.DataMigration
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
@@ -48,14 +45,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import okio.SYSTEM
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.time.ZonedDateTime
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -297,6 +291,9 @@ class Repository @Inject constructor(
 
     suspend fun updateWorkoutExerciseNumber(workoutExerciseReorder: WorkoutExerciseReorder) =
         db.workoutExerciseDao.updateOrder(workoutExerciseReorder)
+
+    suspend fun updateWorkoutExerciseSets(workoutExerciseUpdateSets: WorkoutExerciseUpdateSets) =
+        db.workoutExerciseDao.updateSets(workoutExerciseUpdateSets)
 
     fun resolveResources(workoutExercise: WorkoutExercise): WorkoutExercise {
         val name = if (workoutExercise.userDefined)

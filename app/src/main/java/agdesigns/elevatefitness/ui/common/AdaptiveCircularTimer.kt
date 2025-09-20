@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AdaptiveCircularTimer(
-    remainingTimeMillis: Long, // time in millis
+    remainingTimeSecs: Long, // time in secs
     progress: Float,
     modifier: Modifier = Modifier,
     padding: Dp = 36.dp // empty space between text and ring
@@ -67,12 +67,12 @@ fun AdaptiveCircularTimer(
     val thickStroke = remember(thickStrokeWidth) { Stroke(width = thickStrokeWidth, cap = StrokeCap.Round) }
 
     // Track completion state
-    var hasCompleted by remember(remainingTimeMillis) { mutableStateOf(false) }
-    var showCompletion by remember(remainingTimeMillis) { mutableStateOf(false) }
+    var hasCompleted by remember(remainingTimeSecs) { mutableStateOf(false) }
+    var showCompletion by remember(remainingTimeSecs) { mutableStateOf(false) }
 
     // Detect when timer completes
-    LaunchedEffect(remainingTimeMillis) {
-        if (remainingTimeMillis == 0L && !hasCompleted) {
+    LaunchedEffect(remainingTimeSecs) {
+        if (remainingTimeSecs == 0L && !hasCompleted) {
             hasCompleted = true
             // Start completion animation sequence
             showCompletion = true
@@ -117,7 +117,7 @@ fun AdaptiveCircularTimer(
         /* 1 Measure the TEXT first */
         val textPlaceable = subcompose("text") {
             AnimatedTimer(
-                totalSeconds = remainingTimeMillis / 1000,
+                totalSeconds = remainingTimeSecs,
                 textStyle = MaterialTheme.typography.displayMediumEmphasized,
                 textColor = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,

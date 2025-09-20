@@ -799,4 +799,9 @@
     <string name="empty_workout_add_text">Aggiungi solo a questo allenamento</string>
     <string name="empty_workout_edit_text">Modifica questo programma</string>
     <string name="search_and_add_exercise">Cerca e aggiungi esercizio</string>
+    <string name="autostart_workout_failed">Non è stato possible trovare un allenamento da iniziare!</string>
+    <string name="complete_set_fail">Non è stato possibile completare la seria: peso o ripetizioni non validi!</string>
+    <string name="complete_set_from_watch_fail">Orologio ha provato a completare una serie ma l\'esercizio è sconosciuto!</string>
+    <string name="add_set_fail">Non è stato possibile aggiungere una serie perché l\'esercizio è sconosciuto!</string>
+    <string name="resume_workout_fail">Non è stato possibile trovare l\'allenamento da riprendere!</string>
 </resources>
