@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
@@ -48,14 +51,37 @@ import kotlinx.coroutines.android.awaitFrame
 fun InsertNameDialog(
     prompt: String,
     dialogueIsOpen: Boolean,
+    oldName: String? = null,
     toggleDialog: () -> Unit,
-    insertName: (String) -> Unit
+    insertName: (String) -> Unit,
 ) {
     // alert dialogue to enter the workout plan/program name
-
-    var text by rememberSaveable { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
+    val textFieldState = rememberTextFieldState()
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(oldName) {
+        if (oldName != null) {
+            textFieldState.setTextAndSelectAll(oldName)
+        }
+    }
+    LaunchedEffect(dialogueIsOpen) {
+        if (dialogueIsOpen) {
+            awaitFrame()
+            awaitFrame()
+            awaitFrame()
+            awaitFrame()
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+    val saveAndClose = {
+        if (textFieldState.text.isNotBlank()) {
+            if (textFieldState.text.toString() != oldName) {
+                insertName(textFieldState.text.toString().trim())
+            }
+            toggleDialog()
+        }
+    }
     if (dialogueIsOpen) {
         AlertDialog(
             onDismissRequest = {
@@ -68,36 +94,26 @@ fun InsertNameDialog(
                 Text(text = stringResource(R.string.enter_name_for, prompt.lowercase()))
             },
             text = {
-                TextField(value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier
-                        .focusRequester(focusRequester)
-                        .onFocusChanged {
-                            if (it.isFocused) {
-                                keyboardController?.show()
-                            }
-                        },
+                TextField(
+                    state = textFieldState,
+                    isError = textFieldState.text.isBlank(),
                     label = { Text(prompt) },
-                    keyboardActions = KeyboardActions(onDone = {
-                        keyboardController?.hide()
-                    }),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    singleLine = true)
-                LaunchedEffect(focusRequester) {
-                    awaitFrame()
-                    awaitFrame()
-                    awaitFrame()
-                    awaitFrame()
-                    focusRequester.requestFocus()
-                }
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done,
+                        showKeyboardOnFocus = true
+                    ),
+                    onKeyboardAction = KeyboardActionHandler {
+                        saveAndClose()
+                    },
+                    modifier = Modifier.focusRequester(focusRequester)
+                )
             },
             confirmButton = {
                 TextButton(
-                    enabled = text.isNotBlank(),
+                    enabled = textFieldState.text.isNotBlank(),
                     onClick = {
-                        insertName(text.trim())
-                        toggleDialog()
-                        text = ""
+                        saveAndClose()
                     }
                 ) {
                     Text(stringResource(R.string.dialog_confirm))

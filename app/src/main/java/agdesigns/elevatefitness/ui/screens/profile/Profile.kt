@@ -36,10 +36,16 @@ import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -49,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.android.awaitFrame
 import java.time.ZonedDateTime
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -67,10 +74,6 @@ fun Profile(
 ) {
     val profileState by viewModel.state.collectAsState()
     var editName by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
-    LaunchedEffect(profileState.name){
-        name = profileState.name
-    }
     var userYear by remember { mutableStateOf("0") }
     val validUserYear by remember { derivedStateOf {
         userYear.toIntOrNull() != null && userYear.toInt() in 1900..ZonedDateTime.now().year
@@ -109,7 +112,6 @@ fun Profile(
     ) { uri ->
         uri?.let { viewModel.onEvent(ProfileEvent.ImportPreferences(it)) }
     }
-
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarMessage = profileState.backupOutcomeResId?.let { stringResource(it) }
     LaunchedEffect(snackbarMessage) {
@@ -132,21 +134,21 @@ fun Profile(
         ) {
             // Header Section
             item {
+                val nameTextFieldState = rememberTextFieldState()
                 ProfileHeader(
                     name = profileState.name,
                     editName = editName,
-                    nameValue = name,
-                    onNameChange = { name = it },
-                    onEditToggle = {
+                    nameTextFieldState = nameTextFieldState,
+                    onEditToggle = { newName ->
                         editName = !editName
                         if (!editName) {
-                            viewModel.onEvent(ProfileEvent.UpdateName(name))
+                            viewModel.onEvent(ProfileEvent.UpdateName(newName))
                         }
                     },
-                    onNameSubmit = {
+                    onNameSubmit = { newName ->
                         keyboardController?.hide()
                         editName = false
-                        viewModel.onEvent(ProfileEvent.UpdateName(name))
+                        viewModel.onEvent(ProfileEvent.UpdateName(newName))
                     }
                 )
             }
@@ -413,11 +415,24 @@ fun Profile(
 fun ProfileHeader(
     name: String,
     editName: Boolean,
-    nameValue: String,
-    onNameChange: (String) -> Unit,
-    onEditToggle: () -> Unit,
-    onNameSubmit: () -> Unit
+    nameTextFieldState: TextFieldState,
+    onEditToggle: (String) -> Unit,
+    onNameSubmit: (String) -> Unit
 ) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(editName) {
+        if (editName) {
+            nameTextFieldState.setTextAndSelectAll(name)
+            awaitFrame()
+            awaitFrame()
+            awaitFrame()
+            awaitFrame()
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -439,7 +454,7 @@ fun ProfileHeader(
                         modifier = Modifier.weight(1f)
                     )
                     IconButton(
-                        onClick = onEditToggle,
+                        onClick = { onEditToggle(nameTextFieldState.text.toString()) },
                         colors = IconButtonDefaults.iconButtonColors(
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -448,15 +463,19 @@ fun ProfileHeader(
                     }
                 } else {
                     OutlinedTextField(
-                        value = nameValue,
-                        onValueChange = onNameChange,
+                        state = nameTextFieldState,
+                        isError = nameTextFieldState.text.isBlank(),
                         label = { Text(stringResource(R.string.name)) },
                         keyboardOptions = KeyboardOptions(
                             imeAction = ImeAction.Done,
                             capitalization = KeyboardCapitalization.Words
                         ),
-                        keyboardActions = KeyboardActions(onDone = { onNameSubmit() }),
-                        modifier = Modifier.weight(1f),
+                        onKeyboardAction = KeyboardActionHandler {
+                            onNameSubmit(nameTextFieldState.text.toString())
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(focusRequester),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             unfocusedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -468,7 +487,7 @@ fun ProfileHeader(
                         ),
                     )
                     IconButton(
-                        onClick = onEditToggle,
+                        onClick = { onEditToggle(nameTextFieldState.text.toString()) },
                         colors = IconButtonDefaults.iconButtonColors(
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )

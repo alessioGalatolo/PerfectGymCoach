@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -19,9 +18,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -61,7 +58,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MediumFloatingActionButton
 import androidx.compose.material3.OutlinedButton
@@ -93,10 +89,14 @@ fun AddWorkoutPlan(
 ) {
     // FIXME: two plans and some archived ones. If swapping current plan, archived button disappears
     val addWorkoutState by viewModel.state.collectAsState()
+    // rename plan
     InsertNameDialog(
         prompt = stringResource(R.string.rename_plan),
         dialogueIsOpen = addWorkoutState.openChangeNameDialog,
         toggleDialog = { viewModel.onEvent(PlansEvent.ToggleChangeNameDialog(null)) },
+        oldName = addWorkoutState.workoutPlanMapPrograms.firstOrNull {
+            it.first.planId == addWorkoutState.planToBeRenamed
+        }?.first?.name?.let { getPlanDisplayName(it) },
         insertName = {
             if (addWorkoutState.planToBeRenamed != null) {
                 viewModel.onEvent(
@@ -120,7 +120,9 @@ fun AddWorkoutPlan(
                 WorkoutPlan(
                     name = planName,
                     creationDate = ZonedDateTime.now(),
-                ))) }
+                )
+            ))
+        }
     )
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }

@@ -25,6 +25,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
+import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
@@ -60,10 +61,14 @@ fun AddProgram(
                 orderInWorkoutPlan = addProgramState.programs.size
             ))) }
     )
+    // rename program
     InsertNameDialog(
         prompt = stringResource(R.string.rename_program_prompt),
         dialogueIsOpen = addProgramState.openChangeNameDialog,
         toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
+        oldName = addProgramState.programs.firstOrNull {
+            it.programId == addProgramState.programToBeChanged
+        }?.name?.let { getProgramDisplayName(it)},
         insertName = { viewModel.onEvent(ProgramsEvent.RenameProgram(
             WorkoutProgramRename(
                 programId = addProgramState.programToBeChanged,

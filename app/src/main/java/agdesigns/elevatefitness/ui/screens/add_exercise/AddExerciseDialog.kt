@@ -47,9 +47,13 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
+import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
@@ -111,6 +115,8 @@ fun SharedTransitionScope.AddExerciseDialog(
         resetAllExercises = { viewModel.onEvent(AddExerciseEvent.ResetProbability()) }
     )
 
+    val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val imageHeight = imageWidth/3*2
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // make topappbar opaque
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
@@ -213,11 +219,13 @@ fun SharedTransitionScope.AddExerciseDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 item {
-                    Image(
-                        painterResource(exercise.image),
+                    AsyncImage(
+                        exercise.image,
                         stringResource(R.string.exercise_image),
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(imageHeight)
                             .padding(bottom = 16.dp)
                             .sharedElement(
                                 rememberSharedContentState(
