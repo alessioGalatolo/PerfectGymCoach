@@ -110,6 +110,8 @@ data class WorkoutState(
     val lastWorkoutIntensity: Float? = null,
     val workoutId: Long = 0L,
     val imperialSystem: Boolean = false,
+    val lockHorizontalScroll: Boolean = false,
+    val autoOpenWear: Boolean? = null, // set as null as we want to wait for the actual first value
     // TODO: really not happy about this. Belongs to WorkoutPagesContent but it was not to be
     //  updated directly by the user by the tares are
     val tares: List<Float> = emptyList(),
@@ -303,7 +305,9 @@ class WorkoutViewModel @Inject constructor(
                 preferences.getDumbbellIncrement(),
                 preferences.getMachineIncrement(),
                 preferences.getCableIncrement(),
-                preferences.getDontWantNotificationAccess()
+                preferences.getDontWantNotificationAccess(),
+                preferences.getLockHorizontalScroll(),
+                preferences.getAutoOpenWear()
             ) { values: Array<Any?> ->
                 _workoutState.update {
                     it.copy(
@@ -314,7 +318,9 @@ class WorkoutViewModel @Inject constructor(
                         incrementDumbbell = values[4] as Float,
                         incrementMachine = values[5] as Float,
                         incrementCable = values[6] as Float,
-                        cantRequestNotificationAccess = values[7] as Boolean
+                        cantRequestNotificationAccess = values[7] as Boolean,
+                        lockHorizontalScroll = values[8] as Boolean,
+                        autoOpenWear = values[9] as Boolean
                     )
                 }
             }.collect()
@@ -971,6 +977,11 @@ class WorkoutViewModel @Inject constructor(
                     )
                 )
                 preferences.setCurrentWorkout(workoutId)
+
+                val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
+                if (autoOpenWear) {
+                    repository.openWearWorkout()
+                }
             }
         }
     }
@@ -993,6 +1004,10 @@ class WorkoutViewModel @Inject constructor(
                     workoutStarted = true,
                     workoutId = workoutId
                 )
+            }
+            val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
+            if (autoOpenWear) {
+                repository.openWearWorkout()
             }
         } else {
             Log.e(

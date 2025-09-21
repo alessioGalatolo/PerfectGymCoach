@@ -953,6 +953,40 @@ fun PreferencesContent(
                             )
                         }
                     }
+            }, {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.lock_workout_scroll),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = profileState.lockHorizontalScroll,
+                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleLockHorizontalScroll(it)) }
+                    )
+                }
+            }, {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.auto_open_wearos),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = profileState.autoOpenWear,
+                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(it)) }
+                    )
+                }
             })
         )
     }

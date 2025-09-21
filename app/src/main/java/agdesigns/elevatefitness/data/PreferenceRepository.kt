@@ -177,6 +177,22 @@ class PreferenceRepository @Inject constructor(
         localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
         dataStore.edit { it.remove(PrefKeys.language) }
     }
+
+    fun getLockHorizontalScroll(): Flow<Boolean> = dataStore.data.map{
+        it[PrefKeys.lockHorizontalScroll] ?: false
+    }
+
+    suspend fun setLockHorizontalScroll(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.lockHorizontalScroll] = newValue
+    }
+
+    fun getAutoOpenWear(): Flow<Boolean> = dataStore.data.map{
+        it[PrefKeys.autoOpenWear] ?: true
+    }
+
+    suspend fun setAutoOpenWear(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.autoOpenWear] = newValue
+    }
 }
 
 internal object PrefKeys {
@@ -197,6 +213,8 @@ internal object PrefKeys {
     val incrementMachine = floatPreferencesKey("Increment machine")
     val incrementCable = floatPreferencesKey("Increment cable")
     val language = stringPreferencesKey("Language")
+    val lockHorizontalScroll = booleanPreferencesKey("Lock horizontal scroll")
+    val autoOpenWear = booleanPreferencesKey("Auto open wear")
 }
 
 

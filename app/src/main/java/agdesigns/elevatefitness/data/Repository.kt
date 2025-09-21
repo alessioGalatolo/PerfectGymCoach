@@ -29,12 +29,15 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
+import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.annotation.AnyRes
 import androidx.annotation.DrawableRes
+import androidx.core.net.toUri
+import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
@@ -100,6 +103,16 @@ class Repository @Inject constructor(
                 }
             }
         }
+    }
+
+    fun openWearWorkout() {
+        // maybe open wear os app
+        val openWearIntent = Intent(Intent.ACTION_VIEW).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            data = "elevatefitnesswear://startworkout".toUri()
+        }
+        val remoteActivityHelper = RemoteActivityHelper(context)
+        remoteActivityHelper.startRemoteActivity(openWearIntent)
     }
 
     fun stopWearWorkout() {

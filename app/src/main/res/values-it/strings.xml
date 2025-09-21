@@ -804,4 +804,6 @@
     <string name="complete_set_from_watch_fail">Orologio ha provato a completare una serie ma l\'esercizio è sconosciuto!</string>
     <string name="add_set_fail">Non è stato possibile aggiungere una serie perché l\'esercizio è sconosciuto!</string>
     <string name="resume_workout_fail">Non è stato possibile trovare l\'allenamento da riprendere!</string>
+    <string name="lock_workout_scroll">Blocca scroll orizzontale nell\'allenamento: </string>
+    <string name="auto_open_wearos">Apri automaticamente l\'app Wear OS all\'inizio dell\'allenamento</string>
 </resources>

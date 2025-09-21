@@ -809,4 +809,6 @@
     <string name="complete_set_from_watch_fail">Tried to complete a set from watch but exercise is unknown!</string>
     <string name="add_set_fail">Tried to add a set but current exercise is unknown!</string>
     <string name="resume_workout_fail">Couldn\'t find the workout to resume.</string>
+    <string name="lock_workout_scroll">Lock workout horizontal scroll: </string>
+    <string name="auto_open_wearos">Automatically open Wear OS companion on workout start: </string>
 </resources>

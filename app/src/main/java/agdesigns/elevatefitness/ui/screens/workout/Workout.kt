@@ -130,17 +130,6 @@ fun SharedTransitionScope.Workout(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // TODO: move to a repository and call from VM
-    LaunchedEffect(Unit) {
-        // maybe open wear os app
-        val openWearIntent = Intent(Intent.ACTION_VIEW).apply {
-            addCategory(Intent.CATEGORY_BROWSABLE)
-            setData("elevatefitnesswear://startworkout".toUri())
-        }
-        val remoteActivityHelper = RemoteActivityHelper(context)
-        remoteActivityHelper.startRemoteActivity(openWearIntent)
-    }
-
     // for container transform animation
     val sharedStateCard = rememberSharedContentState(
         SharedElementKey(

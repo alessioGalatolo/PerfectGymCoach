@@ -204,7 +204,8 @@ fun SharedTransitionScope.ExercisePages(
                 HorizontalPager(
                     state = horizontalPagerState,
                     modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.Top,
+                    userScrollEnabled = !workoutState.lockHorizontalScroll
                 ) { page ->
                     if (page == pagesContent.exercises.size) {
                         // page for finishing the workout
