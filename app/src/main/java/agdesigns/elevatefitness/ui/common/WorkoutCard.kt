@@ -28,10 +28,13 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
@@ -47,6 +50,8 @@ fun WorkoutCard(
     cardModifier: Modifier = Modifier,
     imageModifier: Modifier = Modifier,
     exerciseModifier: Modifier = Modifier,
+    cardShape: Shape = MaterialTheme.shapes.medium,
+    cardElevation: Dp = 1.dp,
     onDelete: (() -> Unit)? = null,
     onRename: (() -> Unit)? = null
 ){
@@ -54,9 +59,11 @@ fun WorkoutCard(
     var expanded by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(pageCount = { exercises.size })
     ElevatedCard(
+        shape = cardShape,
         modifier = cardModifier
             .fillMaxWidth()
-            .clip(CardDefaults.shape)
+            .shadow(cardElevation, cardShape)
+            .clip(cardShape)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(), // FIXME: ripple goes out of card, as it fills a box shape
@@ -81,7 +88,7 @@ fun WorkoutCard(
                     val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } // - 32.dp // 2*padding
                     val imageHeight = imageWidth/3*2
 
-                    val roundedCornersShape = CardDefaults.shape
+                    val roundedCornersShape = cardShape
                     HorizontalPager(state = pagerState,
                         modifier = Modifier.graphicsLayer {
                             shape = roundedCornersShape
@@ -173,7 +180,8 @@ fun WorkoutCard(
                             navigator.navigate(
                                 WorkoutDestination(
                                     programId = program.programId,
-                                    quickStart = true
+                                    quickStart = true,
+                                    previewExercise = exercises.getOrNull(pagerState.currentPage)
                                 )
                             )
                         },

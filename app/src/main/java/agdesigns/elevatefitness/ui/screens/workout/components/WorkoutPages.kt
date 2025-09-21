@@ -2,28 +2,22 @@ package agdesigns.elevatefitness.ui.screens.workout.components
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
@@ -32,6 +26,7 @@ import agdesigns.elevatefitness.ui.screens.workout.WorkoutPagesContent
 import agdesigns.elevatefitness.ui.screens.workout.WorkoutState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CornerSize
@@ -41,9 +36,18 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.withStyle
 import com.agdesignes.shared.BarbellType
 import com.agdesignes.shared.Equipment
 import com.agdesignes.shared.barbellResFromWeight
@@ -54,19 +58,24 @@ import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscle
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+import kotlin.collections.forEachIndexed
+import kotlin.collections.isNotEmpty
 import kotlin.math.min
 
 @OptIn(
     ExperimentalFoundationApi::class,
-    ExperimentalMaterial3Api::class
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalSharedTransitionApi::class
 )
 @Composable
-fun ExercisePage(
+fun SharedTransitionScope.ExercisePages(
     navigator: DestinationsNavigator,
     horizontalPagerState: PagerState,
     currentExerciseState: CurrentExerciseState,  // DO NOT USE FROM INSIDE PAGER
     pagesContent: WorkoutPagesContent,
     workoutState: WorkoutState,
+    previewExercise: ProgramExerciseAndInfo?,
     bottomPadding: Dp,
     fabHeight: Dp,
     restCounterProgress: Float?,
@@ -81,9 +90,16 @@ fun ExercisePage(
     removeExercise: (Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val haptic = LocalHapticFeedback.current
 
     var infoDialogOpen by remember { mutableStateOf(false) }
+
+    // Should only show preview when transitioning *into* the workout
+    var containerTransitionFinished by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(this.isTransitionActive) {
+        if (!this@ExercisePages.isTransitionActive) {
+            containerTransitionFinished = true
+        }
+    }
     InfoDialog(
         dialogueIsOpen = infoDialogOpen,
         toggleDialogue = { infoDialogOpen = !infoDialogOpen }) {
@@ -120,6 +136,7 @@ fun ExercisePage(
                     .wrapContentSize()
                     .weight(4f, true)
             ) {
+                // FIXME:
                 ProvideTextStyle(
                     value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)) {
                     CompositionLocalProvider(
@@ -139,344 +156,453 @@ fun ExercisePage(
                 )
             }
         }
-        HorizontalPager(
-            state = horizontalPagerState,
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.Top
-        ) { page ->
-            if (page == pagesContent.exercises.size) {
-                // page for finishing the workout
-                WorkoutFinishPage(
-                    currentExerciseState.workoutTimeFormatted,
-                    workoutState.workoutId,
-                    fabHeight,
-                    bottomPadding,
-                    navigator
+        Box {
+            this@Column.AnimatedVisibility(
+                visible = !containerTransitionFinished || currentExerciseState.isLoading,
+                enter = EnterTransition.None,
+                exit = fadeOut(
+                    MotionScheme.expressive().slowEffectsSpec()
                 )
-            } else {
-                Column (Modifier.padding(horizontal = 16.dp)){
-                    if (pagesContent.exercises[page].note.isNotBlank()) {
-                        Text(text = buildAnnotatedString {
-                            withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                append(stringResource(R.string.note))
-                            }
-                            append(pagesContent.exercises[page].note)
-                        }, modifier = Modifier.align(CenterHorizontally))
-                    }
-                    Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
-                        var likesExercise by rememberSaveable { mutableStateOf(false) }
-                        var dislikesExercise by rememberSaveable { mutableStateOf(false) }
-
-                        IconButton(onClick = {
-                            // if already disliked, remove dislike
-                            if (dislikesExercise) {
-                                dislikesExercise = false
-                                // increase prob to remove previous dislike
-                                updateExerciseProbability(1)
-                            } else {
-                                val increment = if (likesExercise) -1 else -2
-                                updateExerciseProbability(increment)
-                                likesExercise = false
-                                dislikesExercise = true
-                            }
-                        }) {
-                            Icon(
-                                if (dislikesExercise) Icons.Default.ThumbDown else Icons.Outlined.ThumbDown,
-                                stringResource(R.string.thumbdown_icon_dislike_ex)
-                            )
-                        }
-                        // FIXME: it is not clear that this is info about the exercise, not about the like/dislike
-                        IconButton(
-                            onClick = { infoDialogOpen = true }
-                        ) {
-                            Icon(Icons.Outlined.Info, stringResource(R.string.info_icon_ex_desc))
-                        }
-                        IconButton(onClick = {
-                            if (likesExercise) {
-                                likesExercise = false
-                                updateExerciseProbability(-1)
-                            } else {
-                                val increment = if (dislikesExercise) 1 else 2
-                                updateExerciseProbability(increment)
-                                likesExercise = true
-                                dislikesExercise = false
-                            }
-
-                        }) {
-                            Icon(
-                                if (likesExercise) Icons.Default.ThumbUp else Icons.Outlined.ThumbUp,
-                                stringResource(R.string.thumbup_icon_like_ex)
-                            )
-                        }
-                    }
-                    // content
-                    if (currentExerciseState.restTimeSecs != null && restCounterProgress != null){
-                        AdaptiveCircularTimer(
-                            currentExerciseState.restTimeSecs,
-                            restCounterProgress,
-                            Modifier.align(CenterHorizontally)
+            ) {
+                if (previewExercise != null) {
+                    // placeholder for preview
+                    ExercisePage(
+                        exerciseNote = "",
+                        supersetExercise = null,
+                        exerciseRest = previewExercise.rest.getOrNull(0) ?: 0,
+                        equipment = Equipment.EVERYTHING,
+                        tare = null,
+                        repsWeightRows = previewExercise.reps.map {
+                            it.toString() to "..."
+                        },
+                        setsDone = 0,
+                        records = emptyList(),
+                        imperialSystem = workoutState.imperialSystem,
+                        workoutStarted = false,
+                        restTimeSecs = null,
+                        restCounterProgress = null,
+                        fabHeight = fabHeight,
+                        bottomPadding = bottomPadding,
+                        settingsMenu = {},
+                        addSet = {},
+                        updateRowValues = { _, _, _ -> },
+                        updateExerciseProbability = {},
+                        updateTare = {},
+                        updateBottomBar = { _, _ -> },
+                        toggleOtherEquipment = {},
+                        toggleInfoDialog = {}
+                    )
+                }
+            }
+            this@Column.AnimatedVisibility(
+                visible = containerTransitionFinished && !currentExerciseState.isLoading,
+                enter = fadeIn(
+                    MotionScheme.expressive().fastEffectsSpec()
+                ),
+                exit = ExitTransition.None
+            ) {
+                HorizontalPager(
+                    state = horizontalPagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.Top
+                ) { page ->
+                    if (page == pagesContent.exercises.size) {
+                        // page for finishing the workout
+                        WorkoutFinishPage(
+                            currentExerciseState.workoutTimeFormatted,
+                            workoutState.workoutId,
+                            fabHeight,
+                            bottomPadding,
+                            navigator
                         )
-                        LaunchedEffect(currentExerciseState.restTimeSecs) {
-                            // do not vibrate on 0L as this will be called multiple times with 0L
-                            if (currentExerciseState.restTimeSecs == 2L || currentExerciseState.restTimeSecs == 3L) {
-                                haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
-                            } else if (currentExerciseState.restTimeSecs == 1L) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            }
-                        }
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.current_exercise) +
-                                    if (pagesContent.exercises[page].supersetExercise != null) stringResource(
-                                        R.string.part_of_superset
-                                    ) else "",
-                            Modifier.padding(vertical = 8.dp),
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        AnimatedVisibility(
-                            visible = workoutState.workoutStarted,
-                            enter = fadeIn(),
-                            exit = fadeOut()
-                        ) {
-                            val currentWorkoutString = stringResource(R.string.current_workout)
-                            ExerciseSettingsMenu(changeExercise = {
-                                changeExercise(page, pagesContent.exercises.size)
-                                navigator.navigate(
-                                    ExercisesByMuscleDestination(
-                                        programName = currentWorkoutString,
-                                        workoutId = workoutState.workoutId,
-                                        returnAfterAdding = true
+                    } else {
+                        ExercisePage(
+                            exerciseNote = pagesContent.exercises[page].note,
+                            supersetExercise = pagesContent.exercises[page].supersetExercise,
+                            exerciseRest = pagesContent.exercises[page].rest[
+                                min(
+                                    pagesContent.exerciseSetsDone[page],
+                                    pagesContent.exercises[page].rest.size - 1
+                                )
+                            ],
+                            equipment = pagesContent.exercises[page].equipment,
+                            tare = workoutState.tares.getOrNull(page),
+                            repsWeightRows = pagesContent.exerciseRepsWeightRows[page],
+                            setsDone = pagesContent.exerciseSetsDone[page],
+                            records = pagesContent.exerciseRecords[page],
+                            imperialSystem = workoutState.imperialSystem,
+                            workoutStarted = workoutState.workoutStarted,
+                            restTimeSecs = currentExerciseState.restTimeSecs,
+                            restCounterProgress = restCounterProgress,
+                            fabHeight = fabHeight,
+                            bottomPadding = bottomPadding,
+                            settingsMenu = {
+                                val currentWorkoutString = stringResource(R.string.current_workout)
+                                ExerciseSettingsMenu(changeExercise = {
+                                    changeExercise(page, pagesContent.exercises.size)
+                                    navigator.navigate(
+                                        ExercisesByMuscleDestination(
+                                            programName = currentWorkoutString,
+                                            workoutId = workoutState.workoutId,
+                                            returnAfterAdding = true
+                                        )
                                     )
-                                )
-                            }, removeExercise = {
-                                removeExercise(page)
-                            }, addExercise = {
-                                navigator.navigate(
-                                    ExercisesByMuscleDestination(
-                                        programName = currentWorkoutString,
-                                        workoutId = workoutState.workoutId,
-                                        returnAfterAdding = true
+                                }, removeExercise = {
+                                    removeExercise(page)
+                                }, addExercise = {
+                                    navigator.navigate(
+                                        ExercisesByMuscleDestination(
+                                            programName = currentWorkoutString,
+                                            workoutId = workoutState.workoutId,
+                                            returnAfterAdding = true
+                                        )
                                     )
-                                )
-                                // FIXME: if unsuccessful add (e.g., user goes back) do not scroll
-                                scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.pageCount-1) }
-                            })
-                        }
-                    }
-                    ElevatedCard(Modifier.fillMaxWidth()) {
-                        Column(
-                            Modifier.padding(dimensionResource(R.dimen.card_inner_padding)),
-                            horizontalAlignment = CenterHorizontally
-                        ) {
-                            Text(stringResource(R.string.rest) +
-                                    ": ${pagesContent.exercises[page].rest[
-                                        min(pagesContent.exerciseSetsDone[page], pagesContent.exercises[page].rest.size-1)
-                                    ]}s", Modifier.align(Alignment.Start))
-
-                            // if barbell, allow to add barbell weight (used for volume)
-                            AnimatedVisibility(
-                                visible = workoutState.workoutStarted &&
-                                        pagesContent.exercises[page].equipment == Equipment.BARBELL,
-                                enter = slideInVertically() + fadeIn(),
-                                exit = slideOutVertically() + fadeOut()
-                            ) {
-                                // FIXME: barbellResFromWeight should be computed in ViewModel
-                                val barbellName: String =
-                                    stringResource(barbellResFromWeight(workoutState.tares.getOrNull(page) ?: 0f)) +
-                                            " " +
-                                            weightAndUnit(
-                                                workoutState
-                                                    .tares
-                                                    .getOrNull(
-                                                        page
-                                                    ) ?: 0f,
-                                                workoutState.imperialSystem,
-                                                inParenthesis = true
-                                            )
-
-                                BarbellSelector(
-                                    selectedBarbell = barbellName,
-                                    toggleOtherEquipment = toggleOtherEquipment,
-                                    useImperialSystem = workoutState.imperialSystem,
-                                    onBarbellSelected = { weight -> updateTare(weight) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .align(CenterHorizontally)
-                                )
-                            }
-                            pagesContent.exerciseRepsWeightRows[page].forEachIndexed { setCount, (repsInRow, weightInRow) ->
-                                val toBeDone = setCount >= pagesContent.exerciseSetsDone[page]
-                                var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
-                                ChangeRepsWeightDialog(
-                                    dialogIsOpen,
-                                    { dialogIsOpen = !dialogIsOpen },
-                                    repsInRow,
-                                    weightInRow,
-                                    { reps, weight ->
-                                        updateValues(
-                                            reps,
-                                            maybeLbToKg(weight, workoutState.imperialSystem),
-                                            page,
-                                            setCount
+                                    // FIXME: if unsuccessful add (e.g., user goes back) do not scroll
+                                    scope.launch {
+                                        horizontalPagerState.animateScrollToPage(
+                                            horizontalPagerState.pageCount - 1
                                         )
                                     }
+                                })
+                            },
+                            addSet = addSet,
+                            updateRowValues = { reps, weight, setCount ->
+                                updateValues(
+                                    reps,
+                                    maybeLbToKg(weight, workoutState.imperialSystem),
+                                    page,
+                                    setCount
                                 )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(CardDefaults.shape) // rounded bounds when clicking
-                                        .combinedClickable(onLongClick = {
-                                            if (!toBeDone) {
-                                                haptic.performHapticFeedback(
-                                                    HapticFeedbackType.LongPress
-                                                )
-                                                dialogIsOpen = true
-                                            }
-                                        }, onClick = {
-                                            haptic.performHapticFeedback(
-                                                HapticFeedbackType.TextHandleMove // FIXME: not right haptic
-                                            )
-                                            updateBottomBar(
-                                                repsInRow.toInt(),
-                                                weightInRow.toFloatOrNull()
-                                            )
-                                        })
-                                ) {
-                                    FilledIconToggleButton(
-                                        enabled = toBeDone,
-                                        checked = pagesContent.exerciseSetsDone[page] == setCount,
-                                        onCheckedChange = {}
-                                    ) {
-                                        Text((setCount + 1).toString())
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        stringResource(
-                                            R.string.reps_weight,
-                                            repsInRow,
-                                            weightInRow,
-                                            if(workoutState.imperialSystem)
-                                                stringResource(R.string.lb)
-                                            else
-                                                stringResource(R.string.kg)
-                                        ),
-                                        color = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
-                                    )
-                                }
-                            }
-                            AnimatedVisibility(
-                                visible = workoutState.workoutStarted,
-                                enter = slideInVertically() + fadeIn(),
-                                exit = slideOutVertically() + fadeOut()
-                            ) {
-                                TextButton(onClick = addSet) {
-                                    Text(stringResource(R.string.add_set))
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (pagesContent.exerciseRecords[page].isNotEmpty()) {
-                        Text(
-                            stringResource(R.string.history),
-                            Modifier.padding(bottom = 8.dp),
-                            fontWeight = FontWeight.Bold
+                            },
+                            updateExerciseProbability = updateExerciseProbability,
+                            updateTare = updateTare,
+                            updateBottomBar = updateBottomBar,
+                            toggleOtherEquipment = toggleOtherEquipment,
+                            toggleInfoDialog = { infoDialogOpen = true },
                         )
                     }
-                    var recordsToShow by remember { mutableIntStateOf(2) }
-                    pagesContent.exerciseRecords[page].subList(0, min(pagesContent.exerciseRecords[page].size, recordsToShow)).forEach { record ->  // should maybe become lazy
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                                val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
-                                Text(
-                                    record.date.format(formatter),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontStyle = FontStyle.Italic // TODO: add how many days ago
-                                )
-                                if (record.equipment == Equipment.BARBELL) {
-                                    Text(
-                                        stringResource(
-                                            R.string.barbell_used,
-                                            stringResource(barbellResFromWeight(record.tare)),
-                                            weightAndUnit(record.tare, workoutState.imperialSystem, true)
-                                        )
-                                    )
-                                } else if (record.equipment == Equipment.BODY_WEIGHT) {
-                                    // FIXME: bug where bodyweight = 0? <- this may have been fixed with the new state update
-                                    Text(
-                                        stringResource(
-                                            R.string.bodyweight_at_the_time,
-                                            weightAndUnit(record.tare, workoutState.imperialSystem)
-                                        )
-                                    )
-                                }
-                                record.reps.forEachIndexed { index, rep ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(CardDefaults.shape) // rounded bounds when clicking
-                                            .combinedClickable(onLongClick = {
-
-                                            }, onClick = {
-                                                updateBottomBar(
-                                                    rep,
-                                                    maybeKgToLb(
-                                                        record.weights[index],
-                                                        workoutState.imperialSystem
-                                                    )
-                                                )
-                                            })
-                                    ) {
-                                        FilledIconToggleButton(checked = false, // FIXME: can use different component?
-                                            onCheckedChange = { }) {
-                                            Text((index + 1).toString())
-                                        }
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            stringResource(
-                                                R.string.reps_weight,
-                                                rep,
-                                                maybeKgToLb(
-                                                    record.weights[index],
-                                                    workoutState.imperialSystem
-                                                ),
-                                                if (workoutState.imperialSystem)
-                                                    stringResource(R.string.lb)
-                                                else
-                                                    stringResource(R.string.kg)
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
-                    }
-                    // FIXME: works initially, but at some point tapping it doesn't work
-                    //  and no more records are shown. This happens if records are odd
-                    if (recordsToShow < pagesContent.exerciseRecords[page].size) {
-                        TextButton(
-                            onClick = { recordsToShow += 2 },
-                            modifier = Modifier.align(CenterHorizontally)
-                        ) {
-                            Text(stringResource(R.string.show_older_records))
-                        }
-                        Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
-                    }
-                    if (fabHeight > 0.dp) {
-                        // add some padding to the fabHeight
-                        Spacer(Modifier.height(fabHeight + 8.dp))
-                    }
-                    // This is the padding for an eventual bottom bar
-                    Spacer(Modifier.height(bottomPadding))
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ExercisePage(
+    exerciseNote: String,
+    supersetExercise: Long?,
+    exerciseRest: Int,
+    equipment: Equipment,
+    tare: Float?,
+    repsWeightRows: List<Pair<String, String>>,
+    setsDone: Int,
+    records: List<ExerciseRecordAndEquipment>,
+    imperialSystem: Boolean,
+    workoutStarted: Boolean,
+    restTimeSecs: Long?,
+    restCounterProgress: Float?,
+    fabHeight: Dp,
+    bottomPadding: Dp,
+    settingsMenu: @Composable (() -> Unit),
+    addSet: () -> Unit,
+    updateRowValues: (Int, Float, Int) -> Unit,
+    updateExerciseProbability: (Int) -> Unit,
+    updateTare: (Float) -> Unit,
+    updateBottomBar: (Int?, Float?) -> Unit,
+    toggleOtherEquipment: () -> Unit,
+    toggleInfoDialog: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    Column (Modifier.padding(horizontal = 16.dp)){
+        if (exerciseNote.isNotBlank()) {
+            Text(text = buildAnnotatedString {
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                    append(stringResource(R.string.note))
+                }
+                append(exerciseNote)
+            }, modifier = Modifier.align(CenterHorizontally))
+        }
+        Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
+            var likesExercise by rememberSaveable { mutableStateOf(false) }
+            var dislikesExercise by rememberSaveable { mutableStateOf(false) }
+
+            IconButton(onClick = {
+                // if already disliked, remove dislike
+                if (dislikesExercise) {
+                    dislikesExercise = false
+                    // increase prob to remove previous dislike
+                    updateExerciseProbability(1)
+                } else {
+                    val increment = if (likesExercise) -1 else -2
+                    updateExerciseProbability(increment)
+                    likesExercise = false
+                    dislikesExercise = true
+                }
+            }) {
+                Icon(
+                    if (dislikesExercise) Icons.Default.ThumbDown else Icons.Outlined.ThumbDown,
+                    stringResource(R.string.thumbdown_icon_dislike_ex)
+                )
+            }
+            // FIXME: it is not clear that this is info about the exercise, not about the like/dislike
+            IconButton(
+                onClick = toggleInfoDialog
+            ) {
+                Icon(Icons.Outlined.Info, stringResource(R.string.info_icon_ex_desc))
+            }
+            IconButton(onClick = {
+                if (likesExercise) {
+                    likesExercise = false
+                    updateExerciseProbability(-1)
+                } else {
+                    val increment = if (dislikesExercise) 1 else 2
+                    updateExerciseProbability(increment)
+                    likesExercise = true
+                    dislikesExercise = false
+                }
+
+            }) {
+                Icon(
+                    if (likesExercise) Icons.Default.ThumbUp else Icons.Outlined.ThumbUp,
+                    stringResource(R.string.thumbup_icon_like_ex)
+                )
+            }
+        }
+        // content
+        if (restTimeSecs != null && restCounterProgress != null){
+            AdaptiveCircularTimer(
+                restTimeSecs,
+                restCounterProgress,
+                Modifier.align(CenterHorizontally)
+            )
+            LaunchedEffect(restTimeSecs) {
+                // do not vibrate on 0L as this will be called multiple times with 0L
+                if (restTimeSecs == 2L || restTimeSecs == 3L) {
+                    haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                } else if (restTimeSecs == 1L) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.current_exercise) +
+                    if (supersetExercise != null) stringResource(
+                        R.string.part_of_superset
+                    ) else "",
+                Modifier.padding(vertical = 8.dp),
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            AnimatedVisibility(
+                visible = workoutStarted,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                settingsMenu()
+            }
+        }
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(dimensionResource(R.dimen.card_inner_padding)),
+                horizontalAlignment = CenterHorizontally
+            ) {
+                Text(stringResource(R.string.rest) +
+                        ": ${exerciseRest}s", Modifier.align(Alignment.Start))
+
+                // if barbell, allow to add barbell weight (used for volume)
+                AnimatedVisibility(
+                    visible = workoutStarted && equipment == Equipment.BARBELL,
+                    enter = slideInVertically() + fadeIn(),
+                    exit = slideOutVertically() + fadeOut()
+                ) {
+                    // FIXME: barbellResFromWeight should be computed in ViewModel
+                    val barbellName: String =
+                        stringResource(barbellResFromWeight(tare ?: 0f)) +
+                                " " +
+                                weightAndUnit(tare ?: 0f,
+                                    imperialSystem,
+                                    inParenthesis = true
+                                )
+
+                    BarbellSelector(
+                        selectedBarbell = barbellName,
+                        toggleOtherEquipment = toggleOtherEquipment,
+                        useImperialSystem = imperialSystem,
+                        onBarbellSelected = { weight -> updateTare(weight) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(CenterHorizontally)
+                    )
+                }
+                repsWeightRows.forEachIndexed { setCount, (repsInRow, weightInRow) ->
+                    val toBeDone = setCount >= setsDone
+                    var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
+                    ChangeRepsWeightDialog(
+                        dialogIsOpen = dialogIsOpen,
+                        toggleDialog = { dialogIsOpen = !dialogIsOpen },
+                        initialReps = repsInRow,
+                        initialWeight = weightInRow,
+                        updateValues = { reps, weight ->
+                            updateRowValues(
+                                reps,
+                                weight,
+                                setCount
+                            )
+                        }
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(CardDefaults.shape) // rounded bounds when clicking
+                            .combinedClickable(onLongClick = {
+                                if (!toBeDone) {
+                                    haptic.performHapticFeedback(
+                                        HapticFeedbackType.LongPress
+                                    )
+                                    dialogIsOpen = true
+                                }
+                            }, onClick = {
+                                haptic.performHapticFeedback(
+                                    HapticFeedbackType.TextHandleMove // FIXME: not right haptic
+                                )
+                                updateBottomBar(
+                                    repsInRow.toInt(),
+                                    weightInRow.toFloatOrNull()
+                                )
+                            })
+                    ) {
+                        FilledIconToggleButton(
+                            enabled = toBeDone,
+                            checked = setsDone == setCount,
+                            onCheckedChange = {}
+                        ) {
+                            Text((setCount + 1).toString())
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            stringResource(
+                                R.string.reps_weight,
+                                repsInRow,
+                                weightInRow,
+                                if(imperialSystem)
+                                    stringResource(R.string.lb)
+                                else
+                                    stringResource(R.string.kg)
+                            ),
+                            color = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+                AnimatedVisibility(
+                    visible = workoutStarted,
+                    enter = slideInVertically() + fadeIn(),
+                    exit = slideOutVertically() + fadeOut()
+                ) {
+                    TextButton(onClick = addSet) {
+                        Text(stringResource(R.string.add_set))
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        if (records.isNotEmpty()) {
+            Text(
+                stringResource(R.string.history),
+                Modifier.padding(vertical = 8.dp),
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        var recordsToShow by remember { mutableIntStateOf(2) }
+        records.subList(0, min(records.size, recordsToShow)).forEach { record ->  // should maybe become lazy
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
+                    val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
+                    Text(
+                        record.date.format(formatter),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontStyle = FontStyle.Italic // TODO: add how many days ago
+                    )
+                    if (record.equipment == Equipment.BARBELL) {
+                        Text(
+                            stringResource(
+                                R.string.barbell_used,
+                                stringResource(barbellResFromWeight(record.tare)),
+                                weightAndUnit(record.tare, imperialSystem, true)
+                            )
+                        )
+                    } else if (record.equipment == Equipment.BODY_WEIGHT) {
+                        // FIXME: bug where bodyweight = 0? <- this may have been fixed with the new state update
+                        Text(
+                            stringResource(
+                                R.string.bodyweight_at_the_time,
+                                weightAndUnit(record.tare, imperialSystem)
+                            )
+                        )
+                    }
+                    record.reps.forEachIndexed { index, rep ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(CardDefaults.shape) // rounded bounds when clicking
+                                .combinedClickable(onLongClick = {
+
+                                }, onClick = {
+                                    updateBottomBar(
+                                        rep,
+                                        maybeKgToLb(
+                                            record.weights[index],
+                                            imperialSystem
+                                        )
+                                    )
+                                })
+                        ) {
+                            FilledIconToggleButton(checked = false, // FIXME: can use different component?
+                                onCheckedChange = { }) {
+                                Text((index + 1).toString())
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                stringResource(
+                                    R.string.reps_weight,
+                                    rep,
+                                    maybeKgToLb(
+                                        record.weights[index],
+                                        imperialSystem
+                                    ),
+                                    if (imperialSystem)
+                                        stringResource(R.string.lb)
+                                    else
+                                        stringResource(R.string.kg)
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
+        }
+        // FIXME: works initially, but at some point tapping it doesn't work
+        //  and no more records are shown. This happens if records are odd
+        if (recordsToShow < records.size) {
+            TextButton(
+                onClick = { recordsToShow += 2 },
+                modifier = Modifier.align(CenterHorizontally)
+            ) {
+                Text(stringResource(R.string.show_older_records))
+            }
+            Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
+        }
+        if (fabHeight > 0.dp) {
+            // add some padding to the fabHeight
+            Spacer(Modifier.height(fabHeight + 8.dp))
+        }
+        // This is the padding for an eventual bottom bar
+        Spacer(Modifier.height(bottomPadding))
     }
 }
 

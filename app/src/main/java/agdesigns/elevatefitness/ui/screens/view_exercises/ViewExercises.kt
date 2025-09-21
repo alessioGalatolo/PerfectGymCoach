@@ -47,6 +47,7 @@ import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.delete
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -596,6 +597,8 @@ fun LazyItemScope.ExerciseCard(
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
                 .animateItem()
+                // when clipping we remove elevation, need to add shadow again
+                .shadow(1.dp, CardDefaults.shape)
                 .clip(CardDefaults.shape)
                 .then(sharedCardModifier)
                 .combinedClickable(

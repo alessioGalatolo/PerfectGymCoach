@@ -35,6 +35,7 @@ import com.google.android.gms.wearable.PutDataMapRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import java.time.ZonedDateTime
+import kotlin.Boolean
 import kotlin.collections.firstOrNull
 import kotlin.collections.last
 import kotlin.math.min
@@ -43,6 +44,7 @@ import kotlin.text.toUIntOrNull
 
 // elements that change frequently e.g., current exercise, reps, timer, etc.
 data class CurrentExerciseState(
+    val isLoading: Boolean = true,
     val exerciseTitle: String? = null,  // if null, means we are on last recap page
     val repsBottomBar: String = "0", // reps to be displayed in bottom bar
     val repsIsValid: Boolean = true,
@@ -925,6 +927,11 @@ class WorkoutViewModel @Inject constructor(
             repository.getWorkoutExercises(workoutState.value.workoutId).collect{ exs ->
                 val sortedExs = exs.sortedBy { it.orderInProgram }
                 _workoutExercises.update { sortedExs }
+                _currentExerciseState.update {
+                    it.copy(
+                        isLoading = false
+                    )
+                }
                 retrieveExercisesRecords?.cancel()
                 retrieveExercisesRecords = this.launch {
                     repository.getExerciseRecordsAndEquipment(

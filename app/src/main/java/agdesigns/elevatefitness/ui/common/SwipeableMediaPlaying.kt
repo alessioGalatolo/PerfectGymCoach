@@ -174,7 +174,7 @@ fun SwipeableMediaPlaying(
                                 )
                             }
                             // if we are just teasing, gain space by removing buttons
-                            if (!shouldTeaseMediaAccess) {
+                            if (!shouldTeaseMediaAccess && state.title != null) {
                                 Spacer(Modifier.width(8.dp))
                                 FilledIconToggleButton(
                                     checked = state.isPlaying,

@@ -8,6 +8,8 @@ import androidx.compose.animation.SharedTransitionScope.SharedContentState
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment.Companion.TopCenter
@@ -26,7 +28,11 @@ import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalSharedTransitionApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun SharedTransitionScope.FullScreenImageCard(
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -39,11 +45,12 @@ fun SharedTransitionScope.FullScreenImageCard(
     imageHeight: Dp,
     brightImage: Boolean,
     darkTheme: Boolean,
+    cardShape: RoundedCornerShape,
     content: @Composable (Dp) -> Unit,
     floatingActionButton: @Composable () -> Unit,
     bottomBar: @Composable (PaddingValues) -> Unit
 ) {
-    val deviceCornerRadius = 12.dp
+    val cornerRadius = cardShape.topStart
 
     val localDensity = LocalDensity.current
     val statusBarsHeight = WindowInsets.Companion.statusBars.asPaddingValues().calculateTopPadding()
@@ -87,10 +94,6 @@ fun SharedTransitionScope.FullScreenImageCard(
             .background(Color.Transparent)
             .fillMaxSize()
             // FIXME: should not animate bottom bar
-            .sharedBounds(
-                sharedContentState = sharedState,
-                animatedVisibilityScope = animatedVisibilityScope,
-            )
     ){
         image()
 
@@ -137,7 +140,14 @@ fun SharedTransitionScope.FullScreenImageCard(
                 Box(
                     Modifier
                         .padding(top = topPadding)
-                        .fillMaxSize()) {
+                        .fillMaxSize()
+                        .sharedBounds(
+                            sharedContentState = sharedState,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                MotionScheme.expressive().slowSpatialSpec()
+                            }
+                        )) {
 
                     // puts background in the whole screen
                     Surface(
@@ -157,7 +167,7 @@ fun SharedTransitionScope.FullScreenImageCard(
                             .zIndex(1f)) // FIXME: necessary?
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceContainer,
-                            shape = ReversedCornersShape(deviceCornerRadius),
+                            shape = ReversedCornersShape(cornerRadius),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             content(bottomPadding)
@@ -178,8 +188,7 @@ fun SharedTransitionScope.FullScreenImageCard(
     }
 }
 
-class ReversedCornersShape(private val radius: Dp) : Shape {
-
+class ReversedCornersShape(private val cornerSize: CornerSize): BaseReversedCornersShape {
     override fun createOutline(
         size: Size,
         layoutDirection: LayoutDirection,
@@ -187,11 +196,14 @@ class ReversedCornersShape(private val radius: Dp) : Shape {
     ): Outline {
         return Outline.Generic(
             // Draw your custom path here
-            path = reverseRoundedCorners(size = size, radius = with(density) { radius.toPx() })
+            path = reverseRoundedCorners(size = size, radius = cornerSize.toPx(size, density))
         )
     }
+}
 
-    private fun reverseRoundedCorners(size: Size, radius: Float): Path {
+interface BaseReversedCornersShape : Shape {
+
+    fun reverseRoundedCorners(size: Size, radius: Float): Path {
         return Path().apply {
             val rect = size.toRect()
             addRect(rect)

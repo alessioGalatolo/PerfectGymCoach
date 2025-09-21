@@ -53,6 +53,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import coil3.compose.AsyncImage
@@ -226,6 +227,8 @@ fun SharedTransitionScope.AddProgramExercise(
                                     ),
                                     animatedVisibilityScope
                                 )
+                                // clip removes card elevation, we need to reapply the shadow
+                                .shadow(1.dp, CardDefaults.shape)
                                 .clip(CardDefaults.shape)
                                 .combinedClickable(
                                     onLongClick = {

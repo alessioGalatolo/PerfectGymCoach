@@ -41,6 +41,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
@@ -91,7 +92,8 @@ fun SharedTransitionScope.Home(
     val context = LocalContext.current
 
     LaunchedEffect(homeState.currentWorkout){
-        delay(200)  // FIXME: done in order to avoid double dialog showing
+        // done in order to avoid double dialog showing especially when slow transitioning into workout
+        delay(2000)
         resumeWorkoutDialogOpen = homeState.currentWorkout != null
     }
     // add dynamic launcher shortcuts based on current plan
@@ -234,10 +236,11 @@ fun SharedTransitionScope.Home(
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.header_to_content_padding)))
-                    val roundedCornersShape = CardDefaults.shape
                     WorkoutCard(
                         program = currentProgram,
                         exercises = currentExercises,
+                        cardShape = MaterialTheme.shapes.extraLarge,
+                        cardElevation = 2.dp,
                         // TODO: add message when no exercises in the program
                         onCardClick = { previewExercise ->
                             navigator.navigate(
@@ -276,15 +279,16 @@ fun SharedTransitionScope.Home(
                                         )
                                     ),
                                 animatedVisibilityScope = animatedVisibilityScope,
-                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
-                                // need false otherwise image is not clipped with rounded corners during transition
-                                renderInOverlayDuringTransition = false,
+                                clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge),
                                 boundsTransform = { _, _ ->
                                     MotionScheme.expressive().slowSpatialSpec()
                                 }
+                            ).graphicsLayer(
+                                shape = MaterialTheme.shapes.extraLarge,
+                                clip = true
                             ),
                         exerciseModifier = Modifier
-                            .sharedBounds(
+                            .sharedElement(
                                 sharedContentState = rememberSharedContentState(
                                     SharedElementKey(
                                         "Workout",
@@ -320,11 +324,22 @@ fun SharedTransitionScope.Home(
 
                         val pagerState = rememberPagerState(pageCount = { exs.size })
 
+                        // TODO: use grouped card instead
                         // Softer corner radius for less emphasis
-                        val cardShape = when (index) {
-                            0 -> RoundedCornerShape(16.dp, 16.dp, 4.dp, 4.dp)
-                            otherPrograms.size - 1 -> RoundedCornerShape(4.dp, 4.dp, 16.dp, 16.dp)
-                            else -> RoundedCornerShape(4.dp)
+                        val cardShape = if (otherPrograms.size == 1) {
+                            RoundedCornerShape(16.dp, 16.dp, 16.dp, 16.dp)
+                        } else {
+                            when (index) {
+                                0 -> RoundedCornerShape(16.dp, 16.dp, 4.dp, 4.dp)
+                                otherPrograms.size - 1 -> RoundedCornerShape(
+                                    4.dp,
+                                    4.dp,
+                                    16.dp,
+                                    16.dp
+                                )
+
+                                else -> RoundedCornerShape(4.dp)
+                            }
                         }
 
                         Card(
@@ -391,12 +406,15 @@ fun SharedTransitionScope.Home(
                                                         )
                                                     ),
                                                     animatedVisibilityScope = animatedVisibilityScope,
+                                                    clipInOverlayDuringTransition = OverlayClip(
+                                                        MaterialTheme.shapes.small
+                                                    ),
                                                     boundsTransform = { _, _ ->
                                                         MotionScheme.expressive().slowSpatialSpec()
                                                     }
                                                 )
                                                 .size(80.dp) // Smaller image for less emphasis
-                                                .clip(RoundedCornerShape(8.dp))
+                                                .clip(MaterialTheme.shapes.small)
                                         ) { page ->
                                             AsyncImage(
                                                 model = exs[page].image,

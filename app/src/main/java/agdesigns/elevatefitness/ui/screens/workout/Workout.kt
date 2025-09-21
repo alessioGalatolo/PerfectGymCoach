@@ -26,12 +26,10 @@ import androidx.core.graphics.ColorUtils
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import com.agdesignes.shared.maybeLbToKg
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.Theme
-import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
@@ -47,7 +45,7 @@ import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.common.SwipeableMediaPlaying
 import agdesigns.elevatefitness.ui.common.SwipeableMediaPlayingDefaults
 import agdesigns.elevatefitness.ui.screens.workout.components.EnterIntensityAndFinishDialog
-import agdesigns.elevatefitness.ui.screens.workout.components.ExercisePage
+import agdesigns.elevatefitness.ui.screens.workout.components.ExercisePages
 import agdesigns.elevatefitness.ui.screens.workout.components.WorkoutBottomBar
 import android.content.Intent
 import android.util.Log
@@ -57,6 +55,7 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -85,8 +84,6 @@ import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDesti
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import java.time.ZonedDateTime
-import kotlin.math.max
 
 @Destination<WorkoutOnlyGraph>(
     start = true,
@@ -264,14 +261,16 @@ fun SharedTransitionScope.Workout(
     }
 
     // title for top app bar, do not share bounds for animation
-    val titleTopBar = @Composable { Text(
-        currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    ) }
+    val titleTopBar = @Composable {
+        Text(
+            currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
     // title below image, share bounds for animation
-    val titleModifier = if(currentExerciseState.currentExercise?.extProgramExerciseId == previewExercise?.programExerciseId)
-        Modifier.sharedBounds(
+    val titleModifier = if(previewExercise != null && currentExerciseState.isLoading)
+        Modifier.sharedElement(
             sharedStateTitle,
             animatedVisibilityScope,
             boundsTransform = { _, _ ->
@@ -281,7 +280,10 @@ fun SharedTransitionScope.Workout(
     else Modifier
 
     val title = @Composable { Text(
-        currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
+        if (previewExercise != null && currentExerciseState.isLoading)
+            previewExercise.name
+        else
+            currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
         overflow = TextOverflow.Ellipsis,
         maxLines = 3,
         modifier = titleModifier  // FIXME: misbehaves
@@ -311,12 +313,15 @@ fun SharedTransitionScope.Workout(
             Theme.DARK -> true
         }
     }}
-    // We are animating from the previous screen but do not have the data yet. Use placeholder screen
-    // to finish the animation, then show the actual screen. We need to record whether the animation
-    // has finished once as, depending on how do user is interacting, it may keep going
-    var animationHasFinished by remember { mutableStateOf(false) }
-    animationHasFinished = animationHasFinished || !animatedVisibilityScope.transition.isRunning
-    if (pagesContent.exercises.isNotEmpty() && animationHasFinished) {
+
+    // should only show preview when transitioning *into* the workout
+    var containerTransitionFinished by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(this.isTransitionActive) {
+        if (!this@Workout.isTransitionActive) {
+            containerTransitionFinished = true
+        }
+    }
+    if (pagesContent.exercises.isNotEmpty() || (currentExerciseState.isLoading && previewExercise != null)) {
         val currentImageId = if (pagerState.currentPage == pagesContent.exercises.size)
             R.drawable.finish_workout
         else currentExerciseState.currentExercise?.image  ?: R.drawable.finish_workout
@@ -324,49 +329,66 @@ fun SharedTransitionScope.Workout(
             animatedVisibilityScope = animatedVisibilityScope,
             sharedState = sharedStateCard,
             snackbarHostState = snackbarHostState,
+            cardShape = MaterialTheme.shapes.extraLarge as RoundedCornerShape,
             topAppBarNavigationIcon = { appBarShown ->
-                val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
-                IconButton(
-                    shapes = IconButtonDefaults.shapes(),
-                    onClick = onClose
+                AnimatedVisibility(
+                    visible = containerTransitionFinished && !currentExerciseState.isLoading,
+                    enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()),
+                    exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec())
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.close_icon),
-                        tint = if (needsDarkColor)
-                            Color.Black
-                        else
-                            Color.White
-                    )
+                    IconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        onClick = onClose,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.close_icon),
+                        )
+                    }
                 }
             },
             topAppBarActions = { appBarShown ->
-                Row(verticalAlignment = CenterVertically) {
-                    val needsDarkColor = (brightImage.value && !appBarShown) ||
-                            (appBarShown && !useDarkTheme)
-                    Text(
-                        currentExerciseState.workoutTimeFormatted,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (needsDarkColor)
-                            Color.Black
-                        else
-                            Color.White
-                    )
-                    if (workoutState.startDate != null) {
+                AnimatedVisibility(
+                    visible = containerTransitionFinished
+                            && !currentExerciseState.isLoading
+                            && workoutState.workoutStarted,
+                    enter = EnterTransition.None,
+                    exit = ExitTransition.None
+                ) {
+                    Row(verticalAlignment = CenterVertically) {
+                        val needsDarkColor = (brightImage.value && !appBarShown) ||
+                                (appBarShown && !useDarkTheme)
+                        Text(
+                            currentExerciseState.workoutTimeFormatted,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = if (needsDarkColor)
+                                Color.Black
+                            else
+                                Color.White,
+                            modifier = Modifier.animateEnterExit(
+                                enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                                exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                            )
+                        )
                         Spacer(Modifier.width(4.dp))
-                        FilledIconButton(onClick = {
-                            completeWorkout()
-                        }, shapes = IconButtonDefaults.shapes(
-                            MaterialTheme.shapes.small,
-                            MaterialTheme.shapes.extraLarge
-                        )) {
+                        FilledIconButton(
+                            onClick = {
+                                completeWorkout()
+                            }, shapes = IconButtonDefaults.shapes(
+                                MaterialTheme.shapes.small,
+                                MaterialTheme.shapes.extraLarge
+                            ),
+                            modifier = Modifier.animateEnterExit(
+                                enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()),
+                                exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec())
+                            )
+                        ) {
                             Icon(
                                 Icons.Default.DoneAll,
                                 stringResource(R.string.finish),
-//                                tint = if (needsDarkColor)
-//                                    Color.Black
-//                                else
-//                                    Color.White
                             )
                         }
                     }
@@ -374,28 +396,25 @@ fun SharedTransitionScope.Workout(
             },
             title = titleTopBar,
             image = {
-                val roundedCornersShape = CardDefaults.shape
+                val roundedCornersShape = MaterialTheme.shapes.extraLarge
+
                 Box(Modifier
-                    .wrapContentHeight(Top), contentAlignment = TopCenter) { // TODO: add swipe
+                    .wrapContentHeight(Top), contentAlignment = TopCenter) {
+                    // preview image is placed below (z-wise) the actual image
+                    // actual image will fade in and cover the preview image
                     AsyncImage(
                         ImageRequest.Builder(context)
-                            .allowHardware(false) // pixel access is not supported on Config#HARDWARE bitmaps
-                            .data(currentImageId)
+                            .data(previewExercise?.image ?: R.drawable.finish_workout)
                             .crossfade(true)
-                            .listener { _, result ->
-                                val image = result.image.toBitmap()
-                                Palette.from(image).maximumColorCount(3)
-                                    .clearFilters()
-                                    .setRegion(0, 0, image.width,50)
-                                    .generate {
-                                        brightImage.value = (ColorUtils.calculateLuminance(it?.getDominantColor(Color.Black.toArgb()) ?: 0)) > 0.5
-                                    }
-                            }
                             .build(),
                         stringResource(R.string.exercise_image),
                         Modifier
                             .fillMaxWidth()
                             .height(imageHeight)
+                            .graphicsLayer(
+                                shape = roundedCornersShape,
+                                clip = true
+                            )
                             .sharedBounds(
                                 sharedStateImg,
                                 animatedVisibilityScope,
@@ -403,20 +422,62 @@ fun SharedTransitionScope.Workout(
                                 boundsTransform = { _, _ ->
                                     MotionScheme.expressive().slowSpatialSpec()
                                 }
-                            )
-                            .graphicsLayer(
+                            ).graphicsLayer(
                                 shape = roundedCornersShape,
                                 clip = true
                             ),
                         contentScale = ContentScale.Crop
                     )
-
-                    HorizontalPagerIndicator(
-                        pagerState = pagerState,
+                    AnimatedVisibility(
+                        visible = containerTransitionFinished && !currentExerciseState.isLoading,
+                        enter = EnterTransition.None,
+                        exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                    ) {
+                        AsyncImage(
+                            ImageRequest.Builder(context)
+                                .allowHardware(false) // pixel access is not supported on Config#HARDWARE bitmaps
+                                .data(currentImageId)
+    //                                    .crossfade(true)
+                                .listener { _, result ->
+                                    val image = result.image.toBitmap()
+                                    Palette.from(image).maximumColorCount(3)
+                                        .clearFilters()
+                                        .setRegion(0, 0, image.width,50)
+                                        .generate {
+                                            brightImage.value = (ColorUtils.calculateLuminance(it?.getDominantColor(Color.Black.toArgb()) ?: 0)) > 0.5
+                                        }
+                                }
+                                .build(),
+                            stringResource(R.string.exercise_image),
+                            Modifier
+                                .fillMaxWidth()
+                                .height(imageHeight)
+                                .sharedBounds(
+                                    sharedStateImg,
+                                    animatedVisibilityScope,
+                                    clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
+                                    boundsTransform = { _, _ ->
+                                        MotionScheme.expressive().slowSpatialSpec()
+                                    }
+                                ).graphicsLayer(
+                                    shape = roundedCornersShape,
+                                    clip = true
+                                ),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    AnimatedVisibility(
+                        visible = containerTransitionFinished && !currentExerciseState.isLoading,
+                        enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                        exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(16.dp),
-                    )
+                            .padding(16.dp)
+                    ) {
+                        HorizontalPagerIndicator(
+                            pagerState = pagerState,
+                        )
+                    }
                 }
             },
             imageHeight = imageHeight,
@@ -443,12 +504,12 @@ fun SharedTransitionScope.Workout(
                     }
                 }
 
-
-                ExercisePage(
+                ExercisePages(
                     navigator = navigator,
                     horizontalPagerState = pagerState,
                     currentExerciseState = currentExerciseState,
                     pagesContent = pagesContent,
+                    previewExercise = previewExercise,
                     workoutState = workoutState,
                     bottomPadding = bottomPadding,
                     fabHeight = fabHeight,
@@ -512,7 +573,7 @@ fun SharedTransitionScope.Workout(
                     var dismissed by remember { mutableStateOf(false) }
                     fabHeight = if (dismissed) 0.dp else visibleFabHeight
                     AnimatedVisibility(
-                        visible = !pagerState.isScrollInProgress && !dismissed,
+                        visible = containerTransitionFinished && !pagerState.isScrollInProgress && !dismissed,
                         enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                         exit = fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec())
                     ) {
@@ -533,7 +594,7 @@ fun SharedTransitionScope.Workout(
             // FIXME: when becoming invisible, causes bottomPadding to become 0, thus removing the bottom
             // spacer in the exercises and a slight movement in the list
             AnimatedVisibility(
-                visible = !pagerState.isScrollInProgress,
+                visible = containerTransitionFinished && !pagerState.isScrollInProgress,
                 enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
             ) {
@@ -594,103 +655,8 @@ fun SharedTransitionScope.Workout(
                 )
             }
         }
-    } else if (previewExercise != null) {
-        // placeholder mainly used for animation
-        FullScreenImageCard(
-            animatedVisibilityScope = animatedVisibilityScope,
-            sharedState = sharedStateCard,
-            snackbarHostState = snackbarHostState,
-            topAppBarNavigationIcon = { appBarShown ->
-                val needsDarkColor = (brightImage.value && !appBarShown) || (appBarShown && !useDarkTheme)
-                IconButton(
-                    shapes = IconButtonDefaults.shapes(),
-                    onClick = { /* just a placeholder, won't be clicked anyway */}) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.close_icon),
-                        tint = if (needsDarkColor) Color.Gray else Color.White
-                    )
-                }
-            },
-            topAppBarActions = {},
-            title = { },
-            image = {
-                val roundedCornersShape = CardDefaults.shape
-                Box(Modifier
-                    .wrapContentHeight(Top), contentAlignment = TopCenter) {
-                    AsyncImage(
-                        ImageRequest.Builder(context)
-                            .allowHardware(false)
-                            .data(previewExercise.image)
-                            .crossfade(true)
-                            .listener { _, result ->
-                                val image = result.image.toBitmap()
-                                Palette.from(image).maximumColorCount(3)
-                                    .clearFilters()
-                                    .setRegion(0, 0, image.width, 50)
-                                    .generate {
-                                        brightImage.value = (ColorUtils.calculateLuminance(it?.getDominantColor(Color.Black.toArgb()) ?: 0)) > 0.5
-                                    }
-                            }
-                            .build(),
-                        stringResource(R.string.exercise_image),
-                        Modifier
-                            .fillMaxWidth()
-                            .height(imageHeight)
-                            .sharedBounds(
-                                sharedStateImg,
-                                animatedVisibilityScope,
-                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
-                                boundsTransform = { _, _ ->
-                                    MotionScheme.expressive().slowSpatialSpec()
-                                }
-                            )
-                            .graphicsLayer(
-                                shape = roundedCornersShape,
-                                clip = true // <- this ensures clipping is applied during transition
-                            ),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            },
-            imageHeight = imageHeight,
-            brightImage = brightImage.value,
-            darkTheme = useDarkTheme,
-            content = { bottomPadding ->
-                ExercisePage(
-                    bottomPadding = bottomPadding,
-                    horizontalPagerState = rememberPagerState(pageCount = { 2 }),
-                    currentExerciseState = currentExerciseState,  // FIXME: this will break stuff
-                    pagesContent = pagesContent,
-                    workoutState = workoutState,
-                    navigator = navigator,
-                    fabHeight = 0.dp,
-                    title = {
-                        Text(
-                            previewExercise.name, modifier = Modifier.sharedBounds(
-                                sharedStateTitle,
-                                animatedVisibilityScope,
-                                boundsTransform = { _, _ ->
-                                    MotionScheme.expressive().slowSpatialSpec()
-                                }
-                            )
-                        )
-                    },
-                    addSet = { },
-                    updateBottomBar = { _, _ -> },
-                    updateValues = { _, _, _, _ -> },
-                    updateTare = { },
-                    toggleOtherEquipment = { },
-                    changeExercise = { _, _ -> },
-                    removeExercise = { },
-                    restCounterProgress = null,
-                    updateExerciseProbability = { _ -> }
-                )
-            },
-            floatingActionButton = {},
-            bottomBar = { _ -> }
-        )
     } else if (workoutState.workoutId != 0L){
+        Log.d("Workout", "pagesContent.exercises: ${pagesContent.exercises}, isLoading: ${currentExerciseState.isLoading}, previewExercise: $previewExercise")
         // program is empty, prompt to add an exercise
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
         Scaffold(
