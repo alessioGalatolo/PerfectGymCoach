@@ -40,6 +40,7 @@ import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentIcon
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentImage
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -89,23 +90,16 @@ fun SharedTransitionScope.ViewExercises(
     val exercisesState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     // i.e., when use hits "search"
-    var showSearchResultOnMainScreen by remember { mutableStateOf(false) }
-    val exercisesOnMainScreen by remember(
-        exercisesState.searchResults,
-        exercisesState.exercisesFilterEquip,
-        showSearchResultOnMainScreen
-    ) {
-        derivedStateOf {
-            if (showSearchResultOnMainScreen)
-                exercisesState.searchResults?.map{ it.exercise }
-            else
-                exercisesState.exercisesFilterEquip
-        }
-    }
+    var showSearchResultOnMainScreen by rememberSaveable { mutableStateOf(false) }
+    val exercisesOnMainScreen = if (showSearchResultOnMainScreen)
+        exercisesState.searchResults?.map{ it.exercise }
+    else
+        exercisesState.exercisesFilterEquip
 
     val searchBarState = rememberSearchBarState()
 
     var backProgress by remember { mutableFloatStateOf(0f) }
+
     PredictiveBackHandler(
         enabled = exercisesState.searchQuery.isNotBlank(),
     ) { backFlow ->
@@ -119,8 +113,15 @@ fun SharedTransitionScope.ViewExercises(
         } catch (e: CancellationException) {
             backProgress = 0f
         }
-
     }
+
+    /*
+    If user is coming back from a screen with a transition and tries to go back rapidly
+    the old screen will flash. This feels like a bug for compose to solve but until then,
+    we disallow going back until the transition is finished
+     */
+    val running = this@ViewExercises.isTransitionActive
+    BackHandler(enabled = running) { }
 
     val toFocus = rememberSaveable { mutableStateOf(focusSearch) }
 
@@ -353,11 +354,6 @@ fun SharedTransitionScope.ViewExercises(
                                                         viewModel.searchFieldState.text.toString()
                                                     )
                                                 )
-                                                awaitFrame()
-                                                awaitFrame()
-                                                awaitFrame()
-                                                awaitFrame()
-                                                awaitFrame()
                                                 navigator.navigate(
                                                     AddExerciseDialogDestination(
                                                         previewExercise = result.exercise,
