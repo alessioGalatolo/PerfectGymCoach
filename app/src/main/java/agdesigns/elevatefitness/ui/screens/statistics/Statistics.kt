@@ -49,7 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.jaikeerthick.composable_graphs.composables.donut.DonutChart
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartStyle
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartType
