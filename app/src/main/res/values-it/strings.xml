@@ -807,4 +807,8 @@
     <string name="lock_workout_scroll">Blocca scroll orizzontale nell\'allenamento: </string>
     <string name="auto_open_wearos">Apri automaticamente l\'app Wear OS all\'inizio dell\'allenamento</string>
     <string name="show_media_controls">Mostra controlli multimediali</string>
+    <string name="discard_data_dialog_title">Annullare cambiamenti?</string>
+    <string name="discard_data_dialog_info">Hai cambiato qualche valore per questo esercizio. Se torni indietro adesso, annullerai questi cambiamenti.</string>
+    <string name="discard_data_dialog_cancel">Continua a modificare</string>
+    <string name="discard_data_dialog_confirm">Cestina i cambiamenti</string>
 </resources>

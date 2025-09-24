@@ -20,6 +20,8 @@ import javax.inject.Inject
 
 data class AddExerciseState(
     val exercise: Exercise? = null,
+    // keep track of original exercise to check if user changed something
+    val programExercise: ProgramExercise? = null,
     val programId: Long = 0L,
     val workoutId: Long = 0L,
     val programExerciseId: Long = 0L,
@@ -249,6 +251,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 _state.update {
                     it.copy(
                         exercise = exercise,
+                        programExercise = programExercise,
                         programExerciseId = programExerciseId,
                         programId = programExercise.extProgramId,
                         exerciseNumber = programExercise.orderInProgram,

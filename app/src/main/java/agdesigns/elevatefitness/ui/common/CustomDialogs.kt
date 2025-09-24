@@ -277,6 +277,88 @@ fun CancelWorkoutDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun DiscardChangesDialog(
+    dialogueOpenProgress: Float,
+    dismissDialog: () -> Unit,
+    confirmExit: () -> Unit
+) {
+
+    BackHandler(enabled = dialogueOpenProgress == 1f) {
+        dismissDialog()
+    }
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = dialogueOpenProgress,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "dialog_progress"
+    )
+    if (animatedProgress > 0f) {
+        // custom implementation of alert dialog otherwise it doesn't work well with predictive back
+        Box (
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f * animatedProgress))
+                .zIndex(10f) // should be above everything
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    dismissDialog()
+                }
+                .sizeIn(minWidth = 280.dp, maxWidth = 560.dp),  // default for alert dialog
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier
+                    .padding(36.dp)
+                    .alpha(0.5f + (0.5f * animatedProgress))
+                    .scale(0.8f + (0.2f * animatedProgress)), // Optional scale effect
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = stringResource(R.string.discard_data_dialog_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.discard_data_dialog_info),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(
+                            onClick = {
+                                dismissDialog()
+                            }
+                        ) {
+                            Text(stringResource(R.string.discard_data_dialog_cancel))
+                        }
+
+                        TextButton(
+                            onClick = {
+                                dismissDialog()
+                                confirmExit()
+                            }
+                        ) {
+                            Text(stringResource(R.string.discard_data_dialog_confirm))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun InfoDialog(dialogueIsOpen: Boolean, toggleDialogue: () -> Unit, infoText: @Composable () -> Unit) {

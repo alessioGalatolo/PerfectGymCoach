@@ -27,12 +27,14 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
+import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.ui.common.ResetExerciseProbabilityDialog
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.home.components.ValueSuggestionRow
 import agdesigns.elevatefitness.ui.screens.workout.components.TextFieldWithButtons
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -58,6 +60,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.math.max
@@ -79,7 +82,6 @@ fun SharedTransitionScope.AddExerciseDialog(
     continueAdding: Boolean = true,  // if true, expects user to continue adding exercise,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
-    // TODO: if user changed a value and goes back without saving, show an alert
     assert(workoutId != 0L || programId != 0L)
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -102,6 +104,45 @@ fun SharedTransitionScope.AddExerciseDialog(
         else
             state.exercise!!
     }
+
+    var somethingHasChanged by remember { mutableStateOf(false) }
+    LaunchedEffect(
+        state.programExercise,
+        state.note,
+        state.variationResKey,
+        state.repsArray,
+        state.restArray,
+        state.advancedSets
+    ) {
+        if (state.programExercise != null) {
+            somethingHasChanged = state.programExercise!!.note != state.note ||
+                    state.programExercise!!.variationResKey != state.variationResKey ||
+                    state.programExercise!!.reps.map{ it.toUInt() } != state.repsArray ||
+                    state.programExercise!!.rest.map{ it.toUInt() } != state.restArray
+        }
+    }
+
+    // used to animate dialog alpha for predictive back
+    var discardChangesDialogProgress by rememberSaveable { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(
+        enabled = somethingHasChanged && discardChangesDialogProgress < 0.5f
+    ) { backFlow ->
+        try {
+            backFlow.collect { back ->
+                discardChangesDialogProgress = back.progress
+            }
+            discardChangesDialogProgress = 1f
+        } catch (_: CancellationException) {
+            discardChangesDialogProgress = 0f
+        }
+    }
+    DiscardChangesDialog(
+        dialogueOpenProgress = discardChangesDialogProgress,
+        dismissDialog = { discardChangesDialogProgress = 0f },
+        confirmExit = {
+            navigator.navigateUp()
+        }
+    )
 
     var awesomeDialogOpen by rememberSaveable { mutableStateOf(false) }
     InfoDialog(
