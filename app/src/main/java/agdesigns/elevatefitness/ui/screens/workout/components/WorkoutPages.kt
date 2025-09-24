@@ -54,6 +54,8 @@ import com.agdesignes.shared.barbellResFromWeight
 import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import com.agdesignes.shared.weightAndUnit
+import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
+import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination.invoke
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -87,7 +89,9 @@ fun SharedTransitionScope.ExercisePages(
     updateValues: (Int, Float, Int, Int) -> Unit,
     toggleOtherEquipment: () -> Unit,
     changeExercise: (Int, Int) -> Unit,
-    removeExercise: (Int) -> Unit
+    removeExercise: (Int) -> Unit,
+    mediaControlsDismissed: Boolean,
+    resetMediaControlVisibility: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -239,32 +243,45 @@ fun SharedTransitionScope.ExercisePages(
                             bottomPadding = bottomPadding,
                             settingsMenu = {
                                 val currentWorkoutString = stringResource(R.string.current_workout)
-                                ExerciseSettingsMenu(changeExercise = {
-                                    changeExercise(page, pagesContent.exercises.size)
-                                    navigator.navigate(
-                                        ExercisesByMuscleDestination(
-                                            programName = currentWorkoutString,
-                                            workoutId = workoutState.workoutId,
-                                            returnAfterAdding = true
+                                ExerciseSettingsMenu(
+                                    changeExercise = {
+                                        changeExercise(page, pagesContent.exercises.size)
+                                        navigator.navigate(
+                                            ExercisesByMuscleDestination(
+                                                programName = currentWorkoutString,
+                                                workoutId = workoutState.workoutId,
+                                                returnAfterAdding = true
+                                            )
                                         )
-                                    )
-                                }, removeExercise = {
-                                    removeExercise(page)
-                                }, addExercise = {
-                                    navigator.navigate(
-                                        ExercisesByMuscleDestination(
-                                            programName = currentWorkoutString,
-                                            workoutId = workoutState.workoutId,
-                                            returnAfterAdding = true
+                                    },
+                                    removeExercise = {
+                                        removeExercise(page)
+                                    },
+                                    addExercise = {
+                                        navigator.navigate(
+                                            ExercisesByMuscleDestination(
+                                                programName = currentWorkoutString,
+                                                workoutId = workoutState.workoutId,
+                                                returnAfterAdding = true
+                                            )
                                         )
-                                    )
-                                    // FIXME: if unsuccessful add (e.g., user goes back) do not scroll
-                                    scope.launch {
-                                        horizontalPagerState.animateScrollToPage(
-                                            horizontalPagerState.pageCount - 1
+                                        // FIXME: if unsuccessful add (e.g., user goes back) do not scroll
+                                        scope.launch {
+                                            horizontalPagerState.animateScrollToPage(
+                                                horizontalPagerState.pageCount - 1
+                                            )
+                                        }
+                                    },
+                                    viewStatistics = {
+                                        navigator.navigate(
+                                            ExerciseStatsDestination(
+                                                pagesContent.exercises[page].extExerciseId
+                                            )
                                         )
-                                    }
-                                })
+                                    },
+                                    mediaControlsDismissed = mediaControlsDismissed,
+                                    showMediaControls = resetMediaControlVisibility
+                                )
                             },
                             addSet = addSet,
                             updateRowValues = { reps, weight, setCount ->
@@ -651,7 +668,10 @@ fun WorkoutFinishPage(
 fun ExerciseSettingsMenu(
     changeExercise: () -> Unit,
     removeExercise: () -> Unit,
-    addExercise: () -> Unit
+    addExercise: () -> Unit,
+    viewStatistics: () -> Unit,
+    mediaControlsDismissed: Boolean,
+    showMediaControls: () -> Unit
 ) {
     Box(
         modifier = Modifier.wrapContentSize()
@@ -671,17 +691,21 @@ fun ExerciseSettingsMenu(
         ) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.replace_exercise)) },
-                onClick = changeExercise,
+                onClick = {
+                    expanded = false
+                    changeExercise()
+                },
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Edit,
                         contentDescription = stringResource(R.string.replace_exercise)
                     )
-                })
+                }
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.skip_exercise_this_workout_only)) },
                 onClick = {
-                    // does not close automatically TODO: find actual issue
+                    // FIXME does not close automatically TODO: find actual issue
                     expanded = false
                     removeExercise()
                 },
@@ -690,16 +714,49 @@ fun ExerciseSettingsMenu(
                         Icons.Outlined.Delete,
                         contentDescription = stringResource(R.string.skip_exercise_this_workout_only)
                     )
-                })
+                }
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.add_another_exercise)) },
-                onClick = addExercise,
+                onClick = {
+                    expanded = false
+                    addExercise()
+                },
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Add,
                         contentDescription = stringResource(R.string.add_another_exercise)
                     )
-                })
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.view_exercise_history_and_stats)) },
+                onClick = {
+                    expanded = false
+                    viewStatistics()
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Timeline,
+                        contentDescription = stringResource(R.string.view_exercise_history_and_stats)
+                    )
+                }
+            )
+            if (mediaControlsDismissed) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.show_media_controls)) },
+                    onClick = {
+                        expanded = false
+                        showMediaControls()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.PlayArrow,
+                            contentDescription = "Show media controls"
+                        )
+                    }
+                )
+            }
         }
     }
 }

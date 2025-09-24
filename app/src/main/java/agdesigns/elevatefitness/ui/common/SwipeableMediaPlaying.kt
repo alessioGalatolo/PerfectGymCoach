@@ -1,11 +1,8 @@
 package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.ui.screens.workout.WorkoutEvent
 import android.app.ActivityOptions
-import android.media.session.PlaybackState.STATE_PLAYING
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -31,13 +28,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
@@ -64,23 +58,24 @@ object SwipeableMediaPlayingDefaults{
 @Composable
 fun SwipeableMediaPlaying(
     onDismiss: () -> Unit,
-    state: MediaPlayingState,
-    togglePlayPause: () -> Unit,
-    playNext: () -> Unit,
+    mediaState: MediaPlayingState,
     modifier: Modifier = Modifier,
+    swipeState: SwipeToDismissBoxState = rememberSwipeToDismissBoxState(),
+    togglePlayPause: () -> Unit = {},
+    playNext: () -> Unit = {},
     openPermissionDialog: () -> Unit = {}
 ) {
-    val shouldTeaseMediaAccess = state.needsAccess && state.canAskAccess
+    val shouldTeaseMediaAccess = mediaState.needsAccess && mediaState.canAskAccess
     val mediaTitle = if (shouldTeaseMediaAccess) {
         stringResource(R.string.tease_media_access_prompt)
-    } else state.title ?: stringResource(R.string.no_music_playing)
+    } else mediaState.title ?: stringResource(R.string.no_music_playing)
     val mediaArtist = if (shouldTeaseMediaAccess) {
         stringResource(R.string.tease_media_access_learn_more)
-    } else state.artist ?: stringResource(R.string.no_music_playing_info)
+    } else mediaState.artist ?: stringResource(R.string.no_music_playing_info)
     val context = LocalContext.current
 
     SwipeToDismissBox(
-        state = rememberSwipeToDismissBoxState(),
+        state = swipeState,
         onDismiss = {
             onDismiss()
         },
@@ -108,9 +103,9 @@ fun SwipeableMediaPlaying(
                                         ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
                                     )
                                     .toBundle()
-                                state.activityIntent?.send(context, 0, null, null, null, null, opts)
+                                mediaState.activityIntent?.send(context, 0, null, null, null, null, opts)
                             } else {
-                                state.activityIntent?.send()
+                                mediaState.activityIntent?.send()
                             }
                         }
                     }
@@ -119,9 +114,9 @@ fun SwipeableMediaPlaying(
                     contentAlignment = Alignment.Center
                 ) {
                     // big blurred artwork as background
-                    if (state.artwork != null) {
+                    if (mediaState.artwork != null) {
                         AsyncImage(
-                            state.artwork,
+                            mediaState.artwork,
                             stringResource(R.string.song_artwork),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -141,9 +136,9 @@ fun SwipeableMediaPlaying(
                             modifier = Modifier
                                 .fillMaxWidth()
                         ) {
-                            if (state.artwork != null) {
+                            if (mediaState.artwork != null) {
                                 AsyncImage(
-                                    state.artwork,
+                                    mediaState.artwork,
                                     stringResource(R.string.song_artwork),
                                     Modifier
                                         .size(SwipeableMediaPlayingDefaults.artworkSize)
@@ -174,16 +169,16 @@ fun SwipeableMediaPlaying(
                                 )
                             }
                             // if we are just teasing, gain space by removing buttons
-                            if (!shouldTeaseMediaAccess && state.title != null) {
+                            if (!shouldTeaseMediaAccess && mediaState.title != null) {
                                 Spacer(Modifier.width(8.dp))
                                 FilledIconToggleButton(
-                                    checked = state.isPlaying,
+                                    checked = mediaState.isPlaying,
                                     onCheckedChange = { togglePlayPause() },
                                     shapes = IconButtonDefaults.toggleableShapes(),
                                     modifier = Modifier.size(IconButtonDefaults.smallContainerSize(
                                         IconButtonDefaults.IconButtonWidthOption.Wide))
                                 ) {
-                                    if (state.isPlaying) {
+                                    if (mediaState.isPlaying) {
                                         Icon(Icons.Default.Pause,
                                             stringResource(R.string.pause_icon),
                                         )
@@ -215,7 +210,7 @@ fun SwipeableMediaPlayingPreview() {
     Column {
         SwipeableMediaPlaying(
             onDismiss = {},
-            state = MediaPlayingState(
+            mediaState = MediaPlayingState(
                 title = "Song title",
                 artist = "Artist name",
                 isPlaying = true
@@ -226,7 +221,7 @@ fun SwipeableMediaPlayingPreview() {
 
         SwipeableMediaPlaying(
             onDismiss = {},
-            state = MediaPlayingState(
+            mediaState = MediaPlayingState(
                 title = "Song title",
                 artist = "Artist name",
                 isPlaying = false
@@ -236,7 +231,7 @@ fun SwipeableMediaPlayingPreview() {
         )
         SwipeableMediaPlaying(
             onDismiss = {},
-            state = MediaPlayingState(
+            mediaState = MediaPlayingState(
                 title = null,
                 artist = null,
                 isPlaying = false,

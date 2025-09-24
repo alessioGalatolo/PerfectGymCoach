@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
@@ -71,9 +72,7 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.traversalIndex
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.remote.interactions.RemoteActivityHelper
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
@@ -311,6 +310,8 @@ fun SharedTransitionScope.Workout(
             Theme.DARK -> true
         }
     }}
+    var mediaControlsDismissed by rememberSaveable { mutableStateOf(false) }
+    val mediaSwipeState = rememberSwipeToDismissBoxState()
 
     // should only show preview when transitioning *into* the workout
     var containerTransitionFinished by rememberSaveable { mutableStateOf(false) }
@@ -548,16 +549,16 @@ fun SharedTransitionScope.Workout(
                 if (!mediaState.needsAccess || mediaState.canAskAccess) {
                     val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
                             16.dp // fab bottom padding
-                    var dismissed by remember { mutableStateOf(false) }
-                    fabHeight = if (dismissed) 0.dp else visibleFabHeight
+                    fabHeight = if (mediaControlsDismissed) 0.dp else visibleFabHeight
                     AnimatedVisibility(
-                        visible = containerTransitionFinished && !pagerState.isScrollInProgress && !dismissed,
+                        visible = containerTransitionFinished && !pagerState.isScrollInProgress && !mediaControlsDismissed,
                         enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                         exit = fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec())
                     ) {
                         SwipeableMediaPlaying(
-                            onDismiss = { dismissed = true },
-                            state = mediaState,
+                            onDismiss = { mediaControlsDismissed = true },
+                            mediaState = mediaState,
+                            swipeState = mediaSwipeState,
                             togglePlayPause = { mediaVM.togglePlayPause() },
                             playNext = { mediaVM.playNext() },
                             modifier = Modifier.padding(start = 32.dp), // weird padding as it pretends to be a fab
@@ -667,7 +668,14 @@ fun SharedTransitionScope.Workout(
                         )
                     }
                 },
-                removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) }
+                removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) },
+                mediaControlsDismissed = mediaControlsDismissed,
+                resetMediaControlVisibility = {
+                    scope.launch {
+                        mediaSwipeState.reset()
+                        mediaControlsDismissed = false
+                    }
+                }
             )
         }
     } else if (workoutState.workoutId != 0L){

@@ -811,4 +811,5 @@
     <string name="resume_workout_fail">Couldn\'t find the workout to resume.</string>
     <string name="lock_workout_scroll">Lock workout horizontal scroll: </string>
     <string name="auto_open_wearos">Automatically open Wear OS companion on workout start: </string>
+    <string name="show_media_controls">Show media controls</string>
 </resources>

@@ -806,4 +806,5 @@
     <string name="resume_workout_fail">Non è stato possibile trovare l\'allenamento da riprendere!</string>
     <string name="lock_workout_scroll">Blocca scroll orizzontale nell\'allenamento: </string>
     <string name="auto_open_wearos">Apri automaticamente l\'app Wear OS all\'inizio dell\'allenamento</string>
+    <string name="show_media_controls">Mostra controlli multimediali</string>
 </resources>
