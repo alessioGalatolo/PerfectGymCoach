@@ -30,6 +30,7 @@ data class AddExerciseState(
     val repsArray: List<UInt> = List(5) { 8U },
     val restArray: List<UInt> = List(5) { 90U },
     val advancedSets: Boolean = false,
+    val isLoading: Boolean = true
 )
 
 sealed class AddExerciseEvent{
@@ -239,12 +240,12 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
         // NOTE: we could retrieve exercise and then one of the other 3 without using combine
         // but this way we only need to keep track of one job
         if (programExerciseId != 0L) {
+            Log.d("AddExerciseViewModel", "retrieved data: programExerciseId = $programExerciseId")
             // changing an existing exercise
             combine(
                 repository.getExercise(exerciseId),
                 repository.getProgramExercise(programExerciseId)
             ) { exercise, programExercise ->
-                Log.d("AddExerciseViewModel", "retrieved data: $exercise $programExercise")
                 _state.update {
                     it.copy(
                         exercise = exercise,
@@ -257,6 +258,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         repsArray = programExercise.reps.map { it.toUInt() },
                         restArray = programExercise.rest.map { it.toUInt() },
                         advancedSets = (programExercise.reps.distinct().size + programExercise.rest.distinct().size) > 2,
+                        isLoading = false
                     )
                 }
             }.collect()
@@ -276,6 +278,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         exerciseNumber = exerciseNumber,
                         programId = programId,
                         workoutId = workoutId,
+                        isLoading = false
                     )
                 }
             }.collect()
@@ -290,7 +293,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     it.copy(
                         exercise = exercise,
                         exerciseNumber = workoutExercises.size,
-                        workoutId = workoutId
+                        workoutId = workoutId,
+                        isLoading = false
                     )
                 }
             }.collect()

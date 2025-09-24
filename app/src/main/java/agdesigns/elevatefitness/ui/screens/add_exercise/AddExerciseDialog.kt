@@ -86,14 +86,16 @@ fun SharedTransitionScope.AddExerciseDialog(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    viewModel.onEvent(
-        AddExerciseEvent.StartRetrievingData(
-            previewExercise.exerciseId,
-            programId,
-            workoutId,
-            programExerciseId
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(
+            AddExerciseEvent.StartRetrievingData(
+                previewExercise.exerciseId,
+                programId,
+                workoutId,
+                programExerciseId
+            )
         )
-    )
+    }
     val exercise = remember(previewExercise, state.exercise) {
         if (state.exercise == null)
             previewExercise
@@ -258,7 +260,6 @@ fun SharedTransitionScope.AddExerciseDialog(
                         )
                         Spacer(Modifier.width(8.dp))
                         val currentProbability = exercise.probability
-                        // FIXME: does this work with string resource??
                         Text(stringResource(R.string.current_probability_2f, currentProbability))
                         TextButton(onClick = { resetProbabilityDialogOpen = true }) {
                             Text(stringResource(R.string.reset))
@@ -268,7 +269,6 @@ fun SharedTransitionScope.AddExerciseDialog(
                                 stringResource(R.string.more_info)
                             )
                         }
-                        // TODO: check overflow on long probabilities
                     }
                 }
                 item {
@@ -370,12 +370,12 @@ fun SharedTransitionScope.AddExerciseDialog(
                                     pressedShape = MaterialTheme.shapes.extraExtraLarge
                                 ),
                                 onClick = {
-                                viewModel.onEvent(
-                                    AddExerciseEvent.UpdateSets(
-                                        max(1, state.repsArray.size-1).toUInt()
+                                    viewModel.onEvent(
+                                        AddExerciseEvent.UpdateSets(
+                                            max(1, state.repsArray.size-1).toUInt()
+                                        )
                                     )
-                                )
-                            }
+                                }
                             ) {
                                 Icon(Icons.Default.Remove,
                                     stringResource(R.string.decrease_sets)
@@ -417,27 +417,31 @@ fun SharedTransitionScope.AddExerciseDialog(
                         }
                     }
                 }
-                if (!state.advancedSets) {
+                if (!state.advancedSets && !state.isLoading) {
                     item {
                         // reps/rest when advanced sets if off
                         var repsBeingFocussed by remember { mutableStateOf(false) }
-                        val repsTextFieldState = rememberTextFieldState(state.repsArray.first().toString())
+                        val repsTextFieldState = rememberTextFieldState(
+                            state.repsArray.firstOrNull()?.toString() ?: "0"
+                        )
                         var restBeingFocussed by remember { mutableStateOf(false) }
-                        val restTextFieldState = rememberTextFieldState(state.restArray.first().toString())
+                        val restTextFieldState = rememberTextFieldState(
+                            state.restArray.firstOrNull()?.toString() ?: "0"
+                        )
                         var repsTextIsValid by remember { mutableStateOf(true) }
                         LaunchedEffect(repsTextFieldState.text) {
                             val reps = repsTextFieldState.text.toString().toUIntOrNull()
                             repsTextIsValid = reps?.let { it > 0U } == true
-                            if (reps?.toUInt()?.let{it  > 0U} == true) {
-                                viewModel.onEvent(AddExerciseEvent.UpdateReps(reps))
+                            if (repsTextIsValid) {
+                                viewModel.onEvent(AddExerciseEvent.UpdateReps(reps!!))
                             }
                         }
                         var restTextIsValid by remember { mutableStateOf(true) }
                         LaunchedEffect(restTextFieldState.text) {
                             val rest = restTextFieldState.text.toString().toUIntOrNull()
                             restTextIsValid = restTextFieldState.text.toString().toUIntOrNull() != null
-                            if (rest != null) {
-                                viewModel.onEvent(AddExerciseEvent.UpdateRest(rest))
+                            if (restTextIsValid) {
+                                viewModel.onEvent(AddExerciseEvent.UpdateRest(rest!!))
                             }
                         }
                         ValueSuggestionRow(
@@ -518,7 +522,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                             }
                         }
                     }
-                } else {
+                } else if (state.advancedSets && !state.isLoading) {
                     item {
                         Spacer(Modifier.height(16.dp))
                     }
@@ -532,16 +536,16 @@ fun SharedTransitionScope.AddExerciseDialog(
                         LaunchedEffect(repsTextFieldState.text) {
                             val reps = repsTextFieldState.text.toString().toUIntOrNull()
                             repsTextIsValid = reps?.let { it > 0U } == true
-                            if (reps?.toUInt()?.let{it  > 0U} == true) {
-                                viewModel.onEvent(AddExerciseEvent.UpdateRepsAtIndex(reps, index))
+                            if (repsTextIsValid) {
+                                viewModel.onEvent(AddExerciseEvent.UpdateRepsAtIndex(reps!!, index))
                             }
                         }
                         var restTextIsValid by remember { mutableStateOf(true) }
                         LaunchedEffect(restTextFieldState.text) {
                             val rest = restTextFieldState.text.toString().toUIntOrNull()
                             restTextIsValid = restTextFieldState.text.toString().toUIntOrNull() != null
-                            if (rest != null) {
-                                viewModel.onEvent(AddExerciseEvent.UpdateRestAtIndex(rest, index))
+                            if (restTextIsValid) {
+                                viewModel.onEvent(AddExerciseEvent.UpdateRestAtIndex(rest!!, index))
                             }
                         }
                         ValueSuggestionRow(
