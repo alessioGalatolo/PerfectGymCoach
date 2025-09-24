@@ -39,16 +39,17 @@ fun SharedTransitionScope.FullScreenImageCard(
     sharedState: SharedContentState,
     topAppBarNavigationIcon: @Composable (Boolean) -> Unit,
     topAppBarActions: @Composable RowScope.(Boolean) -> Unit,
+    bottomBar: @Composable () -> Unit,
     title: @Composable () -> Unit,
     image: @Composable BoxScope.() -> Unit,
-    snackbarHostState: SnackbarHostState,
+    snackbarHost: @Composable () -> Unit,
+    floatingActionButton: @Composable () -> Unit,
     imageHeight: Dp,
     brightImage: Boolean,
     darkTheme: Boolean,
     cardShape: RoundedCornerShape,
-    content: @Composable (Dp) -> Unit,
-    floatingActionButton: @Composable () -> Unit,
-    bottomBar: @Composable (PaddingValues) -> Unit
+    scrollState: ScrollState,
+    content: @Composable (Dp) -> Unit
 ) {
     val cornerRadius = cardShape.topStart
 
@@ -62,10 +63,12 @@ fun SharedTransitionScope.FullScreenImageCard(
     )
     val s = scrollBehavior.state
     val belowImageFloat = with(localDensity) { contentBelowImage.toPx() }
-    val transition by remember { derivedStateOf { 1 - ((s.heightOffsetLimit - s.contentOffset - belowImageFloat).coerceIn(
-        minimumValue = s.heightOffsetLimit,
-        maximumValue = 0f
-    ) / s.heightOffsetLimit) }}
+    val transition by remember { derivedStateOf {
+            1 - ((s.heightOffsetLimit + scrollState.value - belowImageFloat).coerceIn(
+            minimumValue = s.heightOffsetLimit,
+            maximumValue = 0f
+        ) / s.heightOffsetLimit) }
+    }
 
     // make status bar transparent to see image behind
     // This is an approximation of what happened in accompanist systemUiController
@@ -98,9 +101,9 @@ fun SharedTransitionScope.FullScreenImageCard(
         image()
 
         Scaffold (
-            Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             containerColor = Color.Transparent,
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            snackbarHost = snackbarHost,
             topBar = {
                 // FIXME: low level transition needed because compose likes to hide its functions
                 // TODO: check if new compose exposes something useful for this
@@ -157,9 +160,9 @@ fun SharedTransitionScope.FullScreenImageCard(
                             .padding(top = contentBelowImage)) {}
                     Column(
                         Modifier
-                            .nestedScroll(scrollBehavior.nestedScrollConnection)
-                            .verticalScroll(rememberScrollState())
                             .fillMaxSize()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .verticalScroll(scrollState)
                     ) {
                         // space the same as the image height
                         Spacer(modifier = Modifier
@@ -173,17 +176,10 @@ fun SharedTransitionScope.FullScreenImageCard(
                             content(bottomPadding)
                         }
                     }
-
-                    // bottom bar
-
                 }
             },
             floatingActionButton = { floatingActionButton() },
-            bottomBar = {
-                bottomBar(
-                    WindowInsets.navigationBars.asPaddingValues()
-                )
-            }
+            bottomBar = bottomBar
         )
     }
 }

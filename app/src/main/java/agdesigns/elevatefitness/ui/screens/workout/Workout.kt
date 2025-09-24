@@ -55,7 +55,9 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -244,9 +246,16 @@ fun SharedTransitionScope.Workout(
         }
     }
 
+    /*
+    If pager is scrolled to the top, topappbar is opaque. If pager is scrolled to a new page where
+    the topappbar should be transparent, we need to manually reset the scroll.
+    Otherwise the topappbar will stay opaque
+     */
+    val scrollState = rememberScrollState()
     // communicate with viewModel so that it know current exercise
     LaunchedEffect(pagerState.currentPage) {
         viewModel.onEvent(WorkoutEvent.UpdateCurrentPage(pagerState.currentPage))
+        scrollState.animateScrollTo(0)
     }
 
     // title for top app bar, do not share bounds for animation
@@ -317,8 +326,6 @@ fun SharedTransitionScope.Workout(
         FullScreenImageCard(
             animatedVisibilityScope = animatedVisibilityScope,
             sharedState = sharedStateCard,
-            snackbarHostState = snackbarHostState,
-            cardShape = MaterialTheme.shapes.extraLarge as RoundedCornerShape,
             topAppBarNavigationIcon = { appBarShown ->
                 AnimatedVisibility(
                     visible = containerTransitionFinished && !currentExerciseState.isLoading,
@@ -383,9 +390,75 @@ fun SharedTransitionScope.Workout(
                     }
                 }
             },
+            bottomBar = {
+                AnimatedVisibility(
+                    visible = containerTransitionFinished && !pagerState.isScrollInProgress,
+                    enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
+                ) {
+                    WorkoutBottomBar(
+                        workoutState = workoutState,
+                        currentExerciseState = currentExerciseState,
+                        contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                        startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
+                        completeWorkout = completeWorkout,
+                        completeSet = {
+                            // FIXME: should only call VM.onEvent, then VM should emit a side effect if superset
+                            viewModel.onEvent(WorkoutEvent.CompleteSet)
+                            if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
+                                val superExercise =
+                                    pagesContent.exercises.find {
+                                        it.extProgramExerciseId == currentExerciseState.currentExercise?.supersetExercise
+                                    }
+                                if (superExercise != null) {
+                                    if (pagesContent.exercises.indexOf(
+                                            superExercise
+                                        ) >
+                                        pagesContent.exercises.indexOf(
+                                            currentExerciseState.currentExercise
+                                        )
+                                    ) {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                        }
+                                    } else {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
+                        goToNextExercise = {
+                            scope.launch {
+                                pagerState.animateScrollToPage(
+                                    pagerState.currentPage + 1
+                                )
+                            }
+                        },
+                        updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
+                        updateWeight = { value ->
+                            viewModel.onEvent(
+                                WorkoutEvent.UpdateWeight(
+                                    value
+                                )
+                            )
+                        },
+                        autoStepWeight = { newValue, equipment, decrement ->
+                            viewModel.onEvent(
+                                WorkoutEvent.AutoStepWeight(newValue, equipment, decrement)
+                            )
+                        }
+                    )
+                }
+            },
             title = titleTopBar,
             image = {
-                val roundedCornersShape = MaterialTheme.shapes.extraLarge
+                val roundedCornersShape = MaterialTheme.shapes.extraLarge.copy(
+                    topStart = ZeroCornerSize,
+                    topEnd = ZeroCornerSize
+                )
 
                 Box(Modifier
                     .wrapContentHeight(Top), contentAlignment = TopCenter) {
@@ -469,92 +542,8 @@ fun SharedTransitionScope.Workout(
                     }
                 }
             },
-            imageHeight = imageHeight,
-            brightImage = brightImage.value,
-            darkTheme = useDarkTheme,
-            content = { bottomPadding ->
-                val progressAnim = remember(currentExerciseState.restTimestamp) { Animatable(1f) }
-
-                LaunchedEffect(
-                    currentExerciseState.restTimestamp,
-                    currentExerciseState.currentExerciseRest
-                ) {
-                    if (
-                        currentExerciseState.restTimestamp != null &&
-                        currentExerciseState.currentExerciseRest != null
-                    ) {
-                        progressAnim.animateTo(
-                            targetValue = 0f,
-                            animationSpec = tween(
-                                (currentExerciseState.currentExerciseRest!! * 1000).toInt(),
-                                easing = LinearEasing
-                            )
-                        )
-                    }
-                }
-
-                ExercisePages(
-                    navigator = navigator,
-                    horizontalPagerState = pagerState,
-                    currentExerciseState = currentExerciseState,
-                    pagesContent = pagesContent,
-                    previewExercise = previewExercise,
-                    workoutState = workoutState,
-                    bottomPadding = bottomPadding,
-                    fabHeight = fabHeight,
-                    restCounterProgress = progressAnim.value,
-                    title = title,
-                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
-                    updateExerciseProbability = { probability ->
-                        scope.launch {
-                            // if already snackbarring, dismiss it before a new one.
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            if (probability > 0)
-                                snackbarHostState.showSnackbar(context.getString(R.string.increasing_exercise_probability))
-                            else
-                                snackbarHostState.showSnackbar(context.getString(R.string.decreasing_exercise_probability))
-                        }
-                        viewModel.onEvent(
-                            WorkoutEvent.UpdateExerciseProbability(
-                                pagerState.currentPage,
-                                probability
-                            )
-                        )
-                    },
-                    updateBottomBar = { rep, weight ->
-                        if (rep != null)
-                            viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
-                        else
-                        // this should never happen. Log it
-                            Log.e("Workout", "updateBottomBar called with null rep")
-                        if (weight != null)
-                            viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
-                    },
-                    updateValues = { a, b, c, d ->
-                        viewModel.onEvent(
-                            WorkoutEvent.EditSetRecord(
-                                a,
-                                b,
-                                c,
-                                d
-                            )
-                        )
-                    },
-                    updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
-                    toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
-                    changeExercise = { exerciseInWorkout, originalSize ->
-                        scope.launch {
-                            viewModel.onEvent(
-                                WorkoutEvent.ReplaceExercise(
-                                    exerciseInWorkout,
-                                    originalSize
-                                )
-                            )
-                        }
-                    },
-                    removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) }
-                )
-            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            cardShape = MaterialTheme.shapes.extraLarge as RoundedCornerShape,
             floatingActionButton = {
                 if (!mediaState.needsAccess || mediaState.canAskAccess) {
                     val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
@@ -578,71 +567,108 @@ fun SharedTransitionScope.Workout(
                         )
                     }
                 }
-            }
-        ) { padding ->
-            // FIXME: when becoming invisible, causes bottomPadding to become 0, thus removing the bottom
-            // spacer in the exercises and a slight movement in the list
-            AnimatedVisibility(
-                visible = containerTransitionFinished && !pagerState.isScrollInProgress,
-                enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
+            },
+            imageHeight = imageHeight,
+            brightImage = brightImage.value,
+            darkTheme = useDarkTheme,
+            scrollState = scrollState,
+        ) { currentBottomPadding ->
+            val progressAnim = remember(currentExerciseState.restTimestamp) { Animatable(1f) }
+
+            /*
+            Bottom padding can become 0.dp when scrolling pager as it makes bottomBar disappear
+            This would cause some content to shift abruptly and that is not desirable
+            We thus only update currentBottomPadding is not basePadding (which should not happen normally as
+            we always have a bottom bar in Workout)
+             */
+            var bottomPadding by remember { mutableStateOf(0.dp) }
+            val basePadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            LaunchedEffect(
+                currentBottomPadding,
             ) {
-                WorkoutBottomBar(
-                    workoutState = workoutState,
-                    currentExerciseState = currentExerciseState,
-                    contentPadding = padding,
-                    startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
-                    completeWorkout = completeWorkout,
-                    completeSet = {
-                        // FIXME: should only call VM.onEvent, then VM should emit a side effect if superset
-                        viewModel.onEvent(WorkoutEvent.CompleteSet)
-                        if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
-                            val superExercise =
-                                pagesContent.exercises.find {
-                                    it.extProgramExerciseId == currentExerciseState.currentExercise?.supersetExercise
-                                }
-                            if (superExercise != null) {
-                                if (pagesContent.exercises.indexOf(
-                                        superExercise
-                                    ) >
-                                    pagesContent.exercises.indexOf(
-                                        currentExerciseState.currentExercise
-                                    )
-                                ) {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                    }
-                                } else {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
-                    goToNextExercise = {
-                        scope.launch {
-                            pagerState.animateScrollToPage(
-                                pagerState.currentPage + 1
-                            )
-                        }
-                    },
-                    updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
-                    updateWeight = { value ->
-                        viewModel.onEvent(
-                            WorkoutEvent.UpdateWeight(
-                                value
-                            )
+                if (currentBottomPadding != basePadding) {
+                    bottomPadding = currentBottomPadding
+                }
+            }
+            LaunchedEffect(
+                currentExerciseState.restTimestamp,
+                currentExerciseState.currentExerciseRest
+            ) {
+                if (
+                    currentExerciseState.restTimestamp != null &&
+                    currentExerciseState.currentExerciseRest != null
+                ) {
+                    progressAnim.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(
+                            (currentExerciseState.currentExerciseRest!! * 1000).toInt(),
+                            easing = LinearEasing
                         )
-                    },
-                    autoStepWeight = { newValue, equipment, decrement ->
+                    )
+                }
+            }
+
+            ExercisePages(
+                navigator = navigator,
+                horizontalPagerState = pagerState,
+                currentExerciseState = currentExerciseState,
+                pagesContent = pagesContent,
+                previewExercise = previewExercise,
+                workoutState = workoutState,
+                bottomPadding = bottomPadding,
+                fabHeight = fabHeight,
+                restCounterProgress = progressAnim.value,
+                title = title,
+                addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
+                updateExerciseProbability = { probability ->
+                    scope.launch {
+                        // if already snackbarring, dismiss it before a new one.
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        if (probability > 0)
+                            snackbarHostState.showSnackbar(context.getString(R.string.increasing_exercise_probability))
+                        else
+                            snackbarHostState.showSnackbar(context.getString(R.string.decreasing_exercise_probability))
+                    }
+                    viewModel.onEvent(
+                        WorkoutEvent.UpdateExerciseProbability(
+                            pagerState.currentPage,
+                            probability
+                        )
+                    )
+                },
+                updateBottomBar = { rep, weight ->
+                    if (rep != null)
+                        viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
+                    else
+                    // this should never happen. Log it
+                        Log.e("Workout", "updateBottomBar called with null rep")
+                    if (weight != null)
+                        viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
+                },
+                updateValues = { a, b, c, d ->
+                    viewModel.onEvent(
+                        WorkoutEvent.EditSetRecord(
+                            a,
+                            b,
+                            c,
+                            d
+                        )
+                    )
+                },
+                updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
+                toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
+                changeExercise = { exerciseInWorkout, originalSize ->
+                    scope.launch {
                         viewModel.onEvent(
-                            WorkoutEvent.AutoStepWeight(newValue, equipment, decrement)
+                            WorkoutEvent.ReplaceExercise(
+                                exerciseInWorkout,
+                                originalSize
+                            )
                         )
                     }
-                )
-            }
+                },
+                removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) }
+            )
         }
     } else if (workoutState.workoutId != 0L){
         Log.d("Workout", "pagesContent.exercises: ${pagesContent.exercises}, isLoading: ${currentExerciseState.isLoading}, previewExercise: $previewExercise")
