@@ -58,6 +58,7 @@ import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDest
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination.invoke
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import kotlin.collections.forEachIndexed
@@ -399,6 +400,10 @@ fun ExercisePage(
                     haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
                 } else if (restTimeSecs == 1L) {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    delay(1000)
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                 }
             }
         }
@@ -771,8 +776,8 @@ fun BarbellSelector(
     modifier: Modifier = Modifier
 ) {
     // NOTE: cannot use ExposedDropdownMenu as it currently opens unreliably
-
     var isExpanded by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
 
     Column(modifier = modifier
         .padding(vertical = 8.dp)
@@ -854,24 +859,6 @@ fun BarbellSelector(
                     }
                     // the corner radius between items
                     val defaultOtherCorner: Dp = 4.dp
-                    val currentItemShape = when (index) {
-                        0 -> defaultShape.copy(
-                            bottomStart = CornerSize(defaultOtherCorner),
-                            bottomEnd = CornerSize(defaultOtherCorner)
-                        )
-
-                        BarbellType.entries.lastIndex -> defaultShape.copy(
-                            topStart = CornerSize(defaultOtherCorner),
-                            topEnd = CornerSize(defaultOtherCorner),
-                        )
-
-                        else -> RoundedCornerShape(
-                            topStart = defaultOtherCorner,
-                            topEnd = defaultOtherCorner,
-                            bottomStart = defaultOtherCorner,
-                            bottomEnd = defaultOtherCorner
-                        )
-                    }
                     val optionText = if (option == BarbellType.OTHER) {
                         stringResource(
                             R.string.barbell_custom_value,
@@ -884,11 +871,35 @@ fun BarbellSelector(
                                     else stringResource(R.string.kg)
                                 })"
                     }
+                    val isSelected = selectedBarbell == optionText ||
+                        (
+                            option == BarbellType.OTHER &&
+                            selectedBarbell.contains(stringResource(option.barbellResource))
+                        )
+                    val currentItemShape = if (isSelected)
+                        MaterialTheme.shapes.extraExtraLarge
+                    else
+                        when (index) {
+                            0 -> defaultShape.copy(
+                                bottomStart = CornerSize(defaultOtherCorner),
+                                bottomEnd = CornerSize(defaultOtherCorner)
+                            )
+                            BarbellType.entries.lastIndex -> defaultShape.copy(
+                                topStart = CornerSize(defaultOtherCorner),
+                                topEnd = CornerSize(defaultOtherCorner),
+                            )
 
-                    val isSelected = selectedBarbell == optionText || (option == BarbellType.OTHER && selectedBarbell.contains(stringResource(option.barbellResource)))
+                            else -> RoundedCornerShape(
+                                topStart = defaultOtherCorner,
+                                topEnd = defaultOtherCorner,
+                                bottomStart = defaultOtherCorner,
+                                bottomEnd = defaultOtherCorner
+                            )
+                        }
 
                     Card(
                         onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                             if (option == BarbellType.OTHER) {
                                 toggleOtherEquipment()
                             } else {

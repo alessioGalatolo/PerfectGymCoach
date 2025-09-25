@@ -17,6 +17,8 @@ import agdesigns.elevatefitness.ui.screens.workout.WorkoutState
 import agdesigns.elevatefitness.ui.screens.workout.CurrentExerciseState
 import androidx.compose.foundation.background
 import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import com.agdesignes.shared.Equipment
 
@@ -81,6 +83,7 @@ fun WorkoutBottomBar(
             ) {
                 TextFieldWithButtons(
                     stringResource(R.string.reps),
+                    hapticsEnabled = true,
                     text = { currentExerciseState.repsBottomBar },
                     onNewText = { new -> updateReps(new) },
                     onIncrement = { updateReps(((currentExerciseState.repsBottomBar.toIntOrNull() ?: 0) + 1).toString()) },
@@ -91,6 +94,7 @@ fun WorkoutBottomBar(
                 Spacer(Modifier.width(8.dp))
                 TextFieldWithButtons(
                     stringResource(R.string.weight),
+                    hapticsEnabled = true,
                     text = { currentExerciseState.weightBottomBar },
                     onNewText = { new -> updateWeight(new) },
                     onIncrement = { autoStepWeight(
@@ -133,6 +137,7 @@ fun WorkoutBottomBar(
 @Composable
 fun RowScope.TextFieldWithButtons(
     prompt: String,
+    hapticsEnabled: Boolean = false,
     text: () -> String,
     onNewText: (String) -> Unit,
     onIncrement: () -> Unit,
@@ -140,12 +145,17 @@ fun RowScope.TextFieldWithButtons(
     textIsValid: (String) -> Boolean = { true },
     contentDescription: String = ""
 ) {
+    val haptics = LocalHapticFeedback.current
     Row(verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .weight(1f, true)
     ) {
-        IconButton(onClick = onDecrement, modifier = Modifier
+        IconButton(onClick = {
+            if (hapticsEnabled)
+                haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
+            onDecrement()
+        }, modifier = Modifier
             .weight(0.3f)
             .minimumInteractiveComponentSize()) {
             Icon(
@@ -167,7 +177,11 @@ fun RowScope.TextFieldWithButtons(
                 .heightIn(1.dp, Dp.Infinity)
                 .weight(0.5f)
         )
-        IconButton(onClick = onIncrement, modifier = Modifier
+        IconButton(onClick = {
+            if (hapticsEnabled)
+                haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
+            onIncrement()
+        }, modifier = Modifier
             .weight(0.3f)
             .minimumInteractiveComponentSize()) {
             Icon(Icons.Filled.Add, stringResource(R.string.increase_i, contentDescription))

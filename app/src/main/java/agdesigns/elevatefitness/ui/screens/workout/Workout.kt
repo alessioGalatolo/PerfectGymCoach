@@ -62,6 +62,7 @@ import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -84,6 +85,7 @@ import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscle
 import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Destination<WorkoutOnlyGraph>(
@@ -130,6 +132,7 @@ fun SharedTransitionScope.Workout(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val haptics = LocalHapticFeedback.current
 
     // for container transform animation
     val sharedStateCard = rememberSharedContentState(
@@ -290,9 +293,19 @@ fun SharedTransitionScope.Workout(
         dialogIsOpen = workoutState.enterIntensityDialogOpen,
         lastIntensity = workoutState.lastWorkoutIntensity,
         dismissDialog = { viewModel.onEvent(WorkoutEvent.ToggleEnterIntensityDialog) },
-        completeWorkout = { viewModel.onEvent(WorkoutEvent.FinishWorkout(it)) }
+        completeWorkout = {
+            scope.launch {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            viewModel.onEvent(WorkoutEvent.FinishWorkout(it))
+        }
     )
     val completeWorkout: () -> Unit = {
+        scope.launch {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            delay(200)
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
         viewModel.onEvent(WorkoutEvent.ToggleEnterIntensityDialog)
     }
 
@@ -401,10 +414,18 @@ fun SharedTransitionScope.Workout(
                         workoutState = workoutState,
                         currentExerciseState = currentExerciseState,
                         contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-                        startWorkout = { viewModel.onEvent(WorkoutEvent.StartWorkout) },
+                        startWorkout = {
+                            scope.launch {
+                                haptics.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                            }
+                            viewModel.onEvent(WorkoutEvent.StartWorkout)
+                        },
                         completeWorkout = completeWorkout,
                         completeSet = {
                             // FIXME: should only call VM.onEvent, then VM should emit a side effect if superset
+                            scope.launch {
+                                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            }
                             viewModel.onEvent(WorkoutEvent.CompleteSet)
                             if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
                                 val superExercise =
@@ -430,7 +451,12 @@ fun SharedTransitionScope.Workout(
                                 }
                             }
                         },
-                        addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
+                        addSet = {
+                            scope.launch {
+                                haptics.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                            }
+                            viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise)
+                        },
                         goToNextExercise = {
                             scope.launch {
                                 pagerState.animateScrollToPage(
