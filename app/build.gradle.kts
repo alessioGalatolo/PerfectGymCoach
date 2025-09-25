@@ -44,8 +44,8 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.0.4"
+        versionCode = 9
+        versionName = "0.0.4a"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -59,11 +59,15 @@ android {
         release {
             isDebuggable = false
 
+            // FIXME: Optimisation currently disabled as it makes app crash upon entering
+            //  ViewExercises: Field queries_ for c.u not found (protobuf stuff)
+            //  also there are some glitches around the same screens
+            // TODO: add proper proguard rules
             // Enables code-related app optimization.
-            isMinifyEnabled = true
-
+            isMinifyEnabled = false
             // Enables resource shrinking.
-            isShrinkResources = true
+            isShrinkResources = false
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
