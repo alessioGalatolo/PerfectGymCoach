@@ -85,25 +85,27 @@ fun WorkoutCard(
                     Modifier.wrapContentHeight(Alignment.Top),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } // - 32.dp // 2*padding
+                    val imageWidth = with (LocalDensity.current) {
+                        LocalWindowInfo.current.containerSize.width.toDp()
+                    }
                     val imageHeight = imageWidth/3*2
 
                     val roundedCornersShape = cardShape
                     HorizontalPager(state = pagerState,
                         modifier = Modifier.graphicsLayer {
                             shape = roundedCornersShape
-                            clip = true // <- this ensures clipping is applied during transition
-                        }) { page ->
+                            clip = true
+                        }
+                        .then(imageModifier)) { page ->
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
-                                model = exercises[page].image, // FIXME: topbottom bars with 16:9 image as first exercise
+                                model = exercises[page].image,
                                 contentDescription = stringResource(R.string.exercise_image),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(imageHeight)
                                     .align(Alignment.TopCenter)
-                                    .then(imageModifier)
                             )
                         }
                     }

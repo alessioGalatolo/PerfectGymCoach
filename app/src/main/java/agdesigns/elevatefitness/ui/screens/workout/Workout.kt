@@ -334,6 +334,15 @@ fun SharedTransitionScope.Workout(
             containerTransitionFinished = true
         }
     }
+    // wait a bit, then disappear preview
+    var previewImageShouldDisappear by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(containerTransitionFinished) {
+        if (containerTransitionFinished) {
+            delay(500)
+            previewImageShouldDisappear = true
+        }
+    }
+
     if (pagesContent.exercises.isNotEmpty() || (currentExerciseState.isLoading && previewExercise != null)) {
         val currentImageId = if (pagerState.currentPage == pagesContent.exercises.size)
             R.drawable.finish_workout
@@ -494,9 +503,9 @@ fun SharedTransitionScope.Workout(
                     .wrapContentHeight(Top), contentAlignment = TopCenter) {
                     // we need to fade preview image, otherwise it will be visible everytime a new image buffers
                     AnimatedVisibility(
-                        pagerState.currentPage == 0,
+                        !previewImageShouldDisappear,
                         enter = EnterTransition.None,
-                        exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                        exit = fadeOut(MaterialTheme.motionScheme.slowEffectsSpec())
                     ) {
                         AsyncImage(
                             ImageRequest.Builder(context)
