@@ -157,9 +157,12 @@ fun LazyListScope.goalChoicePage(completeGoal: (WorkoutPlanGoal) -> Unit){
     items(goalImages.size) { index ->
         val goal = goalImages.keys.elementAt(index)
         val image = goalImages.values.elementAt(index)
-        ElevatedCard(Modifier.clickable {
-            completeGoal(goal)
-        }.padding(horizontal = 16.dp)) {
+        ElevatedCard(
+            onClick = {
+                completeGoal(goal)
+            },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             AsyncImage(
                 model = image,
                 contentDescription = stringResource(R.string.goal_i_image, goal),
@@ -203,9 +206,12 @@ fun LazyListScope.expertiseLevelPage(completeExpertise: (WorkoutPlanDifficulty) 
     items(expertiseImages.size) { index ->
         val level = expertiseImages.keys.elementAt(index)
         val image = expertiseImages.values.elementAt(index)
-        ElevatedCard(Modifier.clickable {
-            completeExpertise(level)
-        }.padding(horizontal = 16.dp)) {
+        ElevatedCard(
+            onClick = {
+                completeExpertise(level)
+            },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             AsyncImage(
                 model = image,
                 contentDescription = stringResource(R.string.goal_i_image, level),
@@ -252,9 +258,12 @@ fun LazyListScope.workoutSplitPage(completeSplit: (WorkoutPlanSplit) -> Unit) {
     items(workoutImages.size) { index ->
         val split = workoutImages.keys.elementAt(index)
         val image = workoutImages.values.elementAt(index)
-        ElevatedCard(Modifier.clickable {
-            completeSplit(split)
-        }.padding(horizontal = 16.dp)) {
+        ElevatedCard(
+            onClick = {
+                completeSplit(split)
+            },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             AsyncImage(
                 model = image,
                 contentDescription = stringResource(R.string.goal_i_image, split),

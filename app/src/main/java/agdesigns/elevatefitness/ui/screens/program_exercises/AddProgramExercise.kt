@@ -47,6 +47,7 @@ import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesViewModel
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -85,6 +86,13 @@ fun SharedTransitionScope.AddProgramExercise(
     val expandedFab by remember { derivedStateOf { !listState.isScrollInProgress } }
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    /*
+    If user is coming back from a screen with a transition and tries to go back rapidly
+    the old screen will flash. This feels like a bug for compose to solve but until then,
+    we disallow going back until the transition is finished
+     */
+    val running = this@AddProgramExercise.isTransitionActive
+    BackHandler(enabled = running) { }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -435,7 +443,7 @@ fun SharedTransitionScope.AddProgramExercise(
 //                        }
                     }
                     item{
-                        var finalSpacerSize = 56.dp + 8.dp// large fab size + its padding FIXME: not hardcode
+                        var finalSpacerSize = 56.dp + 16.dp// large fab size + its padding FIXME: not hardcode
                         finalSpacerSize += 16.dp
                         Spacer(Modifier.height(finalSpacerSize))
                     }

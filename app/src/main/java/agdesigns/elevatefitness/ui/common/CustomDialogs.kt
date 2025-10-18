@@ -20,6 +20,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.material.icons.Icons
@@ -78,6 +79,7 @@ fun InsertNameDialog(
         if (textFieldState.text.isNotBlank()) {
             if (textFieldState.text.toString() != oldName) {
                 insertName(textFieldState.text.toString().trim())
+                textFieldState.clearText()
             }
             toggleDialog()
         }

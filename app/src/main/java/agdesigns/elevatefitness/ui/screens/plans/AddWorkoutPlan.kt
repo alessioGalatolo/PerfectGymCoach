@@ -219,7 +219,6 @@ fun AddWorkoutPlan(
                             )
                         }
                     }
-                    // TODO: consider having only the first plan in card, the others are simple list items
                     val planArchivedString = stringResource(R.string.plan_archived)
                     val undoString = stringResource(R.string.undo)
                     val planSetAsCurrentString = stringResource(R.string.plan_set_as_current)
@@ -239,7 +238,7 @@ fun AddWorkoutPlan(
                             modifier = Modifier.padding(
                                 horizontal = dimensionResource(R.dimen.screen_edge_padding)
                             )
-                            .padding(bottom = 16.dp),
+                            .padding(bottom = 8.dp),
                             navigator = navigator,
                             plan = plan.first,
                             programs = plan.second,
@@ -455,7 +454,7 @@ fun AddWorkoutPlan(
                     }
                 }
                 item{
-                    var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode
+                    var finalSpacerSize = 80.dp + 16.dp // large fab size + its padding FIXME: not hardcode
                     finalSpacerSize += 16.dp
                     Spacer(Modifier.height(finalSpacerSize))
                 }
@@ -587,16 +586,16 @@ fun LazyItemScope.PlanCard(
         }
     ) {
         ElevatedCard(
+            onClick = {
+                navigator.navigate(
+                    AddProgramDestination(
+                        planId = plan.planId
+                    )
+                )
+            },
             modifier = Modifier
                 .animateItem()
                 .fillMaxWidth()
-                .clickable {
-                    navigator.navigate(
-                        AddProgramDestination(
-                            planId = plan.planId
-                        )
-                    )
-                }
         ) {
             Column(modifier = Modifier.padding(
                 dimensionResource(R.dimen.card_inner_padding)
@@ -803,16 +802,16 @@ fun LazyItemScope.SecondaryPlanCard(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             shape = shape,
+            onClick = {
+                navigator.navigate(
+                    AddProgramDestination(
+                        planId = plan.planId
+                    )
+                )
+            },
             modifier = Modifier
                 .animateItem()
                 .fillMaxWidth()
-                .clickable {
-                    navigator.navigate(
-                        AddProgramDestination(
-                            planId = plan.planId
-                        )
-                    )
-                }
         ) {
             Column(modifier = Modifier.padding(
                 dimensionResource(R.dimen.card_inner_padding)

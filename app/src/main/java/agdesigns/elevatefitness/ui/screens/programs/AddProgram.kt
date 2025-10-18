@@ -202,7 +202,7 @@ fun AddProgram(
                         }
                     }
                     item{
-                        var finalSpacerSize = 96.dp + 8.dp // large fab size + its padding FIXME: not hardcode
+                        var finalSpacerSize = 80.dp + 16.dp // large fab size + its padding FIXME: not hardcode
                         finalSpacerSize += 8.dp
                         Spacer(Modifier.height(finalSpacerSize))
                     }
