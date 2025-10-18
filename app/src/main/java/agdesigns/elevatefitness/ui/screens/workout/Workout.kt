@@ -488,36 +488,43 @@ fun SharedTransitionScope.Workout(
                     topEnd = ZeroCornerSize
                 )
 
+                // preview image is placed below (z-wise) the actual image
+                // actual image will fade in and cover the preview image
                 Box(Modifier
                     .wrapContentHeight(Top), contentAlignment = TopCenter) {
-                    // preview image is placed below (z-wise) the actual image
-                    // actual image will fade in and cover the preview image
-                    AsyncImage(
-                        ImageRequest.Builder(context)
-                            .data(previewExercise?.image ?: R.drawable.finish_workout)
-                            .crossfade(true)
-                            .build(),
-                        stringResource(R.string.exercise_image),
-                        Modifier
-                            .fillMaxWidth()
-                            .height(imageHeight)
-                            .graphicsLayer(
-                                shape = roundedCornersShape,
-                                clip = true
-                            )
-                            .sharedBounds(
-                                sharedStateImg,
-                                animatedVisibilityScope,
-                                clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
-                                boundsTransform = { _, _ ->
-                                    MotionScheme.expressive().slowSpatialSpec()
-                                }
-                            ).graphicsLayer(
-                                shape = roundedCornersShape,
-                                clip = true
-                            ),
-                        contentScale = ContentScale.Crop
-                    )
+                    // we need to fade preview image, otherwise it will be visible everytime a new image buffers
+                    AnimatedVisibility(
+                        pagerState.currentPage == 0,
+                        enter = EnterTransition.None,
+                        exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                    ) {
+                        AsyncImage(
+                            ImageRequest.Builder(context)
+                                .data(previewExercise?.image ?: R.drawable.finish_workout)
+                                .crossfade(true)
+                                .build(),
+                            stringResource(R.string.exercise_image),
+                            Modifier
+                                .fillMaxWidth()
+                                .height(imageHeight)
+                                .graphicsLayer(
+                                    shape = roundedCornersShape,
+                                    clip = true
+                                )
+                                .sharedBounds(
+                                    sharedStateImg,
+                                    animatedVisibilityScope,
+                                    clipInOverlayDuringTransition = OverlayClip(roundedCornersShape),
+                                    boundsTransform = { _, _ ->
+                                        MotionScheme.expressive().slowSpatialSpec()
+                                    }
+                                ).graphicsLayer(
+                                    shape = roundedCornersShape,
+                                    clip = true
+                                ),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                     AnimatedVisibility(
                         visible = containerTransitionFinished && !currentExerciseState.isLoading,
                         enter = EnterTransition.None,
