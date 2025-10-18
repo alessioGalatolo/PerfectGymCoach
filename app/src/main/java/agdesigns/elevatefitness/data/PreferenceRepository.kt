@@ -110,6 +110,16 @@ class PreferenceRepository @Inject constructor(
     }
 
 
+
+    fun getDontWantOngoingWorkoutNotification(): Flow<Boolean> = dataStore.data.map{
+        it[PrefKeys.dontWantOngoingWorkoutNotification] ?: false
+    }
+
+    suspend fun setDontWantOngoingWorkoutNotification(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.dontWantOngoingWorkoutNotification] = newValue
+    }
+
+
     fun getImperialSystem(): Flow<Boolean> = dataStore.data.map{
         it[PrefKeys.imperialSystem] ?: false
     }
@@ -207,6 +217,7 @@ internal object PrefKeys {
     val userAgeYear = intPreferencesKey("User age year")
     val imperialSystem = booleanPreferencesKey("Imperial system user")
     val dontWantNotificationAccess = booleanPreferencesKey("Don't want notification access")
+    val dontWantOngoingWorkoutNotification = booleanPreferencesKey("Don't want ongoing workout notification")
     val incrementBodyweight = floatPreferencesKey("Increment body weight")
     val incrementBarbell = floatPreferencesKey("Increment barbell")
     val incrementDumbbell = floatPreferencesKey("Increment dumbbell")

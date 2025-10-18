@@ -816,4 +816,13 @@
     <string name="discard_data_dialog_info">You have changed some options for this exercise. If you go back now you will lose these changes.</string>
     <string name="discard_data_dialog_cancel">Keep editing</string>
     <string name="discard_data_dialog_confirm">Discard data</string>
+    <string name="workout_notification_name">Ongoing workout</string>
+    <string name="ongoing_workout_notification_title">Ongoing workout</string>
+    <string name="remaining_rest_notification_content">Rest until next exercise: %1$d</string>
+    <string name="ongoing_workout_notification_content">Done %1$d sets of %2$d</string>
+    <string name="ongoing_workout_rest_finished_notification">Time for next exercise! • %1$s</string>
+    <string name="enable_ongoing_workout_notifications_title">Enable ongoing workout notifications?</string>
+    <string name="enable_ongoing_workout_notifications_info">Will show a persistent notification with current workout progress and remaining rest for when you briefly exit the app</string>
+    <string name="enable_live_notification_title">Also enable live notification?</string>
+    <string name="enable_live_notification_info">Remaining rest will always be visible in the status bar</string>
 </resources>

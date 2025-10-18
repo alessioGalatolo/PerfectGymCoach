@@ -55,7 +55,6 @@ import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import com.agdesignes.shared.weightAndUnit
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination.invoke
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
@@ -92,7 +91,9 @@ fun SharedTransitionScope.ExercisePages(
     changeExercise: (Int, Int) -> Unit,
     removeExercise: (Int) -> Unit,
     mediaControlsDismissed: Boolean,
-    resetMediaControlVisibility: () -> Unit
+    resetMediaControlVisibility: () -> Unit,
+    dontRequestOngoingWorkoutNotification: () -> Unit,
+    refreshPromotedNotificationAccess: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -160,6 +161,16 @@ fun SharedTransitionScope.ExercisePages(
                     stringResource(R.string.arrowforward_icon_next_ex)
                 )
             }
+        }
+        if (workoutState.workoutStarted) {
+            // maybe request notification access
+            NotificationPermission(
+                canAsk = !workoutState.cantRequestOngoingWorkoutNotification,
+                onDontAskAgain = dontRequestOngoingWorkoutNotification,
+                hasPromotedNotificationAccess = workoutState.canPostPromotedNotifications,
+                refreshPromotedNotificationAccess = refreshPromotedNotificationAccess,
+                modifier = Modifier.padding(16.dp),
+            )
         }
         Box {
             this@Column.AnimatedVisibility(

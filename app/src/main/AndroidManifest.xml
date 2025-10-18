@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--Permission for posting notifications-->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--Permission for live update eligibility-->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+
     <application
         android:enableOnBackInvokedCallback="true"
         android:localeConfig="@xml/locales_config"

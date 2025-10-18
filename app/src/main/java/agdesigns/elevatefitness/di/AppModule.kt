@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.di
 import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.DatabaseBackupManager
 import agdesigns.elevatefitness.data.MediaPlayingRepository
+import agdesigns.elevatefitness.data.NotificationService
 import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.SearchesRepository
@@ -104,4 +105,10 @@ object AppModule {
     fun provideMediaPlayingRepository(
         @ApplicationContext context: Context
     ): MediaPlayingRepository = MediaPlayingRepository(context)
+
+    @Provides
+    @Singleton
+    fun provideNotificationService(
+        @ApplicationContext context: Context
+    ): NotificationService = NotificationService(context)
 }

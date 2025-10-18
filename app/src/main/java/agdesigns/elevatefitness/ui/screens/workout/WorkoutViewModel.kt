@@ -1,6 +1,8 @@
 package agdesigns.elevatefitness.ui.screens.workout
 
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.NotificationService
+import agdesigns.elevatefitness.data.WorkoutNotificationState
 import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +19,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.getMetFromIntensity
+import android.os.Build
 import android.text.format.DateUtils
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -94,6 +97,7 @@ data class WorkoutState(
     val workoutStarted: Boolean = false,
     val otherEquipmentDialogOpen: Boolean = false,
     val enterIntensityDialogOpen: Boolean = false,
+    val cantRequestOngoingWorkoutNotification: Boolean = true,
     val requestNotificationAccessDialogOpen: Boolean = false,
     val cantRequestNotificationAccess: Boolean = true,
     val programId: Long = 0L,
@@ -115,6 +119,7 @@ data class WorkoutState(
     // TODO: really not happy about this. Belongs to WorkoutPagesContent but it was not to be
     //  updated directly by the user by the tares are
     val tares: List<Float> = emptyList(),
+    val canPostPromotedNotifications: Boolean = false
 )
 
 sealed class WorkoutEffect {
@@ -149,6 +154,8 @@ sealed class WorkoutEvent{
 
     data object DontRequestNotificationAgain : WorkoutEvent()
 
+    data object DontRequestOngoingWorkoutNotification: WorkoutEvent()
+
     data class ReplaceExercise(val exerciseInWorkout: Int, val originalSize: Int): WorkoutEvent()
 
     data class RemoveExercise(val exerciseInWorkout: Int): WorkoutEvent()
@@ -178,13 +185,16 @@ sealed class WorkoutEvent{
     ): WorkoutEvent()
 
     data class UpdateCurrentPage(val currentPage: Int) : WorkoutEvent()
+
+    data object RefreshHasPromptedNotificationsAccess: WorkoutEvent()
 }
 
 @OptIn(InternalProperty::class, OutOfSyncProperty::class)
 @HiltViewModel
 class WorkoutViewModel @Inject constructor(
     private val repository: Repository,
-    private val preferences: PreferenceRepository
+    private val preferences: PreferenceRepository,
+    private val notificationService: NotificationService
 ): ViewModel() {
     // effects to happen in the UI
     private val _effects = Channel<WorkoutEffect>(capacity = Channel.BUFFERED)
@@ -293,6 +303,7 @@ class WorkoutViewModel @Inject constructor(
         super.onCleared()
         repository.stopWearWorkout()
         timerJob?.cancel()
+        notificationService.stop()
     }
 
     init {
@@ -307,7 +318,8 @@ class WorkoutViewModel @Inject constructor(
                 preferences.getCableIncrement(),
                 preferences.getDontWantNotificationAccess(),
                 preferences.getLockHorizontalScroll(),
-                preferences.getAutoOpenWear()
+                preferences.getAutoOpenWear(),
+                preferences.getDontWantOngoingWorkoutNotification()
             ) { values: Array<Any?> ->
                 _workoutState.update {
                     it.copy(
@@ -320,7 +332,8 @@ class WorkoutViewModel @Inject constructor(
                         incrementCable = values[6] as Float,
                         cantRequestNotificationAccess = values[7] as Boolean,
                         lockHorizontalScroll = values[8] as Boolean,
-                        autoOpenWear = values[9] as Boolean
+                        autoOpenWear = values[9] as Boolean,
+                        cantRequestOngoingWorkoutNotification = values[10] as Boolean
                     )
                 }
             }.collect()
@@ -335,14 +348,18 @@ class WorkoutViewModel @Inject constructor(
                 val tare = it.getDouble("tare").toFloat()
                 var exercise = currentExerciseState.value.currentExercise
                 // FIXME: should find another way of checking this, strings may be slightly different
-                if (exercise == null || !exerciseName.trim().startsWith(exercise.name.trim(), ignoreCase = true)) {
+                if (exercise == null || !exerciseName.trim()
+                        .startsWith(exercise.name.trim(), ignoreCase = true)
+                ) {
                     Log.e(
                         "WorkoutViewModel",
                         "Exercise name does not match, $exerciseName != ${exercise?.name}"
                     )
-                    _effects.trySend(WorkoutEffect.ShowMessage(
-                        R.string.complete_set_from_watch_fail
-                    ))
+                    _effects.trySend(
+                        WorkoutEffect.ShowMessage(
+                            R.string.complete_set_from_watch_fail
+                        )
+                    )
                     return@collect
                 }
                 if (workoutState.value.startDate == null) {
@@ -354,10 +371,12 @@ class WorkoutViewModel @Inject constructor(
                 // tare on watch can be lb/kg
                 val tareKg = maybeLbToKg(tare, pagesContent.value.imperialSystem)
                 // Need to store these in state otherwise TryCompleteSet may fail
-                _currentExerciseState.update { state -> state.copy(
-                    repsBottomBar = reps.toString(),
-                    weightBottomBar = weight.toString(),
-                )}
+                _currentExerciseState.update { state ->
+                    state.copy(
+                        repsBottomBar = reps.toString(),
+                        weightBottomBar = weight.toString(),
+                    )
+                }
                 _workoutState.update { state ->
                     val tares = state.tares.toMutableList()
                     tares[_currentPage.value] = tareKg
@@ -370,7 +389,10 @@ class WorkoutViewModel @Inject constructor(
                     onEvent(WorkoutEvent.AddSetToCurrentExercise)
                     exercise = currentExerciseState.value.currentExercise
                 }
-                if (pagesContent.value.exerciseSetsDone[_currentPage.value] == exercise?.rest?.size?.minus(1)) {
+                if (pagesContent.value.exerciseSetsDone[_currentPage.value] == exercise?.rest?.size?.minus(
+                        1
+                    )
+                ) {
                     _effects.trySend(
                         WorkoutEffect.AdvancePage(_currentPage.value + 1)
                     )
@@ -409,7 +431,8 @@ class WorkoutViewModel @Inject constructor(
                         " (${currentExercise.variation})"
                     else ""
                     val title = currentExercise.name.plus(variation)
-                    val recordsToDisplay = pagesContent.exerciseRecords.getOrNull(page) ?: emptyList()
+                    val recordsToDisplay =
+                        pagesContent.exerciseRecords.getOrNull(page) ?: emptyList()
                     val currentExerciseOngoingRecord = pagesContent.ongoingRecords.getOrNull(page)
                     val setsDone = currentExerciseOngoingRecord?.reps?.size ?: 0
                     val repsToShow = currentExercise.reps.getOrNull(setsDone)?.toString()
@@ -445,6 +468,43 @@ class WorkoutViewModel @Inject constructor(
                         )
                     }
                 }
+            }
+        }
+        // gather stuff for notification
+        viewModelScope.launch {
+            combine(
+                pagesContent.map { it.exercises }.distinctUntilChanged(),
+                pagesContent.map { it.exerciseSetsDone }.distinctUntilChanged(),
+                _currentPage,
+                currentExerciseState.map { it.restTimeSecs }.distinctUntilChanged(),
+                currentExerciseState.map { it.currentExerciseRest }.distinctUntilChanged(),
+                workoutState.map { it.workoutStarted }.distinctUntilChanged(),
+            ) { values ->
+                val exercises = values[0] as List<WorkoutExercise>
+                val exerciseSetsDone = values[1] as List<Int>
+                val currentPage = values[2] as Int
+                val restTime = values[3] as Long?
+                val totalRest = values[4] as Long?
+                val workoutStarted = values[5] as Boolean
+
+                WorkoutNotificationState(
+                    setsPerExercise = exercises.map { it.reps.size },
+                    setsDonePerExercise = exerciseSetsDone,
+                    currentExercise = currentPage,
+                    restTimeSecs = restTime,
+                    totalRest = totalRest,
+                    workoutStarted = workoutStarted
+                )
+            }.collect {
+                notificationService.updateNotification(it)
+            }
+        }
+        // if android 16+ get promoted notification state once (and then manually refresh)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            _workoutState.update {
+                it.copy(
+                    canPostPromotedNotifications = notificationService.canPostPromotedNotifications()
+                )
             }
         }
         startTimer()
@@ -544,6 +604,11 @@ class WorkoutViewModel @Inject constructor(
             is WorkoutEvent.DontRequestNotificationAgain -> {
                 viewModelScope.launch {
                     preferences.setDontWantNotificationAccess(true)
+                }
+            }
+            is WorkoutEvent.DontRequestOngoingWorkoutNotification -> {
+                viewModelScope.launch {
+                    preferences.setDontWantOngoingWorkoutNotification(true)
                 }
             }
             is WorkoutEvent.CompleteSet -> {
@@ -818,6 +883,15 @@ class WorkoutViewModel @Inject constructor(
                     delay(50) // 50ms debounce - adjust as needed
                     if (event.currentPage != _currentPage.value) {
                         _currentPage.update { event.currentPage }
+                    }
+                }
+            }
+            is WorkoutEvent.RefreshHasPromptedNotificationsAccess -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                    _workoutState.update {
+                        it.copy(
+                            canPostPromotedNotifications = notificationService.canPostPromotedNotifications()
+                        )
                     }
                 }
             }

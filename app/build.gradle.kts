@@ -119,6 +119,7 @@ dependencies {
     implementation(libs.compose.destinations.bottom.sheet)
     implementation(libs.wear.remote.interactions)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.accompanist.permissions)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)

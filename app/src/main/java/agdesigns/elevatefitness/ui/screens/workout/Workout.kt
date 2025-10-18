@@ -176,6 +176,7 @@ fun SharedTransitionScope.Workout(
         }
     }
 
+    // FIXME: should use WorkoutEffect
     LaunchedEffect (workoutState.shutDown){
         if (workoutState.shutDown) {
             navigator.navigateUp()
@@ -701,6 +702,16 @@ fun SharedTransitionScope.Workout(
                         mediaSwipeState.reset()
                         mediaControlsDismissed = false
                     }
+                },
+                dontRequestOngoingWorkoutNotification = {
+                    viewModel.onEvent(
+                        WorkoutEvent.DontRequestOngoingWorkoutNotification
+                    )
+                },
+                refreshPromotedNotificationAccess = {
+                    viewModel.onEvent(
+                        WorkoutEvent.RefreshHasPromptedNotificationsAccess
+                    )
                 }
             )
         }

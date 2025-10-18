@@ -811,4 +811,15 @@
     <string name="discard_data_dialog_info">Hai cambiato qualche valore per questo esercizio. Se torni indietro adesso, annullerai questi cambiamenti.</string>
     <string name="discard_data_dialog_cancel">Continua a modificare</string>
     <string name="discard_data_dialog_confirm">Cestina i cambiamenti</string>
+<!--    This is the name shown in the notification settings-->
+    <string name="workout_notification_name">Allenamento in corso</string>
+<!--    This is shown as title of the notification -->
+    <string name="ongoing_workout_notification_title">Allenamento in corso</string>
+    <string name="remaining_rest_notification_content">Riposo prima del prossimo esercizio: %1$d</string>
+    <string name="ongoing_workout_notification_content">Completati %1$d serie di %2$d</string>
+    <string name="ongoing_workout_rest_finished_notification">Ora del prossimo esercizio! • %1$s</string>
+    <string name="enable_ongoing_workout_notifications_title">Abilitare notifiche per allenamento in corso?</string>
+    <string name="enable_ongoing_workout_notifications_info">Verrà mostrata una notifica permanente del progresso nell\'allenamento corrente e il restante riposo per quando l\'app non è in primo piano</string>
+    <string name="enable_live_notification_title">Abilitare anche notifiche live?</string>
+    <string name="enable_live_notification_info">Il riposo mancante sarà sempre visibile nella barra di stato</string>
 </resources>
