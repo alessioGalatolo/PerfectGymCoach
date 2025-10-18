@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.data
 
 import agdesigns.elevatefitness.MainActivity
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.service.WorkoutForegroundService
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
@@ -32,6 +33,7 @@ data class WorkoutNotificationState(
     val setsDonePerExercise: List<Int> = emptyList(),
     val currentExercise: Int = 0,
     val restTimeSecs: Long? = null,
+    val restTimestamp: Long = 0L,
     val totalRest: Long? = null,
     val workoutStarted: Boolean = false,
 )
@@ -61,14 +63,30 @@ class NotificationService @Inject constructor(
 ) {
     private val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    val CHANNEL_ID = "live_updates_channel_id"
     private val CHANNEL_NAME = context.getString(R.string.workout_notification_name)
-    private val NOTIFICATION_ID = 1234
 
     val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, IMPORTANCE_DEFAULT)
 
+    private var foregroundStarted = false
+
     init {
         notificationManager.createNotificationChannel(channel)
+    }
+
+    fun startForegroundService() {
+        val intent = Intent(context, WorkoutForegroundService::class.java).apply {
+            action = WorkoutForegroundService.ACTION_START
+        }
+
+        context.startForegroundService(intent)
+        foregroundStarted = true
+    }
+
+    fun stopForegroundService() {
+        val intent = Intent(context, WorkoutForegroundService::class.java).apply {
+            action = WorkoutForegroundService.ACTION_STOP
+        }
+        context.startService(intent)
     }
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
@@ -141,7 +159,7 @@ class NotificationService @Inject constructor(
             )
     }
 
-    fun buildBaseNotification(appContext: Context): NotificationCompat.Builder {
+    fun buildBaseNotification(): NotificationCompat.Builder {
         val intent = Intent(context, MainActivity::class.java).apply {
             // No NEW_TASK / CLEAR_TASK flags — we want to resume!
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -154,12 +172,13 @@ class NotificationService @Inject constructor(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notificationBuilder = NotificationCompat.Builder(appContext, CHANNEL_ID)
+        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher_foreground)
             .setOngoing(true)
             .setRequestPromotedOngoing(true)
-            .setSilent(true)
+            .setSilent(true)  // TODO: maybe no silent when rest == 3,2,1
             .setContentIntent(pendingIntent)
+            .setContentTitle(context.getString(R.string.ongoing_workout_notification_title))
 
         return notificationBuilder
     }
@@ -167,19 +186,23 @@ class NotificationService @Inject constructor(
 
 
     fun updateNotification(state: WorkoutNotificationState) {
+        if (!foregroundStarted)
+            startForegroundService()
+
         val progressStyle = buildBaseProgressStyle(state)
 
-
         val notification = if (state.restTimeSecs != null && state.totalRest != null && state.restTimeSecs != 0L) {
-            buildBaseNotification(appContext = context)
+            buildBaseNotification()
                 .setSmallIcon(R.mipmap.ic_launcher_foreground)
-                .setContentTitle(context.getString(R.string.ongoing_workout_notification_title))
                 .setContentText(
                     context.getString(
                         R.string.remaining_rest_notification_content,
                         state.restTimeSecs
                     ))
-                .setShortCriticalText(DateUtils.formatElapsedTime(state.restTimeSecs))
+                .setChronometerCountDown(true)
+                .setUsesChronometer(true)
+                .setShowWhen(true)
+                .setWhen(state.restTimestamp)
                 .setStyle(progressStyle)
                 .setLargeIcon(
                     getTintedIcon(context, R.drawable.timer_icon)
@@ -197,9 +220,8 @@ class NotificationService @Inject constructor(
                     contentText
                 )
             }
-            buildBaseNotification(appContext = context)
+            buildBaseNotification()
                 .setSmallIcon(R.mipmap.ic_launcher_foreground)
-                .setContentTitle(context.getString(R.string.ongoing_workout_notification_title))
                 .setContentText(contentText)
                 .setStyle(progressStyle)
                 .build()
@@ -222,7 +244,12 @@ class NotificationService @Inject constructor(
     }
 
     fun stop() {
+        stopForegroundService()
         notificationManager.cancel(NOTIFICATION_ID)
     }
 
+    companion object {
+        const val CHANNEL_ID = "live_updates_channel_id"
+        const val NOTIFICATION_ID = 1234
+    }
 }

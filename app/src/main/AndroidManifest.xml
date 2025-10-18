@@ -7,6 +7,10 @@
     <!--Permission for live update eligibility-->
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
+    <!-- Keep alive   -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:enableOnBackInvokedCallback="true"
         android:localeConfig="@xml/locales_config"
@@ -31,6 +35,11 @@
                 android:name="android.service.notification.disabled_filter_types"
                 android:value="conversations|alerting|ongoing|silent">
             </meta-data>
+        </service>
+        <service
+            android:name=".service.WorkoutForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync">
         </service>
         <activity
             android:name=".MainActivity"

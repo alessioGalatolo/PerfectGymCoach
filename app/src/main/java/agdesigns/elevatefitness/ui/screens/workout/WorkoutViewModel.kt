@@ -492,6 +492,7 @@ class WorkoutViewModel @Inject constructor(
                     setsDonePerExercise = exerciseSetsDone,
                     currentExercise = currentPage,
                     restTimeSecs = restTime,
+                    restTimestamp = Date().time + (restTime ?: 0L) * 1000L,
                     totalRest = totalRest,
                     workoutStarted = workoutStarted
                 )
