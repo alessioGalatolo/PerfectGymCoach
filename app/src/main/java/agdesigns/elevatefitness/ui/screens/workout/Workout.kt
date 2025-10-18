@@ -763,7 +763,7 @@ fun SharedTransitionScope.Workout(
                                 ExercisesByMuscleDestination(
                                     programName = context.getString(R.string.current_and_future_workouts),  // FIXME: all workouts?
                                     workoutId = workoutState.workoutId,
-                                    programId = programId
+                                    programId = workoutState.programId
                                 )
                             )
                         }

@@ -551,7 +551,7 @@ class WorkoutViewModel @Inject constructor(
                             it.copy(workoutId = workoutId)
                         }
                         // once we have workout id, retrieve program exercises
-                        val exercises = repository.getProgramExercisesAndInfo(event.programId)
+                        val exercises = repository.getProgramExercisesAndInfo(programId)
                             .first().sortedBy { it.orderInProgram }
                         // and create the relative workout exercises
                         val workoutExercises = exercises.map {
@@ -1098,6 +1098,7 @@ class WorkoutViewModel @Inject constructor(
     }
 
     private suspend fun inferProgramId(): Long? {
+        Log.d("WorkoutViewModel", "Inferring program id")
         val currentPlanId = preferences.getCurrentPlan().first()
         if (currentPlanId == null) {
             Log.e("WorkoutViewModel", "Tried to auto start workout but current plan is null.")
@@ -1113,6 +1114,7 @@ class WorkoutViewModel @Inject constructor(
         }
         val upcomingProgram = programs[min(
             currentPlan?.currentProgram ?: (programs.size - 1), programs.size-1)]
+        Log.d("WorkoutViewModel", "Inferred program id: ${upcomingProgram.programId}")
         return upcomingProgram.programId
     }
 
