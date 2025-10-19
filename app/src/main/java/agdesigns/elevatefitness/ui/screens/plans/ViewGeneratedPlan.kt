@@ -30,21 +30,25 @@ fun ViewGeneratedPlan(
     workoutSplit: WorkoutPlanSplit,
     viewModel: GeneratePlanViewModel = hiltViewModel()
 ) {
-    val generationState by viewModel.state.collectAsState() 
-    viewModel.onEvent(
-        GeneratePlanEvent.GeneratePlan(
-            goalChoice,
-            expertiseLevel,
-            workoutSplit
+    val generationState by viewModel.state.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(
+            GeneratePlanEvent.GeneratePlan(
+                goalChoice,
+                expertiseLevel,
+                workoutSplit
+            )
         )
-    )
+    }
 
-    LaunchedEffect(generationState.generatedPlan) {
-        if (generationState.generatedPlan != null) {
+    // We are using this loading stage to also load the AI model into memory
+    LaunchedEffect(generationState.generatedPlan, generationState.isLoadingAI) {
+        if (generationState.generatedPlan != null && !generationState.isLoadingAI) {
             navigator.navigateUp()
             navigator.navigate(
                 AddProgramDestination(
-                    generationState.generatedPlan!!.planId
+                    generationState.generatedPlan!!.planId,
+                    hasJustBeenGenerated = true
                 )
             )
         }

@@ -9,8 +9,10 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
+import agdesigns.elevatefitness.genai.LLMWrapper
 import agdesigns.elevatefitness.utils.generatePlan
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +26,8 @@ data class GeneratePlanState(
     val generatedPlan: WorkoutPlan? = null,
     val workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = emptyList(),
     val openAddPlanDialogue: Boolean = false,
-    val currentPlanId: Long? = null
+    val currentPlanId: Long? = null,
+    val isLoadingAI: Boolean = false
 )
 
 sealed class GeneratePlanEvent{
@@ -39,7 +42,8 @@ sealed class GeneratePlanEvent{
 @HiltViewModel
 class GeneratePlanViewModel @Inject constructor(
     private val repository: Repository,
-    private val preferences: PreferenceRepository
+    private val preferences: PreferenceRepository,
+    private val llmWrapper: LLMWrapper
 ): ViewModel() {
     private val _state = MutableStateFlow(GeneratePlanState())
     val state: StateFlow<GeneratePlanState> = _state.asStateFlow()
@@ -81,6 +85,9 @@ class GeneratePlanViewModel @Inject constructor(
             is GeneratePlanEvent.GeneratePlan -> {
                 if (generatePlanJob == null) {
                     generatePlanJob = viewModelScope.launch {
+                        if (llmWrapper.modelIsAvailable()) {
+                            _state.update { it.copy(isLoadingAI = true) }
+                        }
                         val planId = generatePlan(
                             repository,
                             preferences,
@@ -91,8 +98,12 @@ class GeneratePlanViewModel @Inject constructor(
                         preferences.setCurrentPlan(planId, true)  // FIXME: I don't remember why I would need override
 
                         _state.update { it.copy(
-                            generatedPlan = repository.getPlan(planId).first()
+                            generatedPlan = repository.getPlan(planId).first(),
                         ) }
+                        viewModelScope.launch(Dispatchers.IO) {
+                            llmWrapper.start()
+                            _state.update { it.copy(isLoadingAI = false) }
+                        }
                     }
                 }
             }

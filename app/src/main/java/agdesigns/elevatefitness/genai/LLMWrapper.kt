@@ -60,22 +60,34 @@ class LLMWrapper @Inject constructor(
     }
 
     suspend fun generate(prompt: String): String = withContext(Dispatchers.IO) {
+        if (!modelIsAvailable())
+            ""
         if (llm == null)
             start()
-
-        llm?.generateResponse(prompt) ?: ""
+        try {
+            llm?.generateResponse(prompt) ?: ""
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
     }
 
     suspend fun generateAsync(
         prompt: String,
         resultListener: ProgressListener<String>
     ): String = withContext(Dispatchers.IO) {
+        if (!modelIsAvailable())
+            ""
         if (llm == null)
             start()
-
-        llm?.generateResponseAsync(
-            prompt,
-            resultListener
-        )?.await() ?: ""
+        try {
+            llm?.generateResponseAsync(
+                prompt,
+                resultListener
+            )?.await() ?: ""
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
     }
 }

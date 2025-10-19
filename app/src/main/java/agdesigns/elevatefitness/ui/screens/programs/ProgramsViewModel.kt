@@ -8,7 +8,9 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
+import agdesigns.elevatefitness.genai.LLMWrapper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +28,9 @@ data class ProgramsState(
     val exercisesAndInfo: Map<Long, List<ProgramExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialog: Boolean = false,
     val openChangeNameDialog: Boolean = false,
-    val programToBeChanged: Long = 0
+    val programToBeChanged: Long = 0,
+    val aiSummary: String = "",
+    val aiEnabled: Boolean = true
 )
 
 sealed class ProgramsEvent{
@@ -34,7 +38,7 @@ sealed class ProgramsEvent{
 
     data class ToggleChangeNameDialog(val programId: Long = 0) : ProgramsEvent()
 
-    data class InitProgramView(val planId: Long): ProgramsEvent()
+    data class InitProgramView(val planId: Long, val hasJustBeenGenerated: Boolean): ProgramsEvent()
 
     data class AddProgram(val workoutProgram: WorkoutProgram): ProgramsEvent()
 
@@ -47,12 +51,23 @@ sealed class ProgramsEvent{
 }
 
 @HiltViewModel
-class ProgramsViewModel @Inject constructor(private val repository: Repository): ViewModel() {
+class ProgramsViewModel @Inject constructor(
+    private val repository: Repository,
+    private val llmWrapper: LLMWrapper
+): ViewModel() {
     private val _state = MutableStateFlow(ProgramsState())
     val state: StateFlow<ProgramsState> = _state.asStateFlow()
 
     private var getProgramsJob: Job? = null
     private var getProgramExercisesJob: Job? = null
+
+    init {
+        _state.update {
+            it.copy(
+                aiEnabled = llmWrapper.modelIsAvailable()
+            )
+        }
+    }
 
     fun onEvent(event: ProgramsEvent){
         when (event) {
@@ -77,7 +92,9 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                             }
                         }
 
-                    }.collect()
+                    }.collect{
+                        generatePlanSummary()
+                    }
                 }
             }
             is ProgramsEvent.AddProgram -> {
@@ -136,4 +153,27 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
         }
     }
 
+    fun generatePlanSummary() {
+        val basicPrompt = "You are an AI gym coach and you have just created a workout plan for the user. Now you need to **briefly** explain it to the user. Max one paragraph."
+        val planPrompt = "$basicPrompt Begin by describing the overall plan schedule, goal and day division."
+        val days = state.value.programs.map { prg ->
+            prg.name
+        }
+        val input = "$planPrompt. Here is the plan name (raw name for you, don't mention it to the user): ${state.value.planName}. Here are the days: $days."
+        // TODO: if already generated, don't regenerate
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = llmWrapper.generateAsync(
+                input,
+                { text, _ ->
+                    _state.update {
+                        it.copy(aiSummary = it.aiSummary + text)
+                    }
+                }
+            )
+            _state.update { it.copy(aiSummary = result) }
+            if (result.isEmpty()) {
+                // TODO: error
+            }
+        }
+    }
 }

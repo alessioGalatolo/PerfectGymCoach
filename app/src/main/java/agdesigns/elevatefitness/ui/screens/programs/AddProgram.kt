@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -32,6 +31,10 @@ import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
 import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -46,10 +49,18 @@ fun AddProgram(
     navigator: DestinationsNavigator,
     planId: Long,
     openDialogNow: Boolean = false,
+    hasJustBeenGenerated: Boolean = false, // if true, may show AI summary
     viewModel: ProgramsViewModel = hiltViewModel()
 ) {
     val addProgramState by viewModel.state.collectAsState()
-    viewModel.onEvent(ProgramsEvent.InitProgramView(planId))
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(
+            ProgramsEvent.InitProgramView(
+                planId,
+                hasJustBeenGenerated
+            )
+        )
+    }
     InsertNameDialog(
         prompt = stringResource(R.string.new_program_prompt),
         dialogueIsOpen = addProgramState.openAddProgramDialog,
@@ -144,6 +155,46 @@ fun AddProgram(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = innerPadding
                 ) {
+                    if (hasJustBeenGenerated) {
+                        item {
+                            Card(
+                                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth()
+                            ) {
+                                Text(
+                                    "✨ AI Summary ✨",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(Color.Blue, Color.Green)
+                                        )
+                                    ),
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(16.dp).fillMaxWidth()
+                                )
+                                if (addProgramState.aiEnabled) {
+                                    if (addProgramState.aiSummary.isEmpty()) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.fillMaxWidth().padding(16.dp)
+                                        ) {
+                                            ContainedLoadingIndicator()
+                                        }
+                                    } else {
+                                        Text(
+                                            addProgramState.aiSummary,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            modifier = Modifier.padding(16.dp)
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        "AI is not enabled. You can change this setting from the Profile tab.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                     itemsIndexed(items = addProgramState.programs, key = { _, it -> it.programId }) { index, programEntry ->
                         Row(
                             Modifier
