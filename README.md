@@ -1,6 +1,9 @@
 # Elevate Fitness (previously PerfectGymCoach)
 A gym workout app born from the frustration of using badly designed apps with terrible UX and infinite number of paywalls.
 
+### On-Device AI
+
+
 ### Material 3 Expressive
 
 ![expressiveupdate-optimize](https://github.com/user-attachments/assets/030e1427-02f9-483d-b9a1-d1e42da0b265)
@@ -22,7 +25,7 @@ To do:
 ![Screen_recording_20250604_225657-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/08acae06-e532-4d8a-ba43-6ac733827260)
 
 ## Planned features
-1. Integration of Gemini Nano (on-device) into plan generation (this is as soon as Google makes the sdk available) 
+1. ~~Integration of Gemini Nano (on-device) into plan generation (this is as soon as Google makes the sdk available)~~
 2. Persistent notification during workout
 3. ~~Wear OS support~~
 
@@ -32,3 +35,5 @@ I do not own any of the images used in this app. They are copyright free and wer
 Some of the features/design elements were inspired by [Progression](https://play.google.com/store/apps/details?id=workout.progression.lite) (my favourite workout app by far, until the big subscription wall was introduced) and [GymRun](https://play.google.com/store/apps/details?id=com.imperon.android.gymapp).
 
 Privacy policy was inspired by [WrichikBasu/ShakeAlarmClock](https://github.com/WrichikBasu/ShakeAlarmClock).
+
+Gen AI was mostly taken from [google-ai-edge/gallery](https://github.com/google-ai-edge/gallery) (for downloading models) and [MediaPipe - LLM Inference](https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android) (for inference).

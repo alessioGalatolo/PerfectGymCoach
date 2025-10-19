@@ -8,7 +8,6 @@ import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -20,28 +19,37 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.DownloadRepository
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
+import agdesigns.elevatefitness.genai.ModelDownloadStatusType
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
+import agdesigns.elevatefitness.utils.humanReadableSize
 import agdesigns.elevatefitness.utils.plus
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import com.agdesignes.shared.maybeKgToLb
 import com.agdesignes.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
@@ -51,11 +59,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -73,6 +86,7 @@ fun Profile(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.state.collectAsState()
+    val genaiState by viewModel.genaiState.collectAsState()
     var editName by remember { mutableStateOf(false) }
     var userYear by remember { mutableStateOf("0") }
     val validUserYear by remember { derivedStateOf {
@@ -210,6 +224,14 @@ fun Profile(
                 )
                 PreferencesContent(
                     profileState = profileState,
+                    viewModel = viewModel
+                )
+            }
+            // experimental: gen ai
+            item {
+                GenAISection(
+                    snackbarHostState = snackbarHostState,
+                    state = genaiState,
                     viewModel = viewModel
                 )
             }
@@ -1133,4 +1155,200 @@ fun ExternalLink(title: String, description: String, leadingIcon: ImageVector? =
             stringResource(R.string.open_in_icon_browser),
         )
     }
+}
+
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun GenAISection(
+    snackbarHostState: SnackbarHostState,
+    state: GenAIState,
+    viewModel: ProfileViewModel
+) {
+    @SuppressLint("InlinedApi") // Granted at install time on API < 33.
+    val notificationPermissionState = rememberPermissionState(
+        android.Manifest.permission.POST_NOTIFICATIONS,
+    )
+    var downloadStarted by rememberSaveable { mutableStateOf(false) }
+    var userUnderstandsRisks by rememberSaveable { mutableStateOf(false) }
+    val needToDownloadFirst =
+        (state.downloadStatus.status == ModelDownloadStatusType.NOT_DOWNLOADED ||
+                state.downloadStatus.status == ModelDownloadStatusType.FAILED)
+    val inProgress = state.downloadStatus.status == ModelDownloadStatusType.IN_PROGRESS
+    val downloadSucceeded = state.downloadStatus.status == ModelDownloadStatusType.SUCCEEDED
+    val isPartiallyDownloaded =
+        state.downloadStatus.status == ModelDownloadStatusType.PARTIALLY_DOWNLOADED
+    val showDownloadProgress =
+        !downloadSucceeded && (downloadStarted || inProgress || isPartiallyDownloaded)
+    var curDownloadProgress: Float
+    val scope = rememberCoroutineScope()
+
+    Text(
+        "On-Device AI (Experimental)",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
+    )
+    GroupedCard(
+        items = listOf(
+            {
+                Text(
+                    "Enable AI features of this app: enhances summaries, suggestions, overviews and more! All the AI features run locally on your device, as such they require at least ${DownloadRepository.totalBytes.humanReadableSize()} of storage space and needs at least ${DownloadRepository.minDeviceMemoryInGb}GB of RAM to run. Also note this may create performance issues or even crash the app on lower-end devices.",
+                    style = MaterialTheme.typography.bodySmallEmphasized,
+                )
+            },
+            {
+                if (!downloadSucceeded) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Download AI model:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Button(
+                            enabled = needToDownloadFirst && (!state.isLowMemory || userUnderstandsRisks),
+                            onClick = {
+                                viewModel.onEvent(ProfileEvent.DownloadModel)
+                            }
+                        ) {
+                            Text(
+                                if (needToDownloadFirst)
+                                    "Download"
+                                else
+                                    "Downloading..."
+                            )
+                        }
+                    }
+                    if (!needToDownloadFirst && !notificationPermissionState.status.isGranted) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    notificationPermissionState.launchPermissionRequest()
+                                }
+                            ) {
+                                Text("Notify me on completion")
+                            }
+                        }
+                    }
+                    if (state.isLowMemory && !userUnderstandsRisks) {
+                        Text(
+                            "Warning! Your device's RAM is insufficient to run the AI model. By continuing you risk app instability and crashes.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        TextButton(
+                            onClick = {
+                                userUnderstandsRisks = true
+                            }
+                        ) {
+                            Text("I understand")
+                        }
+                    }
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Delete AI model:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f))
+                        Spacer(Modifier.width(8.dp))
+                        Button(onClick = {
+                            viewModel.onEvent(ProfileEvent.DeleteModel)
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    "Model deleted successfully. You may need to clear app cache for changes to take instantly effect."
+                                )
+                            }
+                        }) {
+                            Text("Delete")
+                        }
+                    }
+                    Row (
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Test AI model:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                viewModel.onEvent(ProfileEvent.TestModel)
+                            }
+                        ) {
+                            Text("Test")
+                        }
+                    }
+                    if (state.testText.isNotBlank()) {
+                        Text(state.testText)
+                    }
+                }
+                if (showDownloadProgress) {
+                    curDownloadProgress =
+                        state.downloadStatus.receivedBytes.toFloat() / state.downloadStatus.totalBytes.toFloat()
+                    if (curDownloadProgress.isNaN()) {
+                        curDownloadProgress = 0f
+                    }
+                    val animatedProgress = remember { Animatable(0f) }
+
+                    var downloadProgressModifier: Modifier = Modifier
+                    downloadProgressModifier = downloadProgressModifier.fillMaxWidth()
+                    downloadProgressModifier =
+                        downloadProgressModifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
+                            .padding(horizontal = 8.dp)
+                            .height(42.dp)
+                    Row(
+                        modifier = downloadProgressModifier,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "${(curDownloadProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 12.dp).width(44.dp),
+                        )
+                        LinearWavyProgressIndicator(
+                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                            progress = { animatedProgress.value },
+                        )
+                        IconButton(
+                            onClick = {
+                                downloadStarted = false
+                                viewModel.onEvent(ProfileEvent.CancelModelDownload)
+                            },
+                            colors =
+                                IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                ),
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                    LaunchedEffect(curDownloadProgress) {
+                        animatedProgress.animateTo(curDownloadProgress, animationSpec = tween(150))
+                    }
+                }
+            }
+        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    )
 }

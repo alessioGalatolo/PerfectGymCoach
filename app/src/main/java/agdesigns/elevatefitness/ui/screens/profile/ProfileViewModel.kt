@@ -2,17 +2,23 @@ package agdesigns.elevatefitness.ui.screens.profile
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.BackupRepository
+import agdesigns.elevatefitness.data.DownloadRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
+import agdesigns.elevatefitness.genai.LLMWrapper
+import agdesigns.elevatefitness.genai.ModelDownloadStatus
+import agdesigns.elevatefitness.genai.ModelDownloadStatusType
 import android.os.Build
 import android.net.Uri
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 data class ProfileState(
@@ -34,6 +40,14 @@ data class ProfileState(
     val backupOutcomeResId: Int? = null,
     val lockHorizontalScroll: Boolean = false,
     val autoOpenWear: Boolean = false
+)
+
+data class GenAIState(
+    val downloadStatus: ModelDownloadStatus = ModelDownloadStatus(
+        ModelDownloadStatusType.NOT_DOWNLOADED
+    ),
+    val testText: String = "",
+    val isLowMemory: Boolean = true
 )
 
 sealed class ProfileEvent{
@@ -76,15 +90,28 @@ sealed class ProfileEvent{
     data class ImportPreferences(val fileUri: Uri): ProfileEvent()
 
     data object ResetOutcomeMessage: ProfileEvent()
+
+    data object DownloadModel: ProfileEvent()
+
+    data object DeleteModel: ProfileEvent()
+
+    data object CancelModelDownload: ProfileEvent()
+
+    data object TestModel: ProfileEvent()
 }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
-    private val preferences: PreferenceRepository
+    private val preferences: PreferenceRepository,
+    private val downloadRepository: DownloadRepository,
+    private val llmWrapper: LLMWrapper
 ): ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
+
+    private val _genaiState = MutableStateFlow(GenAIState())
+    val genaiState: StateFlow<GenAIState> = _genaiState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -125,6 +152,22 @@ class ProfileViewModel @Inject constructor(
                     )
                 }
             }.collect()
+        }
+        // init genai state
+        viewModelScope.launch {
+            _genaiState.update {
+                it.copy(
+                    isLowMemory = downloadRepository.isMemoryLow()
+                )
+            }
+            val modelDownloaded = downloadRepository.getModelPath().exists()
+            if (modelDownloaded) {
+                _genaiState.update {
+                    it.copy(
+                        downloadStatus = ModelDownloadStatus(ModelDownloadStatusType.SUCCEEDED)
+                    )
+                }
+            }
         }
     }
 
@@ -305,6 +348,51 @@ class ProfileViewModel @Inject constructor(
             }
             is ProfileEvent.ResetOutcomeMessage -> {
                 _state.update { it.copy(backupOutcomeResId = null) }
+            }
+            is ProfileEvent.DownloadModel -> {
+                _genaiState.update {
+                    it.copy(downloadStatus = ModelDownloadStatus(ModelDownloadStatusType.IN_PROGRESS))
+                }
+
+                // Start to send download request.
+                downloadRepository.downloadModel(
+                    onStatusUpdated = {
+                        _genaiState.update { state ->
+                            state.copy(downloadStatus = it)
+                        }
+                    }
+                )
+            }
+            is ProfileEvent.DeleteModel -> {
+                downloadRepository.getModelPath().deleteRecursively()
+
+                // Update model download status to NotDownloaded.
+                _genaiState.update {
+                    it.copy(
+                        downloadStatus = ModelDownloadStatus(status = ModelDownloadStatusType.NOT_DOWNLOADED)
+                    )
+                }
+            }
+            is ProfileEvent.CancelModelDownload -> {
+                downloadRepository.cancelDownloadModel()
+            }
+            is ProfileEvent.TestModel -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _genaiState.update {
+                        it.copy(testText = "")
+                    }
+                    val result = llmWrapper.generateAsync(
+                        "Tell me a story about beavers testing on-device LLM inference on Android.",
+                        resultListener = { text, done ->
+                            _genaiState.update {
+                                it.copy(testText = it.testText + text)
+                            }
+                        }
+                    )
+                    _genaiState.update {
+                        it.copy(testText = result)
+                    }
+                }
             }
         }
     }

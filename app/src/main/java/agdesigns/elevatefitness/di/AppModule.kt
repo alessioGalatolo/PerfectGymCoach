@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.di
 
 import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.DatabaseBackupManager
+import agdesigns.elevatefitness.data.DownloadRepository
 import agdesigns.elevatefitness.data.MediaPlayingRepository
 import agdesigns.elevatefitness.data.NotificationService
 import agdesigns.elevatefitness.data.PreferenceRepository
@@ -11,6 +12,9 @@ import agdesigns.elevatefitness.data.V1PrefsMigration
 import agdesigns.elevatefitness.data.V2PrefsMigration
 import agdesigns.elevatefitness.data.wearos.WatchMessageReceiver
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
+import agdesigns.elevatefitness.genai.AppLifecycleProvider
+import agdesigns.elevatefitness.genai.LLMWrapper
+import agdesigns.elevatefitness.genai.LifecycleProvider
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -111,4 +115,27 @@ object AppModule {
     fun provideNotificationService(
         @ApplicationContext context: Context
     ): NotificationService = NotificationService(context)
+
+    // Provides AppLifecycleProvider
+    @Provides
+    @Singleton
+    fun provideAppLifecycleProvider(): AppLifecycleProvider {
+        return LifecycleProvider()
+    }
+
+    // Provides DownloadRepository
+    @Provides
+    @Singleton
+    fun provideDownloadRepository(
+        @ApplicationContext context: Context,
+        lifecycleProvider: AppLifecycleProvider,
+    ): DownloadRepository {
+        return DownloadRepository(context, lifecycleProvider)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLLMWrapper(
+        @ApplicationContext context: Context
+    ): LLMWrapper = LLMWrapper(context)
 }

@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -53,6 +54,12 @@ android {
             useSupportLibrary = true
         }
 
+        val localProperties = Properties().apply {
+            val localPropertiesFile = rootProject.file("local.properties")
+            load(localPropertiesFile.inputStream())
+        }
+        val huggingFaceDownloadApiKey = localProperties.getProperty("huggingface.api_key")
+        buildConfigField("String", "HUGGINGFACE_DOWNLOAD_API_KEY", "\"$huggingFaceDownloadApiKey\"")
     }
 
     buildTypes {
@@ -95,6 +102,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -120,6 +128,7 @@ dependencies {
     implementation(libs.wear.remote.interactions)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.accompanist.permissions)
+    implementation(libs.work.runtime.ktx)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)
@@ -154,4 +163,7 @@ dependencies {
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.test.manifest)
+
+    // GENAI
+    implementation(libs.mediapipe.genai)
 }

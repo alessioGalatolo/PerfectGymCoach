@@ -25,6 +25,8 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
 import java.util.Locale
+import kotlin.math.ln
+import kotlin.math.pow
 
 fun getMetFromIntensity(intensity: Float): Float {
     // input: intensity 0-100
@@ -155,3 +157,17 @@ fun getStickyHeader(
     return Pair(titleText, (highestVisibleId ?: lastVisibleKey))
 }
 
+/** Format the bytes into a human-readable format. */
+fun Long.humanReadableSize(si: Boolean = true, extraDecimalForGbAndAbove: Boolean = false): String {
+    val bytes = this
+
+    val unit = if (si) 1000 else 1024
+    if (bytes < unit) return "$bytes B"
+    val exp = (ln(bytes.toDouble()) / ln(unit.toDouble())).toInt()
+    val pre = (if (si) "kMGTPE" else "KMGTPE")[exp - 1] + if (si) "" else "i"
+    var formatString = "%.1f %sB"
+    if (extraDecimalForGbAndAbove && pre.lowercase() != "k" && pre != "M") {
+        formatString = "%.2f %sB"
+    }
+    return formatString.format(bytes / unit.toDouble().pow(exp.toDouble()), pre)
+}
