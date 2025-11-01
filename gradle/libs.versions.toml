@@ -40,6 +40,7 @@ protobuf = "4.32.1"
 mediapipe_genai = "0.10.29"  # use an external model
 workRuntimeKtx = "2.10.5"
 gemini_nano_prompt = "1.0.0-alpha1"  # use integrated gemini nano if available
+halilibo_compose_markdown = "1.0.0-alpha03"
 
 # Plugin versions
 android_application = "8.13.0"
@@ -121,3 +122,5 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 mediapipe-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipe_genai" }
 work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 gemini-nano-prompt = { group = "com.google.mlkit", name = "genai-prompt", version.ref = "gemini_nano_prompt" }
+compose-markdown = { group = "com.halilibo.compose-richtext", name = "richtext-commonmark", version.ref = "halilibo_compose_markdown"}
+richtext = { group = "com.halilibo.compose-richtext", name = "richtext-ui-material3", version.ref = "halilibo_compose_markdown" }

@@ -15,7 +15,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -30,7 +29,8 @@ data class ProgramsState(
     val openChangeNameDialog: Boolean = false,
     val programToBeChanged: Long = 0,
     val aiSummary: String = "",
-    val aiEnabled: Boolean = true
+    val aiEnabled: Boolean = true,
+    val aiGenerationFinished: Boolean = false,
 )
 
 sealed class ProgramsEvent{
@@ -48,6 +48,9 @@ sealed class ProgramsEvent{
 
     data class DeleteProgram(val programId: Long): ProgramsEvent()
 
+    data object InterruptGeneration: ProgramsEvent()
+
+    data object RegenerateSummary: ProgramsEvent()
 }
 
 @HiltViewModel
@@ -60,6 +63,9 @@ class ProgramsViewModel @Inject constructor(
 
     private var getProgramsJob: Job? = null
     private var getProgramExercisesJob: Job? = null
+    private var generateSummaryJob: Job? = null
+
+    private var cancellationToken: LLMWrapper.CancellationToken? = null
 
     init {
         _state.update {
@@ -150,6 +156,22 @@ class ProgramsViewModel @Inject constructor(
                     )
                 }
             }
+            is ProgramsEvent.InterruptGeneration -> {
+                cancellationToken?.cancel()
+                cancellationToken = null
+                _state.update { it.copy(aiGenerationFinished = true) }
+            }
+            is ProgramsEvent.RegenerateSummary -> {
+                cancellationToken?.cancel()
+                cancellationToken = null
+                _state.update {
+                    it.copy(
+                        aiGenerationFinished = false,
+                        aiSummary = ""
+                    )
+                }
+                generatePlanSummary()
+            }
         }
     }
 
@@ -161,16 +183,30 @@ class ProgramsViewModel @Inject constructor(
         }
         val input = "$planPrompt. Here is the plan name (raw name for you, don't mention it to the user): ${state.value.planName}. Here are the days: $days."
         // TODO: if already generated, don't regenerate
-        viewModelScope.launch(Dispatchers.IO) {
+        generateSummaryJob?.cancel()
+        generateSummaryJob = viewModelScope.launch(Dispatchers.IO) {
+            cancellationToken = LLMWrapper.CancellationToken()
+            _state.update {
+                it.copy(
+                    aiGenerationFinished = false,
+                    aiSummary = ""
+                )
+            }
             val result = llmWrapper.generateAsync(
                 input,
                 { text, _ ->
                     _state.update {
                         it.copy(aiSummary = it.aiSummary + text)
                     }
-                }
+                },
+                cancellationToken
             )
-            _state.update { it.copy(aiSummary = result) }
+            _state.update {
+                it.copy(
+                    aiGenerationFinished = true,
+                    aiSummary = result
+                )
+            }
             if (result.isEmpty()) {
                 // TODO: error
             }

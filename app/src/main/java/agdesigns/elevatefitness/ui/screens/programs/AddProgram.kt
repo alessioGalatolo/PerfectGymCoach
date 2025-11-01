@@ -27,14 +27,12 @@ import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.ui.common.AICard
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
 import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -157,42 +155,18 @@ fun AddProgram(
                 ) {
                     if (hasJustBeenGenerated) {
                         item {
-                            Card(
-                                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth()
-                            ) {
-                                Text(
-                                    "✨ AI Summary ✨",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(Color.Blue, Color.Green)
-                                        )
-                                    ),
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(16.dp).fillMaxWidth()
-                                )
-                                if (addProgramState.aiEnabled) {
-                                    if (addProgramState.aiSummary.isEmpty()) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            modifier = Modifier.fillMaxWidth().padding(16.dp)
-                                        ) {
-                                            ContainedLoadingIndicator()
-                                        }
-                                    } else {
-                                        Text(
-                                            addProgramState.aiSummary,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            modifier = Modifier.padding(16.dp)
-                                        )
-                                    }
-                                } else {
-                                    Text(
-                                        "AI is not enabled. You can change this setting from the Profile tab.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(16.dp)
-                                    )
-                                }
-                            }
+                            AICard(
+                                text = addProgramState.aiSummary,
+                                aiEnabled = addProgramState.aiEnabled,
+                                generationFinished = addProgramState.aiGenerationFinished,
+                                interruptGeneration = {
+                                    viewModel.onEvent(ProgramsEvent.InterruptGeneration)
+                                },
+                                regenerate = {
+                                    viewModel.onEvent(ProgramsEvent.RegenerateSummary)
+                                },
+                                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                            )
                         }
                     }
                     itemsIndexed(items = addProgramState.programs, key = { _, it -> it.programId }) { index, programEntry ->
