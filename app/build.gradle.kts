@@ -166,4 +166,5 @@ dependencies {
 
     // GENAI
     implementation(libs.mediapipe.genai)
+    implementation(libs.gemini.nano.prompt)
 }

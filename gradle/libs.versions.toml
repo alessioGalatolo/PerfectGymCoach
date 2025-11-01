@@ -37,8 +37,9 @@ junitVersion = "1.3.0"
 protobuf = "4.32.1"
 
 # gen ai
-mediapipe_genai = "0.10.29"
+mediapipe_genai = "0.10.29"  # use an external model
 workRuntimeKtx = "2.10.5"
+gemini_nano_prompt = "1.0.0-alpha1"  # use integrated gemini nano if available
 
 # Plugin versions
 android_application = "8.13.0"
@@ -119,3 +120,4 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 # genai
 mediapipe-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipe_genai" }
 work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
+gemini-nano-prompt = { group = "com.google.mlkit", name = "genai-prompt", version.ref = "gemini_nano_prompt" }

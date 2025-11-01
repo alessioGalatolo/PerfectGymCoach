@@ -14,6 +14,8 @@ import agdesigns.elevatefitness.genai.ModelDownloadStatusType
 import android.os.Build
 import android.net.Uri
 import android.util.Log
+import com.google.mlkit.genai.common.FeatureStatus
+import com.google.mlkit.genai.prompt.Generation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -43,6 +45,7 @@ data class ProfileState(
 )
 
 data class GenAIState(
+    val geminiNanoStatus: Int = FeatureStatus.UNAVAILABLE,
     val downloadStatus: ModelDownloadStatus = ModelDownloadStatus(
         ModelDownloadStatusType.NOT_DOWNLOADED
     ),
@@ -155,6 +158,15 @@ class ProfileViewModel @Inject constructor(
         }
         // init genai state
         viewModelScope.launch {
+            // TODO: should check whether device has gemini nano before downloading a new model
+            //  should implement logic using ML kit but can't be tested without a compatible device
+            //  so this feature is currently postponed
+            val generativeModel = Generation.getClient()
+            _genaiState.update {
+                it.copy(
+                    geminiNanoStatus = generativeModel.checkStatus()
+                )
+            }
             _genaiState.update {
                 it.copy(
                     isLowMemory = downloadRepository.isMemoryLow()
