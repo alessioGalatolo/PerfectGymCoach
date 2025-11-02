@@ -116,14 +116,12 @@ object AppModule {
         @ApplicationContext context: Context
     ): NotificationService = NotificationService(context)
 
-    // Provides AppLifecycleProvider
     @Provides
     @Singleton
     fun provideAppLifecycleProvider(): AppLifecycleProvider {
         return LifecycleProvider()
     }
 
-    // Provides DownloadRepository
     @Provides
     @Singleton
     fun provideDownloadRepository(
@@ -136,6 +134,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideLLMWrapper(
-        @ApplicationContext context: Context
-    ): LLMWrapper = LLMWrapper(context)
+        @ApplicationContext context: Context,
+        downloadRepository: DownloadRepository,
+    ): LLMWrapper = LLMWrapper(context, downloadRepository)
+
 }

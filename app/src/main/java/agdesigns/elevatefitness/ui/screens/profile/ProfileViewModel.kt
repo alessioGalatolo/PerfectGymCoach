@@ -164,7 +164,7 @@ class ProfileViewModel @Inject constructor(
             val generativeModel = Generation.getClient()
             _genaiState.update {
                 it.copy(
-                    geminiNanoStatus = generativeModel.checkStatus()
+                    geminiNanoStatus = generativeModel.checkStatus(),
                 )
             }
             _genaiState.update {
@@ -172,11 +172,10 @@ class ProfileViewModel @Inject constructor(
                     isLowMemory = downloadRepository.isMemoryLow()
                 )
             }
-            val modelDownloaded = downloadRepository.getModelPath().exists()
-            if (modelDownloaded) {
+            downloadRepository.downloadStatus.collect { status ->
                 _genaiState.update {
                     it.copy(
-                        downloadStatus = ModelDownloadStatus(ModelDownloadStatusType.SUCCEEDED)
+                        downloadStatus = status
                     )
                 }
             }
@@ -362,28 +361,11 @@ class ProfileViewModel @Inject constructor(
                 _state.update { it.copy(backupOutcomeResId = null) }
             }
             is ProfileEvent.DownloadModel -> {
-                _genaiState.update {
-                    it.copy(downloadStatus = ModelDownloadStatus(ModelDownloadStatusType.IN_PROGRESS))
-                }
-
                 // Start to send download request.
-                downloadRepository.downloadModel(
-                    onStatusUpdated = {
-                        _genaiState.update { state ->
-                            state.copy(downloadStatus = it)
-                        }
-                    }
-                )
+                downloadRepository.downloadModel()
             }
             is ProfileEvent.DeleteModel -> {
-                downloadRepository.getModelPath().deleteRecursively()
-
-                // Update model download status to NotDownloaded.
-                _genaiState.update {
-                    it.copy(
-                        downloadStatus = ModelDownloadStatus(status = ModelDownloadStatusType.NOT_DOWNLOADED)
-                    )
-                }
+                downloadRepository.deleteModel()
             }
             is ProfileEvent.CancelModelDownload -> {
                 downloadRepository.cancelDownloadModel()

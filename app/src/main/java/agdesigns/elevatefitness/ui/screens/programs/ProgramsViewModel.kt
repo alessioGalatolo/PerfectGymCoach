@@ -8,6 +8,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
+import agdesigns.elevatefitness.genai.LLMHandler
 import agdesigns.elevatefitness.genai.LLMWrapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -28,9 +29,6 @@ data class ProgramsState(
     val openAddProgramDialog: Boolean = false,
     val openChangeNameDialog: Boolean = false,
     val programToBeChanged: Long = 0,
-    val aiSummary: String = "",
-    val aiEnabled: Boolean = true,
-    val aiGenerationFinished: Boolean = false,
 )
 
 sealed class ProgramsEvent{
@@ -61,19 +59,15 @@ class ProgramsViewModel @Inject constructor(
     private val _state = MutableStateFlow(ProgramsState())
     val state: StateFlow<ProgramsState> = _state.asStateFlow()
 
+    private val llmHandler = LLMHandler(
+        llmWrapper,
+        viewModelScope
+    )
+    val aiState = llmHandler.state
+
     private var getProgramsJob: Job? = null
     private var getProgramExercisesJob: Job? = null
-    private var generateSummaryJob: Job? = null
 
-    private var cancellationToken: LLMWrapper.CancellationToken? = null
-
-    init {
-        _state.update {
-            it.copy(
-                aiEnabled = llmWrapper.modelIsAvailable()
-            )
-        }
-    }
 
     fun onEvent(event: ProgramsEvent){
         when (event) {
@@ -99,7 +93,7 @@ class ProgramsViewModel @Inject constructor(
                         }
 
                     }.collect{
-                        generatePlanSummary()
+                        llmHandler.generate(getGenerationPrompt())
                     }
                 }
             }
@@ -156,60 +150,22 @@ class ProgramsViewModel @Inject constructor(
                     )
                 }
             }
-            is ProgramsEvent.InterruptGeneration -> {
-                cancellationToken?.cancel()
-                cancellationToken = null
-                _state.update { it.copy(aiGenerationFinished = true) }
-            }
-            is ProgramsEvent.RegenerateSummary -> {
-                cancellationToken?.cancel()
-                cancellationToken = null
-                _state.update {
-                    it.copy(
-                        aiGenerationFinished = false,
-                        aiSummary = ""
-                    )
-                }
-                generatePlanSummary()
-            }
+            is ProgramsEvent.InterruptGeneration -> llmHandler.interruptGeneration()
+            is ProgramsEvent.RegenerateSummary -> llmHandler.regenerate(
+                getGenerationPrompt()
+            )
         }
     }
 
-    fun generatePlanSummary() {
+    fun getGenerationPrompt(): String {
         val basicPrompt = "You are an AI gym coach and you have just created a workout plan for the user. Now you need to **briefly** explain it to the user. Max one paragraph."
         val planPrompt = "$basicPrompt Begin by describing the overall plan schedule, goal and day division."
         val days = state.value.programs.map { prg ->
             prg.name
         }
-        val input = "$planPrompt. Here is the plan name (raw name for you, don't mention it to the user): ${state.value.planName}. Here are the days: $days."
+        val prompt = "$planPrompt. Here is the plan name (raw name for you, don't mention it to the user): ${state.value.planName}. Here are the days: $days."
+
         // TODO: if already generated, don't regenerate
-        generateSummaryJob?.cancel()
-        generateSummaryJob = viewModelScope.launch(Dispatchers.IO) {
-            cancellationToken = LLMWrapper.CancellationToken()
-            _state.update {
-                it.copy(
-                    aiGenerationFinished = false,
-                    aiSummary = ""
-                )
-            }
-            val result = llmWrapper.generateAsync(
-                input,
-                { text, _ ->
-                    _state.update {
-                        it.copy(aiSummary = it.aiSummary + text)
-                    }
-                },
-                cancellationToken
-            )
-            _state.update {
-                it.copy(
-                    aiGenerationFinished = true,
-                    aiSummary = result
-                )
-            }
-            if (result.isEmpty()) {
-                // TODO: error
-            }
-        }
+        return prompt
     }
 }

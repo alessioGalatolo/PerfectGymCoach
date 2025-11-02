@@ -47,10 +47,12 @@ fun AddProgram(
     navigator: DestinationsNavigator,
     planId: Long,
     openDialogNow: Boolean = false,
-    hasJustBeenGenerated: Boolean = false, // if true, may show AI summary
+    hasJustBeenGenerated: Boolean = true, // if true, may show AI summary
     viewModel: ProgramsViewModel = hiltViewModel()
 ) {
-    val addProgramState by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState()
+    val aiState by viewModel.aiState.collectAsState()
+
     LaunchedEffect(Unit) {
         viewModel.onEvent(
             ProgramsEvent.InitProgramView(
@@ -61,26 +63,26 @@ fun AddProgram(
     }
     InsertNameDialog(
         prompt = stringResource(R.string.new_program_prompt),
-        dialogueIsOpen = addProgramState.openAddProgramDialog,
+        dialogueIsOpen = state.openAddProgramDialog,
         toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleAddProgramDialog) },
         insertName = { programName ->
             viewModel.onEvent(ProgramsEvent.AddProgram(WorkoutProgram(
                 extPlanId = planId,
                 name = programName,
-                orderInWorkoutPlan = addProgramState.programs.size
+                orderInWorkoutPlan = state.programs.size
             ))) }
     )
     // rename program
     InsertNameDialog(
         prompt = stringResource(R.string.rename_program_prompt),
-        dialogueIsOpen = addProgramState.openChangeNameDialog,
+        dialogueIsOpen = state.openChangeNameDialog,
         toggleDialog = { viewModel.onEvent(ProgramsEvent.ToggleChangeNameDialog()) },
-        oldName = addProgramState.programs.firstOrNull {
-            it.programId == addProgramState.programToBeChanged
+        oldName = state.programs.firstOrNull {
+            it.programId == state.programToBeChanged
         }?.name?.let { getProgramDisplayName(it)},
         insertName = { viewModel.onEvent(ProgramsEvent.RenameProgram(
             WorkoutProgramRename(
-                programId = addProgramState.programToBeChanged,
+                programId = state.programToBeChanged,
                 name = it
             )
         )) }
@@ -107,7 +109,7 @@ fun AddProgram(
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
                 title = { Text(
-                    getPlanDisplayName(addProgramState.planName)
+                    getPlanDisplayName(state.planName)
                 ) },
                 navigationIcon = {
                     IconButton(
@@ -138,7 +140,7 @@ fun AddProgram(
                 )
             }
         }, content = { innerPadding ->
-            if (addProgramState.programs.isEmpty()) {
+            if (state.programs.isEmpty()) {
                 // if you have no programs
                 EmptyScreenInfo(
                     Icons.Default.Description,
@@ -156,9 +158,9 @@ fun AddProgram(
                     if (hasJustBeenGenerated) {
                         item {
                             AICard(
-                                text = addProgramState.aiSummary,
-                                aiEnabled = addProgramState.aiEnabled,
-                                generationFinished = addProgramState.aiGenerationFinished,
+                                text = aiState.aiGeneration,
+                                aiEnabled = aiState.aiEnabled,
+                                generationFinished = aiState.aiGenerationFinished,
                                 interruptGeneration = {
                                     viewModel.onEvent(ProgramsEvent.InterruptGeneration)
                                 },
@@ -169,7 +171,7 @@ fun AddProgram(
                             )
                         }
                     }
-                    itemsIndexed(items = addProgramState.programs, key = { _, it -> it.programId }) { index, programEntry ->
+                    itemsIndexed(items = state.programs, key = { _, it -> it.programId }) { index, programEntry ->
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -181,7 +183,7 @@ fun AddProgram(
                                 IconButton(onClick = {
                                     viewModel.onEvent(ProgramsEvent.ReorderProgram(listOf(
                                         WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan-1),
-                                        WorkoutProgramReorder(addProgramState.programs[index-1].programId, programEntry.orderInWorkoutPlan)
+                                        WorkoutProgramReorder(state.programs[index-1].programId, programEntry.orderInWorkoutPlan)
                                     )))
                                 }, enabled = index > 0) {
                                     Icon(Icons.Default.ArrowUpward,
@@ -194,8 +196,8 @@ fun AddProgram(
                                 IconButton(onClick = {
                                     viewModel.onEvent(ProgramsEvent.ReorderProgram(listOf(
                                         WorkoutProgramReorder(programEntry.programId, programEntry.orderInWorkoutPlan+1),
-                                        WorkoutProgramReorder(addProgramState.programs[index+1].programId, programEntry.orderInWorkoutPlan)
-                                    ))) }, enabled = index+1 < addProgramState.programs.size) {
+                                        WorkoutProgramReorder(state.programs[index+1].programId, programEntry.orderInWorkoutPlan)
+                                    ))) }, enabled = index+1 < state.programs.size) {
                                     Icon(Icons.Default.ArrowDownward,
                                         stringResource(R.string.move_program_down_info)
                                     )
@@ -204,7 +206,7 @@ fun AddProgram(
                             WorkoutCard(
                                 navigator = navigator,
                                 program = programEntry,
-                                exercises = addProgramState.exercisesAndInfo[programEntry.programId]
+                                exercises = state.exercisesAndInfo[programEntry.programId]
                                     ?: emptyList(),
                                 onCardClick = { _ -> // FIXME: unused arg because we need it to animate. Either use it or change function
                                     navigator.navigate(

@@ -85,7 +85,7 @@ class GeneratePlanViewModel @Inject constructor(
             is GeneratePlanEvent.GeneratePlan -> {
                 if (generatePlanJob == null) {
                     generatePlanJob = viewModelScope.launch {
-                        if (llmWrapper.modelIsAvailable()) {
+                        if (llmWrapper.modelIsAvailableFlow().first()) {
                             _state.update { it.copy(isLoadingAI = true) }
                         }
                         val planId = generatePlan(

@@ -37,9 +37,12 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.io.File
 import java.util.UUID
-import java.util.concurrent.Executors
 
 private const val TAG = "AGDownloadRepository"
 private const val MODEL_NAME_TAG = "modelName"
@@ -55,7 +58,17 @@ class DownloadRepository(
     private val context: Context,
     private val lifecycleProvider: AppLifecycleProvider,
 ) {
+    private val _downloadStatus = MutableStateFlow(ModelDownloadStatus(
+            status = if (getModelPath().exists())
+                ModelDownloadStatusType.SUCCEEDED
+            else
+                ModelDownloadStatusType.NOT_DOWNLOADED
+        )
+    )
+    val downloadStatus: StateFlow<ModelDownloadStatus> = _downloadStatus.asStateFlow()
+
     private val workManager = WorkManager.getInstance(context)
+
     /**
      * Stores the start time of a model download.
      *
@@ -66,9 +79,11 @@ class DownloadRepository(
     private val downloadStartTimeSharedPreferences =
         context.getSharedPreferences("download_start_time_ms", Context.MODE_PRIVATE)
 
-    fun downloadModel(
-        onStatusUpdated: (status: ModelDownloadStatus) -> Unit,
-    ) {
+    fun downloadModel() {
+        _downloadStatus.update {
+            it.copy(status = ModelDownloadStatusType.IN_PROGRESS)
+        }
+
         // Create input data.
         val builder = Data.Builder()
         val inputDataBuilder =
@@ -99,17 +114,18 @@ class DownloadRepository(
         // Observe progress.
         observerWorkerProgress(
             workerId = workerId,
-            onStatusUpdated = onStatusUpdated,
         )
     }
 
     fun cancelDownloadModel() {
         workManager.cancelAllWorkByTag("$MODEL_NAME_TAG:$modelName")
+        _downloadStatus.update {
+            it.copy(status = ModelDownloadStatusType.NOT_DOWNLOADED)
+        }
     }
 
     fun observerWorkerProgress(
         workerId: UUID,
-        onStatusUpdated: (status: ModelDownloadStatus) -> Unit,
     ) {
         workManager.getWorkInfoByIdLiveData(workerId).observeForever { workInfo ->
             if (workInfo != null) {
@@ -126,21 +142,25 @@ class DownloadRepository(
                         val remainingSeconds = workInfo.progress.getLong(KEY_MODEL_DOWNLOAD_REMAINING_MS, 0L)
 
                         if (receivedBytes != 0L) {
-                            onStatusUpdated(
+                            _downloadStatus.update {
                                 ModelDownloadStatus(
                                     status = ModelDownloadStatusType.IN_PROGRESS,
                                     totalBytes = totalBytes,
                                     receivedBytes = receivedBytes,
                                     bytesPerSecond = downloadRate,
                                     remainingMs = remainingSeconds,
-                                ),
-                            )
+                                )
+                            }
                         }
                     }
 
                     WorkInfo.State.SUCCEEDED -> {
                         Log.d("repo", "worker %s success".format(workerId.toString()))
-                        onStatusUpdated(ModelDownloadStatus(status = ModelDownloadStatusType.SUCCEEDED))
+                        _downloadStatus.update {
+                            it.copy(
+                                status = ModelDownloadStatusType.SUCCEEDED,
+                            )
+                        }
                         sendNotification(
                             title = "Finished downloading!",  // FIXME: localization
                             text = "Downloaded model: $modelName",
@@ -169,9 +189,12 @@ class DownloadRepository(
                                 modelName = "",
                             )
                         }
-                        onStatusUpdated(
-                            ModelDownloadStatus(status = status, errorMessage = errorMessage),
-                        )
+                        _downloadStatus.update {
+                            it.copy(
+                                status = status,
+                                errorMessage = errorMessage,
+                            )
+                        }
 
                         val startTime = downloadStartTimeSharedPreferences.getLong(modelName, 0L)
                         val duration = System.currentTimeMillis() - startTime
@@ -234,7 +257,16 @@ class DownloadRepository(
         }
     }
 
-    fun getModelPath(): File {
+    fun deleteModel() {
+        getModelPath().deleteRecursively()
+        _downloadStatus.update {
+            it.copy(
+                status = ModelDownloadStatusType.NOT_DOWNLOADED,
+            )
+        }
+    }
+
+    private fun getModelPath(): File {
         return getModelPath(context)
     }
 

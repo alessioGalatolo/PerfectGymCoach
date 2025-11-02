@@ -15,13 +15,17 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class LLMWrapper @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val downloadRepository: DownloadRepository
 ) {
     @Volatile
     private var llm: LlmInference? = null
@@ -66,7 +70,9 @@ class LLMWrapper @Inject constructor(
     }
 
     // Model has been downloaded
-    fun modelIsAvailable(): Boolean = DownloadRepository.getModelPath(context).exists()
+    fun modelIsAvailableFlow(): Flow<Boolean> = downloadRepository.downloadStatus.map {
+        it.status == ModelDownloadStatusType.SUCCEEDED
+    }
 
     init {
         startQueueProcessor()
@@ -111,7 +117,7 @@ class LLMWrapper @Inject constructor(
     }
 
     private suspend fun processGeneration(prompt: String, token: CancellationToken): String {
-        if (!modelIsAvailable() || token.isCancelled)
+        if (!modelIsAvailableFlow().first() || token.isCancelled)
             return ""
         if (llm == null)
             start()
@@ -132,7 +138,7 @@ class LLMWrapper @Inject constructor(
         resultListener: ProgressListener<String>,
         token: CancellationToken
     ): String {
-        if (!modelIsAvailable() || token.isCancelled)
+        if (!modelIsAvailableFlow().first() || token.isCancelled)
             return ""
         if (llm == null)
             start()
@@ -157,7 +163,7 @@ class LLMWrapper @Inject constructor(
     suspend fun start() {
         if (llm != null)
             return
-        if (!modelIsAvailable())
+        if (!modelIsAvailableFlow().first())
             return
         processingScope.launch {
             // heuristic to establish if we can run on GPU
