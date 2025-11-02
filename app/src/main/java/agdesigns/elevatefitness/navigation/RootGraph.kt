@@ -22,6 +22,11 @@ import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.runtime.DisposableEffect
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -54,11 +59,40 @@ enum class BottomBarDestination(
     ExperimentalSharedTransitionApi::class
 )
 @Composable
-fun RootDestinationGraph(){
+fun RootDestinationGraph(
+    viewModel: RootViewModel = hiltViewModel()
+){
     val navController = rememberNavController()
     val navigator = navController.rememberDestinationsNavigator()
     val currentDestination = navController.currentDestinationAsState().value
         ?: NavGraphs.root.startDestination
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Track whether app is in foreground.
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START,
+                Lifecycle.Event.ON_RESUME -> {
+                    viewModel.setAppInForeground(foreground = true)
+                }
+
+                Lifecycle.Event.ON_STOP,
+                Lifecycle.Event.ON_PAUSE -> {
+                    viewModel.setAppInForeground(foreground = false)
+                }
+
+                else -> {
+                    /* Do nothing for other events */
+                }
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         content = { innerPadding ->

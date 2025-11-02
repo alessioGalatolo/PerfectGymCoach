@@ -1,6 +1,6 @@
 package agdesigns.elevatefitness.genai
 
-import agdesigns.elevatefitness.BuildConfig
+import agdesigns.elevatefitness.R
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -244,7 +244,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
             NotificationCompat.Builder(applicationContext, FOREGROUND_NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(content)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(R.mipmap.ic_launcher_foreground)
                 .setOngoing(true) // Makes the notification non-dismissable
                 .setProgress(100, progress, false) // Show progress
                 .setContentIntent(pendingIntent)
