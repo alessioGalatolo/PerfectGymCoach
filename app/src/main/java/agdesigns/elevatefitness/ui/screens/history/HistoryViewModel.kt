@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.temporal.WeekFields
@@ -40,11 +41,23 @@ class HistoryViewModel @Inject constructor(
         }
         viewModelScope.launch {
             repository.getWorkoutHistoryAndName().collect { records ->
-                val filteredRecords = records.filter { it.durationSeconds > 0 }
-                val groupByYear = filteredRecords.groupBy { record -> record.startDate!!.year }
+                val filteredRecords = records
+                    .filter { it.durationSeconds > 0 }
+                val groupByYear = filteredRecords.groupBy { record -> record.startDate?.year ?:
+                // BUG: some old records may have a null start date; try to infer it from the exercise records
+                (
+                        repository.getWorkoutExerciseRecords(record.workoutId)
+                            .first()
+                            .firstOrNull()?.date?.year ?: 2025
+                ) }
                 val weekField = WeekFields.of(Locale.getDefault()).weekOfYear()
                 val yearToWeekToRecord = groupByYear.mapValues {
-                    it.value.groupBy { record -> record.startDate!!.get(weekField) }
+                    it.value.groupBy { record -> record.startDate?.get(weekField) ?:
+                    (
+                            repository.getWorkoutExerciseRecords(record.workoutId)
+                                .first()
+                                .firstOrNull()?.date?.get(weekField) ?: 42
+                    ) }
                 }
                 _state.update { it.copy(
                     workoutRecords = yearToWeekToRecord

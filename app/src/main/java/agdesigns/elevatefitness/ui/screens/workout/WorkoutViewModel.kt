@@ -515,6 +515,10 @@ class WorkoutViewModel @Inject constructor(
         when (event) {
             is WorkoutEvent.InitWorkout -> {
                 viewModelScope.launch {
+                    if (workoutState.value.workoutId != 0L) {
+                        Log.d("WorkoutViewModel", "Trying to re-init workout!")
+                        return@launch
+                    }
                     if (event.resumeWorkout) {
                         resumeWorkout()
                     } else {

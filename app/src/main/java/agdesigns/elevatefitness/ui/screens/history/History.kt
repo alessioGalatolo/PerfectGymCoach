@@ -191,7 +191,7 @@ fun History(
                                         )
 
                                         val formatter = DateTimeFormatter.ofPattern("MMM d, HH:mm")
-                                        val date = workout.startDate!!.format(formatter)
+                                        val date = workout.startDate?.format(formatter) ?: ""
                                         Text(
                                             text = date,
                                             style = MaterialTheme.typography.bodySmall,

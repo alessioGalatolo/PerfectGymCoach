@@ -83,7 +83,7 @@ class RecapViewModel @Inject constructor(
                                     .distinct()
                                     .sortedBy { it.exerciseInWorkout }
                                 val index2date = sortedRecords.mapIndexed { index, workoutRecord ->
-                                    index to workoutRecord.startDate!!
+                                    index to (workoutRecord.startDate ?: (state.value.exerciseRecords.firstOrNull()?.date ?: ZonedDateTime.now()))
                                 }.toMap()
                                 state.value.volumeChartProducer.runTransaction {
                                     lineSeries {
