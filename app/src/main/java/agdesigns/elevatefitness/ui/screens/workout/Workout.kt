@@ -87,6 +87,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 
 @Destination<WorkoutOnlyGraph>(
     start = true,
@@ -642,10 +643,23 @@ fun SharedTransitionScope.Workout(
                     currentExerciseState.restTimestamp != null &&
                     currentExerciseState.currentExerciseRest != null
                 ) {
+                    // This could be called after timer started if UI is not in foreground
+                    // Snap first to current progress, then animate to 0
+                    val now = ZonedDateTime.now()
+                    // this is when rest was set
+                    val restStart = currentExerciseState.restTimestamp!!.minusSeconds(
+                        currentExerciseState.currentExerciseRest!!
+                    ).toInstant().toEpochMilli()
+                    val delay = now.toInstant().toEpochMilli() - restStart
+                    if (delay > 500L) {
+                        val progressToBeDone = (delay / 1000L).toFloat() / currentExerciseState.currentExerciseRest!!
+                        progressAnim.snapTo(1f - progressToBeDone)
+                    }
+
                     progressAnim.animateTo(
                         targetValue = 0f,
                         animationSpec = tween(
-                            (currentExerciseState.currentExerciseRest!! * 1000).toInt(),
+                            (currentExerciseState.currentExerciseRest!! * 1000 - delay).toInt(),
                             easing = LinearEasing
                         )
                     )
