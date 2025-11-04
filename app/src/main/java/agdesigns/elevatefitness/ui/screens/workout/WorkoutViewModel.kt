@@ -184,6 +184,11 @@ sealed class WorkoutEvent{
         val set: Int
     ): WorkoutEvent()
 
+    data class DeleteSetRecord(
+        val exerciseInWorkout: Int,
+        val set: Int
+    ): WorkoutEvent()
+
     data class UpdateCurrentPage(val currentPage: Int) : WorkoutEvent()
 
     data object RefreshHasPromptedNotificationsAccess: WorkoutEvent()
@@ -810,6 +815,40 @@ class WorkoutViewModel @Inject constructor(
                         val weights = record.weights.toMutableList()
                         reps[event.set] = event.reps
                         weights[event.set] = event.weight
+                        repository.addExerciseRecord(
+                            ExerciseRecord(
+                                recordId = record.recordId,
+                                extExerciseId = record.extExerciseId,
+                                extWorkoutId = record.extWorkoutId,
+                                exerciseInWorkout = record.exerciseInWorkout,
+                                date = record.date,
+                                reps = reps,
+                                weights = weights,
+                                variation = record.variation,
+                                variationResKey = record.variationResKey,
+                                rest = record.rest,
+                                tare = record.tare
+                            )
+                        )
+                    }
+                }
+            }
+            is WorkoutEvent.DeleteSetRecord -> {
+                viewModelScope.launch {
+                    val record = currentExerciseState.value.currentExerciseOngoingRecord
+
+                    if (record == null) {
+                        // There is a problem
+                        Log.d("WorkoutViewModel", "Tried to edit a record that does not exist")
+                    } else {
+                        val reps = record.reps.toMutableList()
+                        val weights = record.weights.toMutableList()
+                        if (event.set >= reps.size || event.set >= weights.size) {
+                            Log.d("WorkoutViewModel", "Tried to delete a set that does not exist")
+                            return@launch
+                        }
+                        reps.removeAt(event.set)
+                        weights.removeAt(event.set)
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 recordId = record.recordId,

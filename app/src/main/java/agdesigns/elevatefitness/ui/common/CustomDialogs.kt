@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,6 +27,7 @@ import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -393,7 +398,8 @@ fun ChangeRepsWeightDialog(
     toggleDialog: () -> Unit,
     initialReps: String,
     initialWeight: String,
-    updateValues: (Int, Float) -> Unit
+    updateValues: (Int, Float) -> Unit,
+    deleteSet: () -> Unit
 ) {
     if (dialogIsOpen) {
         var reps by rememberSaveable { mutableStateOf(initialReps) }
@@ -405,6 +411,7 @@ fun ChangeRepsWeightDialog(
             title = { Text(stringResource(R.string.change_reps_weight_title)) },
             text = {
                 Column(Modifier.fillMaxWidth()) {
+                    // TODO: it would be nice to have plus/minus buttons here
                     OutlinedTextField(
                         value = reps,
                         onValueChange = {reps = it},
@@ -419,6 +426,32 @@ fun ChangeRepsWeightDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         label = { Text(stringResource(R.string.new_weight_value)) }
                     )
+                    Card (
+                        onClick = {
+                            toggleDialog()
+                            deleteSet()
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                stringResource(R.string.delete),
+                                Modifier.size(ButtonDefaults.IconSize)
+                            )
+                            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                            Text(
+                                stringResource(R.string.workout_delete_completed_set),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                    }
                 }
             },
             dismissButton = {

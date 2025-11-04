@@ -713,6 +713,14 @@ fun SharedTransitionScope.Workout(
                         )
                     )
                 },
+                deleteSet = { exerciseInWorkout, set ->
+                    viewModel.onEvent(
+                        WorkoutEvent.DeleteSetRecord(
+                            exerciseInWorkout,
+                            set
+                        )
+                    )
+                },
                 updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
                 toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
                 changeExercise = { exerciseInWorkout, originalSize ->

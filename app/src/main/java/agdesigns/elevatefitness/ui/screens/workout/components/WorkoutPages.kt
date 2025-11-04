@@ -87,6 +87,7 @@ fun SharedTransitionScope.ExercisePages(
     updateTare: (Float) -> Unit,
     updateBottomBar: (Int?, Float?) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit,
+    deleteSet: (Int, Int) -> Unit,
     toggleOtherEquipment: () -> Unit,
     changeExercise: (Int, Int) -> Unit,
     removeExercise: (Int) -> Unit,
@@ -206,7 +207,8 @@ fun SharedTransitionScope.ExercisePages(
                         updateTare = {},
                         updateBottomBar = { _, _ -> },
                         toggleOtherEquipment = {},
-                        toggleInfoDialog = {}
+                        toggleInfoDialog = {},
+                        deleteSet = {}
                     )
                 }
             }
@@ -304,6 +306,9 @@ fun SharedTransitionScope.ExercisePages(
                                     setCount
                                 )
                             },
+                            deleteSet = { setCount ->
+                                deleteSet(page, setCount)
+                            },
                             updateExerciseProbability = updateExerciseProbability,
                             updateTare = updateTare,
                             updateBottomBar = updateBottomBar,
@@ -341,6 +346,7 @@ fun ExercisePage(
     updateBottomBar: (Int?, Float?) -> Unit,
     toggleOtherEquipment: () -> Unit,
     toggleInfoDialog: () -> Unit,
+    deleteSet: (Int) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     Column (Modifier.padding(horizontal = 16.dp)){
@@ -484,7 +490,8 @@ fun ExercisePage(
                                 weight,
                                 setCount
                             )
-                        }
+                        },
+                        deleteSet = { deleteSet(setCount) }
                     )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

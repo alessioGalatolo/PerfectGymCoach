@@ -822,4 +822,5 @@
     <string name="enable_ongoing_workout_notifications_info">Verrà mostrata una notifica permanente del progresso nell\'allenamento corrente e il restante riposo per quando l\'app non è in primo piano</string>
     <string name="enable_live_notification_title">Abilitare anche notifiche live?</string>
     <string name="enable_live_notification_info">Il riposo mancante sarà sempre visibile nella barra di stato</string>
+    <string name="workout_delete_completed_set">Cancella questa serie</string>
 </resources>

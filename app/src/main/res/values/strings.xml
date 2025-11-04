@@ -825,4 +825,5 @@
     <string name="enable_ongoing_workout_notifications_info">Will show a persistent notification with current workout progress and remaining rest for when you briefly exit the app</string>
     <string name="enable_live_notification_title">Also enable live notification?</string>
     <string name="enable_live_notification_info">Remaining rest will always be visible in the status bar</string>
+    <string name="workout_delete_completed_set">Delete this set</string>
 </resources>
