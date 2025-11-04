@@ -10,6 +10,7 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class NowPlaying(
+    val mediaId: String? = null,
     val title: String? = null,
     val artist: String? = null,
     val artwork: Bitmap? = null,
@@ -244,14 +246,26 @@ class MediaPlayingRepository @Inject constructor(
         if (controller == null) return
         val md = controller.metadata
         val pb = controller.playbackState
-        val art = if (lastEmission.title == md?.description?.title?.toString() &&
-            lastEmission.artist == md?.description?.subtitle?.toString())
+
+        // Identify the track robustly
+        val mediaId = md?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)
+            ?: md?.description?.mediaId
+            ?: buildString {
+                append(md?.description?.title?.toString() ?: "")
+                append("|")
+                append(md?.description?.subtitle?.toString() ?: "")
+            }
+        val art = if (lastEmission.mediaId == mediaId)
             lastEmission.artwork
         else
-            md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-            ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+            md?.description?.iconBitmap
+                ?: md?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+                ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+
         _nowPlaying.update {
             NowPlaying(
+                mediaId = mediaId,
                 title = md?.description?.title?.toString(),
                 artist = md?.description?.subtitle?.toString(),
                 artwork = art,

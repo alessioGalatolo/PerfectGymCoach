@@ -159,13 +159,21 @@ fun SwipeableMediaPlaying(
                                     mediaTitle,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.labelMedium
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (mediaState.artwork != null)
+                                        Color.White
+                                    else
+                                        MaterialTheme.colorScheme.inverseOnSurface
                                 )
                                 Text(
                                     mediaArtist,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (mediaState.artwork != null)
+                                        Color.White
+                                    else
+                                        MaterialTheme.colorScheme.inverseOnSurface
                                 )
                             }
                             // if we are just teasing, gain space by removing buttons
