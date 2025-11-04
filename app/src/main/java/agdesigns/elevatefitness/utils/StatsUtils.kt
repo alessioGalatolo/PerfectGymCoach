@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.utils
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.ui.screens.statistics.TimeFrame
 import android.util.Log
+import com.agdesignes.shared.Equipment
 import com.agdesignes.shared.maybeKgToLb
 import java.time.LocalDate
 import java.time.YearMonth
@@ -14,13 +15,16 @@ import java.util.Locale
 import kotlin.math.exp
 import kotlin.math.pow
 
-fun computeVolume(weights: List<Float>, reps: List<Int>, tare: Float): Float {
+fun computeVolume(weights: List<Float>, reps: List<Int>, tare: Float, equipment: Equipment): Float {
     if (weights.size != reps.size)
         throw Exception("Weights and reps must be the same size")
     var volume = 0f
     volume += tare * reps.sum()
     volume += weights.zip(reps) { weight, rep ->
-        weight * rep
+        when (equipment) {
+            Equipment.BARBELL, Equipment.DUMBBELL -> weight * rep * 2
+            else -> weight * rep  // FIXME: some cables exercise should be multiplied by 2 e.g., cable fly
+        }
     }.sum()
     return volume
 }
@@ -42,7 +46,7 @@ fun generateVolumeProgressionData(
     // Pre-compute volumes per record in the working zone
     val dateVolumePairs: List<Pair<ZonedDateTime, Float>> = records.map {
         it.date.withZoneSameInstant(zone) to maybeKgToLb(
-            computeVolume(it.weights, it.reps, it.tare),
+            computeVolume(it.weights, it.reps, it.tare, it.equipment),
             useImperialSystem
         )
     }

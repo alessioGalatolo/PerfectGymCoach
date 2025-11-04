@@ -697,7 +697,13 @@ class WorkoutViewModel @Inject constructor(
                             intensity = WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY, // deprecated
                             intensityPercent = event.workoutIntensity,
                             durationSeconds = workoutTimeSeconds,
-                            volume = exercises.sumOf { computeVolume(it.weights, it.reps, it.tare).toDouble() },
+                            volume = exercises.sumOf {
+                                computeVolume(
+                                    it.weights,
+                                    it.reps,
+                                    it.tare,
+                                    it.equipment
+                                ).toDouble() },
                             activeTimeSeconds = max(0L, workoutTimeSeconds -
                                     exercises.sumOf { it.rest.sum() }),
                             calories = intensityMet *

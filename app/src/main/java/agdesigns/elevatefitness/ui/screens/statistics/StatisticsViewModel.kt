@@ -176,7 +176,8 @@ class StatisticsViewModel @Inject constructor(
                 computeVolume(
                     it.weights,
                     it.reps,
-                    it.tare
+                    it.tare,
+                    it.equipment
                 ).toDouble()
             }, state.value.useImperialSystem)
             val avgDuration = if (nonEmptyWorkouts.isNotEmpty()) {
@@ -317,7 +318,12 @@ class StatisticsViewModel @Inject constructor(
         records.forEach { record ->
             val exercise = repository.getExercise(record.extExerciseId).first()
             exercise.let {
-                val volume = computeVolume(record.weights, record.reps, record.tare)
+                val volume = computeVolume(
+                    record.weights,
+                    record.reps,
+                    record.tare,
+                    record.equipment
+                )
 
                 val current = exerciseStats[record.extExerciseId]
                 exerciseStats[record.extExerciseId] = Triple(
