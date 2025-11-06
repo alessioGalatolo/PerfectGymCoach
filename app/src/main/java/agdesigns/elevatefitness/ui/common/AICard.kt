@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.common
 
+import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
@@ -50,14 +52,16 @@ fun AICard(
         modifier = modifier
     ) {
         Text(
-            "✨ AI Coach ✨",
+            stringResource(R.string.ai_card_title),
             style = MaterialTheme.typography.titleLarge.copy(
                 brush = Brush.linearGradient(
                     colors = listOf(Color.Blue, Color.Green)
                 )
             ),
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(16.dp).fillMaxWidth()
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
         )
         if (aiEnabled) {
             if (text.isEmpty() && !generationFinished) {
@@ -109,7 +113,9 @@ fun AICard(
             }
             Row(
                 horizontalArrangement = Arrangement.End,
-                modifier = Modifier.padding(16.dp).fillMaxWidth()
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
             ) {
                 IconButton(
                     if (generationFinished) regenerate else interruptGeneration,
@@ -132,7 +138,7 @@ fun AICard(
             }
         } else {
             Text(
-                "AI is not enabled. You can change this setting from the Profile tab.",
+                stringResource(R.string.ai_not_enabled, stringResource(R.string.profile)),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(16.dp)
             )

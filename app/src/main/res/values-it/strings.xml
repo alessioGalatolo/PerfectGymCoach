@@ -822,4 +822,25 @@
     <string name="enable_ongoing_workout_notifications_info">Verrà mostrata una notifica permanente del progresso nell\'allenamento corrente e il restante riposo per quando l\'app non è in primo piano</string>
     <string name="enable_live_notification_title">Abilitare anche notifiche live?</string>
     <string name="enable_live_notification_info">Il riposo mancante sarà sempre visibile nella barra di stato</string>
+<!--  AI download notifications  -->
+    <string name="download_notification_finished">Download completato!</string>
+    <string name="download_notification_finished_info">Scaricato il modello: %1$s</string>
+    <string name="download_notification_failed">Download fallito!</string>
+    <string name="download_notification_failed_info">Non è stato possible scaricare il modello: %1$s</string>
+    <string name="download_notification_channel">Notifica per download modello IA</string>
+<!--    -->
+    <string name="ai_not_enabled">IA non abilitata. Puoi cambiare questa opzione dal scheda %1$s.</string>
+    <string name="ai_card_title">✨ AI Coach ✨</string>
+<!--    -->
+    <string name="ai_settings_title">On-Device IA (Sperimentale)</string>
+    <string name="ai_settings_info">Abilita funzionalità IA di questa app: migliora recap, suggerimenti, statistiche e più! Tutte le funzionalità IA vengono eseguite in locale sul tuo dispositivo, per questa ragione è necessario che il dispositivo abbia almeno %1$s of storage space (per il modello) e ha bisogno di almeno %2$dGB di RAM per funzionare. Nota anche che questo potrebbe creare dei problemi di performance o persino crash in dispositivi meno performanti.</string>
+    <string name="ai_settings_download">Scarica modello IA:</string>
+    <string name="ai_settings_download_button">Scarica</string>
+    <string name="ai_settings_downloading_button">Downloading...</string>
+    <string name="ai_settings_ram_insufficient_info">Attenzione! La RAM del tuo dispositivo non è sufficente per eseguire il modello IA. Continuando rischi insabilità dell'app e crash.</string>
+    <string name="ai_settings_ram_insufficient_ack">Ho capito</string>
+    <string name="ai_settings_delete_model">Cancella modello AI:</string>
+    <string name="ai_settings_download_completed">Modello cancellato con successo. Potrebbe essere necessario svuotare la cache dell'app prima che i cambiamenti abbiano effetto.</string>
+    <string name="ai_settings_delete">Cancella</string>
+    <string name="ai_settings_notify_about_download">Notificami quando finisce</string>
 </resources>

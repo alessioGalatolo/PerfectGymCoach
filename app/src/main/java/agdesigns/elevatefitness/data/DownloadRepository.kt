@@ -162,8 +162,11 @@ class DownloadRepository(
                             )
                         }
                         sendNotification(
-                            title = "Finished downloading!",  // FIXME: localization
-                            text = "Downloaded model: $modelName",
+                            title = context.getString(R.string.download_notification_finished),
+                            text = context.getString(
+                                R.string.download_notification_finished_info,
+                                modelName
+                            ),
                             modelName = modelName,
                         )
 
@@ -184,8 +187,11 @@ class DownloadRepository(
                             status = ModelDownloadStatusType.NOT_DOWNLOADED
                         } else {
                             sendNotification(
-                                title = "Download failed!",
-                                text = "Failed to download model: $modelName",
+                                title = context.getString(R.string.download_notification_failed),
+                                text = context.getString(
+                                    R.string.download_notification_failed_info,
+                                    modelName
+                                ),
                                 modelName = "",
                             )
                         }
@@ -214,7 +220,7 @@ class DownloadRepository(
         }
 
         val channelId = "download_notification"
-        val channelName = "Model download notification"  // FIXME: localization
+        val channelName = context.getString(R.string.download_notification_channel)
 
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library

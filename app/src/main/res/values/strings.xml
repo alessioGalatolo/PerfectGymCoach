@@ -825,4 +825,22 @@
     <string name="enable_ongoing_workout_notifications_info">Will show a persistent notification with current workout progress and remaining rest for when you briefly exit the app</string>
     <string name="enable_live_notification_title">Also enable live notification?</string>
     <string name="enable_live_notification_info">Remaining rest will always be visible in the status bar</string>
+    <string name="download_notification_finished">Finished downloading!</string>
+    <string name="download_notification_finished_info">Downloaded model: %1$s</string>
+    <string name="download_notification_failed">Download failed!</string>
+    <string name="download_notification_failed_info">Failed to download model: %1$s</string>
+    <string name="download_notification_channel">AI model download notification</string>
+    <string name="ai_not_enabled">AI is not enabled. You can change this setting from the %1$s tab.</string>
+    <string name="ai_card_title">✨ AI Coach ✨</string>
+    <string name="ai_settings_title">On-Device AI (Experimental)</string>
+    <string name="ai_settings_info">Enable AI features of this app: enhances summaries, suggestions, overviews and more! All the AI features run locally on your device, as such they require at least %1$s of storage space and needs at least %2$dGB of RAM to run. Also note this may create performance issues or even crash the app on lower-end devices.</string>
+    <string name="ai_settings_download">Download AI model:</string>
+    <string name="ai_settings_download_button">Download</string>
+    <string name="ai_settings_downloading_button">Downloading...</string>
+    <string name="ai_settings_ram_insufficient_info">Warning! Your device\'s RAM is insufficient to run the AI model. By continuing you risk app instability and crashes.</string>
+    <string name="ai_settings_ram_insufficient_ack">I understand</string>
+    <string name="ai_settings_delete_model">Delete AI model:</string>
+    <string name="ai_settings_download_completed">Model deleted successfully. You may need to clear app cache for changes to take instantly effect.</string>
+    <string name="ai_settings_delete">Delete</string>
+    <string name="ai_settings_notify_about_download">Notify me on completion</string>
 </resources>

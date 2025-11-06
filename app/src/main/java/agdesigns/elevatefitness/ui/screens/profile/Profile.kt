@@ -59,7 +59,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -1183,7 +1182,7 @@ fun GenAISection(
     val scope = rememberCoroutineScope()
 
     Text(
-        "On-Device AI (Experimental)",
+        stringResource(R.string.ai_settings_title),
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
@@ -1192,7 +1191,11 @@ fun GenAISection(
         items = listOf(
             {
                 Text(
-                    "Enable AI features of this app: enhances summaries, suggestions, overviews and more! All the AI features run locally on your device, as such they require at least ${DownloadRepository.totalBytes.humanReadableSize()} of storage space and needs at least ${DownloadRepository.minDeviceMemoryInGb}GB of RAM to run. Also note this may create performance issues or even crash the app on lower-end devices.",
+                    stringResource(
+                        R.string.ai_settings_info,
+                        DownloadRepository.totalBytes.humanReadableSize(),
+                        DownloadRepository.minDeviceMemoryInGb
+                    ),
                     style = MaterialTheme.typography.bodySmallEmphasized,
                 )
             },
@@ -1204,7 +1207,7 @@ fun GenAISection(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "Download AI model:",
+                            stringResource(R.string.ai_settings_download),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
@@ -1217,9 +1220,9 @@ fun GenAISection(
                         ) {
                             Text(
                                 if (needToDownloadFirst)
-                                    "Download"
+                                    stringResource(R.string.ai_settings_download_button)
                                 else
-                                    "Downloading..."
+                                    stringResource(R.string.ai_settings_downloading_button)
                             )
                         }
                     }
@@ -1233,13 +1236,13 @@ fun GenAISection(
                                     notificationPermissionState.launchPermissionRequest()
                                 }
                             ) {
-                                Text("Notify me on completion")
+                                Text(stringResource(R.string.ai_settings_notify_about_download))
                             }
                         }
                     }
                     if (state.isLowMemory && !userUnderstandsRisks) {
                         Text(
-                            "Warning! Your device's RAM is insufficient to run the AI model. By continuing you risk app instability and crashes.",
+                            stringResource(R.string.ai_settings_ram_insufficient_info),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium,
                         )
@@ -1248,7 +1251,7 @@ fun GenAISection(
                                 userUnderstandsRisks = true
                             }
                         ) {
-                            Text("I understand")
+                            Text(stringResource(R.string.ai_settings_ram_insufficient_ack))
                         }
                     }
                 } else {
@@ -1258,19 +1261,20 @@ fun GenAISection(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "Delete AI model:",
+                            stringResource(R.string.ai_settings_delete_model),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f))
                         Spacer(Modifier.width(8.dp))
+                        val downloadCompletedMessage = stringResource(R.string.ai_settings_download_completed)
                         Button(onClick = {
                             viewModel.onEvent(ProfileEvent.DeleteModel)
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    "Model deleted successfully. You may need to clear app cache for changes to take instantly effect."
+                                    downloadCompletedMessage
                                 )
                             }
                         }) {
-                            Text("Delete")
+                            Text(stringResource(R.string.ai_settings_delete))
                         }
                     }
                     Row (
@@ -1320,10 +1324,14 @@ fun GenAISection(
                             "${(curDownloadProgress * 100).toInt()}%",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 12.dp).width(44.dp),
+                            modifier = Modifier
+                                .padding(start = 12.dp)
+                                .width(44.dp),
                         )
                         LinearWavyProgressIndicator(
-                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 4.dp),
                             progress = { animatedProgress.value },
                         )
                         IconButton(
