@@ -1,8 +1,8 @@
 package agdesigns.elevatefitness.ui.screens.workout
 
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.data.NotificationService
-import agdesigns.elevatefitness.data.WorkoutNotificationState
+import agdesigns.elevatefitness.service.NotificationService
+import agdesigns.elevatefitness.service.WorkoutNotificationState
 import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -55,6 +55,7 @@ data class CurrentExerciseState(
     val weightIsValid: Boolean = true,
     val workoutTimeFormatted: String = "",
     val restTimeSecs: Long? = null,
+    val restProgress: Float = 0f,
     val restTimestamp: ZonedDateTime? = null, // workout time of end of rest // FIXME: sometimes timer shows negative e.g., resume workout
     val currentExerciseRest: Long? = null, // useful to compute progress of rest
     val currentTime: ZonedDateTime = ZonedDateTime.now(),
@@ -440,7 +441,12 @@ class WorkoutViewModel @Inject constructor(
                         pagesContent.exerciseRecords.getOrNull(page) ?: emptyList()
                     val currentExerciseOngoingRecord = pagesContent.ongoingRecords.getOrNull(page)
                     val setsDone = currentExerciseOngoingRecord?.reps?.size ?: 0
-                    val repsToShow = currentExercise.reps.getOrNull(setsDone)?.toString()
+                    val repsToShow = computeNextRep(
+                        currentExercise,
+                        recordsToDisplay,
+                        currentExerciseOngoingRecord,
+                        setsDone
+                    )?.toString()
                     val weightToShow = computeNextWeight(
                         recordsToDisplay,
                         currentExerciseOngoingRecord,
@@ -482,6 +488,7 @@ class WorkoutViewModel @Inject constructor(
                 pagesContent.map { it.exerciseSetsDone }.distinctUntilChanged(),
                 _currentPage,
                 currentExerciseState.map { it.restTimeSecs }.distinctUntilChanged(),
+                currentExerciseState.map { it.restTimestamp }.distinctUntilChanged(),
                 currentExerciseState.map { it.currentExerciseRest }.distinctUntilChanged(),
                 workoutState.map { it.workoutStarted }.distinctUntilChanged(),
             ) { values ->
@@ -489,15 +496,17 @@ class WorkoutViewModel @Inject constructor(
                 val exerciseSetsDone = values[1] as List<Int>
                 val currentPage = values[2] as Int
                 val restTime = values[3] as Long?
-                val totalRest = values[4] as Long?
-                val workoutStarted = values[5] as Boolean
+                val restTimestamp = values[4] as ZonedDateTime?
+                val totalRest = values[5] as Long?
+                val workoutStarted = values[6] as Boolean
 
                 WorkoutNotificationState(
                     setsPerExercise = exercises.map { it.reps.size },
                     setsDonePerExercise = exerciseSetsDone,
                     currentExercise = currentPage,
                     restTimeSecs = restTime,
-                    restTimestamp = Date().time + (restTime ?: 0L) * 1000L,
+                    restTimestamp = restTimestamp?.toInstant()?.toEpochMilli() ?:
+                        (Date().time + (restTime ?: 0L) * 1000L),
                     totalRest = totalRest,
                     workoutStarted = workoutStarted
                 )
@@ -1027,6 +1036,33 @@ class WorkoutViewModel @Inject constructor(
         return weightCandidate
     }
 
+    fun computeNextRep(
+        currentExercise: WorkoutExercise,
+        recordsToDisplay: List<ExerciseRecordAndEquipment>,
+        currentExerciseOngoingRecord: ExerciseRecordAndEquipment?,
+        setsDone: Int
+    ): Int? {
+        // reps done last set
+        val lastRepsDone = currentExerciseOngoingRecord?.reps?.last()
+        // reps user should do
+        val upcomingReps = currentExercise.reps.getOrNull(setsDone)
+        val lastRepsThatShouldHaveBeenDone = currentExercise.reps.getOrNull(setsDone-1)
+        if (lastRepsThatShouldHaveBeenDone == lastRepsDone) {
+            // user is following program
+            return upcomingReps
+        }
+        if (lastRepsThatShouldHaveBeenDone == upcomingReps) {
+            // user is not following the program and is in a situation like this:
+            // reps to be done -> reps done
+            // set 1: 10 -> 11
+            // set 2: 10 -> ??
+            // here, we suggest 11
+            return lastRepsDone
+        }
+        // here, additional heuristics can be added. For now, we fall back to the program
+        return upcomingReps
+    }
+
     fun computeExerciseTare(
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
         ongoingRecord: ExerciseRecordAndEquipment?
@@ -1255,23 +1291,34 @@ class WorkoutViewModel @Inject constructor(
                         workoutTimeFormatted = DateUtils.formatElapsedTime(workoutTimeMillis / 1000)
                     )
                 }
-                val restTimeSecs = if (
+                if (
                     currentExerciseState.value.currentExercise != null
                     && currentExerciseState.value.restTimestamp != null
                 ) {
-                    max(
+                    val restTimeMillis = max(
                         0L,
                         currentExerciseState.value.restTimestamp?.toInstant()?.toEpochMilli()
                             ?.minus(
                                 currentExerciseState.value.currentTime.toInstant()
                                     .toEpochMilli()
                             ) ?: 0L
-                    ) / 1000  // convert from millis to secs
-                } else null
-                _currentExerciseState.update {
-                    it.copy(
-                        restTimeSecs = restTimeSecs
                     )
+                    val restTimeSecs = restTimeMillis / 1000  // convert from millis to secs
+                    _currentExerciseState.update {
+                        it.copy(
+                            restTimeSecs = restTimeSecs,
+                            restProgress = restTimeMillis.toFloat().div(
+                                it.currentExerciseRest?.times(1000L)?.toFloat() ?: 1f
+                            )
+                        )
+                    }
+                } else {
+                    _currentExerciseState.update {
+                        it.copy(
+                            restTimeSecs = null,
+                            restProgress = 0f
+                        )
+                    }
                 }
             }
         }.launchIn(viewModelScope)

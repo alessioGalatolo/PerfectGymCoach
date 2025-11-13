@@ -3,7 +3,7 @@ package agdesigns.elevatefitness.di
 import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.DatabaseBackupManager
 import agdesigns.elevatefitness.data.MediaPlayingRepository
-import agdesigns.elevatefitness.data.NotificationService
+import agdesigns.elevatefitness.service.NotificationService
 import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.SearchesRepository

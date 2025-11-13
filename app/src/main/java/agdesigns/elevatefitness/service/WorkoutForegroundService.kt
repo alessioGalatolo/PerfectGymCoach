@@ -1,7 +1,5 @@
 package agdesigns.elevatefitness.service
 
-import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.data.NotificationService
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder

@@ -1,8 +1,7 @@
-package agdesigns.elevatefitness.data
+package agdesigns.elevatefitness.service
 
 import agdesigns.elevatefitness.MainActivity
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.service.WorkoutForegroundService
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
@@ -15,7 +14,6 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.text.format.DateUtils
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat

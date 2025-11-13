@@ -54,6 +54,7 @@ import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -618,7 +619,13 @@ fun SharedTransitionScope.Workout(
             darkTheme = useDarkTheme,
             scrollState = scrollState,
         ) { currentBottomPadding ->
-            val progressAnim = remember(currentExerciseState.restTimestamp) { Animatable(1f) }
+            val progressAnim = animateFloatAsState(
+                targetValue = currentExerciseState.restProgress,
+                animationSpec = tween(
+                    500, // rest progress gets updated every 500 millis, slowly progress
+                    easing = LinearEasing
+                ),
+            )
 
             /*
             Bottom padding can become 0.dp when scrolling pager as it makes bottomBar disappear
@@ -633,36 +640,6 @@ fun SharedTransitionScope.Workout(
             ) {
                 if (currentBottomPadding != basePadding) {
                     bottomPadding = currentBottomPadding
-                }
-            }
-            LaunchedEffect(
-                currentExerciseState.restTimestamp,
-                currentExerciseState.currentExerciseRest
-            ) {
-                if (
-                    currentExerciseState.restTimestamp != null &&
-                    currentExerciseState.currentExerciseRest != null
-                ) {
-                    // This could be called after timer started if UI is not in foreground
-                    // Snap first to current progress, then animate to 0
-                    val now = ZonedDateTime.now()
-                    // this is when rest was set
-                    val restStart = currentExerciseState.restTimestamp!!.minusSeconds(
-                        currentExerciseState.currentExerciseRest!!
-                    ).toInstant().toEpochMilli()
-                    val delay = now.toInstant().toEpochMilli() - restStart
-                    if (delay > 500L) {
-                        val progressToBeDone = (delay / 1000L).toFloat() / currentExerciseState.currentExerciseRest!!
-                        progressAnim.snapTo(1f - progressToBeDone)
-                    }
-
-                    progressAnim.animateTo(
-                        targetValue = 0f,
-                        animationSpec = tween(
-                            (currentExerciseState.currentExerciseRest!! * 1000 - delay).toInt(),
-                            easing = LinearEasing
-                        )
-                    )
                 }
             }
 

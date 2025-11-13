@@ -255,7 +255,7 @@ class MediaPlayingRepository @Inject constructor(
                 append("|")
                 append(md?.description?.subtitle?.toString() ?: "")
             }
-        val art = if (lastEmission.mediaId == mediaId)
+        val art = if (lastEmission.mediaId == mediaId && lastEmission.artwork != null)
             lastEmission.artwork
         else
             md?.description?.iconBitmap
