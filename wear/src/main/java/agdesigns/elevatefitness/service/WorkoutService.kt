@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class ForegroundOnlyWorkoutService: LifecycleService() {
+class WorkoutService: LifecycleService() {
     @Inject lateinit var repository: WearRepository
     private lateinit var notificationManager: NotificationManager
 
@@ -52,6 +52,9 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
             repository.activeWorkoutFlow.collect { isActive ->
                 if (workoutActive != isActive) {
                     workoutActive = isActive
+                    // Update notification whenever workout state changes
+                    Log.d(TAG, "workoutActive = $workoutActive")
+                    updateNotification()
                 }
             }
         }
@@ -119,9 +122,22 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
     }
 
     private fun notForegroundService() {
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopForeground(STOP_FOREGROUND_DETACH) // Changed to DETACH to keep notification
         serviceRunningInForeground = false
         configurationChange = false
+    }
+
+    /**
+     * Updates the notification when workout state changes
+     */
+    private fun updateNotification() {
+        if (workoutActive) {
+            val notification = generateNotification(getString(R.string.workout_notification_started_text))
+            notificationManager.notify(NOTIFICATION_ID, notification)
+        } else {
+            // Remove notification when workout is stopped
+            notificationManager.cancel(NOTIFICATION_ID)
+        }
     }
 
     fun startWorkout() {
@@ -132,7 +148,7 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
         // Binding to this service doesn't actually trigger onStartCommand(). That is needed to
         // ensure this Service can be promoted to a foreground service, i.e., the service needs to
         // be officially started (which we do here).
-        startService(Intent(applicationContext, ForegroundOnlyWorkoutService::class.java))
+        startService(Intent(applicationContext, WorkoutService::class.java))
 
     }
 
@@ -162,9 +178,9 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
     }
 
     /*
-     * Generates a BIG_TEXT_STYLE Notification that represent latest Walking Points while a
-     * workout is active.
-     */private fun generateNotification(mainText: String): Notification {
+     * Generates a BIG_TEXT_STYLE Notification that a workout is active.
+     */
+    private fun generateNotification(mainText: String): Notification {
         Log.d(TAG, "generateNotification()")
 
         // Main steps for building a BIG_TEXT_STYLE notification:
@@ -195,11 +211,11 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
             .setBigContentTitle(titleText)
 
         // 3. Set up main Intent/Pending Intents for notification.
-        // FIXME: each time the user resumes ongoing activity a new back stack is
-        //  added, meaning the user then as to go back MANY times to exit the app
-        val launchActivityIntent = Intent(this, WearActivity::class.java)
+        val launchActivityIntent = Intent(this, WearActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
 
-        val cancelIntent = Intent(this, ForegroundOnlyWorkoutService::class.java)
+        val cancelIntent = Intent(this, WorkoutService::class.java)
         cancelIntent.putExtra(EXTRA_CANCEL_WORKOUT_FROM_NOTIFICATION, true)
 
         val servicePendingIntent = PendingIntent.getService(
@@ -280,12 +296,12 @@ class ForegroundOnlyWorkoutService: LifecycleService() {
      * clients, we don't need to deal with IPC.
      */
     inner class LocalBinder : Binder() {
-        internal val foregroundOnlyWorkoutService: ForegroundOnlyWorkoutService
-            get() = this@ForegroundOnlyWorkoutService
+        internal val workoutService: WorkoutService
+            get() = this@WorkoutService
     }
 
     companion object {
-        private const val TAG = "ForegroundOnlyService"
+        private const val TAG = "WorkoutService"
 
         private const val THREE_SECONDS_MILLISECONDS = 3000L
 

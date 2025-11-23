@@ -37,6 +37,8 @@ import com.agdesignes.shared.maybeLbToKg
 import com.google.android.gms.wearable.PutDataMapRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.Boolean
 import kotlin.collections.firstOrNull
@@ -111,7 +113,6 @@ data class WorkoutState(
     val incrementMachine: Float = 0f,
     val incrementCable: Float = 0f,
     val hasRecordedExercise: Boolean = false, // used to add a flag in cancel workout
-    val autoStartFailed: Boolean = false,  // autoStart was not able to find a workout program, navigate up
     val lastWorkoutIntensity: Float? = null,
     val workoutId: Long = 0L,
     val imperialSystem: Boolean = false,
@@ -147,7 +148,7 @@ sealed class WorkoutEvent{
 
     data object ToggleOtherEquipmentDialog: WorkoutEvent()
 
-    data object CompleteSet: WorkoutEvent()
+    data class CompleteSet(val restTimestamp: ZonedDateTime? = null): WorkoutEvent()
 
     data object ToggleRequestNotificationAccessDialog : WorkoutEvent()
 
@@ -352,6 +353,13 @@ class WorkoutViewModel @Inject constructor(
                 val weight = it.getDouble("weight").toFloat()
                 val reps = it.getInt("reps")
                 val tare = it.getDouble("tare").toFloat()
+                val restTimestampMillis = it.getLong("restTimestamp")
+                val restTimestamp = if (restTimestampMillis != 0L) {
+                    ZonedDateTime.ofInstant(
+                        Instant.ofEpochMilli(restTimestampMillis),
+                        ZoneId.systemDefault()
+                    )
+                } else null
                 var exercise = currentExerciseState.value.currentExercise
                 // FIXME: should find another way of checking this, strings may be slightly different
                 if (exercise == null || !exerciseName.trim()
@@ -390,6 +398,7 @@ class WorkoutViewModel @Inject constructor(
                         tares = tares
                     )
                 }
+                // FIXME: just got a bug causes by now having enough sets in exercise.rest
                 if (currentExerciseState.value.setsDone >= exercise.rest.size) {
                     // user has done all sets and is adding another one from watch
                     onEvent(WorkoutEvent.AddSetToCurrentExercise)
@@ -403,7 +412,7 @@ class WorkoutViewModel @Inject constructor(
                         WorkoutEffect.AdvancePage(_currentPage.value + 1)
                     )
                 }
-                onEvent(WorkoutEvent.CompleteSet)
+                onEvent(WorkoutEvent.CompleteSet(restTimestamp))
             }
         }
         viewModelScope.launch {
@@ -642,9 +651,12 @@ class WorkoutViewModel @Inject constructor(
                 viewModelScope.launch {
                     val record = currentExerciseState.value.currentExerciseOngoingRecord
 
-                    val exerciseRest = currentExerciseState.value.currentExercise?.rest[currentExerciseState.value.setsDone]?.toLong() ?: 0L
+                    val exerciseRest = currentExerciseState.value.currentExercise
+                        ?.rest
+                        ?.getOrNull(currentExerciseState.value.setsDone)
+                        ?.toLong() ?: 0L
                     _currentExerciseState.update { it.copy(
-                        restTimestamp = ZonedDateTime.now().plusSeconds(exerciseRest),
+                        restTimestamp = event.restTimestamp ?: ZonedDateTime.now().plusSeconds(exerciseRest),
                         currentExerciseRest = exerciseRest
                     ) }
                     sendWorkout2Wear()
@@ -1187,14 +1199,14 @@ class WorkoutViewModel @Inject constructor(
         val currentPlanId = preferences.getCurrentPlan().first()
         if (currentPlanId == null) {
             Log.e("WorkoutViewModel", "Tried to auto start workout but current plan is null.")
-            _workoutState.update { it.copy(autoStartFailed = true) }
+            _effects.trySend(WorkoutEffect.ShowErrorAndBack(R.string.autostart_workout_failed))
             return null
         }
         val currentPlan = repository.getPlan(currentPlanId).first()
         val programs = repository.getPrograms(currentPlanId).first()
         if (programs.isEmpty()) {
             Log.e("WorkoutViewModel", "Tried to auto start workout but current plan has no programs.")
-            _workoutState.update { it.copy(autoStartFailed = true) }
+            _effects.trySend(WorkoutEffect.ShowErrorAndBack(R.string.autostart_workout_failed))
             return null
         }
         val upcomingProgram = programs[min(

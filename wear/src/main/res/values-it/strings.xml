@@ -5,7 +5,7 @@
     <string name="active_workout">Allenamento attivo</string>
     <string name="stop_workout_notification_text">Interrompi allenamento</string>
     <string name="launch_activity">Apri app</string>
-    <string name="notification_permission_explanation">Questa app ha bisogno del permesso per mostrare attività in corso (allenamento in corso).</string>
+    <string name="notification_permission_explanation">Questa app ha bisogno del permesso per mostrare attività in corso (allenamento in corso)</string>
     <string name="show_permission">Mostra richesta permesso</string>
     <string name="show_settings">Mostra impostazioni</string>
     <string name="go_back">Torna indietro</string>
@@ -31,4 +31,8 @@
     <string name="next_exercise">Prossimo esercizio:</string>
     <string name="waiting_exercise_data">Caricamento dati esercizio…</string>
     <string name="exercise_image">Immagine sbiadita esercizio</string>
+    <string name="not_now">Non adesso</string>
+    <string name="complete_set_next">Avanti</string>
+    <string name="no_title">Nessun titolo</string>
+    <string name="no_artist">Artista non disponibile</string>
 </resources>

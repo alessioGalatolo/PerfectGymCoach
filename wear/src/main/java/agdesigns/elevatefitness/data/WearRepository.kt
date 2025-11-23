@@ -5,7 +5,7 @@ import agdesigns.elevatefitness.data.datastore.WorkoutDataStore
 import agdesigns.elevatefitness.data.phone.WearDataHandler
 import agdesigns.elevatefitness.data.phone.WearMessageHandler
 import agdesigns.elevatefitness.data.phone.WearWorkout
-import agdesigns.elevatefitness.service.ForegroundOnlyWorkoutService
+import agdesigns.elevatefitness.service.WorkoutService
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,16 +41,16 @@ class WearRepository @Inject constructor(
     // The remaining variables are related to the binding/monitoring/interacting with the
     // service that gathers all the data to calculate walking points.
     private var foregroundOnlyServiceBound = false
-    private val _service = MutableStateFlow<ForegroundOnlyWorkoutService?>(null)
-    val service: StateFlow<ForegroundOnlyWorkoutService?> = _service
+    private val _service = MutableStateFlow<WorkoutService?>(null)
+    val service: StateFlow<WorkoutService?> = _service
 
-    var foregroundOnlyWalkingWorkoutService: ForegroundOnlyWorkoutService? = null
+    var foregroundOnlyWalkingWorkoutService: WorkoutService? = null
         private set
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            val binder = service as ForegroundOnlyWorkoutService.LocalBinder
-            foregroundOnlyWalkingWorkoutService = binder.foregroundOnlyWorkoutService
+            val binder = service as WorkoutService.LocalBinder
+            foregroundOnlyWalkingWorkoutService = binder.workoutService
             foregroundOnlyServiceBound = true
             _service.value = foregroundOnlyWalkingWorkoutService
         }
@@ -61,7 +62,7 @@ class WearRepository @Inject constructor(
     }
 
     fun bindForegroundOnlyService() {
-        val intent = Intent(context, ForegroundOnlyWorkoutService::class.java)
+        val intent = Intent(context, WorkoutService::class.java)
         // If it's a foreground service that must actually run, start it as well:
         // ContextCompat.startForegroundService(context, intent)
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
@@ -102,13 +103,20 @@ class WearRepository @Inject constructor(
 
     fun isPhoneAlive(): Flow<Boolean> = _isPhoneAlive.asStateFlow()
 
-    fun completeSet(exerciseName: String, reps: Int, weight: Float, tare: Float) {
+    fun completeSet(
+        exerciseName: String,
+        reps: Int,
+        weight: Float,
+        tare: Float,
+        restTimestamp: ZonedDateTime?
+    ) {
         // from a view model
         val message = JSONObject()
         message.put("exerciseName", exerciseName)
         message.put("reps", reps)
         message.put("weight", weight.toDouble())
         message.put("tare", tare.toDouble())
+        message.put("restTimestamp", restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
 
         val nodes = Wearable.getNodeClient(context).connectedNodes
         nodes.addOnSuccessListener {

@@ -21,11 +21,14 @@ wearable_play_services = "19.0.0"
 wear_remote_interactions = "1.1.0"
 wear_ongoing = "1.1.0"  # ongoing activity
 # compose wear os
-wear_compose = "1.5.1"
+wear_compose = "1.6.0-alpha05"
+wear_compose_material3 = "1.6.0-alpha05"
 wear_tooling_preview = "1.0.0"
-core_splashscreen = "1.0.1"
+core_splashscreen = "1.2.0"
+horologist = "0.8.3-alpha"
 # other
 palette = "1.0.0"
+android_shapes = "1.0.1"
 # external libraries
 graphs = "1.2.3"
 vico = "2.2.0"  # plots
@@ -97,14 +100,17 @@ graphs = { group = "com.github.jaikeerthick", name = "Composable-Graphs", versio
 wearable-play-services = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "wearable_play_services" }
 wear-remote-interactions = { group = "androidx.wear", name = "wear-remote-interactions", version.ref = "wear_remote_interactions" }
 wear-ongoing = { group = "androidx.wear", name = "wear-ongoing", version.ref = "wear_ongoing" }
-wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wear_compose" }
+wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wear_compose_material3" }
 wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wear_compose" }
+wear-compose-ui-tooling = { group = "androidx.wear.compose", name = "compose-ui-tooling", version.ref = "wear_compose_material3" }
 wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wear_tooling_preview" }
+horologist-material = { group = "com.google.android.horologist", name = "horologist-compose-material", version.ref = "horologist" }
+horologist-media-ui = { group = "com.google.android.horologist", name = "horologist-media-ui", version.ref = "horologist" }
 core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "core_splashscreen" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-
+android-shapes = { group = "androidx.graphics", name = "graphics-shapes", version.ref = "android_shapes" }
 # plots
 
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }

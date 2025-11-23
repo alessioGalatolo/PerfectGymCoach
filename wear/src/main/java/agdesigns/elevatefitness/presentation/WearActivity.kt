@@ -1,14 +1,19 @@
 package agdesigns.elevatefitness.presentation
 
 import agdesigns.elevatefitness.data.WearRepository
+import agdesigns.elevatefitness.presentation.screens.home.Home
+import agdesigns.elevatefitness.presentation.screens.workout.Workout
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import agdesigns.elevatefitness.presentation.theme.PerfectGymCoachTheme
-import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.rememberNavHostEngine
+
+import androidx.navigation.NavDeepLink
+import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.navigation.SwipeDismissableNavHost
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -23,18 +28,33 @@ class WearActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        setTheme(android.R.style.Theme_DeviceDefault)
-
         setContent {
             PerfectGymCoachTheme {
-                val engine = rememberNavHostEngine()
-                val navController = engine.rememberNavController()
-
-                DestinationsNavHost(
-                    navGraph = NavGraphs.root,
-                    engine = engine,
-                    navController = navController
-                )
+                val navController = rememberSwipeDismissableNavController()
+                AppScaffold() {
+                    SwipeDismissableNavHost(
+                        navController = navController,
+                        startDestination = "home"
+                    ) {
+                        composable(route = "home") {
+                            Home(
+                                openWorkoutScreen = {
+                                    navController.navigate("workout")
+                                }
+                            )
+                        }
+                        composable(
+                            route = "workout",
+                            deepLinks = listOf(NavDeepLink("elevatefitnesswear://startworkout"))
+                        ) {
+                            Workout(
+                                onBack = {
+                                    navController.navigateUp()
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

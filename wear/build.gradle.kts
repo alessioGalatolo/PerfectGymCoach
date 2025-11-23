@@ -30,6 +30,12 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            // Override the app name
+            resValue("string", "app_name", "EF (Debug)")
+        }
     }
 
     compileOptions {
@@ -51,7 +57,6 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.service)
     implementation(libs.datastore.preferences)
-    implementation(libs.compose.destinations.wear)
     implementation(libs.accompanist.permissions)
     ksp(libs.compose.destinations.ksp)
 
@@ -62,20 +67,19 @@ dependencies {
 
     implementation(libs.wearable.play.services)
 
-    implementation(platform(libs.compose.bom))
-    androidTestImplementation(platform(libs.compose.bom))
-
     implementation(libs.wear.remote.interactions)
 
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.graphics)
-    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.wear.compose.ui.tooling)
     implementation(libs.compose.icons)
 
     implementation(libs.wear.compose.material3)
+    implementation(libs.horologist.material)
+    implementation(libs.horologist.media.ui)
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.wear.ongoing)
+
+    implementation(libs.android.shapes)
 
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)

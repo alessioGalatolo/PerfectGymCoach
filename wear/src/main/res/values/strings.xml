@@ -4,7 +4,7 @@
     <string name="active_workout">Active workout</string>
     <string name="stop_workout_notification_text">Stop workout</string>
     <string name="launch_activity">Open app</string>
-    <string name="notification_permission_explanation">This app requires permission to show ongoing activity (workout in progress).</string>
+    <string name="notification_permission_explanation">This app requires permission to show ongoing activity (workout in progress)</string>
     <string name="show_permission">Launch</string>
     <string name="show_settings">Show settings</string>
     <string name="go_back">Go back</string>
@@ -30,6 +30,10 @@
     <string name="next_exercise">"Next exercise: "</string>
     <string name="waiting_exercise_data">Waiting for exercise data…</string>
     <string name="exercise_image">Faded image of the exercise</string>
+    <string name="not_now">Not now</string>
+    <string name="complete_set_next">Next</string>
+    <string name="no_title">No title</string>
+    <string name="no_artist">No artist</string>
     <!--
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.

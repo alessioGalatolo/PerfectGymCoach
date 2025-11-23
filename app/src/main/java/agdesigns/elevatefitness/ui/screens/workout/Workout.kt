@@ -52,7 +52,6 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -438,7 +437,7 @@ fun SharedTransitionScope.Workout(
                             scope.launch {
                                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                             }
-                            viewModel.onEvent(WorkoutEvent.CompleteSet)
+                            viewModel.onEvent(WorkoutEvent.CompleteSet())
                             if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
                                 val superExercise =
                                     pagesContent.exercises.find {
@@ -910,6 +909,11 @@ fun SharedTransitionScope.Workout(
                 )
             }
         }
+    } else {
+        // couldn't init workout, have a scaffold to show error then go back
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) {}
     }
 }
 

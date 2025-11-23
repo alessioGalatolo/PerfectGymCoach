@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.presentation.screens.workout
 
 import agdesigns.elevatefitness.data.WearRepository
+import agdesigns.elevatefitness.presentation.screens.common.MediaPlayingState
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -27,6 +28,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
+import kotlin.math.max
 
 data class WorkoutState(
     val exerciseName: String = "",
@@ -38,6 +40,8 @@ data class WorkoutState(
     val currentExerciseRest: Long? = null,
     val note: String = "",
     val currentTime: ZonedDateTime = ZonedDateTime.now(),
+    val ongoingRestSecs: Long? = null,
+    val ongoingRestProgression: Float? = null,
     val currentReps: Int = 0,
     val exerciseIncrement: Float = 0.5f,
     val nextExerciseName: String = "",
@@ -46,7 +50,9 @@ data class WorkoutState(
     val tareBarbell: Float = 0f,
     val tareIndex: Int = 0,
     val imperialSystem: Boolean = false,
-    val workoutEnded: Boolean = false
+    val workoutEnded: Boolean = false,
+    // true when user completed a set from watch but has not yet set reps and weight values
+    val settingSetValues: Boolean = false
 )
 
 sealed class WorkoutEvent {
@@ -56,7 +62,8 @@ sealed class WorkoutEvent {
     data object CompleteSet: WorkoutEvent()
     data object ForceSync: WorkoutEvent()
     data object StopActivity: WorkoutEvent()
-    data class ChangeTare(val newIndex: Int): WorkoutEvent()
+    data class ChangeTare(val change: Int): WorkoutEvent()
+    data object StartRest: WorkoutEvent()
 }
 
 
@@ -64,6 +71,8 @@ sealed class WorkoutEvent {
 class WorkoutViewModel @Inject constructor(private val repository: WearRepository): ViewModel() {
     private val _state = MutableStateFlow(WorkoutState())
     val state: StateFlow<WorkoutState> = _state.asStateFlow()
+    private val _mediaState = MutableStateFlow(MediaPlayingState())
+    val mediaState: StateFlow<MediaPlayingState> = _mediaState.asStateFlow()
     private var timerJob: Job? = null
 
     init {
@@ -125,15 +134,6 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
             }
         }
         viewModelScope.launch {
-            // FIXME: slow heartbeat means state is constantly reset
-//            repository.isPhoneAlive().collect {
-//                // reset state
-//                if (!it) {
-//                    _state.value = WorkoutState()
-//                }
-//            }
-        }
-        viewModelScope.launch {
             repository.observeWorkoutInterrupted().collect {
                 if (it) {
                     _state.value = WorkoutState(workoutEnded = true)
@@ -167,8 +167,14 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                         state.value.exerciseName,
                         state.value.currentReps,
                         state.value.weight,
-                        tare
+                        tare,
+                        state.value.restTimestamp
                     )
+                    _state.update {
+                        it.copy(
+                            settingSetValues = false
+                        )
+                    }
                 }
 
             }
@@ -178,11 +184,31 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                 }
             }
             is WorkoutEvent.ChangeTare -> {
-                _state.update { it.copy(tareIndex = event.newIndex) }
+                val totalItems = BarbellType.entries.size
+                _state.update {
+                    it.copy(
+                        tareIndex = (it.tareIndex + event.change + totalItems) % totalItems
+                    )
+                }
             }
             is WorkoutEvent.StopActivity -> {
                 viewModelScope.launch {
                     repository.service.firstOrNull()?.stopWorkout()
+                }
+            }
+            is WorkoutEvent.StartRest -> {
+                _state.update {
+                    Log.d("WorkoutViewModel", "Starting rest ${it.setsDone}")
+                    it.copy(
+                        restTimestamp = ZonedDateTime
+                            .now()
+                            .plusSeconds(
+                                it.rest.getOrNull(it.setsDone)?.toLong() ?: 0L
+                            ),
+                        settingSetValues = true,
+                        currentExerciseRest = it.rest.getOrNull(it.setsDone)?.toLong(),
+                        setsDone = it.setsDone + 1
+                    )
                 }
             }
 
@@ -197,10 +223,43 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
             var counter = 0
             while (true) {
                 emit(counter++)
-                delay(100)
+                delay(TIME_REFRESH_DELAY_MILLIS)
             }
         }.onEach {
-            _state.update { it.copy(currentTime = ZonedDateTime.now()) }
+            _state.update {
+                val currentTime = ZonedDateTime.now()
+                // should get setsDone if set from watch
+                var rest = it.rest.getOrNull(it.setsDone-1)
+                if (rest == null) {
+                    rest = it.rest.lastOrNull()
+                }
+                val ongoingRestMillis = if (it.restTimestamp != null && rest != null) {
+                    max(
+                        0L,
+                        it.restTimestamp.toInstant()?.toEpochMilli()?.minus(
+                        currentTime.toInstant().toEpochMilli()
+                        ) ?: 0L
+                    )
+                } else null
+                val ongoingRestSecs = ongoingRestMillis?.div(1000L)
+                // FIXME: if exercise is changed then rests change then progression is weird
+                val ongoingRestProgression = if (
+                    ongoingRestMillis != null &&
+                    (it.currentExerciseRest ?: 0L) > 0L
+                ) {
+                    ongoingRestMillis.toFloat() / it.currentExerciseRest!!.times(1000L).toFloat()
+                } else null
+                Log.d("WorkoutViewModel", "Progress: $ongoingRestProgression")
+                it.copy(
+                    currentTime = currentTime,
+                    ongoingRestSecs = ongoingRestSecs,
+                    ongoingRestProgression = ongoingRestProgression
+                )
+            }
         }.launchIn(viewModelScope)
+    }
+
+    companion object {
+        const val TIME_REFRESH_DELAY_MILLIS = 500L  // how much delay before currentTime is updated
     }
 }

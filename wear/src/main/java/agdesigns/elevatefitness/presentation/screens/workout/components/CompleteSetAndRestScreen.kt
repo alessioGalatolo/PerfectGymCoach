@@ -1,0 +1,569 @@
+package agdesigns.elevatefitness.presentation.screens.workout.components
+
+import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
+import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
+import agdesigns.elevatefitness.presentation.screens.workout.WorkoutViewModel
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontVariation
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.graphics.shapes.CornerRounding
+import androidx.graphics.shapes.RoundedPolygon
+import androidx.graphics.shapes.star
+import androidx.wear.compose.material3.AnimatedText
+import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.ButtonGroup
+import androidx.wear.compose.material3.CircularProgressIndicator
+import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
+import androidx.wear.compose.material3.EdgeButton
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.IconButton
+import androidx.wear.compose.material3.IconButtonDefaults
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.OutlinedButton
+import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.TextButton
+import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
+import com.agdesignes.shared.BarbellType
+import com.agdesignes.shared.Equipment
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
+import com.google.android.horologist.media.ui.screens.player.PlayerScreen
+import com.google.android.horologist.media.ui.util.isLargeScreen
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalHorologistApi::class)
+@Composable
+fun CompleteSetAndRestScreen(
+    restProgression: Float,
+    currentRestSeconds: Long,
+    nextSetExerciseName: String,
+    workoutState: WorkoutState,
+    changeReps: (Int) -> Unit,
+    changeWeight: (Int) -> Unit,
+    changeTare: (Int) -> Unit,
+    skipRest: () -> Unit,
+    completeSet: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+
+    val animatedRestProgression by animateFloatAsState(
+        targetValue = restProgression,
+        animationSpec = tween(
+            WorkoutViewModel.TIME_REFRESH_DELAY_MILLIS.toInt(),
+            easing = LinearEasing
+        )
+    )
+    LaunchedEffect(currentRestSeconds) {
+        currentRestSeconds.let {
+            if (it < 4L) {
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            }
+            if (it < 2) {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            }
+        }
+    }
+    CircularProgressIndicator(
+        progress = { animatedRestProgression },
+        startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center
+        endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
+        strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
+
+    )
+    val totalPages = rememberSaveable(workoutState.restTimestamp, workoutState.equipment) {
+        if (workoutState.equipment == Equipment.BARBELL)
+            3 // we have a barbell selection page
+        else
+            2
+    }
+    // page: 0 -> select reps, 1 -> select weight, 2 -> select tare, 3 -> show rest
+    var page by rememberSaveable(
+        workoutState.restTimestamp?.toInstant()?.toEpochMilli(),
+        workoutState.equipment,
+        workoutState.settingSetValues
+    ) {
+        mutableIntStateOf(
+            if (workoutState.settingSetValues)
+                0
+            else
+                totalPages
+        )
+    }
+    AnimatedContent(
+        targetState = page,
+        transitionSpec = {
+            (fadeIn(animationSpec = tween(300, delayMillis = 150)) +
+                    scaleIn(initialScale = 0.5f, animationSpec = tween(300, delayMillis = 150)))
+                .togetherWith(fadeOut(animationSpec = tween(150)))
+        }
+    ) { animatedPage ->
+        when (animatedPage) {
+            0 -> SelectValueScreen(
+                title = stringResource(R.string.reps),
+                subtitle = "",
+                value = workoutState.currentReps.toString(),
+                subValue = "",
+                changeValue = changeReps,
+                nextButtonText = stringResource(R.string.complete_set_next),
+                onNext = {
+                    page = 1
+                }
+            )
+            1 -> SelectValueScreen(
+                title = stringResource(R.string.weight),
+                subtitle = "",
+                value = "%.0f".format(workoutState.weight),
+                subValue = if ("%.2f".format(workoutState.weight % 1) != "0.00")
+                    "%.2f".format(workoutState.weight % 1).substring(1)
+                else
+                    "",
+                changeValue = changeWeight,
+                nextButtonText = if (page == totalPages-1)
+                    stringResource(R.string.done_icon)
+                else
+                    stringResource(R.string.complete_set_next),
+                onNext = {
+                    page = 2
+                    if (page == totalPages) {
+                        completeSet()
+                    }
+                }
+            )
+            totalPages -> ShowRestScreen(
+                nextSetExerciseName = nextSetExerciseName,
+                currentRestSeconds = currentRestSeconds,
+                skipRest = skipRest
+            )
+            2 -> SelectBarbellScreen(
+                tareBarbell = workoutState.tareBarbell,
+                tareIndex = workoutState.tareIndex,
+                imperialSystem = workoutState.imperialSystem,
+                changeTareIndex = changeTare,
+                onNext = {
+                    page = totalPages
+                    completeSet()
+                }
+            )
+            else -> {}
+        }
+    }
+
+}
+
+@OptIn(ExperimentalHorologistApi::class)
+@Composable
+fun SelectValueScreen(
+    title: String,
+    subtitle: String,
+    value: String,
+    subValue: String,
+    nextButtonText: String,
+    changeValue: (Int) -> Unit,
+    onNext: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val animatedTextFontRegistry =
+        rememberAnimatedTextFontRegistry(
+            // Variation axes at the start of the animation, width 10, weight 200
+            startFontVariationSettings =
+                FontVariation.Settings(FontVariation.width(100f), FontVariation.weight(400)),
+            // Variation axes at the end of the animation, width 100, weight 500
+            endFontVariationSettings =
+                FontVariation.Settings(FontVariation.width(100f), FontVariation.weight(600)),
+            startFontSize = MaterialTheme.typography.numeralMedium.fontSize,
+            endFontSize = MaterialTheme.typography.numeralMedium.fontSize,
+            textStyle = MaterialTheme.typography.numeralMedium.copy(
+                color = MaterialTheme.colorScheme.primary
+            ),
+        )
+    val textAnimatable = remember { Animatable(0f) }
+    AmbientAware { ambient ->
+        PlayerScreen(
+            mediaDisplay = {
+                TextMediaDisplay(
+                    title = title,
+                    subtitle = subtitle
+                )
+            },
+            controlButtons = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    IconButton(
+                        modifier = Modifier
+                            .height(IconButtonDefaults.DefaultButtonSize * 1.25f)
+                            .width(IconButtonDefaults.DefaultButtonSize),
+                        shapes = IconButtonDefaults.animatedShapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (ambient.isInteractive)
+                                MaterialTheme.colorScheme.secondaryContainer
+                            else
+                                Color.Transparent
+                        ),
+                        onClick = {
+                            changeValue(-1)
+                            scope.launch {
+                                textAnimatable.animateTo(1f)
+                                textAnimatable.animateTo(0f)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            Icons.Default.Remove,
+                            contentDescription = stringResource(R.string.remove_icon_minus_reps)
+                        )
+                    }
+
+
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1.5f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            var topTextWidthPixels by remember { mutableIntStateOf(0) }
+                            AnimatedText(
+                                text = value,
+                                fontRegistry = animatedTextFontRegistry,
+                                progressFraction = { textAnimatable.value },
+                                modifier = Modifier.onSizeChanged({ size ->
+                                    topTextWidthPixels = size.width
+                                })
+                            )
+                            if (subValue.isNotEmpty()) {
+                                Text(
+                                    subValue,
+                                    textAlign = TextAlign.End,
+                                    style = MaterialTheme.typography.bodyExtraSmall,
+                                    modifier = Modifier.width(
+                                        with(LocalDensity.current) {
+                                            topTextWidthPixels.toDp()
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                    }
+//                            Text(
+//                                value,
+//                                style = MaterialTheme.typography.displayLarge,
+//                                fontWeight = FontWeight.Medium,
+//                                color = MaterialTheme.colorScheme.secondary,
+//                                textAlign = TextAlign.Center,
+//                                maxLines = 1,
+//                            )
+                    IconButton(
+                        modifier = Modifier
+                            .height(IconButtonDefaults.DefaultButtonSize * 1.25f)
+                            .width(IconButtonDefaults.DefaultButtonSize),
+                        shapes = IconButtonDefaults.animatedShapes(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (ambient.isInteractive)
+                                MaterialTheme.colorScheme.secondaryContainer
+                            else
+                                Color.Transparent
+                        ),
+                        onClick = {
+                            changeValue(1)
+                            scope.launch {
+                                textAnimatable.animateTo(1f)
+                                textAnimatable.animateTo(0f)
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = stringResource(R.string.add_icon_plus_reps)
+                        )
+                    }
+                }
+            },
+            buttons = {
+                EdgeButton(
+                    onClick = onNext,
+                    colors = if (ambient.isInteractive)
+                        ButtonDefaults.filledVariantButtonColors()
+                    else
+                        ButtonDefaults.outlinedButtonColors(),
+                    border = if (ambient.isInteractive)
+                        null
+                    else
+                        ButtonDefaults.outlinedButtonBorder(true)
+                ) {
+                    Text(text = nextButtonText)
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalHorologistApi::class)
+@Composable
+fun SelectBarbellScreen(
+    tareBarbell: Float,
+    tareIndex: Int,
+    imperialSystem: Boolean,
+    changeTareIndex: (Int) -> Unit,
+    onNext: () -> Unit,
+) {
+    // if barbell is other, use weight from user
+    val type = BarbellType.entries[tareIndex]
+    val weight = if (type == BarbellType.OTHER)
+            tareBarbell
+        else
+            type.weight[imperialSystem] ?: 0f
+    AmbientAware { ambient ->
+        PlayerScreen(
+            mediaDisplay = {
+                TextMediaDisplay(
+                    title = stringResource(R.string.barbell),
+                    subtitle =
+                        stringResource(type.barbellResource),
+                )
+            },
+            controlButtons = {
+                Box(contentAlignment = Alignment.Center) {
+                    ButtonGroup(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                    ) {
+                        IconButton(
+                            onClick = { changeTareIndex(-1) },
+                        ) {
+                            Box(
+                                Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.remove_icon_minus_reps)
+                                )
+                            }
+                        }
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1.5f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "$weight ",
+                                    style = MaterialTheme.typography.displayLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Text(
+                                    if (imperialSystem)
+                                        stringResource(com.agdesignes.shared.R.string.lb)
+                                    else
+                                        stringResource(com.agdesignes.shared.R.string.kg),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyExtraSmall,
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = {
+                                changeTareIndex(1)
+                            },
+                        ) {
+                            Box(
+                                Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowForward,
+                                    contentDescription = stringResource(R.string.add_icon_plus_reps)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            buttons = {
+                EdgeButton(
+                    onClick = onNext,
+                    colors = if (ambient.isInteractive)
+                        ButtonDefaults.filledVariantButtonColors()
+                    else
+                        ButtonDefaults.outlinedButtonColors(),
+                    border = if (ambient.isInteractive)
+                        null
+                    else
+                        ButtonDefaults.outlinedButtonBorder(true)
+                ) {
+                    Text(text = stringResource(R.string.done_icon))
+                }
+            }
+        )
+    }
+}
+
+
+
+@OptIn(ExperimentalHorologistApi::class)
+@Composable
+fun ShowRestScreen(
+    nextSetExerciseName: String,
+    currentRestSeconds: Long,
+    skipRest: () -> Unit
+) {
+    val nextThingString = stringResource(R.string.next_thing)
+    val middleSize = if (LocalConfiguration.current.isLargeScreen) 88.dp else 72.dp
+    val haptics = LocalHapticFeedback.current
+
+    PlayerScreen(
+        mediaDisplay = {
+            TextMediaDisplay(
+                title = nextThingString,
+                subtitle = nextSetExerciseName,
+            )
+        },
+        controlButtons = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(middleSize),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Absolute.Center,
+            ) {
+                val poly = remember {
+                    RoundedPolygon.star(
+                        6,
+                        rounding = CornerRounding(0.2f)
+                    )
+                }
+                val clipShape = remember(poly) {
+                    RoundedPolygonShape(polygon = poly)
+                }
+
+                AmbientAware { ambient ->
+                    // Infinite rotation animation
+                    val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+                    val rotation by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(
+                                durationMillis = 18000,
+                                easing = LinearEasing
+                            ),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "rotation"
+                    )
+                    val background = if (ambient.isAmbient) {
+                        Color.Transparent
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(middleSize)
+                            .rotate(if (ambient.isAmbient) 0f else rotation) // Apply rotation here
+                            .clip(clipShape)
+                            // this will only be visible in ambient mode as the background becomes transparent
+                            .border(1.dp, MaterialTheme.colorScheme.primary, clipShape)
+                            .background(background),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = currentRestSeconds.toString(),
+                            style = MaterialTheme.typography.displayMedium,
+                            color = if (ambient.isAmbient) {
+                                Color.White
+                            } else
+                                MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .rotate(
+                                    if (ambient.isAmbient)
+                                        0f
+                                    else -rotation // Counter-rotate text to keep it upright
+                                )
+                        )
+                    }
+                }
+            }
+        },
+        buttons = {
+            TextButton(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    skipRest()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+                Text(text = stringResource(R.string.skip_rest), textAlign = TextAlign.Center)
+            }
+        }
+    )
+}

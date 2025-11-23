@@ -249,5 +249,17 @@ fun SwipeableMediaPlayingPreview() {
             togglePlayPause = {},
             playNext = {}
         )
+        SwipeableMediaPlaying(
+            onDismiss = {},
+            mediaState = MediaPlayingState(
+                title = null,
+                artist = null,
+                isPlaying = false,
+                needsAccess = false,
+                canAskAccess = true
+            ),
+            togglePlayPause = {},
+            playNext = {}
+        )
     }
 }
