@@ -367,6 +367,16 @@ fun SharedTransitionScope.ViewExercises(
                                         }
                                     }
                                     item {
+                                        CreateNewExerciseButton {
+                                            navigator.navigate(
+                                                CreateExerciseDialogDestination(
+                                                    muscleOrdinal = muscleOrdinal,
+                                                    filterEquipment = exercisesState.equipToFiler
+                                                )
+                                            )
+                                        }
+                                    }
+                                    item {
                                         Spacer(Modifier.height(16.dp))
                                     }
                                 }
@@ -413,20 +423,13 @@ fun SharedTransitionScope.ViewExercises(
                         }
                     }
                     item {
-                        Box(Modifier.fillMaxWidth()) {
-                            Button(
-                                shapes = ButtonDefaults.shapes(),
-                                modifier = Modifier.align(Center),
-                                onClick = {
-                                    navigator.navigate(
-                                        CreateExerciseDialogDestination()
-                                    )
-                                }
-                            ) {
-                                Icon(Icons.Default.Add, stringResource(R.string.create_a_new_exercise))
-                                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text(stringResource(R.string.create_a_new_exercise))
-                            }
+                        CreateNewExerciseButton {
+                            navigator.navigate(
+                                CreateExerciseDialogDestination(
+                                    muscleOrdinal = muscleOrdinal,
+                                    filterEquipment = exercisesState.equipToFiler
+                                )
+                            )
                         }
                     }
                     item {
@@ -670,6 +673,22 @@ fun LazyItemScope.ExerciseCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun CreateNewExerciseButton(onCreateClick: () -> Unit) {
+    Box(Modifier.fillMaxWidth()) {
+        Button(
+            shapes = ButtonDefaults.shapes(),
+            modifier = Modifier.align(Center),
+            onClick = onCreateClick
+        ) {
+            Icon(Icons.Default.Add, stringResource(R.string.create_a_new_exercise))
+            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+            Text(stringResource(R.string.create_a_new_exercise))
         }
     }
 }

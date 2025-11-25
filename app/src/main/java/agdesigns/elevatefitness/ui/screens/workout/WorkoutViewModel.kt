@@ -481,12 +481,10 @@ class WorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             pagesContent.map { it.suggestedTares }.distinctUntilChanged().collect {
                 // We only want to use suggestedTare as init
-                if (workoutState.value.tares.size != it.size) {
-                    _workoutState.update { state ->
-                        state.copy(
-                            tares = it
-                        )
-                    }
+                _workoutState.update { state ->
+                    state.copy(
+                        tares = it
+                    )
                 }
             }
         }

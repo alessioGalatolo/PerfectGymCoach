@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,12 +65,20 @@ import kotlinx.coroutines.launch
 @Composable
 fun CreateExerciseDialog(
     navigator: DestinationsNavigator,
+    muscleOrdinal: Int = 0,  // used for init
+    filterEquipment: Equipment? = null,
     viewModel: CreateExerciseViewModel = hiltViewModel()
 ) {
     val exerciseState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(
+            CreateExerciseEvent.Init(muscleOrdinal, filterEquipment)
+        )
+    }
 
     // Make top app bar opaque
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
@@ -256,6 +265,11 @@ private fun EquipmentSection(
     selectedEquipment: Equipment,
     onEquipmentSelected: (Equipment) -> Unit
 ) {
+    val lazyRowState = rememberLazyListState()
+    // FIXME: should only scroll once, after init
+    LaunchedEffect(selectedEquipment) {
+        lazyRowState.animateScrollToItem(selectedEquipment.ordinal-1)
+    }
     Column {
         SectionHeader(
             title = stringResource(R.string.select_equipment),
@@ -263,6 +277,7 @@ private fun EquipmentSection(
         Spacer(Modifier.height(8.dp))
 
         LazyRow(
+            state = lazyRowState,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
@@ -339,6 +354,11 @@ private fun PrimaryMuscleSection(
     selectedMuscle: Exercise.Muscle,
     onMuscleSelected: (Exercise.Muscle) -> Unit
 ) {
+    val lazyRowState = rememberLazyListState()
+    // FIXME: should only scroll once, after init
+    LaunchedEffect(selectedMuscle) {
+        lazyRowState.animateScrollToItem(selectedMuscle.ordinal - 1)
+    }
     Column {
         SectionHeader(
             title = stringResource(R.string.select_primary_muscle),
@@ -346,6 +366,7 @@ private fun PrimaryMuscleSection(
         Spacer(Modifier.height(8.dp))
 
         LazyRow (
+            state = lazyRowState,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {

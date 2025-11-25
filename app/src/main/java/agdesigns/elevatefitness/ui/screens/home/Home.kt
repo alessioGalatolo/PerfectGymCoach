@@ -377,7 +377,7 @@ fun SharedTransitionScope.Home(
                                     navigator.navigate(
                                         WorkoutDestination(
                                             programId = program.programId,
-                                            previewExercise = exs.getOrNull(pagerState.currentPage)
+                                            previewExercise = exs.getOrNull(0)
                                         )
                                     )
                                 }

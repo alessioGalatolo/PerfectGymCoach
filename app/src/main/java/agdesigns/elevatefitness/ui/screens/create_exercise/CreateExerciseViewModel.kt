@@ -23,6 +23,8 @@ data class ExerciseState(
 )
 
 sealed class CreateExerciseEvent{
+    data class Init(val muscleOrdinal: Int, val filterEquipment: Equipment?): CreateExerciseEvent()
+
     data class UpdateName(val newName: String): CreateExerciseEvent()
 
     data class UpdateEquipment(val newEquipment: Equipment): CreateExerciseEvent()
@@ -46,6 +48,22 @@ class CreateExerciseViewModel @Inject constructor(private val repository: Reposi
 
     fun onEvent(event: CreateExerciseEvent): Boolean {
         when (event) {
+            is CreateExerciseEvent.Init -> {
+                _state.update {
+                    val muscle = Exercise.Muscle.entries[event.muscleOrdinal]
+                    val equipment = event.filterEquipment ?: Equipment.EVERYTHING
+                    it.copy(
+                        equipment = if (equipment != Equipment.EVERYTHING)
+                            equipment
+                        else
+                            it.equipment,
+                        primaryMuscle = if (muscle != Exercise.Muscle.EVERYTHING)
+                            muscle
+                        else
+                            it.primaryMuscle
+                    )
+                }
+            }
             is CreateExerciseEvent.TryCreateExercise -> {
                 if(state.value.name.isNotBlank()) {
                     val secondaryMuscles = mutableListOf<Exercise.Muscle>()
