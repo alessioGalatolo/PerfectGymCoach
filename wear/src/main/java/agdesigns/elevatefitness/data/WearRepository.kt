@@ -43,7 +43,7 @@ class WearRepository @Inject constructor(
     private var foregroundOnlyServiceBound = false
     private val _service = MutableStateFlow<WorkoutService?>(null)
     val service: StateFlow<WorkoutService?> = _service
-
+    val mediaState = dataHandler.mediaState
     var foregroundOnlyWalkingWorkoutService: WorkoutService? = null
         private set
 
@@ -167,5 +167,18 @@ class WearRepository @Inject constructor(
             instance ?: synchronized(this) {
                 instance ?: WearRepository(dataHandler, messageHandler, workoutDataStore, permissionStateDataStore, context).also { instance = it }
             }
+    }
+
+    // media playing stuff
+    fun playPauseMedia() {
+        messageHandler.sendMessage("/media_control", "play_pause")
+    }
+
+    fun nextMedia() {
+        messageHandler.sendMessage("/media_control", "next")
+    }
+
+    fun previousMedia() {
+        messageHandler.sendMessage("/media_control", "previous")
     }
 }

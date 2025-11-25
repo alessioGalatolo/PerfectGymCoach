@@ -108,7 +108,16 @@ fun Workout(
                                 viewModel.onEvent(WorkoutEvent.CompleteSet)
                             }
                         )
-                        2 -> MediaPlayingPage(mediaState)
+                        2 -> MediaPlayingPage(
+                            mediaState,
+                            onPlayPause = {
+                                viewModel.onEvent(WorkoutEvent.PlayPauseMedia)
+                            }, onNext = {
+                                viewModel.onEvent(WorkoutEvent.NextMedia)
+                            }, onPrevious = {
+                                viewModel.onEvent(WorkoutEvent.PreviousMedia)
+                            }
+                        )
                     }
                 }
             }

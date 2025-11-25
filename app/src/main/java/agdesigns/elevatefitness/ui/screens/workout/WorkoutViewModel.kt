@@ -1255,15 +1255,16 @@ class WorkoutViewModel @Inject constructor(
                     dataMapReq.dataMap.putLong("restTimestamp", currentExerciseState.value.restTimestamp?.toInstant()?.toEpochMilli() ?: 0L)
                 if (currentExerciseState.value.currentExerciseRest != null)
                     dataMapReq.dataMap.putLong("currentRestSeconds", currentExerciseState.value.currentExerciseRest!!)
-                repository.sendWorkout2Wear(
+                repository.send2Wear(
                     dataMapReq,
                     overrideDeadWatch
                 )
                 if (sendImage) {
+                    // FIXME: this belongs to the repository
                     val imageAsset = repository.getAssetFromResId(exercise.image)
                     val imageReq = PutDataMapRequest.create("/image2watch")
                     imageReq.dataMap.putAsset("image", imageAsset)
-                    repository.sendWorkout2Wear(
+                    repository.send2Wear(
                         imageReq,
                         overrideDeadWatch
                     )

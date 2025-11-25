@@ -130,7 +130,8 @@ class Repository @Inject constructor(
         listenHeartbeatJob = null
     }
 
-    fun sendWorkout2Wear(message: PutDataMapRequest, overrideDeadWatch: Boolean = false) {
+    // FIXME: this belongs to its own repository/service
+    fun send2Wear(message: PutDataMapRequest, overrideDeadWatch: Boolean = false) {
         startListeningForWatch()  // This should actually be called first by the view model
         if (!_watchIsAlive.value && !overrideDeadWatch) {
             Log.d("Repository", "Skipping sending workout to wear as it is dead")

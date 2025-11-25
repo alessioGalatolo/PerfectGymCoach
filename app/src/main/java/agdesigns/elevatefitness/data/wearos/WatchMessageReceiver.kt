@@ -42,6 +42,12 @@ class WatchMessageReceiver @Inject constructor(
     )
     val watchHeartbeat: SharedFlow<Long> = _watchHeartbeat.asSharedFlow()
 
+    private val _watchMediaControlRequests = MutableSharedFlow<String>(
+        replay = 0,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val watchMediaControlRequests: SharedFlow<String> = _watchMediaControlRequests.asSharedFlow()
 
     init {
         Wearable.getMessageClient(context).addListener(this)
@@ -58,6 +64,9 @@ class WatchMessageReceiver @Inject constructor(
             _watchHeartbeat.tryEmit(System.currentTimeMillis())
             // watch replies to phone heartbeats but phone should avoid that
             // to avoid overloading the connection
+        } else if (messageEvent.path == "/media_control") {
+            val msg = String(messageEvent.data, Charsets.UTF_8)
+            _watchMediaControlRequests.tryEmit(msg)
         }
     }
 

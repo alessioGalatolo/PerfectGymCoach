@@ -64,6 +64,10 @@ sealed class WorkoutEvent {
     data object StopActivity: WorkoutEvent()
     data class ChangeTare(val change: Int): WorkoutEvent()
     data object StartRest: WorkoutEvent()
+
+    data object PlayPauseMedia: WorkoutEvent()
+    data object NextMedia: WorkoutEvent()
+    data object PreviousMedia: WorkoutEvent()
 }
 
 
@@ -71,8 +75,8 @@ sealed class WorkoutEvent {
 class WorkoutViewModel @Inject constructor(private val repository: WearRepository): ViewModel() {
     private val _state = MutableStateFlow(WorkoutState())
     val state: StateFlow<WorkoutState> = _state.asStateFlow()
-    private val _mediaState = MutableStateFlow(MediaPlayingState())
-    val mediaState: StateFlow<MediaPlayingState> = _mediaState.asStateFlow()
+    // FIXME: should inquire about media on init
+    val mediaState: StateFlow<MediaPlayingState> = repository.mediaState
     private var timerJob: Job? = null
 
     init {
@@ -211,7 +215,21 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                     )
                 }
             }
-
+            is WorkoutEvent.PlayPauseMedia -> {
+                viewModelScope.launch {
+                    repository.playPauseMedia()
+                }
+            }
+            is WorkoutEvent.NextMedia -> {
+                viewModelScope.launch {
+                    repository.nextMedia()
+                }
+            }
+            is WorkoutEvent.PreviousMedia -> {
+                viewModelScope.launch {
+                    repository.previousMedia()
+                }
+            }
         }
 
     }
@@ -249,7 +267,6 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                 ) {
                     ongoingRestMillis.toFloat() / it.currentExerciseRest!!.times(1000L).toFloat()
                 } else null
-                Log.d("WorkoutViewModel", "Progress: $ongoingRestProgression")
                 it.copy(
                     currentTime = currentTime,
                     ongoingRestSecs = ongoingRestSecs,

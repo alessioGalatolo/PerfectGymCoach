@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.data.wearos.WatchMessageReceiver
 import agdesigns.elevatefitness.service.NotificationListener
 import agdesigns.elevatefitness.utils.notificationAccessFlow
 import android.app.PendingIntent
@@ -13,6 +14,8 @@ import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.PutDataMapRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +30,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 data class NowPlaying(
@@ -52,7 +56,9 @@ data class SessionSummary(
 )
 
 class MediaPlayingRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val repository: Repository,  // FIXME: decouple and remove
+    private val messageReceiver: WatchMessageReceiver
 ) {
 
     private val manager: MediaSessionManager =
@@ -98,6 +104,37 @@ class MediaPlayingRepository @Inject constructor(
 
                 // Seed with current list
                 handleSessionsChanged(manager.getActiveSessions(component))
+            }
+        }
+        // send now playing to wear
+        secondaryScope.launch {
+            nowPlaying.collect {
+                val message = PutDataMapRequest.create("/now_playing")
+                if (it.title != null)
+                    message.dataMap.putString("title", it.title)
+                if (it.artist != null)
+                    message.dataMap.putString("artist", it.artist)
+                message.dataMap.putBoolean("isPlaying", it.isPlaying)
+
+                val imageAsset = it.artwork?.let { artwork -> ByteArrayOutputStream().let { byteStream ->
+                    artwork.compress(Bitmap.CompressFormat.JPEG, 50, byteStream)
+                    Asset.createFromBytes(byteStream.toByteArray())
+                } }
+                if (imageAsset != null)
+                    message.dataMap.putAsset("artwork", imageAsset)
+                repository.send2Wear(
+                    message,
+                    false
+                )
+            }
+        }
+        secondaryScope.launch {
+            messageReceiver.watchMediaControlRequests.collect { request ->
+                when (request) {
+                    "play_pause" -> togglePlayPause()
+                    "next" -> next()
+                    "previous" -> previous()
+                }
             }
         }
     }

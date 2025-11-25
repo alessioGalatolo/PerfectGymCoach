@@ -25,6 +25,7 @@ fun VignetteImage(
     imageBitmap: ImageBitmap,
     modifier: Modifier = Modifier,
     color: Color = Color.Transparent,
+    alpha: Float = 0.4f,
     background: Color = MaterialTheme.colorScheme.background,
 ) {
     AmbientAware { ambientState ->
@@ -43,7 +44,7 @@ fun VignetteImage(
                         // pre-compute your brush or shader once per size change
                         val brush = Brush.radialGradient(
                             colors = listOf(
-                                animatedBackgroundColor.value.copy(alpha = 0.4f),
+                                animatedBackgroundColor.value.copy(alpha = alpha),
                                 background,
                             ),
                             center = size.center,

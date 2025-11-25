@@ -103,8 +103,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideMediaPlayingRepository(
-        @ApplicationContext context: Context
-    ): MediaPlayingRepository = MediaPlayingRepository(context)
+        @ApplicationContext context: Context,
+        repository: Repository,
+        watchMessageReceiver: WatchMessageReceiver
+    ): MediaPlayingRepository = MediaPlayingRepository(context, repository, watchMessageReceiver)
 
     @Provides
     @Singleton

@@ -2,7 +2,9 @@ package agdesigns.elevatefitness.presentation.screens.workout.components
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.screens.common.MediaPlayingState
+import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.media.ui.components.MediaControlButtons
@@ -13,6 +15,9 @@ import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 @Composable
 fun MediaPlayingPage(
     mediaState: MediaPlayingState,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit
 ) {
     PlayerScreen(
         mediaDisplay = {
@@ -23,18 +28,26 @@ fun MediaPlayingPage(
         },
         controlButtons = {
             MediaControlButtons(
-                onPlayButtonClick = { /*TODO*/ },
-                onPauseButtonClick = { /*TODO*/ },
+                onPlayButtonClick = onPlayPause,
+                onPauseButtonClick = onPlayPause,
                 playPauseButtonEnabled = true,
-                playing = true,
-                onSeekToPreviousButtonClick = { /*TODO*/ },
-                onSeekToNextButtonClick = { /*TODO*/ },
-                seekToPreviousButtonEnabled = false,
-                seekToNextButtonEnabled = false,
+                playing = mediaState.isPlaying,
+                onSeekToPreviousButtonClick = onPrevious,
+                onSeekToNextButtonClick = onNext,
+                seekToPreviousButtonEnabled = true,
+                seekToNextButtonEnabled = true,
             )
         },
         buttons = {
 
+        },
+        background = {
+            if (mediaState.artwork != null) {
+                VignetteImage(
+                    mediaState.artwork.asImageBitmap(),
+                    alpha = 0f
+                )
+            }
         }
     )
 }

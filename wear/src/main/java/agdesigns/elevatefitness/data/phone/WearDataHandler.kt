@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.data.phone
 
 import agdesigns.elevatefitness.data.phone.WearWorkout
+import agdesigns.elevatefitness.presentation.screens.common.MediaPlayingState
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -19,8 +20,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -52,6 +57,9 @@ class WearDataHandler @Inject constructor(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val image: SharedFlow<Bitmap> = _image.asSharedFlow()
+
+    private val _mediaState = MutableStateFlow(MediaPlayingState())
+    val mediaState: StateFlow<MediaPlayingState> = _mediaState.asStateFlow()
 
     private val _workoutInterrupted: MutableSharedFlow<Boolean> = MutableSharedFlow(
         replay = 0,
@@ -91,6 +99,35 @@ class WearDataHandler @Inject constructor(
             _workoutActive.tryEmit(true)
             _workoutData.tryEmit(queuedWorkout)
         }
+        Wearable.getDataClient(context).getDataItems("/now_playing".toUri()).addOnSuccessListener {
+            var nowPlayingState = MediaPlayingState()
+            var queuedAsset: Asset? = null
+
+            Log.d("WearDataHandler", "Found some queued now playing on init")
+            it.forEach { item ->
+                Log.d("WearDataHandler", "Found some queued now playing on init")
+                val dataMap = DataMapItem.fromDataItem(item).dataMap
+                if (dataMap.containsKey("title"))
+                    nowPlayingState = nowPlayingState.copy(title = dataMap.getString("title"))
+                if (dataMap.containsKey("artist"))
+                    nowPlayingState = nowPlayingState.copy(artist = dataMap.getString("artist"))
+                if (dataMap.containsKey("isPlaying"))
+                    nowPlayingState = nowPlayingState.copy(isPlaying = dataMap.getBoolean("isPlaying"))
+                if (dataMap.containsKey("artwork")) {
+                    val asset = dataMap.getAsset("artwork")
+                    if (asset != null) {
+                        queuedAsset = asset
+                    }
+                }
+            }
+            _mediaState.update {
+                nowPlayingState
+            }
+            if (queuedAsset != null) {
+                Log.d("WearDataHandler", "Found some queued artwork on init")
+                decodeArtworkAndEmit(queuedAsset)
+            }
+        }
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -114,27 +151,66 @@ class WearDataHandler @Inject constructor(
                 } else if (item.uri.path == "/stop_workout") {
                     _workoutInterrupted.tryEmit(true)
                     _workoutActive.tryEmit(false)
+                } else if (item.uri.path == "/now_playing") {
+                    val dataMap = DataMapItem.fromDataItem(item).dataMap
+                    _mediaState.update {
+                        var nowPlayingState = it
+                        if (dataMap.containsKey("title"))
+                            nowPlayingState = nowPlayingState.copy(title = dataMap.getString("title"))
+                        if (dataMap.containsKey("artist"))
+                            nowPlayingState = nowPlayingState.copy(artist = dataMap.getString("artist"))
+                        if (dataMap.containsKey("isPlaying"))
+                            nowPlayingState = nowPlayingState.copy(isPlaying = dataMap.getBoolean("isPlaying"))
+                        nowPlayingState
+                    }
+                    if (dataMap.containsKey("artwork")) {
+                        val asset = dataMap.getAsset("artwork")
+                        if (asset != null) {
+                            decodeArtworkAndEmit(asset)
+                        }
+                    }
                 }
             }
         }
     }
 
-    fun decodeImageAndEmit(asset: Asset) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val assetFd = Tasks.await(Wearable.getDataClient(context).getFdForAsset(asset))
-                val inputStream = assetFd?.inputStream
-                val imageBitmap = inputStream?.use { BitmapFactory.decodeStream(it) }
+        fun decodeImageAndEmit(asset: Asset) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val assetFd = Tasks.await(Wearable.getDataClient(context).getFdForAsset(asset))
+                    val inputStream = assetFd?.inputStream
+                    val imageBitmap = inputStream?.use { BitmapFactory.decodeStream(it) }
 
-                if (imageBitmap != null) {
-                    Log.d("WearDataHandler", "emitting image")
-                    _image.tryEmit(imageBitmap)
+                    if (imageBitmap != null) {
+                        Log.d("WearDataHandler", "emitting image")
+                        _image.tryEmit(imageBitmap)
+                    }
+                } catch (e: Exception) {
+                    Log.e("WearDataHandler", "Failed to load asset", e)
                 }
-            } catch (e: Exception) {
-                Log.e("WearDataHandler", "Failed to load asset", e)
             }
         }
-    }
+
+        fun decodeArtworkAndEmit(asset: Asset) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val assetFd = Tasks.await(Wearable.getDataClient(context).getFdForAsset(asset))
+                    val inputStream = assetFd?.inputStream
+                    val imageBitmap = inputStream?.use { BitmapFactory.decodeStream(it) }
+
+                    if (imageBitmap != null) {
+                        Log.d("WearDataHandler", "emitting artwork")
+                        _mediaState.update {
+                            it.copy(
+                                artwork = imageBitmap
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("WearDataHandler", "Failed to load asset", e)
+                }
+            }
+        }
 
     // updates workout with non-null values in dataMap
     fun updateWorkout(dataMap: DataMap, workout: WearWorkout): WearWorkout {
