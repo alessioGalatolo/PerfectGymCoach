@@ -42,6 +42,7 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withLink
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
@@ -172,7 +173,9 @@ fun WorkoutRecap(
                 item {
                     Text(
                         stringResource(R.string.workout_recap_praise),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineLargeEmphasized,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontStyle = FontStyle.Italic,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -296,7 +299,7 @@ fun WorkoutRecap(
                     }
                     item {
                         GroupedCard(
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
                             ),
@@ -465,7 +468,7 @@ fun WorkoutRecap(
                     )
                 }
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(0.dp))
                 }
             }
         }

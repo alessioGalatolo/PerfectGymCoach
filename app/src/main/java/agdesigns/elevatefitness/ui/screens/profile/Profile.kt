@@ -224,7 +224,7 @@ fun Profile(
                     {
                         Text(
                             stringResource(R.string.backup_restore_info),
-                            style = MaterialTheme.typography.bodySmallEmphasized,
+                            style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                     }, {
@@ -411,6 +411,7 @@ fun Profile(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ProfileHeader(
     name: String,
@@ -449,7 +450,7 @@ fun ProfileHeader(
                             stringResource(R.string.salute_user, name)
                         else
                             stringResource(R.string.what_is_your_name),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineSmallEmphasized,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.weight(1f)
                     )

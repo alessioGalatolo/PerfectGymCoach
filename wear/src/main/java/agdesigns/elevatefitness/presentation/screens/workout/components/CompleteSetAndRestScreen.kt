@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutViewModel
+import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -60,7 +61,6 @@ import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
 import androidx.wear.compose.material3.AnimatedText
-import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ButtonGroup
 import androidx.wear.compose.material3.CircularProgressIndicator
@@ -70,7 +70,6 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.IconButton
 import androidx.wear.compose.material3.IconButtonDefaults
 import androidx.wear.compose.material3.MaterialTheme
-import androidx.wear.compose.material3.OutlinedButton
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
@@ -214,17 +213,24 @@ fun SelectValueScreen(
     onNext: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val restTextStyle = MaterialTheme.typography.displayLarge
     val animatedTextFontRegistry =
         rememberAnimatedTextFontRegistry(
             // Variation axes at the start of the animation, width 10, weight 200
             startFontVariationSettings =
-                FontVariation.Settings(FontVariation.width(100f), FontVariation.weight(400)),
+                FontVariation.Settings(FontVariation.weight(
+                    restTextStyle.fontWeight?.weight ?: 700
+                )),
             // Variation axes at the end of the animation, width 100, weight 500
             endFontVariationSettings =
-                FontVariation.Settings(FontVariation.width(100f), FontVariation.weight(600)),
-            startFontSize = MaterialTheme.typography.numeralMedium.fontSize,
-            endFontSize = MaterialTheme.typography.numeralMedium.fontSize,
-            textStyle = MaterialTheme.typography.numeralMedium.copy(
+                FontVariation.Settings(
+                    FontVariation.weight(
+                        (restTextStyle.fontWeight?.weight ?: 700).times(1.5f).toInt()
+                    )
+                ),
+            startFontSize = restTextStyle.fontSize,
+            endFontSize = restTextStyle.fontSize,
+            textStyle = restTextStyle.copy(
                 color = MaterialTheme.colorScheme.primary
             ),
         )
@@ -280,14 +286,21 @@ fun SelectValueScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             var topTextWidthPixels by remember { mutableIntStateOf(0) }
-                            AnimatedText(
-                                text = value,
-                                fontRegistry = animatedTextFontRegistry,
-                                progressFraction = { textAnimatable.value },
-                                modifier = Modifier.onSizeChanged({ size ->
-                                    topTextWidthPixels = size.width
-                                })
-                            )
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                AnimatedText(
+                                    text = value,
+                                    fontRegistry = animatedTextFontRegistry,
+                                    progressFraction = { textAnimatable.value },
+                                    modifier = Modifier.onSizeChanged({ size ->
+                                        topTextWidthPixels = size.width
+                                    })
+                                )
+                            } else {
+                                Text(
+                                    text = value,
+                                    style = restTextStyle,
+                                )
+                            }
                             if (subValue.isNotEmpty()) {
                                 Text(
                                     subValue,
