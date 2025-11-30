@@ -60,10 +60,8 @@ fun AdaptiveCircularTimer(
         (iii) a rounded, chunky tick will scale in
      */
 
-    // FIXME? if first call is done with remainingTimeMillis = 0L, it still performs end animation
-    // Is it desirable?
     val density = LocalDensity.current
-    val thickStrokeWidth = with(LocalDensity.current) { 12.dp.toPx() }
+    val thickStrokeWidth = with(LocalDensity.current) { 10.dp.toPx() }
     val thickStroke = remember(thickStrokeWidth) { Stroke(width = thickStrokeWidth, cap = StrokeCap.Round) }
 
     // Track completion state
@@ -118,7 +116,7 @@ fun AdaptiveCircularTimer(
         val textPlaceable = subcompose("text") {
             AnimatedTimer(
                 totalSeconds = remainingTimeSecs,
-                textStyle = MaterialTheme.typography.displayMediumEmphasized,
+                textStyle = MaterialTheme.typography.displaySmallEmphasized,
                 textColor = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.alpha(contentAlpha)
@@ -254,17 +252,21 @@ fun AnimatedTimer(
     val mm = totalSeconds / 60L
     val ss = totalSeconds.mod(60L)
     val formatted = "%02d:%02d".format(mm, ss)
+    // Use tabular numbers to ensure consistent digit width
+    val tabularTextStyle = textStyle.copy(
+        fontFeatureSettings = "tnum"
+    )
     Row(modifier = modifier, horizontalArrangement = Arrangement.Center) {
         formatted.forEach { ch ->
             when (ch) {
                 ':' -> Text(":",
-                    style = textStyle,
+                    style = tabularTextStyle,
                     color = textColor,
                     fontWeight = fontWeight
                 )          // colon doesn't animate
                 else -> MorphDigit(
                     digit = ch,
-                    textStyle = textStyle,
+                    textStyle = tabularTextStyle,
                     textColor = textColor,
                     fontWeight = fontWeight,
                     modifier = Modifier

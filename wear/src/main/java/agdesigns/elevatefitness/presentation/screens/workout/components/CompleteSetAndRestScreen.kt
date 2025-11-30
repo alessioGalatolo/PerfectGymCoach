@@ -75,9 +75,11 @@ import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
 import agdesignes.elevatefitness.shared.BarbellType
 import agdesignes.elevatefitness.shared.Equipment
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.mutableFloatStateOf
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
@@ -113,13 +115,24 @@ fun CompleteSetAndRestScreen(
             }
         }
     }
+    var previousRestProgression by remember { mutableFloatStateOf(restProgression) }
+
     val animatedRestProgression = animateFloatAsState(
         targetValue = restProgression,
-        animationSpec = tween(
-            WorkoutViewModel.TIME_REFRESH_DELAY_MILLIS.toInt(),
-            easing = LinearEasing
-        )
+        animationSpec = if (restProgression > previousRestProgression) {
+            // Resetting to full - use snap (no animation)
+            snap()
+        } else {
+            tween(
+                WorkoutViewModel.TIME_REFRESH_DELAY_MILLIS.toInt(),
+                easing = LinearEasing
+            )
+        }
     )
+
+    LaunchedEffect(restProgression) {
+        previousRestProgression = restProgression
+    }
     CircularProgressIndicator(
         progress = { animatedRestProgression.value },
         startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center

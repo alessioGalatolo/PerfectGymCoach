@@ -141,7 +141,7 @@ class WorkoutService: LifecycleService() {
     fun stopWorkout() {
         Log.d(TAG, "stopWorkout()")
         workoutActive = false
-        stopWorkoutWithServiceShutdownOption(false)
+        stopWorkoutWithServiceShutdownOption(true)
     }
 
     /**

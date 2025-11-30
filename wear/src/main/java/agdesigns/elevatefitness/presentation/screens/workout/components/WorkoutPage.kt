@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.presentation.screens.workout.components
 
+import agdesignes.elevatefitness.shared.R
 import agdesigns.elevatefitness.presentation.screens.common.MorphPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
@@ -82,10 +83,21 @@ fun WorkoutPage(
         CompleteSetAndRestScreen(
             restProgression = workoutState.ongoingRestProgression ?: 1f,
             currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
-            nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount } ?: false )
-                currentExercise.name ?: ""
-            else
-                exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name ?: "",
+            nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount } ?: false ) {
+                val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
+                    workoutState.currentExerciseIndex
+                )
+                val setsDone = exercisesState.exercisesSetsDone.getOrNull(
+                    workoutState.currentExerciseIndex
+                ) ?: 0
+                (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${repsWeight?.getWeight(setsDone)}${if (exercisesState.imperialSystem)
+                    stringResource(R.string.lb)
+                else
+                    stringResource(R.string.kg)})"
+            } else {
+                exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
+                    ?: ""
+            },
             // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
             workoutState = workoutState,
             exercisesState = exercisesState,

@@ -11,7 +11,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -22,8 +25,11 @@ import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material3.HorizontalPageIndicator
 import androidx.wear.compose.material3.HorizontalPagerScaffold
+import androidx.wear.compose.material3.OpenOnPhoneDialog
+import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.TimeText
+import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
@@ -57,6 +63,14 @@ fun Workout(
         val pagerState = rememberPagerState(initialPage = 1) {
             if (mediaState.title == null) 2 else 3
         }
+        val text = OpenOnPhoneDialogDefaults.text
+        val style = OpenOnPhoneDialogDefaults.curvedTextStyle
+        var openOnPhone by remember { mutableStateOf(false) }
+        OpenOnPhoneDialog(
+            visible = openOnPhone,
+            onDismissRequest = { openOnPhone = false },
+            curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
+        )
         ScreenScaffold(
             modifier = Modifier.background(Color.Transparent),
             scrollState = listState,
@@ -74,9 +88,11 @@ fun Workout(
                         0 -> EndWorkoutPage(
                             contentPadding,
                             endWorkout = {
-                                viewModel.onEvent(WorkoutEvent.StopActivity)
                                 scope.launch {
-                                    delay(1000L)
+                                    viewModel.onEvent(WorkoutEvent.StopActivity)
+                                    openOnPhone = true
+                                    delay(OpenOnPhoneDialogDefaults.DurationMillis)
+                                    delay(500L)
                                     exitProcess(0) // FIXME
                                 }
                             }

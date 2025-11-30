@@ -74,6 +74,7 @@ class ProgramExercisesViewModel @Inject constructor(
                     val ex1 = state.value.programExercises[event.programExerciseReorders[0].orderInProgram]
                     val ex2 = state.value.programExercises[event.programExerciseReorders[1].orderInProgram]
                     if (ex1.supersetExercise == ex2.programExerciseId && ex2.supersetExercise == ex1.programExerciseId){
+                        repository.reorderProgramExercises(event.programExerciseReorders)
                         return@launch
                     }
                     // reset both exercise's supersets
@@ -94,7 +95,26 @@ class ProgramExercisesViewModel @Inject constructor(
             }
             is ProgramExercisesEvent.DeleteExercise -> {
                 viewModelScope.launch {
+                    val exercise = state.value.programExercises.find {
+                        it.programExerciseId == event.programExerciseId
+                    }
+                    if (exercise == null) {
+                        Log.w("ProgramExercisesViewModel", "Trying to delete exercise that doesn't exist")
+                        return@launch
+                    }
+                    val exerciseOrderInProgram = exercise.orderInProgram
+                    val exercisesToBeUpdated = state.value.programExercises.filter {
+                        it.orderInProgram > exerciseOrderInProgram
+                    }
+                    val updates = exercisesToBeUpdated.map {
+                        ProgramExerciseReorder(
+                            it.programExerciseId,
+                            it.orderInProgram - 1
+                        )
+                    }
                     repository.deleteProgramExercise(event.programExerciseId)
+                    // if not last exercise, we need to update all the others' orderInProgram
+                    repository.reorderProgramExercises(updates)
                 }
             }
             is ProgramExercisesEvent.UpdateSuperset -> {
