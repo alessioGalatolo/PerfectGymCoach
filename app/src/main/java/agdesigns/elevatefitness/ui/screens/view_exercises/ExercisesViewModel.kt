@@ -12,7 +12,7 @@ import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
 import android.util.Log
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.snapshotFlow
-import com.agdesignes.shared.Equipment
+import agdesignes.elevatefitness.shared.Equipment
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

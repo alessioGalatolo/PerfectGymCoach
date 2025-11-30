@@ -3,19 +3,21 @@ package agdesigns.elevatefitness.di
 import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.DatabaseBackupManager
 import agdesigns.elevatefitness.data.MediaPlayingRepository
+import agdesigns.elevatefitness.data.PhoneWorkoutRepository
 import agdesigns.elevatefitness.service.NotificationService
 import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.SearchesRepository
 import agdesigns.elevatefitness.data.V1PrefsMigration
 import agdesigns.elevatefitness.data.V2PrefsMigration
-import agdesigns.elevatefitness.data.wearos.WatchMessageReceiver
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.data.WearDataLayerRegistry
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,20 +47,15 @@ object AppModule {
     fun provideWorkoutPlanDatabase(
         @ApplicationContext app: Context,
         scope: CoroutineScope
-    ): WorkoutDatabase = WorkoutDatabase.Companion.getInstance(app, scope)
+    ): WorkoutDatabase = WorkoutDatabase.getInstance(app, scope)
 
     @Singleton
     @Provides
     fun provideRepository(
         db: WorkoutDatabase,
-        watchMessageReceiver: WatchMessageReceiver,
         @ApplicationContext context: Context
-    ): Repository = Repository.Companion.getInstance(db, watchMessageReceiver, context)
+    ): Repository = Repository.getInstance(db, context)
 
-    @Singleton
-    @Provides
-    fun provideWearMessageReceiver(@ApplicationContext context: Context
-    ): WatchMessageReceiver = WatchMessageReceiver(context)
 
     @Singleton
     @Provides
@@ -102,15 +99,25 @@ object AppModule {
 
     @Provides
     @Singleton
+    @OptIn(ExperimentalHorologistApi::class)
     fun provideMediaPlayingRepository(
         @ApplicationContext context: Context,
-        repository: Repository,
-        watchMessageReceiver: WatchMessageReceiver
-    ): MediaPlayingRepository = MediaPlayingRepository(context, repository, watchMessageReceiver)
+        registry: WearDataLayerRegistry
+    ): MediaPlayingRepository = MediaPlayingRepository(context, registry)
 
     @Provides
     @Singleton
     fun provideNotificationService(
         @ApplicationContext context: Context
     ): NotificationService = NotificationService(context)
+
+    @OptIn(ExperimentalHorologistApi::class)
+    @Provides
+    @Singleton
+    fun phoneWorkoutRepository(
+        registry: WearDataLayerRegistry
+    ): PhoneWorkoutRepository = PhoneWorkoutRepository(
+        registry
+    )
+
 }

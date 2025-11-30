@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 
-import com.agdesignes.shared.R as sharedR
+import agdesignes.elevatefitness.shared.R as sharedR
 
 
 @OptIn(ExperimentalTextApi::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -22,7 +22,7 @@ fun customTypography(): Typography {
             weight = FontWeight.Bold,
             variationSettings = FontVariation.Settings(
                 FontVariation.Setting("ROND", 100f),
-//                FontVariation.weight(700)
+                FontVariation.weight(700)
             )
         )
     )

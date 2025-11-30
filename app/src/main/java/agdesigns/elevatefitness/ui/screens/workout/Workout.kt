@@ -26,7 +26,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
-import com.agdesignes.shared.maybeLbToKg
+import agdesignes.elevatefitness.shared.maybeLbToKg
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.Theme

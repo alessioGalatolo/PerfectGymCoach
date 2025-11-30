@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.dynamicColorScheme
-import com.agdesignes.shared.R as sharedR
+import agdesignes.elevatefitness.shared.R as sharedR
 
 @OptIn(ExperimentalTextApi::class)
 @Composable

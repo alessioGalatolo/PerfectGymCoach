@@ -8,7 +8,6 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
-import agdesigns.elevatefitness.data.wearos.WatchMessageReceiver
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
@@ -66,45 +65,8 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 @Singleton
 class Repository @Inject constructor(
     private val db: WorkoutDatabase,
-    private val watchMessageReceiver: WatchMessageReceiver,
     @ApplicationContext  private val context: Context
 ) {
-    /*
-     * Wear connection
-     */
-    private val _watchIsAlive = MutableStateFlow(true)
-    private var lastHeartbeat = System.currentTimeMillis()
-    private var listenHeartbeatJob: Job? = null
-    private var checkWatchHealthJob: Job? = null
-
-    fun startListeningForWatch() {
-        if (checkWatchHealthJob == null) {
-            lastHeartbeat = System.currentTimeMillis()
-            checkWatchHealthJob = CoroutineScope(Dispatchers.Default).launch {
-                while (true) {
-                    // send phone heartbeat, then check watch's
-                    val nodes = Wearable.getNodeClient(context).connectedNodes
-                    nodes.addOnSuccessListener {
-                        for (node in it) {
-                            Wearable.getMessageClient(context)
-                                .sendMessage(node.id, "/heartbeat", "ping".toByteArray())
-                        }
-                    }
-                    val alive = System.currentTimeMillis() - lastHeartbeat < 2000
-                    _watchIsAlive.tryEmit(alive)
-                    delay(1000)
-                }
-            }
-        }
-        if (listenHeartbeatJob == null) {
-            listenHeartbeatJob = CoroutineScope(Dispatchers.Default).launch {
-                watchMessageReceiver.watchHeartbeat.collect {
-                    lastHeartbeat = System.currentTimeMillis()
-                }
-            }
-        }
-    }
-
     fun openWearWorkout() {
         // maybe open wear os app
         val openWearIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -114,46 +76,6 @@ class Repository @Inject constructor(
         val remoteActivityHelper = RemoteActivityHelper(context)
         remoteActivityHelper.startRemoteActivity(openWearIntent)
     }
-
-    fun stopWearWorkout() {
-        val message = PutDataMapRequest.create("/stop_workout")
-        message.dataMap.putLong("message_timestamp", System.currentTimeMillis())
-        val putReq = message.asPutDataRequest().setUrgent()
-        Wearable.getDataClient(context)
-            .putDataItem(putReq)
-            .addOnSuccessListener { dataItem ->
-                Log.d("WearSender", "Stop workout sent: $dataItem")
-            }
-        checkWatchHealthJob?.cancel()
-        listenHeartbeatJob?.cancel()
-        checkWatchHealthJob = null
-        listenHeartbeatJob = null
-    }
-
-    // FIXME: this belongs to its own repository/service
-    fun send2Wear(message: PutDataMapRequest, overrideDeadWatch: Boolean = false) {
-        startListeningForWatch()  // This should actually be called first by the view model
-        if (!_watchIsAlive.value && !overrideDeadWatch) {
-            Log.d("Repository", "Skipping sending workout to wear as it is dead")
-            return
-        }
-        // FIXME: it should work even without a timestamp but it doesn't ><
-        message.dataMap.putLong("message_timestamp", System.currentTimeMillis())
-        val putReq = message.asPutDataRequest().setUrgent()
-
-        Wearable.getDataClient(context)
-            .putDataItem(putReq)
-            .addOnSuccessListener { dataItem ->
-                Log.d("WearSender", "DataItem sent: $dataItem")
-            }
-            .addOnFailureListener { e ->
-                Log.e("WearSender", "Failed sending DataItem", e)
-            }
-    }
-
-    fun getWatchSetCompletion(): Flow<JSONObject> = watchMessageReceiver.setCompletionInfo
-
-    fun getSyncRequest(): Flow<Boolean> = watchMessageReceiver.syncRequest
 
     /*
      * WORKOUT PLAN
@@ -538,9 +460,9 @@ class Repository @Inject constructor(
         // For Singleton instantiation
         @Volatile private var instance: Repository? = null
 
-        fun getInstance(workoutDatabase: WorkoutDatabase, watchMessageReceiver: WatchMessageReceiver, context: Context) =
+        fun getInstance(workoutDatabase: WorkoutDatabase, /*watchMessageReceiver: WatchMessageReceiver,*/ context: Context) =
             instance ?: synchronized(this) {
-                instance ?: Repository(workoutDatabase, watchMessageReceiver, context).also { instance = it }
+                instance ?: Repository(workoutDatabase, /*watchMessageReceiver,*/ context).also { instance = it }
             }
     }
 }

@@ -1,4 +1,4 @@
-package com.agdesignes.shared
+package agdesignes.elevatefitness.shared
 
 
 enum class Equipment(val equipmentResKey: String){

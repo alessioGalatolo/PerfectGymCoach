@@ -1,6 +1,5 @@
 package agdesigns.elevatefitness.presentation.screens.workout
 
-import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.screens.workout.components.EndWorkoutPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingWorkoutScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.MediaPlayingPage
@@ -13,7 +12,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -24,13 +22,10 @@ import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material3.HorizontalPageIndicator
 import androidx.wear.compose.material3.HorizontalPagerScaffold
-import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.ScreenScaffold
-import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.time.delay
 import kotlin.system.exitProcess
 
 
@@ -46,15 +41,16 @@ fun Workout(
     }
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val workoutState by viewModel.state.collectAsState()
+    val exercisesState by viewModel.exercisesState.collectAsState()
+    val state by viewModel.state.collectAsState()
     val mediaState by viewModel.mediaState.collectAsState()
     val listState = rememberScalingLazyListState()
-    LaunchedEffect(workoutState.workoutEnded) {
-        if (workoutState.workoutEnded) {
+    LaunchedEffect(exercisesState.activeWorkout) {
+        if (!exercisesState.activeWorkout) {
             onBack()
         }
     }
-    if (workoutState.exerciseName.isNotEmpty()) {
+    if (exercisesState.exercises.isNotEmpty()) {
         LaunchedEffect(Unit) {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         }
@@ -87,7 +83,8 @@ fun Workout(
                         )
                         1 -> WorkoutPage(
                             contentPadding,
-                            workoutState = workoutState,
+                            workoutState = state,
+                            exercisesState = exercisesState,
                             listState = listState,
                             changeWeight = {
                                 viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
@@ -106,6 +103,12 @@ fun Workout(
                             },
                             completeSet = {
                                 viewModel.onEvent(WorkoutEvent.CompleteSet)
+                            },
+                            onNextExercise = {
+                                viewModel.onEvent(WorkoutEvent.NextExercise)
+                            },
+                            onPreviousExercise = {
+                                viewModel.onEvent(WorkoutEvent.PreviousExercise)
                             }
                         )
                         2 -> MediaPlayingPage(

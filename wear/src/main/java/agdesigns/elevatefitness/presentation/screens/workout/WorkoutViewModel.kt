@@ -6,21 +6,42 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.agdesignes.shared.BarbellType
-import com.agdesignes.shared.Equipment
-import com.agdesignes.shared.barbellIndexFromWeight
+import agdesignes.elevatefitness.shared.BarbellType
+import agdesignes.elevatefitness.shared.Equipment
+import agdesignes.elevatefitness.shared.MEDIA_IMAGES_PATH
+import agdesignes.elevatefitness.shared.WORKOUT_IMAGES_PATH
+import agdesignes.elevatefitness.shared.barbellIndexFromWeight
+import agdesignes.elevatefitness.shared.bitmapFlow
+import agdesignes.elevatefitness.shared.grpc.Media
+import agdesignes.elevatefitness.shared.grpc.MediaServiceGrpcKt
+import agdesignes.elevatefitness.shared.grpc.Workout
+import agdesignes.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
+import agdesignes.elevatefitness.shared.toProtoTimestamp
+import agdesignes.elevatefitness.shared.toZonedDateTime
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.data.ProtoDataStoreHelper.protoFlow
+import com.google.android.horologist.data.TargetNodeId
+import com.google.android.horologist.data.WearDataLayerRegistry
+import com.google.protobuf.Empty
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.grpc.StatusException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -30,27 +51,30 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.math.max
 
+data class ExercisesState(
+    val workoutId: Long = 0L,
+    val startDate: ZonedDateTime? = null,
+    val exercises: List<Workout.Exercise> = emptyList(),
+    val images: List<Bitmap> = emptyList(),
+    val defaultIncrements: Workout.DefaultIncrements = Workout.DefaultIncrements.getDefaultInstance(),
+    val exercisesSetsDone: List<Int> = emptyList(),
+    val suggestedRepsWeight: List<Workout.SuggestedRepsWeight> = emptyList(),
+    val suggestedTare: List<Float> = emptyList(),
+    val imperialSystem: Boolean = false,
+    val activeWorkout: Boolean = true
+)
+
 data class WorkoutState(
-    val exerciseName: String = "",
-    val setsDone: Int = 0,
-    val reps: List<Int> = emptyList(),
-    val weight: Float = 0f,
-    val rest: List<Int> = emptyList(),
+    val currentExerciseIndex: Int = 0,
+    val currentWeight: Float = 0f,
     val restTimestamp: ZonedDateTime? = null,
     val currentExerciseRest: Long? = null,
-    val note: String = "",
     val currentTime: ZonedDateTime = ZonedDateTime.now(),
     val ongoingRestSecs: Long? = null,
     val ongoingRestProgression: Float? = null,
     val currentReps: Int = 0,
-    val exerciseIncrement: Float = 0.5f,
-    val nextExerciseName: String = "",
-    val imageBitmap: Bitmap? = null,
-    val equipment: Equipment? = null,
     val tareBarbell: Float = 0f,
     val tareIndex: Int = 0,
-    val imperialSystem: Boolean = false,
-    val workoutEnded: Boolean = false,
     // true when user completed a set from watch but has not yet set reps and weight values
     val settingSetValues: Boolean = false
 )
@@ -60,92 +84,86 @@ sealed class WorkoutEvent {
     data class ChangeReps(val change: Int): WorkoutEvent()
     data class ChangeWeight(val change: Int): WorkoutEvent()
     data object CompleteSet: WorkoutEvent()
-    data object ForceSync: WorkoutEvent()
     data object StopActivity: WorkoutEvent()
     data class ChangeTare(val change: Int): WorkoutEvent()
     data object StartRest: WorkoutEvent()
+    data object NextExercise: WorkoutEvent()
+    data object PreviousExercise: WorkoutEvent()
 
     data object PlayPauseMedia: WorkoutEvent()
     data object NextMedia: WorkoutEvent()
     data object PreviousMedia: WorkoutEvent()
 }
 
-
+@OptIn(ExperimentalHorologistApi::class)
 @HiltViewModel
-class WorkoutViewModel @Inject constructor(private val repository: WearRepository): ViewModel() {
+class WorkoutViewModel
+@Inject constructor(
+    private val repository: WearRepository,
+    private val registry: WearDataLayerRegistry,
+    private val workoutService: WorkoutServiceGrpcKt.WorkoutServiceCoroutineStub,
+    private val mediaService: MediaServiceGrpcKt.MediaServiceCoroutineStub
+): ViewModel() {
+    val exercisesState = combine(
+        registry.protoFlow<Workout.WorkoutStaticData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
+        registry.protoFlow<Workout.WorkoutDynamicData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
+        registry.bitmapFlow(TargetNodeId.PairedPhone, WORKOUT_IMAGES_PATH).distinctUntilChanged()
+    ) { staticData, dynamicData, images ->
+        val startDate = staticData.startDate.toZonedDateTime()
+        ExercisesState(
+            workoutId = staticData.workoutId,
+            startDate = startDate,
+            exercises = staticData.exercisesList,
+            images = images,
+            defaultIncrements = staticData.defaultIncrements,
+            exercisesSetsDone = dynamicData.setsDoneList,
+            suggestedRepsWeight = dynamicData.suggestedRepsWeightList,
+            imperialSystem = staticData.imperialSystem,
+            activeWorkout = staticData.activeWorkout,
+            suggestedTare = staticData.suggestedTaresList
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+    ExercisesState()
+    )
+
     private val _state = MutableStateFlow(WorkoutState())
     val state: StateFlow<WorkoutState> = _state.asStateFlow()
-    // FIXME: should inquire about media on init
-    val mediaState: StateFlow<MediaPlayingState> = repository.mediaState
+
+    val mediaState: StateFlow<MediaPlayingState> = combine(
+        registry.protoFlow<Media.MediaPlaying>(TargetNodeId.PairedPhone).distinctUntilChanged(),
+        registry.bitmapFlow(TargetNodeId.PairedPhone, MEDIA_IMAGES_PATH).distinctUntilChanged()
+    ) { media, image ->
+        MediaPlayingState(
+            isPlaying = media.isPlaying,
+            title = media.title.ifEmpty { null },
+            artist = media.artist.ifEmpty { null },
+            artwork = image.getOrNull(0)
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+    MediaPlayingState()
+    )
     private var timerJob: Job? = null
 
     init {
-        // ensure binding happens
-        repository.bindForegroundOnlyService()
         viewModelScope.launch {
+            // ensure binding happens
             // wait until the service is available once, then start
-            repository.service
-                .filterNotNull()
-                .first()
-                .startWorkout()
+            repository.bindForegroundOnlyService()
+            repository.startWorkout()
         }
         viewModelScope.launch {
-            repository.observeWearWorkout().collect { workout ->
-                val setsDone = (workout.setsDone ?: state.value.setsDone)
-                val reps = workout.reps ?: state.value.reps
-                val currentReps = reps.getOrNull(setsDone) ?: state.value.currentReps
-                var exerciseIncrement = workout.exerciseIncrement ?: state.value.exerciseIncrement
-                if (exerciseIncrement == 0f) {
-                    exerciseIncrement = state.value.exerciseIncrement  // FIXME: sometimes arrives 0, why?
-                }
-                // FIXME: should change logic now that we have shared components
-                var tareIndex: Int? = null
-                if (workout.tareBarbell != null) {
-                    tareIndex = barbellIndexFromWeight(workout.tareBarbell)
-                }
-                Log.d("WorkoutViewModel", "got wear workout: $workout")
-                val equipment = Equipment.fromResKey(workout.equipmentResKey)
-                Log.d("WorkoutViewModel", "Received workout.currentRestSeconds ${workout.currentRestSeconds}")
-                _state.update {
-                    it.copy(
-                        exerciseName = workout.exerciseName ?: state.value.exerciseName,
-                        setsDone = workout.setsDone ?: state.value.setsDone,
-                        reps = reps,
-                        weight = workout.weight ?: state.value.weight,
-                        rest = workout.rest ?: state.value.rest,
-                        note = workout.note ?: state.value.note,
-                        restTimestamp = workout.restTimestamp?.let {
-                            ZonedDateTime.ofInstant(
-                                Instant.ofEpochMilli(it),
-                                ZoneId.systemDefault()
-                            )
-                        } ?: state.value.restTimestamp,
-                        currentExerciseRest = workout.currentRestSeconds ?: state.value.currentExerciseRest,
-                        currentReps = currentReps,
-                        exerciseIncrement = exerciseIncrement,
-                        nextExerciseName = workout.nextExerciseName ?: state.value.nextExerciseName,
-                        equipment = equipment ?: state.value.equipment,
-                        tareIndex = tareIndex ?: state.value.tareIndex,
-                        tareBarbell = workout.tareBarbell ?: state.value.tareBarbell,
-                        imperialSystem = workout.imperialSystem ?: state.value.imperialSystem
-                    )
-                }
-            }
-        }
-        viewModelScope.launch {
-            repository.observeWearImage().collect { image ->
-                _state.update { it.copy(imageBitmap = image) }
-            }
-        }
-        viewModelScope.launch {
-            repository.observeWorkoutInterrupted().collect {
-                if (it) {
-                    _state.value = WorkoutState(workoutEnded = true)
-                }
-            }
+            observeUpdateRepsWeight()
         }
         startTimer()
-        onEvent(WorkoutEvent.ForceSync) // request sync once
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        repository.stopWorkout()
     }
 
     fun onEvent(event: WorkoutEvent){
@@ -159,32 +177,58 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                 _state.update { it.copy(currentReps = state.value.currentReps + event.change) }
             }
             is WorkoutEvent.ChangeWeight -> {
-                val deincrement = state.value.exerciseIncrement * event.change
-                _state.update { it.copy(weight = state.value.weight + deincrement) }
+                val currentExercise = exercisesState.value.exercises.getOrNull(
+                    state.value.currentExerciseIndex
+                )
+                val equipment = Equipment.fromResKey(currentExercise?.equipment)
+                val increment = when (equipment) {
+                    Equipment.BARBELL -> exercisesState.value.defaultIncrements.barbell
+                    Equipment.BODY_WEIGHT -> exercisesState.value.defaultIncrements.bodyweight
+                    Equipment.CABLES -> exercisesState.value.defaultIncrements.cable
+                    Equipment.DUMBBELL -> exercisesState.value.defaultIncrements.dumbbell
+                    Equipment.MACHINE -> exercisesState.value.defaultIncrements.machine
+                    else -> 1f
+                }
+                val deincrement = increment * event.change.toFloat()
+                _state.update { it.copy(currentWeight = state.value.currentWeight + deincrement) }
             }
             is WorkoutEvent.CompleteSet -> {
                 viewModelScope.launch {
-                    val tare = if (state.value.equipment == Equipment.BARBELL)
-                        BarbellType.entries[state.value.tareIndex].weight[state.value.imperialSystem] ?: 0f
-                    else 0f
-                    repository.completeSet(
-                        state.value.exerciseName,
-                        state.value.currentReps,
-                        state.value.weight,
-                        tare,
-                        state.value.restTimestamp
+                    val currentExercise = exercisesState.value.exercises.getOrNull(
+                        state.value.currentExerciseIndex
                     )
+                    if (currentExercise != null) {
+                        val equipment = Equipment.fromResKey(currentExercise.equipment)
+                        val tare = if (equipment == Equipment.BARBELL)
+                            BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
+                        else 0f
+                        val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
+                        try {
+                            val result = workoutService.setCompleted(
+                                Workout.SetCompleted.newBuilder()
+                                    .setWorkoutId(exercisesState.value.workoutId)
+                                    .setExerciseId(currentExercise.exerciseId)
+                                    .setReps(state.value.currentReps)
+                                    .setWeight(state.value.currentWeight)
+                                    .setTare(tare)
+                                    .setRest(state.value.currentExerciseRest ?: 0L)
+                                    .setRestTimestamp(protoTimestamp)
+                                    .build()
+                            )
+                            if (!result.success) {
+                                Log.e("WorkoutViewModel", "Error completing set with message: ${result.message}")
+                                // TODO: propagate error to user
+                            }
+                        } catch (e: StatusException) {
+                            Log.e("WorkoutViewModel", "Error completing set with error: ${e.message}")
+                            // TODO: propagate error to user
+                        }
+                    }
                     _state.update {
                         it.copy(
                             settingSetValues = false
                         )
                     }
-                }
-
-            }
-            is WorkoutEvent.ForceSync -> {
-                viewModelScope.launch {
-                    repository.forceSync()
                 }
             }
             is WorkoutEvent.ChangeTare -> {
@@ -201,33 +245,59 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                 }
             }
             is WorkoutEvent.StartRest -> {
-                _state.update {
-                    Log.d("WorkoutViewModel", "Starting rest ${it.setsDone}")
-                    it.copy(
+                _state.update { state ->
+                    val currentExercise = exercisesState.value.exercises.getOrNull(
+                        state.currentExerciseIndex
+                    )
+                    val setsDone = exercisesState.value.exercisesSetsDone.getOrNull(
+                        state.currentExerciseIndex
+                    ) ?: 0
+                    val rest = if (currentExercise?.let { setsDone < it.restCount } ?: false)
+                        currentExercise.getRest(setsDone)
+                    else if (currentExercise?.let { it.restCount > 0 } ?: false)
+                        currentExercise.restList.last()
+                    else 0
+                    state.copy(
                         restTimestamp = ZonedDateTime
                             .now()
                             .plusSeconds(
-                                it.rest.getOrNull(it.setsDone)?.toLong() ?: 0L
+                                rest.toLong()
                             ),
                         settingSetValues = true,
-                        currentExerciseRest = it.rest.getOrNull(it.setsDone)?.toLong(),
-                        setsDone = it.setsDone + 1
+                        currentExerciseRest = rest.toLong(),
+                    )
+                }
+            }
+            is WorkoutEvent.NextExercise -> {
+                if (state.value.currentExerciseIndex == exercisesState.value.exercises.size - 1)
+                    return
+                _state.update {
+                    it.copy(
+                        currentExerciseIndex = it.currentExerciseIndex + 1
+                    )
+                }
+            }
+            is WorkoutEvent.PreviousExercise -> {
+                if (state.value.currentExerciseIndex == 0) return
+                _state.update {
+                    it.copy(
+                        currentExerciseIndex = it.currentExerciseIndex - 1
                     )
                 }
             }
             is WorkoutEvent.PlayPauseMedia -> {
                 viewModelScope.launch {
-                    repository.playPauseMedia()
+                    mediaService.playPause(Empty.getDefaultInstance())
                 }
             }
             is WorkoutEvent.NextMedia -> {
                 viewModelScope.launch {
-                    repository.nextMedia()
+                    mediaService.next(Empty.getDefaultInstance())
                 }
             }
             is WorkoutEvent.PreviousMedia -> {
                 viewModelScope.launch {
-                    repository.previousMedia()
+                    mediaService.previous(Empty.getDefaultInstance())
                 }
             }
         }
@@ -246,12 +316,7 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
         }.onEach {
             _state.update {
                 val currentTime = ZonedDateTime.now()
-                // should get setsDone if set from watch
-                var rest = it.rest.getOrNull(it.setsDone-1)
-                if (rest == null) {
-                    rest = it.rest.lastOrNull()
-                }
-                val ongoingRestMillis = if (it.restTimestamp != null && rest != null) {
+                val ongoingRestMillis = if (it.restTimestamp != null) {
                     max(
                         0L,
                         it.restTimestamp.toInstant()?.toEpochMilli()?.minus(
@@ -274,6 +339,33 @@ class WorkoutViewModel @Inject constructor(private val repository: WearRepositor
                 )
             }
         }.launchIn(viewModelScope)
+    }
+    private suspend fun observeUpdateRepsWeight() {
+        combine(
+            state.map { it.currentExerciseIndex }.distinctUntilChanged(),
+            exercisesState.map { it.suggestedRepsWeight }.distinctUntilChanged(),
+            exercisesState.map { it.exercisesSetsDone }.distinctUntilChanged(),
+            exercisesState.map { it.suggestedTare }.distinctUntilChanged()
+        ) { index, suggestedRepsWeight, allSetsDone, tares ->
+            // NOTE: if user is selecting values and this gets called, it will override user's values
+            // TODO: fix
+            _state.update {
+                val repsWeight = suggestedRepsWeight.getOrNull(index)
+                val setsDone = allSetsDone.getOrNull(index) ?: 0
+                val suggestedTare = tares.getOrNull(index)
+                val suggestedTareIndex = suggestedTare?.let {
+                    barbellIndexFromWeight(it)
+                }
+                if (repsWeight != null && repsWeight.weightCount > setsDone && repsWeight.repsCount > setsDone) {
+                    it.copy(
+                        currentReps = repsWeight.getReps(setsDone).toIntOrNull() ?: it.currentReps,
+                        currentWeight = repsWeight.getWeight(setsDone).toFloatOrNull() ?: it.currentWeight,
+                        tareBarbell = suggestedTare ?: it.tareBarbell,
+                        tareIndex = suggestedTareIndex ?: it.tareIndex
+                    )
+                } else it
+            }
+        }.collect()
     }
 
     companion object {

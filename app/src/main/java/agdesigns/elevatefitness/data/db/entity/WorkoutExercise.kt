@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
-import com.agdesignes.shared.Equipment
+import agdesignes.elevatefitness.shared.Equipment
+import agdesignes.elevatefitness.shared.grpc.Workout
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -82,6 +83,20 @@ data class WorkoutExercise (
         get() = getVariation(variationResKey)
     val imageResource: Int
         get() = getImageResource(imageResKey)
+
+    fun toProto(): Workout.Exercise {
+        return Workout.Exercise.newBuilder()
+            .setExerciseId(this.workoutExerciseId)
+            .setName(this.name)
+            .setEquipment(this.equipment.equipmentResKey)
+            .setOrderInProgram(this.orderInProgram)
+            .addAllReps(this.reps)
+            .addAllRest(this.rest)
+            .setNote(this.note)
+            .setVariation(this.variation)
+            .setSupersetExercise(this.supersetExercise ?: 0L)
+            .build()
+    }
 }
 
 @Parcelize

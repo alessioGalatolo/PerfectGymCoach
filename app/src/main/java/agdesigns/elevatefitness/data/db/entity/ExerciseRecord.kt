@@ -6,7 +6,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.agdesignes.shared.Equipment
+import agdesignes.elevatefitness.shared.Equipment
 import kotlinx.parcelize.Parcelize
 import java.time.ZonedDateTime
 

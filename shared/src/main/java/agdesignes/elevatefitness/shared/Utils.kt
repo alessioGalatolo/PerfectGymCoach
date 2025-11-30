@@ -1,8 +1,12 @@
-package com.agdesignes.shared
+package agdesignes.elevatefitness.shared
 
 import androidx.compose.ui.res.stringResource
 import kotlin.math.round
 import androidx.compose.runtime.Composable
+import com.google.protobuf.Timestamp
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 const val decimalPlaces = 100  // 2 decimal places
 
@@ -66,4 +70,28 @@ fun weightAndUnit(
         "($displayWeight $unit)"
     else
         "$displayWeight $unit"
+}
+
+fun ZonedDateTime?.toProtoTimestamp(): Timestamp {
+    val millis = this?.toInstant()?.toEpochMilli()
+    return if (millis != null)
+        Timestamp.newBuilder()
+            .setSeconds(millis / 1000)
+            .setNanos((millis % 1000).toInt() * 1000000)
+            .build()
+    else
+        Timestamp.newBuilder()
+            .setSeconds(0L)
+            .setNanos(0)
+            .build()
+}
+
+fun Timestamp.toZonedDateTime(): ZonedDateTime? {
+    if (this.seconds == 0L && this.nanos == 0)
+        return null
+    val millis = this.seconds * 1000 + this.nanos / 1000000
+    return ZonedDateTime.ofInstant(
+        Instant.ofEpochMilli(millis),
+        ZoneId.systemDefault()
+    )
 }

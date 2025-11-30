@@ -31,7 +31,7 @@ import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.history.components.WorkoutCalendarCards
-import com.agdesignes.shared.maybeKgToLb
+import agdesignes.elevatefitness.shared.maybeKgToLb
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape

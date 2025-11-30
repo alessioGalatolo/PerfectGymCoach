@@ -3,8 +3,8 @@ package agdesigns.elevatefitness.utils
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.ui.screens.statistics.TimeFrame
 import android.util.Log
-import com.agdesignes.shared.Equipment
-import com.agdesignes.shared.maybeKgToLb
+import agdesignes.elevatefitness.shared.Equipment
+import agdesignes.elevatefitness.shared.maybeKgToLb
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId

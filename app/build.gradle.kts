@@ -19,15 +19,14 @@ room {
 
 protobuf {
     protoc {
-        artifact = libs.protobuf.protoc.get().toString()
+        artifact = libs.protobuf.protoc.stnd.get().toString()
     }
     generateProtoTasks {
         all().forEach { task ->
             task.builtins {
-//                TODO: kotlin compiling does not work atm
-//                create("kotlin") {
-//                    option("lite")
-//                }
+                create("kotlin") {
+                    option("lite")
+                }
                 create("java") {
                     option("lite")
                 }
@@ -83,13 +82,13 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_19
-        targetCompatibility = JavaVersion.VERSION_19
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlin {
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_19
+            jvmTarget = JvmTarget.JVM_17
         }
     }
 
@@ -131,7 +130,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.datastore.proto)
     implementation(libs.protobuf.kotlin.lite)
-    implementation(libs.protobuf.protoc)
+    implementation(libs.protobuf.protoc.stnd)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -150,6 +149,9 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
+    implementation(libs.horologist.datalayer.phone)
+    implementation(libs.horologist.datalayer)
+    implementation(libs.horologist.datalayer.grpc)
     androidTestImplementation(libs.espresso.core)
 
     debugImplementation(libs.compose.ui.tooling)

@@ -41,6 +41,32 @@
             android:exported="false"
             android:foregroundServiceType="dataSync">
         </service>
+        <service
+            android:name=".service.WearWorkoutDataService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/grpc/"
+                    android:scheme="wear"
+                    />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".service.WearMediaDataService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/grpc/"
+                    android:scheme="wear"
+                    />
+            </intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
             android:launchMode="standard"

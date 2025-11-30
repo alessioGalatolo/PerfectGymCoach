@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package agdesignes.elevatefitness.shared.grpc;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option java_package = "agdesignes.elevatefitness.shared.grpc";
+
+// Workout data synced via DataStore
+message WorkoutStaticData {
+  int64 workout_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  repeated Exercise exercises = 3;
+  repeated float suggested_tares = 6;
+  DefaultIncrements default_increments = 7;
+  bool imperial_system = 8;
+  bool active_workout = 9;
+}
+
+message WorkoutDynamicData {
+  repeated SuggestedRepsWeight suggested_reps_weight = 4;
+  repeated int32 sets_done = 5;
+}
+
+message Exercise {
+  int64 exercise_id = 1;
+  string name = 2;
+  string equipment = 3;
+  int32 orderInProgram = 4;
+  repeated int32 reps = 5;
+  repeated int32 rest = 6;
+  string note = 7;
+  string variation = 8;
+  int64 superset_exercise = 9;
+}
+
+message SuggestedRepsWeight {
+  repeated string reps = 1;
+  repeated string weight = 2;
+}
+
+message DefaultIncrements {
+  float bodyweight = 1;
+  float barbell = 2;
+  float dumbbell = 3;
+  float machine = 4;
+  float cable = 5;
+}
+
+// Events sent via gRPC
+message SetCompleted {
+  int64 workout_id = 1;
+  int64 exercise_id = 2;
+  int32 reps = 3;
+  float weight = 4;
+  float tare = 5;
+  int64 rest = 6;
+  google.protobuf.Timestamp rest_timestamp = 7;
+}
+
+message SetCompletedResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message WorkoutActiveResponse {
+  bool active = 1;
+}
+
+// gRPC service for events
+service WorkoutService {
+  rpc workoutActive(google.protobuf.Empty) returns (WorkoutActiveResponse);
+  rpc setCompleted(SetCompleted) returns (SetCompletedResponse);
+}

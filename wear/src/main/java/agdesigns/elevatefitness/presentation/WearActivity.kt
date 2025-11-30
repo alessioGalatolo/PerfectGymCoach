@@ -64,21 +64,8 @@ class WearActivity : ComponentActivity() {
         wearRepository.bindForegroundOnlyService()
     }
 
-    override fun onDestroy() {
-        wearRepository.close()
-        super.onDestroy()
-    }
-
     override fun onStop() {
         wearRepository.stopForegroundOnlyService()
-        wearRepository.close()
         super.onStop()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        wearRepository.reopen()
-        // TODO: is this needed?
-        wearRepository.forceSync()
     }
 }

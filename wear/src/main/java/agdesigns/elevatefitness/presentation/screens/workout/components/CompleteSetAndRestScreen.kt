@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.presentation.screens.workout.components
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
+import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutViewModel
 import android.os.Build
@@ -20,7 +21,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,14 +73,19 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
-import com.agdesignes.shared.BarbellType
-import com.agdesignes.shared.Equipment
+import agdesignes.elevatefitness.shared.BarbellType
+import agdesignes.elevatefitness.shared.Equipment
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 import com.google.android.horologist.media.ui.util.isLargeScreen
 import kotlinx.coroutines.launch
+import kotlin.math.floor
 
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
@@ -88,6 +93,7 @@ fun CompleteSetAndRestScreen(
     restProgression: Float,
     currentRestSeconds: Long,
     nextSetExerciseName: String,
+    exercisesState: ExercisesState,
     workoutState: WorkoutState,
     changeReps: (Int) -> Unit,
     changeWeight: (Int) -> Unit,
@@ -97,13 +103,6 @@ fun CompleteSetAndRestScreen(
 ) {
     val haptics = LocalHapticFeedback.current
 
-    val animatedRestProgression by animateFloatAsState(
-        targetValue = restProgression,
-        animationSpec = tween(
-            WorkoutViewModel.TIME_REFRESH_DELAY_MILLIS.toInt(),
-            easing = LinearEasing
-        )
-    )
     LaunchedEffect(currentRestSeconds) {
         currentRestSeconds.let {
             if (it < 4L) {
@@ -114,23 +113,37 @@ fun CompleteSetAndRestScreen(
             }
         }
     }
+    val animatedRestProgression = animateFloatAsState(
+        targetValue = restProgression,
+        animationSpec = tween(
+            WorkoutViewModel.TIME_REFRESH_DELAY_MILLIS.toInt(),
+            easing = LinearEasing
+        )
+    )
     CircularProgressIndicator(
-        progress = { animatedRestProgression },
+        progress = { animatedRestProgression.value },
         startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center
         endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
         strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
 
     )
-    val totalPages = rememberSaveable(workoutState.restTimestamp, workoutState.equipment) {
-        if (workoutState.equipment == Equipment.BARBELL)
+    val totalPages = rememberSaveable(
+        workoutState.restTimestamp,
+        exercisesState.exercises,
+        exercisesState.exercisesSetsDone,
+        workoutState.currentExerciseIndex
+    ) {
+        val currentEx = exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex)
+        val setsDone = exercisesState.exercisesSetsDone.getOrNull(workoutState.currentExerciseIndex) ?: 0
+        val equipment = Equipment.fromResKey(currentEx?.equipment)
+        if (equipment == Equipment.BARBELL && setsDone == 0) // only ask about barbell during first set
             3 // we have a barbell selection page
         else
             2
     }
     // page: 0 -> select reps, 1 -> select weight, 2 -> select tare, 3 -> show rest
     var page by rememberSaveable(
-        workoutState.restTimestamp?.toInstant()?.toEpochMilli(),
-        workoutState.equipment,
+        totalPages,
         workoutState.settingSetValues
     ) {
         mutableIntStateOf(
@@ -154,18 +167,19 @@ fun CompleteSetAndRestScreen(
                 subtitle = "",
                 value = workoutState.currentReps.toString(),
                 subValue = "",
+                useArrowButtons = false,
                 changeValue = changeReps,
                 nextButtonText = stringResource(R.string.complete_set_next),
                 onNext = {
                     page = 1
-                }
+                },
             )
             1 -> SelectValueScreen(
                 title = stringResource(R.string.weight),
                 subtitle = "",
-                value = "%.0f".format(workoutState.weight),
-                subValue = if ("%.2f".format(workoutState.weight % 1) != "0.00")
-                    "%.2f".format(workoutState.weight % 1).substring(1)
+                value = "%.0f".format(floor(workoutState.currentWeight)),
+                subValue = if ("%.2f".format(workoutState.currentWeight % 1) != "0.00")
+                    "%.2f".format(workoutState.currentWeight % 1).substring(1)
                 else
                     "",
                 changeValue = changeWeight,
@@ -173,28 +187,48 @@ fun CompleteSetAndRestScreen(
                     stringResource(R.string.done_icon)
                 else
                     stringResource(R.string.complete_set_next),
+                useArrowButtons = false,
                 onNext = {
                     page = 2
                     if (page == totalPages) {
                         completeSet()
                     }
-                }
+                },
             )
             totalPages -> ShowRestScreen(
                 nextSetExerciseName = nextSetExerciseName,
                 currentRestSeconds = currentRestSeconds,
                 skipRest = skipRest
             )
-            2 -> SelectBarbellScreen(
-                tareBarbell = workoutState.tareBarbell,
-                tareIndex = workoutState.tareIndex,
-                imperialSystem = workoutState.imperialSystem,
-                changeTareIndex = changeTare,
-                onNext = {
+            2 -> {
+                // if barbell is other, use weight from user
+                val type = BarbellType.entries[workoutState.tareIndex]
+                val weight = if (type == BarbellType.OTHER)
+                    workoutState.tareBarbell
+                else
+                    type.weight[exercisesState.imperialSystem] ?: 0f
+
+                val weightMainValue = "%.0f".format(floor(weight))
+                val weightSubValue = if ("%.2f".format(weight % 1) != "0.00")
+                    "%.2f".format(weight % 1).substring(1)
+                else
+                    ""
+                SelectValueScreen(
+                    title = stringResource(R.string.barbell),
+                    subtitle = stringResource(type.barbellResource),
+                    value = weightMainValue,
+                    subValue = weightSubValue + if (exercisesState.imperialSystem)
+                        stringResource(agdesignes.elevatefitness.shared.R.string.lb)
+                    else
+                        stringResource(agdesignes.elevatefitness.shared.R.string.kg),
+                    nextButtonText = stringResource(R.string.done_icon),
+                    useArrowButtons = true,
+                    changeValue = changeTare
+                ) {
                     page = totalPages
                     completeSet()
                 }
-            )
+            }
             else -> {}
         }
     }
@@ -209,11 +243,12 @@ fun SelectValueScreen(
     value: String,
     subValue: String,
     nextButtonText: String,
+    useArrowButtons: Boolean,  // used for barbell selection
     changeValue: (Int) -> Unit,
     onNext: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val restTextStyle = MaterialTheme.typography.displayLarge
+    val restTextStyle = MaterialTheme.typography.numeralLarge
     val animatedTextFontRegistry =
         rememberAnimatedTextFontRegistry(
             // Variation axes at the start of the animation, width 10, weight 200
@@ -244,56 +279,48 @@ fun SelectValueScreen(
                 )
             },
             controlButtons = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(20.dp)
-                ) {
-                    IconButton(
-                        modifier = Modifier
-                            .height(IconButtonDefaults.DefaultButtonSize * 1.25f)
-                            .width(IconButtonDefaults.DefaultButtonSize),
-                        shapes = IconButtonDefaults.animatedShapes(),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = if (ambient.isInteractive)
-                                MaterialTheme.colorScheme.secondaryContainer
-                            else
-                                Color.Transparent
-                        ),
-                        onClick = {
-                            changeValue(-1)
-                            scope.launch {
-                                textAnimatable.animateTo(1f)
-                                textAnimatable.animateTo(0f)
-                            }
-                        },
-                    ) {
-                        Icon(
-                            Icons.Default.Remove,
-                            contentDescription = stringResource(R.string.remove_icon_minus_reps)
-                        )
-                    }
-
-
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .weight(1.5f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                ControlButtonLayout(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 10.dp),
+                    leftButton = {
+                        IconButton(
+                            modifier = Modifier
+                                .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
+                                .width(IconButtonDefaults.DefaultButtonSize),
+                            shapes = IconButtonDefaults.animatedShapes(),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = if (ambient.isInteractive && !useArrowButtons)
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                else
+                                    Color.Transparent
+                            ),
+                            onClick = {
+                                changeValue(-1)
+                                scope.launch {
+                                    textAnimatable.animateTo(1f)
+                                    textAnimatable.animateTo(0f)
+                                }
+                            },
                         ) {
-                            var topTextWidthPixels by remember { mutableIntStateOf(0) }
+                            Icon(
+                                if (useArrowButtons)
+                                    Icons.AutoMirrored.Filled.ArrowBack
+                                else
+                                    Icons.Default.Remove,
+                                // FIXME: contentDescription
+                                contentDescription = stringResource(R.string.remove_icon_minus_reps)
+                            )
+                        }
+                    },
+                    middleButton = {
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 AnimatedText(
                                     text = value,
                                     fontRegistry = animatedTextFontRegistry,
                                     progressFraction = { textAnimatable.value },
-                                    modifier = Modifier.onSizeChanged({ size ->
-                                        topTextWidthPixels = size.width
-                                    })
                                 )
                             } else {
                                 Text(
@@ -306,48 +333,45 @@ fun SelectValueScreen(
                                     subValue,
                                     textAlign = TextAlign.End,
                                     style = MaterialTheme.typography.bodyExtraSmall,
-                                    modifier = Modifier.width(
-                                        with(LocalDensity.current) {
-                                            topTextWidthPixels.toDp()
-                                        }
-                                    )
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(end = 8.dp)
+                                        .offset(y = (25).dp)
                                 )
                             }
                         }
-                    }
-//                            Text(
-//                                value,
-//                                style = MaterialTheme.typography.displayLarge,
-//                                fontWeight = FontWeight.Medium,
-//                                color = MaterialTheme.colorScheme.secondary,
-//                                textAlign = TextAlign.Center,
-//                                maxLines = 1,
-//                            )
-                    IconButton(
-                        modifier = Modifier
-                            .height(IconButtonDefaults.DefaultButtonSize * 1.25f)
-                            .width(IconButtonDefaults.DefaultButtonSize),
-                        shapes = IconButtonDefaults.animatedShapes(),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = if (ambient.isInteractive)
-                                MaterialTheme.colorScheme.secondaryContainer
-                            else
-                                Color.Transparent
-                        ),
-                        onClick = {
-                            changeValue(1)
-                            scope.launch {
-                                textAnimatable.animateTo(1f)
-                                textAnimatable.animateTo(0f)
+                    },
+                    rightButton = {
+                        IconButton(
+                            modifier = Modifier
+                                .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
+                                .width(IconButtonDefaults.DefaultButtonSize),
+                            shapes = IconButtonDefaults.animatedShapes(),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = if (ambient.isInteractive && !useArrowButtons)
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                else
+                                    Color.Transparent
+                            ),
+                            onClick = {
+                                changeValue(1)
+                                scope.launch {
+                                    textAnimatable.animateTo(1f)
+                                    textAnimatable.animateTo(0f)
+                                }
                             }
+                        ) {
+                            Icon(
+                                if (useArrowButtons)
+                                    Icons.AutoMirrored.Filled.ArrowForward
+                                else
+                                    Icons.Default.Add,
+                                // FIXME: contentDescription
+                                contentDescription = stringResource(R.string.add_icon_plus_reps)
+                            )
                         }
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = stringResource(R.string.add_icon_plus_reps)
-                        )
                     }
-                }
+                )
+
             },
             buttons = {
                 EdgeButton(
@@ -359,7 +383,8 @@ fun SelectValueScreen(
                     border = if (ambient.isInteractive)
                         null
                     else
-                        ButtonDefaults.outlinedButtonBorder(true)
+                        ButtonDefaults.outlinedButtonBorder(true),
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     Text(text = nextButtonText)
                 }
@@ -367,115 +392,6 @@ fun SelectValueScreen(
         )
     }
 }
-
-@OptIn(ExperimentalHorologistApi::class)
-@Composable
-fun SelectBarbellScreen(
-    tareBarbell: Float,
-    tareIndex: Int,
-    imperialSystem: Boolean,
-    changeTareIndex: (Int) -> Unit,
-    onNext: () -> Unit,
-) {
-    // if barbell is other, use weight from user
-    val type = BarbellType.entries[tareIndex]
-    val weight = if (type == BarbellType.OTHER)
-            tareBarbell
-        else
-            type.weight[imperialSystem] ?: 0f
-    AmbientAware { ambient ->
-        PlayerScreen(
-            mediaDisplay = {
-                TextMediaDisplay(
-                    title = stringResource(R.string.barbell),
-                    subtitle =
-                        stringResource(type.barbellResource),
-                )
-            },
-            controlButtons = {
-                Box(contentAlignment = Alignment.Center) {
-                    ButtonGroup(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                    ) {
-                        IconButton(
-                            onClick = { changeTareIndex(-1) },
-                        ) {
-                            Box(
-                                Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.remove_icon_minus_reps)
-                                )
-                            }
-                        }
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .weight(1.5f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    "$weight ",
-                                    style = MaterialTheme.typography.displayLarge,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    textAlign = TextAlign.Center,
-                                )
-                                Text(
-                                    if (imperialSystem)
-                                        stringResource(com.agdesignes.shared.R.string.lb)
-                                    else
-                                        stringResource(com.agdesignes.shared.R.string.kg),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyExtraSmall,
-                                )
-                            }
-                        }
-                        IconButton(
-                            onClick = {
-                                changeTareIndex(1)
-                            },
-                        ) {
-                            Box(
-                                Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = stringResource(R.string.add_icon_plus_reps)
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            buttons = {
-                EdgeButton(
-                    onClick = onNext,
-                    colors = if (ambient.isInteractive)
-                        ButtonDefaults.filledVariantButtonColors()
-                    else
-                        ButtonDefaults.outlinedButtonColors(),
-                    border = if (ambient.isInteractive)
-                        null
-                    else
-                        ButtonDefaults.outlinedButtonBorder(true)
-                ) {
-                    Text(text = stringResource(R.string.done_icon))
-                }
-            }
-        )
-    }
-}
-
 
 
 @OptIn(ExperimentalHorologistApi::class)

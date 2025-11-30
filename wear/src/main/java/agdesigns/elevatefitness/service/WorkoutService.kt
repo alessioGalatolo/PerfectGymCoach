@@ -38,26 +38,11 @@ class WorkoutService: LifecycleService() {
 
     private val localBinder = LocalBinder()
 
-    private var workoutActive = false
-
-    private fun setActiveWorkout(active: Boolean) = lifecycleScope.launch {
-        repository.setActiveWorkout(active)
-    }
+    private var workoutActive: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate()")
-
-        lifecycleScope.launch {
-            repository.activeWorkoutFlow.collect { isActive ->
-                if (workoutActive != isActive) {
-                    workoutActive = isActive
-                    // Update notification whenever workout state changes
-                    Log.d(TAG, "workoutActive = $workoutActive")
-                    updateNotification()
-                }
-            }
-        }
 
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
@@ -143,7 +128,8 @@ class WorkoutService: LifecycleService() {
     fun startWorkout() {
         Log.d(TAG, "startWorkout()")
 
-        setActiveWorkout(true)
+        workoutActive = true
+        updateNotification()
 
         // Binding to this service doesn't actually trigger onStartCommand(). That is needed to
         // ensure this Service can be promoted to a foreground service, i.e., the service needs to
@@ -154,6 +140,7 @@ class WorkoutService: LifecycleService() {
 
     fun stopWorkout() {
         Log.d(TAG, "stopWorkout()")
+        workoutActive = false
         stopWorkoutWithServiceShutdownOption(false)
     }
 
@@ -168,10 +155,8 @@ class WorkoutService: LifecycleService() {
         Log.d(TAG, "stopWorkout()")
 
         lifecycleScope.launch {
-            val job: Job = setActiveWorkout(false)
+            workoutActive = false
             if (stopService) {
-                // Waits until DataStore data is saved before shutting down service.
-                job.join()
                 stopSelf()
             }
         }

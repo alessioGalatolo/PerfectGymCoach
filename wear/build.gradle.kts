@@ -1,9 +1,49 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.plugin)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.proto)
+}
+
+protobuf {
+    protoc {
+        artifact = libs.protobuf.protoc.stnd.get().toString()
+    }
+    plugins {
+        create("javalite") {
+            artifact = libs.protobuf.protoc.gen.javalite.get().toString()
+        }
+        create("grpc") {
+            artifact = libs.protobuf.protoc.gen.grpc.java.get().toString()
+        }
+        create("grpckt") {
+            artifact = libs.protobuf.protoc.gen.grpc.kotlin.get().toString()
+        }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+                create("kotlin") {
+                    option("lite")
+                }
+            }
+            task.plugins {
+                create("grpc") {
+                    option("lite")
+                }
+                create("grpckt") {
+                    option("lite")
+                }
+            }
+        }
+    }
 }
 
 android {
@@ -39,12 +79,14 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
     }
 
     buildFeatures {
@@ -75,6 +117,17 @@ dependencies {
     implementation(libs.wear.compose.material3)
     implementation(libs.horologist.material)
     implementation(libs.horologist.media.ui)
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.binder)
+    implementation(libs.grpc.android)
+    implementation(libs.grpc.protobuf.lite)
+    implementation(libs.grpc.kotlin)
+    implementation(libs.horologist.datalayer.watch)
+    implementation(libs.horologist.datalayer)
+    implementation(libs.horologist.datalayer.grpc)
+    implementation(libs.kotlin.coroutines.play.services)
+    implementation(libs.protobuf.kotlin.lite)
+    implementation(libs.datastore.proto)
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.wear.ongoing)

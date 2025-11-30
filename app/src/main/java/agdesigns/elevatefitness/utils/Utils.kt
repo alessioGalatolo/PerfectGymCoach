@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.os.LocaleListCompat
-import com.agdesignes.shared.Equipment
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged

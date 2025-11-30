@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package agdesignes.elevatefitness.shared.grpc;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option java_package = "agdesignes.elevatefitness.shared.grpc";
+
+message MediaPlaying {
+  string title = 1;
+  string artist = 2;
+  bool is_playing = 3;
+}
+
+message setMediaResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+
+service MediaService {
+  rpc playPause(google.protobuf.Empty) returns (setMediaResponse);
+  rpc next(google.protobuf.Empty) returns (setMediaResponse);
+  rpc previous(google.protobuf.Empty) returns (setMediaResponse);
+}

@@ -20,7 +20,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import com.agdesignes.shared.Equipment
+import agdesignes.elevatefitness.shared.Equipment
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

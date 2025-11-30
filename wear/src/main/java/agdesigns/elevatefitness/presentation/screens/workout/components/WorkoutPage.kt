@@ -3,9 +3,11 @@ package agdesigns.elevatefitness.presentation.screens.workout.components
 import agdesigns.elevatefitness.presentation.screens.common.MorphPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
+import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -51,6 +53,7 @@ import com.google.android.horologist.media.ui.util.isLargeScreen
 @Composable
 fun WorkoutPage(
     contentPadding: PaddingValues,
+    exercisesState: ExercisesState,
     workoutState: WorkoutState,
     listState: ScalingLazyListState,
     changeWeight: (Int) -> Unit,
@@ -59,19 +62,33 @@ fun WorkoutPage(
     startRest: () -> Unit,
     resetRest: () -> Unit,
     completeSet: () -> Unit,
+    onNextExercise: () -> Unit,
+    onPreviousExercise: () -> Unit,
 ) {
-    if (workoutState.imageBitmap != null) {
-        VignetteImage(workoutState.imageBitmap.asImageBitmap())
+    val currentExercise = remember(workoutState.currentExerciseIndex, exercisesState.exercises) {
+        exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex)
+            ?: exercisesState.exercises.lastOrNull()
+    }
+    val setsDone = remember (workoutState.currentExerciseIndex, exercisesState.exercisesSetsDone) {
+        exercisesState.exercisesSetsDone.getOrNull(workoutState.currentExerciseIndex) ?: 0
+    }
+    val currentImage = remember(workoutState.currentExerciseIndex, exercisesState.images) {
+        exercisesState.images.getOrNull(workoutState.currentExerciseIndex)
+    }
+    if (currentImage != null) {
+        VignetteImage(currentImage.asImageBitmap(), alpha = 0.15f)
     }
     if ((workoutState.ongoingRestProgression ?: 0f) > 0f || workoutState.settingSetValues) {
         CompleteSetAndRestScreen(
-            restProgression = workoutState.ongoingRestProgression ?: 0f,
+            restProgression = workoutState.ongoingRestProgression ?: 1f,
             currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
-            nextSetExerciseName = if (workoutState.setsDone < workoutState.rest.size)
-                workoutState.exerciseName
+            nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount } ?: false )
+                currentExercise.name ?: ""
             else
-                workoutState.nextExerciseName,
+                exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name ?: "",
+            // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
             workoutState = workoutState,
+            exercisesState = exercisesState,
             changeReps = changeReps,
             changeWeight = changeWeight,
             changeTare = changeTare,
@@ -79,9 +96,36 @@ fun WorkoutPage(
             completeSet = completeSet
         )
     } else {
+        val exerciseName = remember(
+            workoutState.currentExerciseIndex,
+            exercisesState.exercises,
+            exercisesState.exercisesSetsDone
+        ) {
+            (currentExercise?.name ?: "") + " (${setsDone + 1}/${currentExercise?.restCount ?: 0})"
+        }
+
         ExercisePage(
-            workoutState,
-            startRest = startRest
+            exerciseTitle = exerciseName,
+            exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
+                    if (exercisesState.imperialSystem)
+                        stringResource(agdesignes.elevatefitness.shared.R.string.lb)
+                    else
+                        stringResource(agdesignes.elevatefitness.shared.R.string.kg),
+            bottomText = currentExercise?.note ?: "",
+            startRest = startRest,
+            hasPrevious = workoutState.currentExerciseIndex > 0,
+            hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size-1,
+            onNext = {
+                if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
+                    onNextExercise()
+                }
+            },
+            onPrevious = {
+                if (workoutState.currentExerciseIndex > 0) {
+                    onPreviousExercise()
+                }
+            }
+
         )
     }
 }
@@ -89,32 +133,40 @@ fun WorkoutPage(
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun ExercisePage(
-    workoutState: WorkoutState,
+    exerciseTitle: String,
+    exerciseSubtitle: String,
+    bottomText: String,
+    hasPrevious: Boolean,
+    hasNext: Boolean,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
     startRest: () -> Unit
 ) {
     PlayerScreen(
         mediaDisplay = {
             TextMediaDisplay(
-                title = workoutState.exerciseName + " (${workoutState.setsDone + 1}/${workoutState.rest.size})",
-                subtitle = workoutState.note
+                title = exerciseTitle,
+                subtitle = exerciseSubtitle  // TODO: test rendering
             )
         },
         controlButtons = {
             ControlButtonLayout(
                 leftButton = {
                     MediaButton(
-                        onClick = {},
+                        onClick = onPrevious,
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         "",
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        enabled = hasPrevious
                     )
                 },
                 rightButton = {
                     MediaButton(
-                        onClick = {},
+                        onClick = onNext,
                         icon = Icons.AutoMirrored.Filled.ArrowForward,
                         "",
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        enabled = hasNext
                     )
                 },
                 middleButton = {
@@ -193,12 +245,12 @@ fun ExercisePage(
             )
         },
         buttons = {
-            Text("${workoutState.currentReps} x ${workoutState.weight} " +
-                    if (workoutState.imperialSystem)
-                        stringResource(com.agdesignes.shared.R.string.lb)
-                    else
-                        stringResource(com.agdesignes.shared.R.string.kg)
-            )
+            if (bottomText.isNotBlank()) {
+                Text(
+                    bottomText,
+                    modifier = Modifier.basicMarquee()
+                )
+            }
         },
     )
 }

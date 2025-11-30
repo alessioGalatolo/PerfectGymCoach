@@ -2,8 +2,6 @@ package agdesigns.elevatefitness.di
 
 import agdesigns.elevatefitness.data.datastore.PermissionStateDataStore
 import agdesigns.elevatefitness.data.datastore.WorkoutDataStore
-import agdesigns.elevatefitness.data.phone.WearDataHandler
-import agdesigns.elevatefitness.data.phone.WearMessageHandler
 import agdesigns.elevatefitness.data.WearRepository
 import android.content.Context
 import dagger.Module
@@ -28,17 +26,7 @@ object WearModule {
 
     @Singleton
     @Provides
-    fun provideDataHandler(@ApplicationContext context: Context): WearDataHandler =
-        WearDataHandler(context)
-
-    @Singleton
-    @Provides
-    fun provideMessageHandler(@ApplicationContext context: Context): WearMessageHandler =
-        WearMessageHandler(context)
-
-    @Singleton
-    @Provides
-    fun provideRepository(dataHandler: WearDataHandler, messageHandler: WearMessageHandler, dataStore: WorkoutDataStore, permissionStateDataStore: PermissionStateDataStore, @ApplicationContext context: Context): WearRepository =
-        WearRepository.Companion.getInstance(dataHandler, messageHandler, dataStore, permissionStateDataStore, context)
+    fun provideRepository(dataStore: WorkoutDataStore, permissionStateDataStore: PermissionStateDataStore, @ApplicationContext context: Context): WearRepository =
+        WearRepository.getInstance(dataStore, permissionStateDataStore, context)
 
 }

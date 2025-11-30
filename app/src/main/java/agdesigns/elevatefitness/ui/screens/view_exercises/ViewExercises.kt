@@ -63,7 +63,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.agdesignes.shared.Equipment
+import agdesignes.elevatefitness.shared.Equipment
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException

@@ -1,4 +1,4 @@
-package com.agdesignes.shared
+package agdesignes.elevatefitness.shared
 
 enum class BarbellType(val barbellResKey: String, val weight: Map<Boolean, Float>){
     // name, weight[false] = kg, true = lbs

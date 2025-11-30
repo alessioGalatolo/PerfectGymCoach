@@ -32,8 +32,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import com.agdesignes.shared.maybeKgToLb
-import com.agdesignes.shared.maybeLbToKg
+import agdesignes.elevatefitness.shared.maybeKgToLb
+import agdesignes.elevatefitness.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.input.KeyboardActionHandler

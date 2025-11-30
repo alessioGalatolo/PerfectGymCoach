@@ -14,7 +14,7 @@ import javax.inject.Inject
 class WorkoutDataStore @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = WALKING_WORKOUTS_DATASTORE_NAME)
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = WORKOUTS_DATASTORE_NAME)
 
     val activeWorkoutFlow: Flow<Boolean> = context.dataStore.data.map {
         it[ACTIVE_WORKOUT_KEY] == true
@@ -27,7 +27,7 @@ class WorkoutDataStore @Inject constructor(
     }
 
     companion object {
-        private const val WALKING_WORKOUTS_DATASTORE_NAME = "workouts_datastore"
+        private const val WORKOUTS_DATASTORE_NAME = "workouts_datastore"
 
         private val ACTIVE_WORKOUT_KEY =
             booleanPreferencesKey("active_workout")
