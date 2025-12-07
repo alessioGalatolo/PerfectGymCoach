@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.presentation.screens.workout
 
+import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.screens.workout.components.EndWorkoutPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingWorkoutScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.MediaPlayingPage
@@ -14,21 +15,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
+import androidx.wear.compose.material3.AlertDialog
+import androidx.wear.compose.material3.AlertDialogDefaults
+import androidx.wear.compose.material3.ConfirmationDialogDefaults
+import androidx.wear.compose.material3.FailureConfirmationDialog
 import androidx.wear.compose.material3.HorizontalPageIndicator
 import androidx.wear.compose.material3.HorizontalPagerScaffold
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
+import androidx.wear.compose.material3.confirmationDialogCurvedText
 import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,6 +52,55 @@ fun Workout(
     DisposableEffect(Unit) {
         onDispose {
             viewModel.onEvent(WorkoutEvent.StopActivity)
+        }
+    }
+    var nonRetriableErrorDialogShown by rememberSaveable { mutableStateOf(false) }
+    var retriableErrorDialogShown by rememberSaveable { mutableStateOf(false) }
+
+    val curvedTextStyle = ConfirmationDialogDefaults.curvedTextStyle
+    val text = stringResource(R.string.non_retriable_error_with_phone)
+    // FIXME: compose bug? where curved text is not entirely shown
+    FailureConfirmationDialog(
+        visible = nonRetriableErrorDialogShown,
+        onDismissRequest = { nonRetriableErrorDialogShown = false },
+        curvedText = { confirmationDialogCurvedText(
+            text = text,
+            style = curvedTextStyle
+        )},
+    )
+    AlertDialog(
+        visible = retriableErrorDialogShown,
+        onDismissRequest = { retriableErrorDialogShown = false },
+        icon = {
+            ConfirmationDialogDefaults.ConnectionFailureIcon()
+        },
+        title = { Text(stringResource(R.string.retriable_error_title)) },
+        text = { Text(stringResource(R.string.retriable_error_info)) },
+        edgeButton = {
+            AlertDialogDefaults.EdgeButton(
+                onClick = {
+                    // Perform confirm action here
+                    viewModel.onEvent(WorkoutEvent.RetrySendSetCompleted)
+                    retriableErrorDialogShown = false
+                },
+                content = {
+                    Text(stringResource(R.string.retriable_error_retry))
+                }
+            )
+        },
+    )
+
+    // listen for VM effects
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is WorkoutEffect.RetriableError -> {
+                    retriableErrorDialogShown = true
+                }
+                is WorkoutEffect.NonRetriableError -> {
+                    nonRetriableErrorDialogShown = true
+                }
+            }
         }
     }
     val haptics = LocalHapticFeedback.current

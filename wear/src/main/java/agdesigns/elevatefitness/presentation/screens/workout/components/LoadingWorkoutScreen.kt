@@ -38,10 +38,5 @@ fun LoadingWorkoutScreen(
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(8.dp))
-        Button(onClick = {
-            onBack()
-        }) {
-            Text(stringResource(R.string.go_back))
-        }
     }
 }

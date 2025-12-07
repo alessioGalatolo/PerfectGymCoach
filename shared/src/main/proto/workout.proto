@@ -48,7 +48,7 @@ message DefaultIncrements {
   float cable = 5;
 }
 
-// Events sent via gRPC
+// Set completed from watch to be sent to phone
 message SetCompleted {
   int64 workout_id = 1;
   int64 exercise_id = 2;
@@ -72,4 +72,22 @@ message WorkoutActiveResponse {
 service WorkoutService {
   rpc workoutActive(google.protobuf.Empty) returns (WorkoutActiveResponse);
   rpc setCompleted(SetCompleted) returns (SetCompletedResponse);
+}
+
+message ExerciseToScrollTo {
+  int32 exercise_index = 1;
+}
+
+// set completed from phone; to be sent to watch for rest keeping
+message RestPhone2Watch {
+  int64 rest = 1;
+  google.protobuf.Timestamp rest_timestamp = 2;
+}
+
+// used by phone to tell watch to advance exercise
+service WorkoutWearService {
+  // TODO: merge scrollToExercise into set rest, scroll to exercise should be a
+  //  side effect of a set completed on phone
+  rpc scrollToExercise(ExerciseToScrollTo) returns (google.protobuf.Empty);
+  rpc setRest(RestPhone2Watch) returns (google.protobuf.Empty);
 }

@@ -26,7 +26,9 @@ import com.google.protobuf.Empty
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.grpc.StatusException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +43,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -89,10 +92,17 @@ sealed class WorkoutEvent {
     data object StartRest: WorkoutEvent()
     data object NextExercise: WorkoutEvent()
     data object PreviousExercise: WorkoutEvent()
+    data object RetrySendSetCompleted: WorkoutEvent()
 
     data object PlayPauseMedia: WorkoutEvent()
     data object NextMedia: WorkoutEvent()
     data object PreviousMedia: WorkoutEvent()
+}
+
+// effects that should be propagated to the UI
+sealed class WorkoutEffect {
+    data object RetriableError: WorkoutEffect()
+    data object NonRetriableError: WorkoutEffect()
 }
 
 @OptIn(ExperimentalHorologistApi::class)
@@ -131,6 +141,14 @@ class WorkoutViewModel
     private val _state = MutableStateFlow(WorkoutState())
     val state: StateFlow<WorkoutState> = _state.asStateFlow()
 
+    // This should always be empty unless there is an error communicating with the phone
+    private val setCompletedQueue = mutableListOf<Workout.SetCompleted>()
+
+    // effects to happen in the UI
+    private val _effects = Channel<WorkoutEffect>(capacity = Channel.BUFFERED)
+
+    val effects: Flow<WorkoutEffect> = _effects.receiveAsFlow()
+
     val mediaState: StateFlow<MediaPlayingState> = combine(
         registry.protoFlow<Media.MediaPlaying>(TargetNodeId.PairedPhone).distinctUntilChanged(),
         registry.bitmapFlow(TargetNodeId.PairedPhone, MEDIA_IMAGES_PATH).distinctUntilChanged()
@@ -157,6 +175,25 @@ class WorkoutViewModel
         }
         viewModelScope.launch {
             observeUpdateRepsWeight()
+        }
+        viewModelScope.launch {
+            // listen for scroll to exercise requests from phone
+            for (event in repository.scrollToExerciseChannel) {
+                _state.update {
+                    it.copy(currentExerciseIndex = event)
+                }
+            }
+        }
+        viewModelScope.launch {
+            // listen for set rest requests from phone
+            for (event in repository.setRestChannel) {
+                _state.update {
+                    it.copy(
+                        currentExerciseRest = event.rest,
+                        restTimestamp = event.restTimestamp.toZonedDateTime()
+                    )
+                }
+            }
         }
         startTimer()
     }
@@ -198,30 +235,45 @@ class WorkoutViewModel
                         state.value.currentExerciseIndex
                     )
                     if (currentExercise != null) {
+                        val shouldAdvancePage = (exercisesState.value.exercisesSetsDone.getOrNull(
+                            state.value.currentExerciseIndex
+                        )?.plus(1) ?: 0) == currentExercise.restCount
+                        if (shouldAdvancePage) {
+                            _state.update {
+                                it.copy(
+                                    currentExerciseIndex = it.currentExerciseIndex + 1
+                                )
+                            }
+                        }
                         val equipment = Equipment.fromResKey(currentExercise.equipment)
                         val tare = if (equipment == Equipment.BARBELL)
                             BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
                         else 0f
                         val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
                         try {
+                            val queuedSetCompleted = Workout.SetCompleted.newBuilder()
+                                .setWorkoutId(exercisesState.value.workoutId)
+                                .setExerciseId(currentExercise.exerciseId)
+                                .setReps(state.value.currentReps)
+                                .setWeight(state.value.currentWeight)
+                                .setTare(tare)
+                                .setRest(state.value.currentExerciseRest ?: 0L)
+                                .setRestTimestamp(protoTimestamp)
+                                .build()
+                            setCompletedQueue.add(queuedSetCompleted)
                             val result = workoutService.setCompleted(
-                                Workout.SetCompleted.newBuilder()
-                                    .setWorkoutId(exercisesState.value.workoutId)
-                                    .setExerciseId(currentExercise.exerciseId)
-                                    .setReps(state.value.currentReps)
-                                    .setWeight(state.value.currentWeight)
-                                    .setTare(tare)
-                                    .setRest(state.value.currentExerciseRest ?: 0L)
-                                    .setRestTimestamp(protoTimestamp)
-                                    .build()
+                                queuedSetCompleted
                             )
                             if (!result.success) {
+                                // Note, this should never happen because
                                 Log.e("WorkoutViewModel", "Error completing set with message: ${result.message}")
-                                // TODO: propagate error to user
+                                _effects.trySend(WorkoutEffect.RetriableError)
+                                return@launch
                             }
+                            setCompletedQueue.remove(queuedSetCompleted)
                         } catch (e: StatusException) {
                             Log.e("WorkoutViewModel", "Error completing set with error: ${e.message}")
-                            // TODO: propagate error to user
+                            _effects.trySend(WorkoutEffect.RetriableError)
                         }
                     }
                     _state.update {
@@ -287,17 +339,53 @@ class WorkoutViewModel
             }
             is WorkoutEvent.PlayPauseMedia -> {
                 viewModelScope.launch {
-                    mediaService.playPause(Empty.getDefaultInstance())
+                    try {
+                        mediaService.playPause(Empty.getDefaultInstance())
+                    } catch (e: StatusException) {
+                        _effects.trySend(WorkoutEffect.NonRetriableError)
+                        Log.e("WorkoutViewModel", "Error playing/pausing media with error: ${e.message}")
+                    }
                 }
             }
             is WorkoutEvent.NextMedia -> {
                 viewModelScope.launch {
-                    mediaService.next(Empty.getDefaultInstance())
+                    try {
+                        mediaService.next(Empty.getDefaultInstance())
+                    } catch (e: StatusException) {
+                        _effects.trySend(WorkoutEffect.NonRetriableError)
+                        Log.e("WorkoutViewModel", "Error skipping media with error: ${e.message}")
+                    }
                 }
             }
             is WorkoutEvent.PreviousMedia -> {
                 viewModelScope.launch {
-                    mediaService.previous(Empty.getDefaultInstance())
+                    try {
+                        mediaService.previous(Empty.getDefaultInstance())
+                    } catch (e: StatusException) {
+                        _effects.trySend(WorkoutEffect.NonRetriableError)
+                        Log.e("WorkoutViewModel", "Error skipping media with error: ${e.message}")
+                    }
+                }
+            }
+            is WorkoutEvent.RetrySendSetCompleted -> {
+                viewModelScope.launch {
+                    for (set in setCompletedQueue) {
+                        try {
+                            val result = workoutService.setCompleted(set)
+                            if (!result.success) {
+                                Log.e(
+                                    "WorkoutViewModel",
+                                    "Error completing set with message: ${result.message}"
+                                )
+                            }
+                        } catch (e: StatusException) {
+                            Log.e(
+                                "WorkoutViewModel",
+                                "Error completing set with error: ${e.message}"
+                            )
+                        }
+                        setCompletedQueue.remove(set)
+                    }
                 }
             }
         }

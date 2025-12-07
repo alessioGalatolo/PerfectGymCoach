@@ -293,7 +293,10 @@ fun SelectValueScreen(
             },
             controlButtons = {
                 ControlButtonLayout(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 10.dp),
                     leftButton = {
                         IconButton(
                             modifier = Modifier
@@ -329,6 +332,7 @@ fun SelectValueScreen(
                             Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
                         ) {
+                            // TODO: add rotary selection of value
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 AnimatedText(
                                     text = value,
@@ -346,7 +350,8 @@ fun SelectValueScreen(
                                     subValue,
                                     textAlign = TextAlign.End,
                                     style = MaterialTheme.typography.bodyExtraSmall,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
                                         .padding(end = 8.dp)
                                         .offset(y = (25).dp)
                                 )
@@ -414,7 +419,10 @@ fun ShowRestScreen(
     currentRestSeconds: Long,
     skipRest: () -> Unit
 ) {
-    val nextThingString = stringResource(R.string.next_thing)
+    val nextThingString = if (nextSetExerciseName.isNotBlank())
+        stringResource(R.string.next_thing)
+    else
+        stringResource(R.string.all_done)  // we are likely at the end of workout
     val middleSize = if (LocalConfiguration.current.isLargeScreen) 88.dp else 72.dp
     val haptics = LocalHapticFeedback.current
 

@@ -3,7 +3,12 @@ package agdesignes.elevatefitness.shared
 import androidx.compose.ui.res.stringResource
 import kotlin.math.round
 import androidx.compose.runtime.Composable
+import com.google.android.gms.wearable.CapabilityClient
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.data.TargetNodeId
+import com.google.android.horologist.data.WearDataLayerRegistry
 import com.google.protobuf.Timestamp
+import kotlinx.coroutines.tasks.await
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -94,4 +99,17 @@ fun Timestamp.toZonedDateTime(): ZonedDateTime? {
         Instant.ofEpochMilli(millis),
         ZoneId.systemDefault()
     )
+}
+
+// horologist has a TargetNodeId for paired phone but not for paired watch
+public object PairedWatch : TargetNodeId {
+    @OptIn(ExperimentalHorologistApi::class)
+    override suspend fun evaluate(dataLayerRegistry: WearDataLayerRegistry): String? {
+        val capabilitySearch = dataLayerRegistry.capabilityClient.getCapability(
+            TargetNodeId.HOROLOGIST_WATCH,
+            CapabilityClient.FILTER_ALL,
+        ).await()
+
+        return capabilitySearch.nodes.singleOrNull()?.id
+    }
 }

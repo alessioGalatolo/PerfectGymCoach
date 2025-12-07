@@ -437,7 +437,7 @@ fun SharedTransitionScope.Workout(
                             scope.launch {
                                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                             }
-                            viewModel.onEvent(WorkoutEvent.CompleteSet())
+                            viewModel.onEvent(WorkoutEvent.CompleteSet)
                             if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
                                 val superExercise =
                                     pagesContent.exercises.find {

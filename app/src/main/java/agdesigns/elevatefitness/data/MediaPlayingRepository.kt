@@ -131,7 +131,11 @@ class MediaPlayingRepository @Inject constructor(
 
                 if (media.artwork != null) {
                     wearImagesStore.updateData {
-                        listOf(media.artwork)
+                        // avoid sending if same bitmap
+                        if (it.getOrNull(0) == media.artwork)
+                            it
+                        else
+                            listOf(media.artwork)
                     }
                 }
             }

@@ -34,6 +34,11 @@
     <string name="complete_set_next">Next</string>
     <string name="no_title">No title</string>
     <string name="no_artist">No artist</string>
+    <string name="all_done">All done!</string>
+    <string name="non_retriable_error_with_phone">Action unsuccessful!</string>
+    <string name="retriable_error_title">Could not communicate with phone!</string>
+    <string name="retriable_error_info">Please make sure the phone is connected to your device and that the app is running. Then try again.</string>
+    <string name="retriable_error_retry">Retry</string>
     <!--
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.

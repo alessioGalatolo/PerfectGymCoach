@@ -27,7 +27,7 @@ import androidx.lifecycle.viewModelScope
 import agdesignes.elevatefitness.shared.Equipment
 import agdesignes.elevatefitness.shared.WORKOUT_IMAGES_PATH
 import agdesignes.elevatefitness.shared.bitmapArrayStore
-import agdesignes.elevatefitness.shared.grpc.copy
+import agdesignes.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
 import agdesignes.elevatefitness.shared.maybeKgToLb
 import agdesignes.elevatefitness.shared.maybeLbToKg
 import agdesignes.elevatefitness.shared.toProtoTimestamp
@@ -150,7 +150,7 @@ sealed class WorkoutEvent{
 
     data object ToggleOtherEquipmentDialog: WorkoutEvent()
 
-    data class CompleteSet(val restTimestamp: ZonedDateTime? = null): WorkoutEvent()
+    data object CompleteSet: WorkoutEvent()
 
     data object ToggleRequestNotificationAccessDialog : WorkoutEvent()
 
@@ -205,7 +205,8 @@ class WorkoutViewModel @Inject constructor(
     private val preferences: PreferenceRepository,
     private val notificationService: NotificationService,
     private val registry: WearDataLayerRegistry,
-    private val phoneWorkoutRepository: PhoneWorkoutRepository
+    private val phoneWorkoutRepository: PhoneWorkoutRepository,
+    private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
 ): ViewModel() {
     // split static data (e.g., exercises) with data that is frequently changing to avoid too many messages
     private val wearWorkoutStatic = registry.protoDataStore<Workout.WorkoutStaticData>(viewModelScope)
@@ -590,12 +591,42 @@ class WorkoutViewModel @Inject constructor(
                     ?.getOrNull(currentExerciseState.value.setsDone)
                     ?.toLong() ?: 0L
                 val exercise = currentExerciseState.value.currentExercise
+                val restTimestamp = ZonedDateTime.now().plusSeconds(exerciseRest)
+                viewModelScope.launch {
+                    try {
+                        // if sets done == total sets, scroll to next if any
+                        val setsDone = currentExerciseState.value.setsDone
+                        val totalSets = currentExerciseState.value.currentExercise?.reps?.size ?: 0
+                        val exerciseToScrollTo = if (setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)) {
+                            _currentPage.value+1
+                        } else {
+                            _currentPage.value
+                        }
+                        phoneToWatchService.scrollToExercise(
+                            Workout.ExerciseToScrollTo.newBuilder()
+                                .setExerciseIndex(exerciseToScrollTo)
+                                .build()
+                        )
+                    } catch (e: Exception) {
+                        Log.e("WorkoutViewModel", "Failed to scroll to exercise on watch", e)
+                    }
+                    try {
+                        phoneToWatchService.setRest(
+                            Workout.RestPhone2Watch.newBuilder()
+                                .setRest(exerciseRest)
+                                .setRestTimestamp(restTimestamp.toProtoTimestamp())
+                                .build()
+                        )
+                    } catch (e: Exception) {
+                        Log.e("WorkoutViewModel", "Failed to set rest on watch", e)
+                    }
+                }
                 completeSet(
                     exercise = exercise,
                     exerciseRest = exerciseRest,
                     reps = currentExerciseState.value.repsBottomBar.toInt(),
                     weight = currentExerciseState.value.weightBottomBar.toFloat(),
-                    restTimestamp = event.restTimestamp
+                    restTimestamp = restTimestamp
                 )
             }
             is WorkoutEvent.FinishWorkout -> {

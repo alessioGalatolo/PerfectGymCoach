@@ -22,8 +22,8 @@ wear_remote_interactions = "1.1.0"
 wear_ongoing = "1.1.0"  # ongoing activity
 kotlin_coroutines_play_services = "1.10.2"
 # compose wear os
-wear_compose = "1.6.0-alpha05"
-wear_compose_material3 = "1.6.0-alpha05"
+wear_compose = "1.6.0-alpha06"
+wear_compose_material3 = "1.6.0-alpha06"
 wear_tooling_preview = "1.0.0"
 core_splashscreen = "1.2.0"
 horologist = "0.8.3-alpha"

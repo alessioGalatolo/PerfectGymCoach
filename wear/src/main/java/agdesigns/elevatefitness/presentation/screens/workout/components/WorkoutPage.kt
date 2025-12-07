@@ -156,6 +156,7 @@ fun ExercisePage(
 ) {
     PlayerScreen(
         mediaDisplay = {
+            // TODO: replace all instances of TextMediaDisplay with one with marquee effect
             TextMediaDisplay(
                 title = exerciseTitle,
                 subtitle = exerciseSubtitle  // TODO: test rendering

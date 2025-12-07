@@ -35,4 +35,9 @@
     <string name="complete_set_next">Avanti</string>
     <string name="no_title">Nessun titolo</string>
     <string name="no_artist">Artista non disponibile</string>
+    <string name="all_done">Tutto fatto!</string>
+    <string name="non_retriable_error_with_phone">Azione non completata!</string>
+    <string name="retriable_error_title">Impossibile comunicare con il cellulare!</string>
+    <string name="retriable_error_info">Acceratati che is cellulare sia connesso e che l\'app sia in esecuzione. Poi, riprova.</string>
+    <string name="retriable_error_retry">Riprova</string>
 </resources>

@@ -1,7 +1,7 @@
 package agdesigns.elevatefitness.data
 
+import agdesignes.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.data.datastore.PermissionStateDataStore
-import agdesigns.elevatefitness.data.datastore.WorkoutDataStore
 import agdesigns.elevatefitness.service.WorkoutService
 import android.content.ComponentName
 import android.content.Context
@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +33,6 @@ import javax.inject.Singleton
 
 @Singleton
 class WearRepository @Inject constructor(
-    private val workoutDataStore: WorkoutDataStore,
     val permissionStateDataStore: PermissionStateDataStore,
     @ApplicationContext private val context: Context
 ) {
@@ -44,6 +44,17 @@ class WearRepository @Inject constructor(
 
     var foregroundOnlyWalkingWorkoutService: WorkoutService? = null
         private set
+
+    val scrollToExerciseChannel = Channel<Int>()
+    val setRestChannel = Channel<Workout.RestPhone2Watch>()
+
+    fun handleScrollToExercise(exerciseIndex: Int) {
+        scrollToExerciseChannel.trySend(exerciseIndex)
+    }
+
+    fun handleSetRest(rest: Workout.RestPhone2Watch) {
+        setRestChannel.trySend(rest)
+    }
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -88,9 +99,9 @@ class WearRepository @Inject constructor(
         // For Singleton instantiation
         @Volatile private var instance: WearRepository? = null
 
-        fun getInstance(workoutDataStore: WorkoutDataStore, permissionStateDataStore: PermissionStateDataStore, context: Context) =
+        fun getInstance(permissionStateDataStore: PermissionStateDataStore, context: Context) =
             instance ?: synchronized(this) {
-                instance ?: WearRepository(workoutDataStore, permissionStateDataStore, context).also { instance = it }
+                instance ?: WearRepository(permissionStateDataStore, context).also { instance = it }
             }
     }
 }
