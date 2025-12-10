@@ -163,6 +163,9 @@ fun Workout(
                             changeWeight = {
                                 viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
                             },
+                            fineGrainedChangeWeight = {
+                                viewModel.onEvent(WorkoutEvent.FineGrainedChangeWeight(it))
+                            },
                             changeReps = {
                                 viewModel.onEvent(WorkoutEvent.ChangeReps(it))
                             },

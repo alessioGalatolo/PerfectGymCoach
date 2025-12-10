@@ -75,13 +75,17 @@ import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
 import agdesignes.elevatefitness.shared.BarbellType
 import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.focus.FocusRequester
+import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.compose.rotaryinput.accumulatedBehavior
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
@@ -99,6 +103,7 @@ fun CompleteSetAndRestScreen(
     workoutState: WorkoutState,
     changeReps: (Int) -> Unit,
     changeWeight: (Int) -> Unit,
+    fineGrainedChangeWeight: (Int) -> Unit,
     changeTare: (Int) -> Unit,
     skipRest: () -> Unit,
     completeSet: () -> Unit
@@ -196,6 +201,7 @@ fun CompleteSetAndRestScreen(
                 else
                     "",
                 changeValue = changeWeight,
+                fineGrainedChangeValue = fineGrainedChangeWeight,
                 nextButtonText = if (page == totalPages-1)
                     stringResource(R.string.done_icon)
                 else
@@ -258,8 +264,16 @@ fun SelectValueScreen(
     nextButtonText: String,
     useArrowButtons: Boolean,  // used for barbell selection
     changeValue: (Int) -> Unit,
+    fineGrainedChangeValue: (Int) -> Unit = changeValue,  // mainly used for weight
     onNext: () -> Unit
 ) {
+    val haptics = LocalHapticFeedback.current
+    // for rotary control of value
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(focusRequester) {
+        focusRequester.requestFocus()
+    }
+
     val scope = rememberCoroutineScope()
     val restTextStyle = MaterialTheme.typography.numeralLarge
     val animatedTextFontRegistry =
@@ -286,7 +300,7 @@ fun SelectValueScreen(
     AmbientAware { ambient ->
         PlayerScreen(
             mediaDisplay = {
-                TextMediaDisplay(
+                TextHeaderWithMarquee(
                     title = title,
                     subtitle = subtitle
                 )
@@ -329,15 +343,27 @@ fun SelectValueScreen(
                     },
                     middleButton = {
                         Box(
-                            Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                                .rotaryScrollable(
+                                    accumulatedBehavior { value ->
+                                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                        val delta = if (value > 0) 1 else -1
+                                        fineGrainedChangeValue(delta)
+                                        scope.launch {
+                                            textAnimatable.animateTo(1f)
+                                            textAnimatable.animateTo(0f)
+                                        }
+                                    },
+                                    focusRequester = focusRequester
+                                )
                         ) {
                             // TODO: add rotary selection of value
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 AnimatedText(
                                     text = value,
                                     fontRegistry = animatedTextFontRegistry,
-                                    progressFraction = { textAnimatable.value },
+                                    progressFraction = { textAnimatable.value }
                                 )
                             } else {
                                 Text(
@@ -428,7 +454,7 @@ fun ShowRestScreen(
 
     PlayerScreen(
         mediaDisplay = {
-            TextMediaDisplay(
+            TextHeaderWithMarquee(
                 title = nextThingString,
                 subtitle = nextSetExerciseName,
             )

@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.presentation.screens.workout.components
 import agdesignes.elevatefitness.shared.R
 import agdesigns.elevatefitness.presentation.screens.common.MorphPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
+import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
 import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
@@ -58,6 +59,7 @@ fun WorkoutPage(
     workoutState: WorkoutState,
     listState: ScalingLazyListState,
     changeWeight: (Int) -> Unit,
+    fineGrainedChangeWeight: (Int) -> Unit,
     changeReps: (Int) -> Unit,
     changeTare: (Int) -> Unit,
     startRest: () -> Unit,
@@ -103,6 +105,7 @@ fun WorkoutPage(
             exercisesState = exercisesState,
             changeReps = changeReps,
             changeWeight = changeWeight,
+            fineGrainedChangeWeight = fineGrainedChangeWeight,
             changeTare = changeTare,
             skipRest = resetRest,
             completeSet = completeSet
@@ -156,8 +159,7 @@ fun ExercisePage(
 ) {
     PlayerScreen(
         mediaDisplay = {
-            // TODO: replace all instances of TextMediaDisplay with one with marquee effect
-            TextMediaDisplay(
+            TextHeaderWithMarquee(
                 title = exerciseTitle,
                 subtitle = exerciseSubtitle  // TODO: test rendering
             )

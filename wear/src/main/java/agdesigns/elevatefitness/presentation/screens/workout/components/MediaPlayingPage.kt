@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.presentation.screens.workout.components
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.screens.common.MediaPlayingState
+import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asImageBitmap
@@ -21,7 +22,7 @@ fun MediaPlayingPage(
 ) {
     PlayerScreen(
         mediaDisplay = {
-            TextMediaDisplay(
+            TextHeaderWithMarquee(
                 title = mediaState.title ?: stringResource(R.string.no_title),
                 subtitle = mediaState.artist ?: stringResource(R.string.no_artist),
             )

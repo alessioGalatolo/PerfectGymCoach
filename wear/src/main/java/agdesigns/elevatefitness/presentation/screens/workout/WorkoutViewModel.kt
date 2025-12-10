@@ -86,6 +86,7 @@ sealed class WorkoutEvent {
     data object ResetRest: WorkoutEvent()
     data class ChangeReps(val change: Int): WorkoutEvent()
     data class ChangeWeight(val change: Int): WorkoutEvent()
+    data class FineGrainedChangeWeight(val change: Int): WorkoutEvent()
     data object CompleteSet: WorkoutEvent()
     data object StopActivity: WorkoutEvent()
     data class ChangeTare(val change: Int): WorkoutEvent()
@@ -227,6 +228,10 @@ class WorkoutViewModel
                     else -> 1f
                 }
                 val deincrement = increment * event.change.toFloat()
+                _state.update { it.copy(currentWeight = state.value.currentWeight + deincrement) }
+            }
+            is WorkoutEvent.FineGrainedChangeWeight -> {
+                val deincrement = event.change.toFloat() * 0.5f
                 _state.update { it.copy(currentWeight = state.value.currentWeight + deincrement) }
             }
             is WorkoutEvent.CompleteSet -> {
