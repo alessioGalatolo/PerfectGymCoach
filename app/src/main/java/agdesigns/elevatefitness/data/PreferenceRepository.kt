@@ -203,6 +203,18 @@ class PreferenceRepository @Inject constructor(
     suspend fun setAutoOpenWear(newValue: Boolean) = dataStore.edit {
         it[PrefKeys.autoOpenWear] = newValue
     }
+
+    fun isDismissedPlanChangeReminder(planId: Long): Flow<Boolean> = dataStore.data.map{
+        val dismissedPlans = it[PrefKeys.dismissedPlanChangeReminders] ?: ""
+        dismissedPlans.split(",").contains(planId.toString())
+    }
+
+    suspend fun dismissPlanChangeReminder(planId: Long) = dataStore.edit {
+        val current = it[PrefKeys.dismissedPlanChangeReminders] ?: ""
+        val dismissedPlans = current.split(",").filter { it.isNotBlank() }.toMutableSet()
+        dismissedPlans.add(planId.toString())
+        it[PrefKeys.dismissedPlanChangeReminders] = dismissedPlans.joinToString(",")
+    }
 }
 
 internal object PrefKeys {
@@ -226,6 +238,7 @@ internal object PrefKeys {
     val language = stringPreferencesKey("Language")
     val lockHorizontalScroll = booleanPreferencesKey("Lock horizontal scroll")
     val autoOpenWear = booleanPreferencesKey("Auto open wear")
+    val dismissedPlanChangeReminders = stringPreferencesKey("Dismissed plan change reminders")
 }
 
 

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +31,7 @@ import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
+import agdesigns.elevatefitness.ui.screens.plans.CustomizePlanGeneration
 import agdesigns.elevatefitness.ui.screens.plans.GeneratePlanButton
 import android.content.Intent
 import android.util.Log
@@ -54,6 +56,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
 import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
 import com.ramcosta.composedestinations.generated.destinations.AddWorkoutPlanDestination
+import com.ramcosta.composedestinations.generated.destinations.CustomizePlanGenerationDestination
 import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
@@ -224,6 +227,18 @@ fun SharedTransitionScope.Home(
                 val otherPrograms by derivedStateOf {
                     homeState.programs!!.minus(currentProgram).sortedBy {
                         (it.orderInWorkoutPlan - currentProgram.orderInWorkoutPlan).mod(homeState.programs!!.size)
+                    }
+                }
+                // Plan change reminder
+                if (homeState.showPlanChangeReminder) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        PlanChangeReminder(
+                            cycleCount = homeState.planCycleCount,
+                            navigator = navigator,
+                            onDismiss = { viewModel.onEvent(HomeEvent.DismissPlanChangeReminder) },
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                        )
                     }
                 }
                 item {
@@ -590,6 +605,112 @@ fun SharedTransitionScope.Home(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                     }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PlanChangeReminder(
+    cycleCount: Int,
+    navigator: DestinationsNavigator,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        ),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.size(24.dp)
+                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(R.string.time_to_change_plan),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    Text(
+                        text = if (cycleCount >= 8) {
+                            stringResource(R.string.plan_change_reason_cycles, cycleCount)
+                        } else {
+                            stringResource(R.string.plan_change_reason_diminishing)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close_icon),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        navigator.navigate(
+                            AddWorkoutPlanDestination(openDialogNow = true)
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onTertiaryContainer)
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text(stringResource(R.string.create_plan))
+                }
+
+                Button(
+                    onClick = {
+                        navigator.navigate(
+                            CustomizePlanGenerationDestination()
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary
+                    )
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text(stringResource(R.string.generate_plan))
                 }
             }
         }

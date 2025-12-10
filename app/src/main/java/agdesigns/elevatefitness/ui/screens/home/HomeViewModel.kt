@@ -26,11 +26,14 @@ data class HomeState(
     val exercisesAndInfo: Map<Long, List<ProgramExerciseAndInfo>> = emptyMap(),
     val openAddProgramDialogue: Boolean = false,
     val currentWorkout: Long? = null,
-    val animationTick: Int = 0
+    val animationTick: Int = 0,
+    val planCycleCount: Int = 0,
+    val showPlanChangeReminder: Boolean = false
 )
 
 sealed class HomeEvent{
     data object ResetCurrentWorkout: HomeEvent()
+    data object DismissPlanChangeReminder: HomeEvent()
 }
 
 @HiltViewModel
@@ -75,6 +78,20 @@ class HomeViewModel @Inject constructor(
                                         ) }
                                     }
                             }
+                            // Calculate plan cycle count and check if reminder should be shown
+                            viewModelScope.launch {
+                                val cycleCount = repository.getPlanCycleCount(currentPlanId)
+                                val hasDiminishingReturns = repository.isPlanShowingDiminishingReturns(currentPlanId)
+                                val isDismissed = preferences.isDismissedPlanChangeReminder(currentPlanId).first()
+                                val shouldShowReminder = (cycleCount >= 8 || hasDiminishingReturns) && !isDismissed
+
+                                _state.update {
+                                    it.copy(
+                                        planCycleCount = cycleCount,
+                                        showPlanChangeReminder = shouldShowReminder
+                                    )
+                                }
+                            }
                         }
                     }
                 } else {
@@ -114,6 +131,14 @@ class HomeViewModel @Inject constructor(
             is HomeEvent.ResetCurrentWorkout -> {
                 viewModelScope.launch {
                     preferences.setCurrentWorkout(null)
+                }
+            }
+            is HomeEvent.DismissPlanChangeReminder -> {
+                viewModelScope.launch {
+                    state.value.currentPlan?.let { planId ->
+                        preferences.dismissPlanChangeReminder(planId)
+                    }
+                    _state.update { it.copy(showPlanChangeReminder = false) }
                 }
             }
         }

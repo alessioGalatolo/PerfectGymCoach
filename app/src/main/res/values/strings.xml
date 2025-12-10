@@ -158,6 +158,12 @@
     <string name="plan_archived">Plan archived</string>
     <string name="undo">Undo</string>
     <string name="generate_a_new_plan">Generate a new plan (beta)</string>
+    <!-- Plan change reminder -->
+    <string name="time_to_change_plan">Time to change your plan!</string>
+    <string name="plan_change_reason_cycles">You\'ve completed this plan %1$d times. Consider switching to a new plan for continued progress.</string>
+    <string name="plan_change_reason_diminishing">Your progress has plateaued. A new plan might help you break through.</string>
+    <string name="create_plan">Create</string>
+    <string name="generate_plan">Generate</string>
     <!-- View archived plans -->
     <string name="you_don_t_have_any_archived_plans">You don\'t have any archived plans!</string>
     <string name="plan_restored">Plan restored!</string>

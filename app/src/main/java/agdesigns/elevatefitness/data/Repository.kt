@@ -47,6 +47,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -361,6 +362,49 @@ class Repository @Inject constructor(
     suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 
     suspend fun getWorkoutsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) = db.workoutRecordDao.getWorkoutsBetween(startDate, endDate)
+
+    /**
+     * Calculate how many times a plan has been cycled through.
+     * A cycle is counted when any programs in the plan have been completed at least once.
+     * Returns the maximum completion count across all programs.
+     * Note: we should take the minimum instead but what if user skips leg day?
+     */
+    suspend fun getPlanCycleCount(planId: Long): Int {
+        val programs = getPrograms(planId).first()
+        if (programs.isEmpty()) return 0
+
+        val completionCounts = programs.map { program ->
+            getWorkoutRecordsByProgram(program.programId).first()
+                .count { it.startDate != null && it.durationSeconds > 60L * 5L }
+        }
+
+        return completionCounts.maxOrNull() ?: 0
+    }
+
+    /**
+     * Check if the plan is showing diminishing returns.
+     * Returns true if average volume has decreased or plateaued over recent workouts.
+     */
+    suspend fun isPlanShowingDiminishingReturns(planId: Long): Boolean {
+        val programs = getPrograms(planId).first()
+        if (programs.isEmpty()) return false
+
+        // Get all workout records for this plan's programs
+        val allRecords = programs.flatMap { program ->
+            getWorkoutRecordsByProgram(program.programId).first()
+        }.filter { it.startDate != null && it.durationSeconds > 60L * 5L }
+            .sortedByDescending { it.startDate }
+
+        // Need at least 12 workouts to detect a trend
+        if (allRecords.size < 12) return false
+
+        // Compare average volume of last 6 workouts vs previous 6 workouts
+        val recentVolume = allRecords.take(6).map { it.volume }.average()
+        val previousVolume = allRecords.drop(6).take(6).map { it.volume }.average()
+
+        // If recent volume is less than 95% of previous volume, consider it diminishing returns
+        return recentVolume < previousVolume * 0.95
+    }
 
     /*
      * EXERCISE

@@ -31,7 +31,7 @@ horologist = "0.8.3-alpha"
 palette = "1.0.0"
 android_shapes = "1.0.1"
 # external libraries
-graphs = "1.2.3"
+graphs = "1.2.5"
 vico = "2.2.0"  # plots
 # tests
 espresso = "3.7.0"
@@ -94,6 +94,7 @@ grpc-binder = { group = "io.grpc", name = "grpc-binder", version.ref = "grpc" }
 grpc-protobuf-lite = { group = "io.grpc", name = "grpc-protobuf-lite", version.ref = "grpc" }
 protobuf-kotlin-lite = { group = "com.google.protobuf", name = "protobuf-kotlin-lite", version.ref = "protobuf" }
 protobuf-protoc-stnd = { group = "com.google.protobuf", name = "protoc", version.ref = "protobuf" }
+# do not remove the 3 below, they are actually used
 protobuf-protoc-gen-javalite = { group = "com.google.protobuf", name = "protoc-gen-javalite", version.ref = "protobuf-gen-javalite" }
 protobuf-protoc-gen-grpc-java = { group = "io.grpc", name = "protoc-gen-grpc-java", version.ref = "grpc"}
 protobuf-protoc-gen-grpc-kotlin = { module = "io.grpc:protoc-gen-grpc-kotlin", version.ref = "grpc-gen-kotlin" }
