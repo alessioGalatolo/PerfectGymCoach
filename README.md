@@ -42,7 +42,8 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 ## Screenshots
 | Material 3 Expressive | Wear OS |
 |---|---|
-| ![Expressive Update](https://github.com/user-attachments/assets/030e1427-02f9-483d-b9a1-d1e42da0b265) | ![Wear OS Demo](https://github.com/user-attachments/assets/08acae06-e532-4d8a-ba43-6ac733827260) |
+| ![Expressive Update](https://github.com/user-attachments/assets/030e1427-02f9-483d-b9a1-d1e42da0b265) | ![Wear OS Demo](https://github.com/user-attachments/assets/4bb5351a-80aa-4dff-9f36-56663540078f)
+ |
 
 ## Tech Stack
 
@@ -96,10 +97,9 @@ For release builds:
 
 ###  In Progress
 - [ ] Gemini Nano/On-Device AI Integration: On-device AI for intelligent coaching (WIP [here](https://github.com/alessioGalatolo/PerfectGymCoach/tree/ondevice-ai))
-- [ ] Improve wear os companion
+- [ ] Expressive typography
 
 ### Planned
-- [ ] Expressive typography
 - [ ] Additional animations and transitions
 
 ## Contributing
