@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package agdesigns.elevatefitness.shared.grpc;
+
+import "google/protobuf/empty.proto";
+
+option java_package = "agdesigns.elevatefitness.shared.grpc";
+
+// info exchange between phone and watch e.g., version number
+
+message VersionInfo {
+  int32 version_code = 1;
+  VersionName version_name = 2;
+}
+
+// together they give e.g., "1.0.1a"
+message VersionName {
+  int32 major = 1;
+  int32 minor = 2;
+  int32 patch = 3;
+  string hotfix = 4;
+}
+
+service PhoneInfoService {
+  rpc versionInfo(google.protobuf.Empty) returns (VersionInfo);
+}
+
+service WearInfoService {
+  rpc versionInfo(google.protobuf.Empty) returns (VersionInfo);
+}

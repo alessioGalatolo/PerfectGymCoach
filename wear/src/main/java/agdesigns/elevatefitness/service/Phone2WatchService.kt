@@ -1,7 +1,7 @@
 package agdesigns.elevatefitness.service
 
-import agdesignes.elevatefitness.shared.grpc.Workout
-import agdesignes.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
+import agdesigns.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
 import agdesigns.elevatefitness.data.WearRepository
 import android.content.Intent
 import com.google.android.horologist.annotations.ExperimentalHorologistApi

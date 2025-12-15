@@ -25,7 +25,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.common.InfoDialog
-import agdesignes.elevatefitness.shared.maybeKgToLb
+import agdesigns.elevatefitness.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline

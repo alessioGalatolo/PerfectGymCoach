@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
-import agdesignes.elevatefitness.shared.Equipment
-import agdesignes.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.grpc.Workout
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

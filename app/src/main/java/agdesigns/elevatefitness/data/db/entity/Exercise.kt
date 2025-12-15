@@ -5,7 +5,7 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.Equipment
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

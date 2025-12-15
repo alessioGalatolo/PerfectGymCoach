@@ -20,7 +20,7 @@ import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.history.components.WorkoutCalendarCards
-import agdesignes.elevatefitness.shared.maybeKgToLb
+import agdesigns.elevatefitness.shared.maybeKgToLb
 import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape

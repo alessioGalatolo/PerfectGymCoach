@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 
-import agdesignes.elevatefitness.shared.R as sharedR
+import agdesigns.elevatefitness.shared.R as sharedR
 
 
 @OptIn(ExperimentalTextApi::class, ExperimentalMaterial3ExpressiveApi::class)

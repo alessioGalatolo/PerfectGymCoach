@@ -54,17 +54,18 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 30
         targetSdk = 36
-        versionCode = 12  // cannot match app version
-        versionName = "0.0.6" // match phone app version + eventual revisions
+        versionCode = 14  // cannot match app version
+        versionName = "0.0.6a" // match phone app version + eventual revisions
     }
 
     buildTypes {
         release {
             // Enables code-related app optimization.
-            isMinifyEnabled = true
+            // FIXME: optimization enabled breaks phone-watch connection...
+//            isMinifyEnabled = true
 
             // Enables resource shrinking.
-            isShrinkResources = true
+//            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -91,6 +92,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

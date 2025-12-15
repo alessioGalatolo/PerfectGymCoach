@@ -1,9 +1,9 @@
 package agdesigns.elevatefitness.service
 
-import agdesignes.elevatefitness.shared.grpc.Media
-import agdesignes.elevatefitness.shared.grpc.MediaServiceGrpcKt
-import agdesignes.elevatefitness.shared.grpc.Workout
-import agdesignes.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
+import agdesigns.elevatefitness.shared.grpc.Media
+import agdesigns.elevatefitness.shared.grpc.MediaServiceGrpcKt
+import agdesigns.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
 import agdesigns.elevatefitness.data.MediaPlayingRepository
 import agdesigns.elevatefitness.data.PhoneWorkoutRepository
 import android.util.Log

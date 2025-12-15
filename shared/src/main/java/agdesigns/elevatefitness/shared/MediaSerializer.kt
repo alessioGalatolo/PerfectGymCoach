@@ -1,7 +1,7 @@
-package agdesignes.elevatefitness.shared
+package agdesigns.elevatefitness.shared
 
-import agdesignes.elevatefitness.shared.grpc.Media
-import agdesignes.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.grpc.Media
+import agdesigns.elevatefitness.shared.grpc.Workout
 import android.util.Log
 import com.google.protobuf.InvalidProtocolBufferException
 import androidx.datastore.core.Serializer

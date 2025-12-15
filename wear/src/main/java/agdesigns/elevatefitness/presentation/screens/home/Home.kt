@@ -196,15 +196,18 @@ fun Home(
                             Text(stringResource(R.string.open_phone_app))
                         }
                     }
-                    item {
-                        TextButton(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = {
-                                remoteActivityHelper.startRemoteActivity(getAppIntent)
-                                showConfirmation = true
+                    if (homeState.phoneVersionInfo == null) {
+                        // we have info about the phone app version so it must be installed
+                        item {
+                            TextButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    remoteActivityHelper.startRemoteActivity(getAppIntent)
+                                    showConfirmation = true
+                                }
+                            ) {
+                                Text(stringResource(R.string.get_phone_app), maxLines = 1)
                             }
-                        ) {
-                            Text(stringResource(R.string.get_phone_app), maxLines = 1)
                         }
                     }
                 } else {

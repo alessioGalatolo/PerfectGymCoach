@@ -14,8 +14,8 @@ import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import android.util.Log
-import agdesignes.elevatefitness.shared.Equipment
-import agdesignes.elevatefitness.shared.maybeKgToLb
+import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.maybeKgToLb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*

@@ -1,4 +1,4 @@
-package agdesignes.elevatefitness.shared
+package agdesigns.elevatefitness.shared
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

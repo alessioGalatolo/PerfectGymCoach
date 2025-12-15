@@ -1,8 +1,8 @@
 package agdesigns.elevatefitness.data
 
-import agdesignes.elevatefitness.shared.MEDIA_IMAGES_PATH
-import agdesignes.elevatefitness.shared.bitmapArrayStore
-import agdesignes.elevatefitness.shared.grpc.Media.MediaPlaying
+import agdesigns.elevatefitness.shared.MEDIA_IMAGES_PATH
+import agdesigns.elevatefitness.shared.bitmapArrayStore
+import agdesigns.elevatefitness.shared.grpc.Media.MediaPlaying
 import agdesigns.elevatefitness.service.NotificationListener
 import agdesigns.elevatefitness.utils.notificationAccessFlow
 import android.app.PendingIntent

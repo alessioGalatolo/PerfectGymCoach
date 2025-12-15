@@ -1,6 +1,6 @@
 package agdesigns.elevatefitness.presentation.screens.workout.components
 
-import agdesignes.elevatefitness.shared.R
+import agdesigns.elevatefitness.shared.R
 import agdesigns.elevatefitness.presentation.screens.common.MorphPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
@@ -123,9 +123,9 @@ fun WorkoutPage(
             exerciseTitle = exerciseName,
             exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
                     if (exercisesState.imperialSystem)
-                        stringResource(agdesignes.elevatefitness.shared.R.string.lb)
+                        stringResource(agdesigns.elevatefitness.shared.R.string.lb)
                     else
-                        stringResource(agdesignes.elevatefitness.shared.R.string.kg),
+                        stringResource(agdesigns.elevatefitness.shared.R.string.kg),
             bottomText = currentExercise?.note ?: "",
             startRest = startRest,
             hasPrevious = workoutState.currentExerciseIndex > 0,

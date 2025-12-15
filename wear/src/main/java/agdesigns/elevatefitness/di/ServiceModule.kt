@@ -1,11 +1,11 @@
 package agdesigns.elevatefitness.di
 
-import agdesignes.elevatefitness.shared.MediaSerializer
+import agdesigns.elevatefitness.shared.MediaSerializer
 import agdesigns.elevatefitness.service.WearDataLayerAppHelper
 import android.content.Context
 import android.util.Log
-import agdesignes.elevatefitness.shared.WorkoutDataDynamicSerializer
-import agdesignes.elevatefitness.shared.WorkoutDataStaticSerializer
+import agdesigns.elevatefitness.shared.WorkoutDataDynamicSerializer
+import agdesigns.elevatefitness.shared.WorkoutDataStaticSerializer
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.WearDataLayerRegistry
 import com.google.android.horologist.data.store.ProtoDataListener

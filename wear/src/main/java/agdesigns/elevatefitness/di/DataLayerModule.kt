@@ -1,12 +1,13 @@
 package agdesigns.elevatefitness.di
 
-import agdesignes.elevatefitness.shared.MediaSerializer
+import agdesigns.elevatefitness.shared.MediaSerializer
 import agdesigns.elevatefitness.service.WearDataLayerAppHelper
 import android.content.Context
-import agdesignes.elevatefitness.shared.WorkoutDataDynamicSerializer
-import agdesignes.elevatefitness.shared.WorkoutDataStaticSerializer
-import agdesignes.elevatefitness.shared.grpc.MediaServiceGrpcKt
-import agdesignes.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
+import agdesigns.elevatefitness.shared.WorkoutDataDynamicSerializer
+import agdesigns.elevatefitness.shared.WorkoutDataStaticSerializer
+import agdesigns.elevatefitness.shared.grpc.MediaServiceGrpcKt
+import agdesigns.elevatefitness.shared.grpc.PhoneInfoServiceGrpcKt
+import agdesigns.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.registerProtoDataListener
 import com.google.android.horologist.data.TargetNodeId
@@ -97,5 +98,18 @@ object DataLayerModule {
             coroutineScope = coroutineScope,
         ) {
             MediaServiceGrpcKt.MediaServiceCoroutineStub(it)
+        }
+
+    @ActivityRetainedScoped
+    @Provides
+    fun phoneInfoService(
+        wearDataLayerRegistry: WearDataLayerRegistry,
+        coroutineScope: CoroutineScope,
+    ): PhoneInfoServiceGrpcKt.PhoneInfoServiceCoroutineStub =
+        wearDataLayerRegistry.grpcClient(
+            nodeId = TargetNodeId.PairedPhone,
+            coroutineScope = coroutineScope,
+        ) {
+            PhoneInfoServiceGrpcKt.PhoneInfoServiceCoroutineStub(it)
         }
 }

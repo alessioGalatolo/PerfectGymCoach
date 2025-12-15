@@ -73,8 +73,8 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
-import agdesignes.elevatefitness.shared.BarbellType
-import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.BarbellType
+import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
@@ -237,9 +237,9 @@ fun CompleteSetAndRestScreen(
                     subtitle = stringResource(type.barbellResource),
                     value = weightMainValue,
                     subValue = weightSubValue + if (exercisesState.imperialSystem)
-                        stringResource(agdesignes.elevatefitness.shared.R.string.lb)
+                        stringResource(agdesigns.elevatefitness.shared.R.string.lb)
                     else
-                        stringResource(agdesignes.elevatefitness.shared.R.string.kg),
+                        stringResource(agdesigns.elevatefitness.shared.R.string.kg),
                     nextButtonText = stringResource(R.string.done_icon),
                     useArrowButtons = true,
                     changeValue = changeTare

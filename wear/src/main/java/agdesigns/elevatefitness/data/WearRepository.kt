@@ -1,6 +1,6 @@
 package agdesigns.elevatefitness.data
 
-import agdesignes.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.data.datastore.PermissionStateDataStore
 import agdesigns.elevatefitness.service.WorkoutService
 import android.content.ComponentName

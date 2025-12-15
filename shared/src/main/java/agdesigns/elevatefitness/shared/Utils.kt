@@ -1,4 +1,4 @@
-package agdesignes.elevatefitness.shared
+package agdesigns.elevatefitness.shared
 
 import androidx.compose.ui.res.stringResource
 import kotlin.math.round

@@ -45,7 +45,7 @@ protobuf {
 }
 
 android {
-    namespace = "agdesignes.elevatefitness.shared"
+    namespace = "agdesigns.elevatefitness.shared"
     compileSdk = 36
 
     defaultConfig {

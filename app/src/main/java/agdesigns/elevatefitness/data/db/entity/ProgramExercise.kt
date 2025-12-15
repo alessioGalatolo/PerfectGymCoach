@@ -9,7 +9,7 @@ import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
 import androidx.room.Relation
-import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.Equipment
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

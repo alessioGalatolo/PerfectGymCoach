@@ -1,6 +1,6 @@
 package agdesigns.elevatefitness.data
 
-import agdesignes.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.grpc.Workout
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoDataStore
 import com.google.android.horologist.data.WearDataLayerRegistry

@@ -19,7 +19,7 @@ import javax.inject.Inject
 import androidx.core.net.toUri
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import androidx.wear.tiles.TileService
-import agdesignes.elevatefitness.shared.toProtoTimestamp
+import agdesigns.elevatefitness.shared.toProtoTimestamp
 import com.google.android.gms.tasks.Tasks
 import com.google.android.horologist.data.UsageStatus
 import com.google.android.horologist.data.activityLaunched

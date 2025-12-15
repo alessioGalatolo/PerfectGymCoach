@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package agdesignes.elevatefitness.shared.grpc;
+package agdesigns.elevatefitness.shared.grpc;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-option java_package = "agdesignes.elevatefitness.shared.grpc";
+option java_package = "agdesigns.elevatefitness.shared.grpc";
 
 // Workout data synced via DataStore
 message WorkoutStaticData {

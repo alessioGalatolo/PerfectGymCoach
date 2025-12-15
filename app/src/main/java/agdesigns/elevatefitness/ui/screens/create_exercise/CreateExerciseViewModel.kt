@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.Equipment
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

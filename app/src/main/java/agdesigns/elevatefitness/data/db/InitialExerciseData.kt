@@ -3,7 +3,7 @@ package agdesigns.elevatefitness.data.db
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import android.content.Context
-import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.Equipment
 
 // TODO: Fix general spelling and capitalisation, missing exercises e.g. planche
 val INITIAL_EXERCISE_DATA = listOf(

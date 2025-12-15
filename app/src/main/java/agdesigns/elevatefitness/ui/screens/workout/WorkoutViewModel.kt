@@ -1,6 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.workout
 
-import agdesignes.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.PhoneWorkoutRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
@@ -24,14 +24,14 @@ import android.text.format.DateUtils
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import agdesignes.elevatefitness.shared.Equipment
-import agdesignes.elevatefitness.shared.WORKOUT_IMAGES_PATH
-import agdesignes.elevatefitness.shared.bitmapArrayStore
-import agdesignes.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
-import agdesignes.elevatefitness.shared.maybeKgToLb
-import agdesignes.elevatefitness.shared.maybeLbToKg
-import agdesignes.elevatefitness.shared.toProtoTimestamp
-import agdesignes.elevatefitness.shared.toZonedDateTime
+import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.WORKOUT_IMAGES_PATH
+import agdesigns.elevatefitness.shared.bitmapArrayStore
+import agdesigns.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
+import agdesigns.elevatefitness.shared.maybeKgToLb
+import agdesigns.elevatefitness.shared.maybeLbToKg
+import agdesigns.elevatefitness.shared.toProtoTimestamp
+import agdesigns.elevatefitness.shared.toZonedDateTime
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoDataStore
 import com.google.android.horologist.data.WearDataLayerRegistry

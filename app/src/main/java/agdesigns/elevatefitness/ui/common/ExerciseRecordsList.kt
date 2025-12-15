@@ -3,8 +3,8 @@ package agdesigns.elevatefitness.ui.common
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
-import agdesignes.elevatefitness.shared.maybeKgToLb
-import agdesignes.elevatefitness.shared.weightAndUnit
+import agdesigns.elevatefitness.shared.maybeKgToLb
+import agdesigns.elevatefitness.shared.weightAndUnit
 import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,8 +34,8 @@ import androidx.core.content.res.ResourcesCompat.ID_NULL
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import agdesignes.elevatefitness.shared.Equipment
-import agdesignes.elevatefitness.shared.barbellResFromWeight
+import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.barbellResFromWeight
 
 // Shows a nice list of records
 fun LazyListScope.ExerciseRecordsList(

@@ -14,7 +14,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getGeneratedPlanName
 import agdesigns.elevatefitness.data.db.entity.getGeneratedProgramName
 import android.util.Log
-import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.Equipment
 import kotlinx.coroutines.flow.first
 import java.time.ZonedDateTime
 import kotlin.math.ceil

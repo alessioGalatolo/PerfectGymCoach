@@ -11,7 +11,7 @@ import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
 import agdesigns.elevatefitness.utils.estimate1RM
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
-import agdesignes.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.Equipment
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import dagger.hilt.android.lifecycle.HiltViewModel
