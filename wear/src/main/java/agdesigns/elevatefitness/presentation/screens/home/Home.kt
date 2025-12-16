@@ -171,7 +171,9 @@ fun Home(
             ScalingLazyColumn(
                 state = listState,
                 contentPadding = SCALING_LIST_PADDING_VALUES,
-                autoCentering = null
+                // param below will avoid having the last element scroll all the way to the center
+                // but will create problems with google's review process
+//                autoCentering = null
             ) {
                 if (!homeState.workoutRunningFromPhone) {
                     item {

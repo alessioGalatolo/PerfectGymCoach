@@ -32,7 +32,6 @@ fun PermissionRequiredScreen(
     @StringRes buttonLabelResId: Int
 ) {
     ScalingLazyColumn(
-        contentPadding = SCALING_LIST_PADDING_VALUES,
         modifier = Modifier
             .fillMaxSize()
             .zIndex(1f)
@@ -40,7 +39,10 @@ fun PermissionRequiredScreen(
         state = listState,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceAround,
-        autoCentering = null
+        contentPadding = SCALING_LIST_PADDING_VALUES,
+        // param below will avoid having the last element scroll all the way to the center
+        // but will create problems with google's review process
+//        autoCentering = null,
     ) {
         item {
             Text(

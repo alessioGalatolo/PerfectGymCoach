@@ -11,6 +11,7 @@ import agdesigns.elevatefitness.data.SearchesRepository
 import agdesigns.elevatefitness.data.V1PrefsMigration
 import agdesigns.elevatefitness.data.V2PrefsMigration
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
+import agdesigns.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -115,9 +116,11 @@ object AppModule {
     @Provides
     @Singleton
     fun phoneWorkoutRepository(
-        registry: WearDataLayerRegistry
+        registry: WearDataLayerRegistry,
+        phone2WatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
     ): PhoneWorkoutRepository = PhoneWorkoutRepository(
-        registry
+        registry,
+        phone2WatchService
     )
 
 }

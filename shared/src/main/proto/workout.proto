@@ -90,4 +90,6 @@ service WorkoutWearService {
   //  side effect of a set completed on phone
   rpc scrollToExercise(ExerciseToScrollTo) returns (google.protobuf.Empty);
   rpc setRest(RestPhone2Watch) returns (google.protobuf.Empty);
+  // stops workout on watch
+  rpc stopWorkout(google.protobuf.Empty) returns (google.protobuf.Empty);
 }

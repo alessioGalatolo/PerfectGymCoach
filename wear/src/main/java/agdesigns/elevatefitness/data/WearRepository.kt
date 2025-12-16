@@ -56,6 +56,11 @@ class WearRepository @Inject constructor(
         setRestChannel.trySend(rest)
     }
 
+    fun handleStopWorkout() {
+        foregroundOnlyWalkingWorkoutService?.stopWorkout()
+    }
+
+
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             val binder = service as WorkoutService.LocalBinder

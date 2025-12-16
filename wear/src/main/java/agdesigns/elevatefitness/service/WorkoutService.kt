@@ -156,6 +156,7 @@ class WorkoutService: LifecycleService() {
 
         lifecycleScope.launch {
             workoutActive = false
+            updateNotification()  // Cancel the ongoing activity notification
             if (stopService) {
                 stopSelf()
             }
