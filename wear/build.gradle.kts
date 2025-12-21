@@ -136,7 +136,6 @@ dependencies {
 
     implementation(libs.android.shapes)
 
-    implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
 
     debugImplementation(libs.compose.ui.tooling)

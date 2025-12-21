@@ -28,41 +28,37 @@ fun VignetteImage(
     alpha: Float = 0.4f,
     background: Color = MaterialTheme.colorScheme.background,
 ) {
-    AmbientAware { ambientState ->
-        if (ambientState.isInteractive) {
-            // Image with radial gradient
-            val animatedBackgroundColor = animateColorAsState(
-                targetValue = color,
-                animationSpec = tween(450, 0, LinearEasing),
-                label = "ColorBackground",
-            )
+    // Image with radial gradient
+    val animatedBackgroundColor = animateColorAsState(
+        targetValue = color,
+        animationSpec = tween(450, 0, LinearEasing),
+        label = "ColorBackground",
+    )
 
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .drawWithCache {
-                        // pre-compute your brush or shader once per size change
-                        val brush = Brush.radialGradient(
-                            colors = listOf(
-                                animatedBackgroundColor.value.copy(alpha = alpha),
-                                background,
-                            ),
-                            center = size.center,
-                            radius = size.minDimension / 2
-                        )
-                        onDrawWithContent {
-                            drawContent()                // 1) draw children (your Image)
-                            drawRect(brush = brush)     // 2) overlay the radial gradient
-                        }
-                    },
-            ) {
-                Image(
-                    imageBitmap,
-                    contentDescription = stringResource(R.string.exercise_image),
-                    modifier = Modifier.matchParentSize(),
-                    contentScale = ContentScale.Crop
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .drawWithCache {
+                // pre-compute your brush or shader once per size change
+                val brush = Brush.radialGradient(
+                    colors = listOf(
+                        animatedBackgroundColor.value.copy(alpha = alpha),
+                        background,
+                    ),
+                    center = size.center,
+                    radius = size.minDimension / 2
                 )
-            }
-        }
+                onDrawWithContent {
+                    drawContent()                // 1) draw children (your Image)
+                    drawRect(brush = brush)     // 2) overlay the radial gradient
+                }
+            },
+    ) {
+        Image(
+            imageBitmap,
+            contentDescription = stringResource(R.string.exercise_image),
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.Crop
+        )
     }
 }

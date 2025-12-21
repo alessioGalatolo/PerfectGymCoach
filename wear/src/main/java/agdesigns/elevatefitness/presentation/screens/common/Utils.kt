@@ -24,6 +24,7 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.images.base.paintable.Paintable
 import com.google.android.horologist.images.base.paintable.PaintableIcon
 import com.google.android.horologist.media.ui.util.isLargeScreen
@@ -36,9 +37,13 @@ import com.google.android.horologist.media.ui.util.isLargeScreen
 fun TextHeaderWithMarquee(
     title: String,
     subtitle: String,
+    ambientState: AmbientState,
     modifier: Modifier = Modifier,
     titleIcon: ImageVector? = null,
 ) {
+    val marqueeModifier = if (ambientState.isInteractive) {
+        Modifier.basicMarquee()
+    } else Modifier
     val isLargeScreen = LocalConfiguration.current.isLargeScreen
     val titleSidePadding = (0.063f * LocalConfiguration.current.screenWidthDp).dp
 
@@ -70,8 +75,7 @@ fun TextHeaderWithMarquee(
         Text(
             text = text,
             inlineContent = inlineContent,
-            modifier = Modifier
-                .basicMarquee()
+            modifier = marqueeModifier
                 .padding(
                     top = if (isLargeScreen) 0.dp else 2.dp,
                     bottom = if (isLargeScreen) 3.dp else 1.dp,
@@ -85,10 +89,9 @@ fun TextHeaderWithMarquee(
         )
         Text(
             text = subtitle,
-            modifier = Modifier
+            modifier = marqueeModifier
                 .fillMaxWidth()
-                .padding(top = 1.dp, bottom = .6.dp)
-                .basicMarquee(),
+                .padding(top = 1.dp, bottom = .6.dp),
             color = MaterialTheme.colors.onBackground,
             textAlign = TextAlign.Center,
             maxLines = 1,

@@ -46,8 +46,10 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.controls.MediaButton
+import com.google.android.horologist.media.ui.components.controls.MediaButtonDefaults
 import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 import com.google.android.horologist.media.ui.util.isLargeScreen
@@ -78,70 +80,85 @@ fun WorkoutPage(
     val currentImage = remember(workoutState.currentExerciseIndex, exercisesState.images) {
         exercisesState.images.getOrNull(workoutState.currentExerciseIndex)
     }
-    if (currentImage != null) {
-        VignetteImage(currentImage.asImageBitmap(), alpha = 0.15f)
-    }
-    if ((workoutState.ongoingRestProgression ?: 0f) > 0f || workoutState.settingSetValues) {
-        CompleteSetAndRestScreen(
-            restProgression = workoutState.ongoingRestProgression ?: 1f,
-            currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
-            nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount } ?: false ) {
-                val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
-                    workoutState.currentExerciseIndex
-                )
-                val setsDone = exercisesState.exercisesSetsDone.getOrNull(
-                    workoutState.currentExerciseIndex
-                ) ?: 0
-                (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${repsWeight?.getWeight(setsDone)}${if (exercisesState.imperialSystem)
-                    stringResource(R.string.lb)
-                else
-                    stringResource(R.string.kg)})"
-            } else {
-                exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
-                    ?: ""
-            },
-            // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
-            workoutState = workoutState,
-            exercisesState = exercisesState,
-            changeReps = changeReps,
-            changeWeight = changeWeight,
-            fineGrainedChangeWeight = fineGrainedChangeWeight,
-            changeTare = changeTare,
-            skipRest = resetRest,
-            completeSet = completeSet
-        )
-    } else {
-        val exerciseName = remember(
-            workoutState.currentExerciseIndex,
-            exercisesState.exercises,
-            exercisesState.exercisesSetsDone
-        ) {
-            (currentExercise?.name ?: "") + " (${setsDone + 1}/${currentExercise?.restCount ?: 0})"
+    AmbientAware { ambientState ->
+        if (currentImage != null && ambientState.isInteractive) {
+            VignetteImage(
+                currentImage.asImageBitmap(),
+                alpha = 0.15f,
+            )
         }
-
-        ExercisePage(
-            exerciseTitle = exerciseName,
-            exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
-                    if (exercisesState.imperialSystem)
-                        stringResource(agdesigns.elevatefitness.shared.R.string.lb)
-                    else
-                        stringResource(agdesigns.elevatefitness.shared.R.string.kg),
-            bottomText = currentExercise?.note ?: "",
-            startRest = startRest,
-            hasPrevious = workoutState.currentExerciseIndex > 0,
-            hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size-1,
-            onNext = {
-                if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
-                    onNextExercise()
-                }
-            },
-            onPrevious = {
-                if (workoutState.currentExerciseIndex > 0) {
-                    onPreviousExercise()
-                }
+        if ((workoutState.ongoingRestProgression ?: 0f) > 0f || workoutState.settingSetValues) {
+            CompleteSetAndRestScreen(
+                restProgression = workoutState.ongoingRestProgression ?: 1f,
+                currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
+                nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount }
+                        ?: false) {
+                    val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
+                        workoutState.currentExerciseIndex
+                    )
+                    val setsDone = exercisesState.exercisesSetsDone.getOrNull(
+                        workoutState.currentExerciseIndex
+                    ) ?: 0
+                    (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${
+                        repsWeight?.getWeight(
+                            setsDone
+                        )
+                    }${
+                        if (exercisesState.imperialSystem)
+                            stringResource(R.string.lb)
+                        else
+                            stringResource(R.string.kg)
+                    })"
+                } else {
+                    exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
+                        ?: ""
+                },
+                // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
+                workoutState = workoutState,
+                exercisesState = exercisesState,
+                ambientState = ambientState,
+                changeReps = changeReps,
+                changeWeight = changeWeight,
+                fineGrainedChangeWeight = fineGrainedChangeWeight,
+                changeTare = changeTare,
+                skipRest = resetRest,
+                completeSet = completeSet
+            )
+        } else {
+            val exerciseName = remember(
+                workoutState.currentExerciseIndex,
+                exercisesState.exercises,
+                exercisesState.exercisesSetsDone
+            ) {
+                (currentExercise?.name
+                    ?: "") + " (${setsDone + 1}/${currentExercise?.restCount ?: 0})"
             }
 
-        )
+            ExercisePage(
+                exerciseTitle = exerciseName,
+                exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
+                        if (exercisesState.imperialSystem)
+                            stringResource(agdesigns.elevatefitness.shared.R.string.lb)
+                        else
+                            stringResource(agdesigns.elevatefitness.shared.R.string.kg),
+                bottomText = currentExercise?.note ?: "",
+                startRest = startRest,
+                hasPrevious = workoutState.currentExerciseIndex > 0,
+                hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
+                ambientState = ambientState,
+                onNext = {
+                    if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
+                        onNextExercise()
+                    }
+                },
+                onPrevious = {
+                    if (workoutState.currentExerciseIndex > 0) {
+                        onPreviousExercise()
+                    }
+                }
+
+            )
+        }
     }
 }
 
@@ -153,6 +170,7 @@ fun ExercisePage(
     bottomText: String,
     hasPrevious: Boolean,
     hasNext: Boolean,
+    ambientState: AmbientState,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     startRest: () -> Unit
@@ -161,7 +179,8 @@ fun ExercisePage(
         mediaDisplay = {
             TextHeaderWithMarquee(
                 title = exerciseTitle,
-                subtitle = exerciseSubtitle  // TODO: test rendering
+                subtitle = exerciseSubtitle,
+                ambientState = ambientState
             )
         },
         controlButtons = {
@@ -172,6 +191,12 @@ fun ExercisePage(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         "",
                         modifier = Modifier.fillMaxSize(),
+                        colors = if (ambientState.isInteractive)
+                            MediaButtonDefaults.mediaButtonDefaultColors
+                        else
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
                         enabled = hasPrevious
                     )
                 },
@@ -181,80 +206,84 @@ fun ExercisePage(
                         icon = Icons.AutoMirrored.Filled.ArrowForward,
                         "",
                         modifier = Modifier.fillMaxSize(),
-                        enabled = hasNext
+                        enabled = hasNext,
+                        colors = if (ambientState.isInteractive)
+                            MediaButtonDefaults.mediaButtonDefaultColors
+                        else
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
                     )
                 },
                 middleButton = {
-                    AmbientAware { ambient ->
-                        val shapeA = remember {
-                            RoundedPolygon.star(
-                                numVerticesPerRadius = 4,
-                                radius = 2f,
-                                innerRadius = 0.352f * 2f, // multiply by radius
-                                rounding = CornerRounding(0.32f * 2f),
-                            )
-                        }
-                        val shapeB = remember {
-                            RoundedPolygon(
-                                4,
-                                radius = 1.4f,
-                                rounding = CornerRounding(0.5f)
-                            )
-                        }
-                        val morph = remember {
-                            Morph(shapeA, shapeB)
-                        }
-                        val interactionSource = remember {
-                            MutableInteractionSource()
-                        }
-                        val isPressed by interactionSource.collectIsPressedAsState()
-                        val animatedProgress = animateFloatAsState(
-                            targetValue = if (isPressed) 1f else 0f,
-                            label = "progress",
-                            animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                    val shapeA = remember {
+                        RoundedPolygon.star(
+                            numVerticesPerRadius = 4,
+                            radius = 2f,
+                            innerRadius = 0.352f * 2f, // multiply by radius
+                            rounding = CornerRounding(0.32f * 2f),
                         )
-                        val background = if (ambient.isAmbient) {
-                            Color.Transparent
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .rotate(45f)
-                                .clip(
-                                    MorphPolygonShape(morph, animatedProgress.value)
-                                )
-                                .border(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    MorphPolygonShape(morph, animatedProgress.value)
-                                )
-                                .rotate(-45f)
-                                .clickable(interactionSource = interactionSource, indication = null, onClick = startRest)
-                                .background(background),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Default.Done,
-                                modifier = Modifier
-                                    .defaultMinSize(
-                                        minWidth = ButtonDefaults.DefaultButtonSize,
-                                        minHeight = ButtonDefaults.DefaultButtonSize,
-                                    )
-                                    .size(if (LocalConfiguration.current.isLargeScreen)
-                                        38.dp
-                                    else
-                                        32.dp
-                                    )
-                                    .align(Alignment.Center),
-                                contentDescription = "", // FIXME
-                                tint = if (ambient.isAmbient)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onPrimary,
+                    }
+                    val shapeB = remember {
+                        RoundedPolygon(
+                            4,
+                            radius = 1.4f,
+                            rounding = CornerRounding(0.5f)
+                        )
+                    }
+                    val morph = remember {
+                        Morph(shapeA, shapeB)
+                    }
+                    val interactionSource = remember {
+                        MutableInteractionSource()
+                    }
+                    val isPressed by interactionSource.collectIsPressedAsState()
+                    val animatedProgress = animateFloatAsState(
+                        targetValue = if (isPressed) 1f else 0f,
+                        label = "progress",
+                        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                    )
+                    val background = if (ambientState.isAmbient) {
+                        Color.Transparent
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .rotate(45f)
+                            .clip(
+                                MorphPolygonShape(morph, animatedProgress.value)
                             )
-                        }
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary,
+                                MorphPolygonShape(morph, animatedProgress.value)
+                            )
+                            .rotate(-45f)
+                            .clickable(interactionSource = interactionSource, indication = null, onClick = startRest)
+                            .background(background),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.Done,
+                            modifier = Modifier
+                                .defaultMinSize(
+                                    minWidth = ButtonDefaults.DefaultButtonSize,
+                                    minHeight = ButtonDefaults.DefaultButtonSize,
+                                )
+                                .size(if (LocalConfiguration.current.isLargeScreen)
+                                    38.dp
+                                else
+                                    32.dp
+                                )
+                                .align(Alignment.Center),
+                            contentDescription = "", // FIXME
+                            tint = if (ambientState.isAmbient)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onPrimary,
+                        )
                     }
                 }
             )

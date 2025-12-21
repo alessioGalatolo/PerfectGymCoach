@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -63,6 +64,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.horologist.compose.ambient.AmbientAware
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -110,127 +112,123 @@ fun Home(
     val style = OpenOnPhoneDialogDefaults.curvedTextStyle
     val listState = rememberScalingLazyListState()
 
-    ScreenScaffold (listState) {
-        OpenOnPhoneDialog(
-            visible = showConfirmation,
-            onDismissRequest = { showConfirmation = false },
-            curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
-        )
-        if (permissionState.status == PermissionStatus.Granted) {
-            LaunchedEffect(Unit) {
-                // Reset the status of having shown permission rationale.
-                viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(ShownRationaleStatus.UNKNOWN)
-            }
-        }
-        var notNow by rememberSaveable { mutableStateOf(false) }
-        if (permissionState.status is PermissionStatus.Denied && !notNow) {
-            val denied = permissionState.status as PermissionStatus.Denied
-            val hasPreviouslyShown by viewModel.permissionStateDataStore
-                .hasPreviouslyShownRationaleFlow
-                .collectAsStateWithLifecycle(initialValue = ShownRationaleStatus.UNKNOWN)
-
-            if (denied.shouldShowRationale) {
+    AmbientAware { ambientState ->
+        ScreenScaffold(listState) {
+            OpenOnPhoneDialog(
+                visible = showConfirmation,
+                onDismissRequest = { showConfirmation = false },
+                curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
+            )
+            if (permissionState.status == PermissionStatus.Granted) {
                 LaunchedEffect(Unit) {
+                    // Reset the status of having shown permission rationale.
                     viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                        ShownRationaleStatus.HAS_SHOWN
+                        ShownRationaleStatus.UNKNOWN
                     )
                 }
-                // ShouldShowRationale returns true if:
-                // - A request has previously been denied
-                // - The app permission was set to denied in settings
-                // At this point, the app stores the state that the rationale has been shown, as if
-                // subsequently false is returned, this means that the permission cannot be requested
-                // now, as opposed to the false seen from shouldShowRationale on first ever launch
-                PermissionRequiredScreen(
-                    listState,
-                    onPermissionClick = { permissionState.launchPermissionRequest() },
-                    buttonLabelResId = R.string.show_permission,
-                    onNotNowClick = { notNow = true }
-                )
-            } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_SHOWN) {
-                // Rationale has been shown previously, but the user has decided not to grant permission
-                // Offer the user the option to go to permission settings.
-                PermissionRequiredScreen(
-                    listState,
-                    onPermissionClick = { launchPermissionsSettings(context) },
-                    buttonLabelResId = R.string.show_settings,
-                    onNotNowClick = { notNow = true }
-                )
-            } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_NOT_SHOWN) {
-                // First launch of permissions, show the permission request without any rationale.
-                LaunchedEffect(Unit) {
-                    permissionState.launchPermissionRequest()
-                }
             }
-        } else {
-            LaunchedEffect(Unit) {
-                // PermissionRequiredScreen shares the same state, if we begin with that screen and scroll
-                // then we should scroll back before showing the actual screen
-                listState.scrollToItem(0)
-            }
-            ScalingLazyColumn(
-                state = listState,
-                contentPadding = SCALING_LIST_PADDING_VALUES,
-                // param below will avoid having the last element scroll all the way to the center
-                // but will create problems with google's review process
-//                autoCentering = null
-            ) {
-                if (!homeState.workoutRunningFromPhone) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.no_workout_detected),
-                            textAlign = TextAlign.Center
+            var notNow by rememberSaveable { mutableStateOf(false) }
+            if (permissionState.status is PermissionStatus.Denied && !notNow) {
+                val denied = permissionState.status as PermissionStatus.Denied
+                val hasPreviouslyShown by viewModel.permissionStateDataStore
+                    .hasPreviouslyShownRationaleFlow
+                    .collectAsStateWithLifecycle(initialValue = ShownRationaleStatus.UNKNOWN)
+
+                if (denied.shouldShowRationale) {
+                    LaunchedEffect(Unit) {
+                        viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
+                            ShownRationaleStatus.HAS_SHOWN
                         )
                     }
-                    item {
-                        Spacer(Modifier.height(16.dp))
+                    // ShouldShowRationale returns true if:
+                    // - A request has previously been denied
+                    // - The app permission was set to denied in settings
+                    // At this point, the app stores the state that the rationale has been shown, as if
+                    // subsequently false is returned, this means that the permission cannot be requested
+                    // now, as opposed to the false seen from shouldShowRationale on first ever launch
+                    PermissionRequiredScreen(
+                        listState,
+                        onPermissionClick = { permissionState.launchPermissionRequest() },
+                        buttonLabelResId = R.string.show_permission,
+                        onNotNowClick = { notNow = true }
+                    )
+                } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_SHOWN) {
+                    // Rationale has been shown previously, but the user has decided not to grant permission
+                    // Offer the user the option to go to permission settings.
+                    PermissionRequiredScreen(
+                        listState,
+                        onPermissionClick = { launchPermissionsSettings(context) },
+                        buttonLabelResId = R.string.show_settings,
+                        onNotNowClick = { notNow = true }
+                    )
+                } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_NOT_SHOWN) {
+                    // First launch of permissions, show the permission request without any rationale.
+                    LaunchedEffect(Unit) {
+                        permissionState.launchPermissionRequest()
                     }
-                    item {
-                        Button(onClick = {
-                            remoteActivityHelper.startRemoteActivity(openAppIntent)
-                            showConfirmation = true
-                        }) {
-                            Icon(
-                                Icons.Default.PhoneAndroid,
-                                stringResource(R.string.phone_icon)
-                            )
-                            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                            Text(stringResource(R.string.open_phone_app))
-                        }
-                    }
-                    if (homeState.phoneVersionInfo == null) {
-                        // we have info about the phone app version so it must be installed
+                }
+            } else {
+                LaunchedEffect(Unit) {
+                    // PermissionRequiredScreen shares the same state, if we begin with that screen and scroll
+                    // then we should scroll back before showing the actual screen
+                    listState.scrollToItem(0)
+                }
+                ScalingLazyColumn(
+                    state = listState,
+                    contentPadding = SCALING_LIST_PADDING_VALUES,
+                    // param below will avoid having the last element scroll all the way to the center
+                    // but will create problems with google's review process
+//                autoCentering = null
+                ) {
+                    if (!homeState.workoutRunningFromPhone) {
                         item {
-                            TextButton(
-                                modifier = Modifier.fillMaxWidth(),
+                            Text(
+                                text = stringResource(R.string.no_workout_detected),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        item {
+                            Spacer(Modifier.height(16.dp))
+                        }
+                        item {
+                            Button(
+                                colors = if (ambientState.isInteractive)
+                                    ButtonDefaults.buttonColors()
+                                else
+                                    ButtonDefaults.outlinedButtonColors(),
+                                border = if (ambientState.isAmbient)
+                                    ButtonDefaults.outlinedButtonBorder(true)
+                                else null,
                                 onClick = {
-                                    remoteActivityHelper.startRemoteActivity(getAppIntent)
+                                    remoteActivityHelper.startRemoteActivity(openAppIntent)
                                     showConfirmation = true
                                 }
                             ) {
-                                Text(stringResource(R.string.get_phone_app), maxLines = 1)
+                                Icon(
+                                    if (ambientState.isInteractive)
+                                        Icons.Default.PhoneAndroid
+                                    else
+                                        Icons.Outlined.PhoneAndroid,
+                                    stringResource(R.string.phone_icon)
+                                )
+                                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                Text(stringResource(R.string.open_phone_app))
                             }
                         }
-                    }
-                } else {
-                    item {
-                        Text(
-                            stringResource(R.string.workout_detected),
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    item {
-                        Spacer(Modifier.height(16.dp))
-                    }
-                    item {
-                        Button(onClick = openWorkoutScreen) {
-                            Icon(
-                                Icons.Default.FitnessCenter,
-                                stringResource(R.string.fitness_centre)
-                            )
-                            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                            Text(stringResource(R.string.switch_to_workout_view))
+                        if (homeState.phoneVersionInfo == null) {
+                            // if we have info about the phone app version, it must be installed
+                            // if we don't it may be either outdated or not installed
+                            item {
+                                TextButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        remoteActivityHelper.startRemoteActivity(getAppIntent)
+                                        showConfirmation = true
+                                    }
+                                ) {
+                                    Text(stringResource(R.string.get_phone_app), maxLines = 1)
+                                }
+                            }
                         }
                     }
                 }

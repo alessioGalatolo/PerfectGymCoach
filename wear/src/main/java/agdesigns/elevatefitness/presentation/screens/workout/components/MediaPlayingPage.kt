@@ -8,7 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.media.ui.components.MediaControlButtons
+import com.google.android.horologist.media.ui.components.controls.MediaButtonDefaults
 import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 
@@ -20,35 +22,38 @@ fun MediaPlayingPage(
     onNext: () -> Unit,
     onPrevious: () -> Unit
 ) {
-    PlayerScreen(
-        mediaDisplay = {
-            TextHeaderWithMarquee(
-                title = mediaState.title ?: stringResource(R.string.no_title),
-                subtitle = mediaState.artist ?: stringResource(R.string.no_artist),
-            )
-        },
-        controlButtons = {
-            MediaControlButtons(
-                onPlayButtonClick = onPlayPause,
-                onPauseButtonClick = onPlayPause,
-                playPauseButtonEnabled = true,
-                playing = mediaState.isPlaying,
-                onSeekToPreviousButtonClick = onPrevious,
-                onSeekToNextButtonClick = onNext,
-                seekToPreviousButtonEnabled = true,
-                seekToNextButtonEnabled = true,
-            )
-        },
-        buttons = {
-
-        },
-        background = {
-            if (mediaState.artwork != null) {
-                VignetteImage(
-                    mediaState.artwork.asImageBitmap(),
-                    alpha = 0f
+    AmbientAware { ambientState ->
+        PlayerScreen(
+            mediaDisplay = {
+                TextHeaderWithMarquee(
+                    title = mediaState.title ?: stringResource(R.string.no_title),
+                    subtitle = mediaState.artist ?: stringResource(R.string.no_artist),
+                    ambientState = ambientState
                 )
+            },
+            controlButtons = {
+                MediaControlButtons(
+                    onPlayButtonClick = onPlayPause,
+                    onPauseButtonClick = onPlayPause,
+                    playPauseButtonEnabled = true,
+                    playing = mediaState.isPlaying,
+                    onSeekToPreviousButtonClick = onPrevious,
+                    onSeekToNextButtonClick = onNext,
+                    seekToPreviousButtonEnabled = true,
+                    seekToNextButtonEnabled = true,
+                )
+            },
+            buttons = {
+
+            },
+            background = {
+                if (mediaState.artwork != null && ambientState.isInteractive) {
+                    VignetteImage(
+                        mediaState.artwork.asImageBitmap(),
+                        alpha = 0f
+                    )
+                }
             }
-        }
-    )
+        )
+    }
 }

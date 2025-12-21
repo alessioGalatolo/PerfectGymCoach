@@ -85,6 +85,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.compose.rotaryinput.accumulatedBehavior
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
@@ -101,6 +102,7 @@ fun CompleteSetAndRestScreen(
     nextSetExerciseName: String,
     exercisesState: ExercisesState,
     workoutState: WorkoutState,
+    ambientState: AmbientState,
     changeReps: (Int) -> Unit,
     changeWeight: (Int) -> Unit,
     fineGrainedChangeWeight: (Int) -> Unit,
@@ -108,20 +110,9 @@ fun CompleteSetAndRestScreen(
     skipRest: () -> Unit,
     completeSet: () -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
-
-    LaunchedEffect(currentRestSeconds) {
-        currentRestSeconds.let {
-            if (it < 4L) {
-                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-            }
-            if (it < 2) {
-                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-            }
-        }
-    }
     var previousRestProgression by remember { mutableFloatStateOf(restProgression) }
 
+    // FIXME: may have weird behaviour when coming out of ambient state
     val animatedRestProgression = animateFloatAsState(
         targetValue = restProgression,
         animationSpec = if (restProgression > previousRestProgression) {
@@ -138,13 +129,14 @@ fun CompleteSetAndRestScreen(
     LaunchedEffect(restProgression) {
         previousRestProgression = restProgression
     }
-    CircularProgressIndicator(
-        progress = { animatedRestProgression.value },
-        startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center
-        endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
-        strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
-
-    )
+    if (ambientState.isInteractive) {
+        CircularProgressIndicator(
+            progress = { animatedRestProgression.value },
+            startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center
+            endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
+            strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
+        )
+    }
     val totalPages = rememberSaveable(
         workoutState.restTimestamp,
         exercisesState.exercises,
@@ -188,6 +180,7 @@ fun CompleteSetAndRestScreen(
                 useArrowButtons = false,
                 changeValue = changeReps,
                 nextButtonText = stringResource(R.string.complete_set_next),
+                ambientState = ambientState,
                 onNext = {
                     page = 1
                 },
@@ -207,6 +200,7 @@ fun CompleteSetAndRestScreen(
                 else
                     stringResource(R.string.complete_set_next),
                 useArrowButtons = false,
+                ambientState = ambientState,
                 onNext = {
                     page = 2
                     if (page == totalPages) {
@@ -217,6 +211,7 @@ fun CompleteSetAndRestScreen(
             totalPages -> ShowRestScreen(
                 nextSetExerciseName = nextSetExerciseName,
                 currentRestSeconds = currentRestSeconds,
+                ambientState = ambientState,
                 skipRest = skipRest
             )
             2 -> {
@@ -242,6 +237,7 @@ fun CompleteSetAndRestScreen(
                         stringResource(agdesigns.elevatefitness.shared.R.string.kg),
                     nextButtonText = stringResource(R.string.done_icon),
                     useArrowButtons = true,
+                    ambientState = ambientState,
                     changeValue = changeTare
                 ) {
                     page = totalPages
@@ -263,6 +259,7 @@ fun SelectValueScreen(
     subValue: String,
     nextButtonText: String,
     useArrowButtons: Boolean,  // used for barbell selection
+    ambientState: AmbientState,
     changeValue: (Int) -> Unit,
     fineGrainedChangeValue: (Int) -> Unit = changeValue,  // mainly used for weight
     onNext: () -> Unit
@@ -297,144 +294,148 @@ fun SelectValueScreen(
             ),
         )
     val textAnimatable = remember { Animatable(0f) }
-    AmbientAware { ambient ->
-        PlayerScreen(
-            mediaDisplay = {
-                TextHeaderWithMarquee(
-                    title = title,
-                    subtitle = subtitle
-                )
-            },
-            controlButtons = {
-                ControlButtonLayout(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(bottom = 10.dp),
-                    leftButton = {
-                        IconButton(
-                            modifier = Modifier
-                                .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
-                                .width(IconButtonDefaults.DefaultButtonSize),
-                            shapes = IconButtonDefaults.animatedShapes(),
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = if (ambient.isInteractive && !useArrowButtons)
+    PlayerScreen(
+        mediaDisplay = {
+            TextHeaderWithMarquee(
+                title = title,
+                subtitle = subtitle,
+                ambientState = ambientState
+            )
+        },
+        controlButtons = {
+            ControlButtonLayout(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 10.dp),
+                leftButton = {
+                    IconButton(
+                        modifier = Modifier
+                            .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
+                            .width(IconButtonDefaults.DefaultButtonSize),
+                        shapes = IconButtonDefaults.animatedShapes(),
+                        colors = if (ambientState.isAmbient)
+                            IconButtonDefaults.outlinedIconButtonColors()
+                        else
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = if (!useArrowButtons)
                                     MaterialTheme.colorScheme.secondaryContainer
                                 else
                                     Color.Transparent
                             ),
-                            onClick = {
-                                changeValue(-1)
-                                scope.launch {
-                                    textAnimatable.animateTo(1f)
-                                    textAnimatable.animateTo(0f)
-                                }
-                            },
-                        ) {
-                            Icon(
-                                if (useArrowButtons)
-                                    Icons.AutoMirrored.Filled.ArrowBack
-                                else
-                                    Icons.Default.Remove,
-                                // FIXME: contentDescription
-                                contentDescription = stringResource(R.string.remove_icon_minus_reps)
+                        onClick = {
+                            changeValue(-1)
+                            scope.launch {
+                                textAnimatable.animateTo(1f)
+                                textAnimatable.animateTo(0f)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            if (useArrowButtons)
+                                Icons.AutoMirrored.Filled.ArrowBack
+                            else
+                                Icons.Default.Remove,
+                            // FIXME: contentDescription
+                            contentDescription = stringResource(R.string.remove_icon_minus_reps)
+                        )
+                    }
+                },
+                middleButton = {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                            .rotaryScrollable(
+                                accumulatedBehavior { value ->
+                                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                    val delta = if (value > 0) 1 else -1
+                                    fineGrainedChangeValue(delta)
+                                    scope.launch {
+                                        textAnimatable.animateTo(1f)
+                                        textAnimatable.animateTo(0f)
+                                    }
+                                },
+                                focusRequester = focusRequester
+                            )
+                    ) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            AnimatedText(
+                                text = value,
+                                fontRegistry = animatedTextFontRegistry,
+                                progressFraction = { textAnimatable.value }
+                            )
+                        } else {
+                            Text(
+                                text = value,
+                                style = restTextStyle,
                             )
                         }
-                    },
-                    middleButton = {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                                .rotaryScrollable(
-                                    accumulatedBehavior { value ->
-                                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                        val delta = if (value > 0) 1 else -1
-                                        fineGrainedChangeValue(delta)
-                                        scope.launch {
-                                            textAnimatable.animateTo(1f)
-                                            textAnimatable.animateTo(0f)
-                                        }
-                                    },
-                                    focusRequester = focusRequester
-                                )
-                        ) {
-                            // TODO: add rotary selection of value
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                AnimatedText(
-                                    text = value,
-                                    fontRegistry = animatedTextFontRegistry,
-                                    progressFraction = { textAnimatable.value }
-                                )
-                            } else {
-                                Text(
-                                    text = value,
-                                    style = restTextStyle,
-                                )
-                            }
-                            if (subValue.isNotEmpty()) {
-                                Text(
-                                    subValue,
-                                    textAlign = TextAlign.End,
-                                    style = MaterialTheme.typography.bodyExtraSmall,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(end = 8.dp)
-                                        .offset(y = (25).dp)
-                                )
-                            }
-                        }
-                    },
-                    rightButton = {
-                        IconButton(
-                            modifier = Modifier
-                                .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
-                                .width(IconButtonDefaults.DefaultButtonSize),
-                            shapes = IconButtonDefaults.animatedShapes(),
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = if (ambient.isInteractive && !useArrowButtons)
-                                    MaterialTheme.colorScheme.secondaryContainer
-                                else
-                                    Color.Transparent
-                            ),
-                            onClick = {
-                                changeValue(1)
-                                scope.launch {
-                                    textAnimatable.animateTo(1f)
-                                    textAnimatable.animateTo(0f)
-                                }
-                            }
-                        ) {
-                            Icon(
-                                if (useArrowButtons)
-                                    Icons.AutoMirrored.Filled.ArrowForward
-                                else
-                                    Icons.Default.Add,
-                                // FIXME: contentDescription
-                                contentDescription = stringResource(R.string.add_icon_plus_reps)
+                        if (subValue.isNotEmpty()) {
+                            Text(
+                                subValue,
+                                textAlign = TextAlign.End,
+                                style = MaterialTheme.typography.bodyExtraSmall,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(end = 8.dp)
+                                    .offset(y = (25).dp)
                             )
                         }
                     }
-                )
-
-            },
-            buttons = {
-                EdgeButton(
-                    onClick = onNext,
-                    colors = if (ambient.isInteractive)
-                        ButtonDefaults.filledVariantButtonColors()
-                    else
-                        ButtonDefaults.outlinedButtonColors(),
-                    border = if (ambient.isInteractive)
-                        null
-                    else
-                        ButtonDefaults.outlinedButtonBorder(true),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(text = nextButtonText)
+                },
+                rightButton = {
+                    IconButton(
+                        modifier = Modifier
+                            .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
+                            .width(IconButtonDefaults.DefaultButtonSize),
+                        shapes = IconButtonDefaults.animatedShapes(),
+                        colors = if (ambientState.isAmbient)
+                            IconButtonDefaults.outlinedIconButtonColors()
+                        else
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = if (!useArrowButtons)
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                else
+                                    Color.Transparent
+                            ),
+                        onClick = {
+                            changeValue(1)
+                            scope.launch {
+                                textAnimatable.animateTo(1f)
+                                textAnimatable.animateTo(0f)
+                            }
+                        }
+                    ) {
+                        Icon(
+                            if (useArrowButtons)
+                                Icons.AutoMirrored.Filled.ArrowForward
+                            else
+                                Icons.Default.Add,
+                            // FIXME: contentDescription
+                            contentDescription = stringResource(R.string.add_icon_plus_reps)
+                        )
+                    }
                 }
+            )
+
+        },
+        buttons = {
+            EdgeButton(
+                onClick = onNext,
+                colors = if (ambientState.isInteractive)
+                    ButtonDefaults.filledVariantButtonColors()
+                else
+                    ButtonDefaults.outlinedButtonColors(),
+                border = if (ambientState.isInteractive)
+                    null
+                else
+                    ButtonDefaults.outlinedButtonBorder(true),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Text(text = nextButtonText)
             }
-        )
-    }
+        }
+    )
 }
 
 
@@ -443,6 +444,7 @@ fun SelectValueScreen(
 fun ShowRestScreen(
     nextSetExerciseName: String,
     currentRestSeconds: Long,
+    ambientState: AmbientState,
     skipRest: () -> Unit
 ) {
     val nextThingString = if (nextSetExerciseName.isNotBlank())
@@ -457,6 +459,7 @@ fun ShowRestScreen(
             TextHeaderWithMarquee(
                 title = nextThingString,
                 subtitle = nextSetExerciseName,
+                ambientState = ambientState
             )
         },
         controlButtons = {
@@ -477,54 +480,57 @@ fun ShowRestScreen(
                     RoundedPolygonShape(polygon = poly)
                 }
 
-                AmbientAware { ambient ->
-                    // Infinite rotation animation
-                    val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                    val rotation by infiniteTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(
-                                durationMillis = 18000,
-                                easing = LinearEasing
-                            ),
-                            repeatMode = RepeatMode.Restart
+                // Infinite rotation animation
+                val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+                val rotation by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(
+                            durationMillis = 18000,
+                            easing = LinearEasing
                         ),
-                        label = "rotation"
-                    )
-                    val background = if (ambient.isAmbient) {
-                        Color.Transparent
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    }
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "rotation"
+                )
+                val background = if (ambientState.isAmbient) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
 
-                    Box(
+                Box(
+                    modifier = Modifier
+                        .size(middleSize)
+                        .rotate(if (ambientState.isAmbient) 0f else rotation) // Apply rotation here
+                        .clip(clipShape)
+                        // this will only be visible in ambient mode as the background becomes transparent
+                        .border(1.dp, MaterialTheme.colorScheme.primary, clipShape)
+                        .background(background),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val minutes = currentRestSeconds.floorDiv(60)
+                    val seconds = currentRestSeconds.mod(60)
+                    Text(
+                        text = if (ambientState.isInteractive)
+                            "%02d:%02d".format(minutes, seconds)
+                        else
+                            "%02d:--".format(minutes),
+                        style = MaterialTheme.typography.numeralExtraSmall,
+                        color = if (ambientState.isAmbient) {
+                            Color.White
+                        } else
+                            MaterialTheme.colorScheme.onPrimary,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
                         modifier = Modifier
-                            .size(middleSize)
-                            .rotate(if (ambient.isAmbient) 0f else rotation) // Apply rotation here
-                            .clip(clipShape)
-                            // this will only be visible in ambient mode as the background becomes transparent
-                            .border(1.dp, MaterialTheme.colorScheme.primary, clipShape)
-                            .background(background),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = currentRestSeconds.toString(),
-                            style = MaterialTheme.typography.displayMedium,
-                            color = if (ambient.isAmbient) {
-                                Color.White
-                            } else
-                                MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .rotate(
-                                    if (ambient.isAmbient)
-                                        0f
-                                    else -rotation // Counter-rotate text to keep it upright
-                                )
-                        )
-                    }
+                            .rotate(
+                                if (ambientState.isAmbient)
+                                    0f
+                                else -rotation // Counter-rotate text to keep it upright
+                            )
+                    )
                 }
             }
         },

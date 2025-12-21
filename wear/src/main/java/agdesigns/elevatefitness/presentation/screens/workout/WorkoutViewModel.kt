@@ -194,6 +194,11 @@ class WorkoutViewModel
                         restTimestamp = event.restTimestamp.toZonedDateTime()
                     )
                 }
+                val restFromNow = event.restTimestamp.toZonedDateTime()?.let {
+                    it.toInstant().toEpochMilli() - ZonedDateTime.now().toInstant().toEpochMilli()
+                }?.div(1000L)
+                val restForVibration = (restFromNow ?: event.rest) - 2
+                repository.scheduleVibrationAlarm(restForVibration * 1000L)
             }
         }
         startTimer()
@@ -314,6 +319,7 @@ class WorkoutViewModel
                     else if (currentExercise?.let { it.restCount > 0 } ?: false)
                         currentExercise.restList.last()
                     else 0
+                    repository.scheduleVibrationAlarm((rest.toLong() - 2L) * 1000L)
                     state.copy(
                         restTimestamp = ZonedDateTime
                             .now()
@@ -418,7 +424,6 @@ class WorkoutViewModel
                     )
                 } else null
                 val ongoingRestSecs = ongoingRestMillis?.div(1000L)
-                // FIXME: if exercise is changed then rests change then progression is weird
                 val ongoingRestProgression = if (
                     ongoingRestMillis != null &&
                     (it.currentExerciseRest ?: 0L) > 0L
