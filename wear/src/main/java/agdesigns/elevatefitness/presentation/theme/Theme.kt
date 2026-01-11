@@ -37,6 +37,12 @@ fun PerfectGymCoachTheme(
         content = content,
         colorScheme = dynamicColors ?: MaterialTheme.colorScheme,
         typography = MaterialTheme.typography.copy(
+            numeralExtraSmall = MaterialTheme.typography.numeralExtraSmall.copy(
+                fontFamily = fontFamily,
+            ),
+            numeralSmall = MaterialTheme.typography.numeralSmall.copy(
+                fontFamily = fontFamily,
+            ),
             numeralMedium = MaterialTheme.typography.numeralMedium.copy(
                 fontFamily = fontFamily,
             ),

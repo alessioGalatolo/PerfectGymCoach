@@ -40,4 +40,27 @@
     <string name="retriable_error_title">Impossibile comunicare con il cellulare!</string>
     <string name="retriable_error_info">Acceratati che is cellulare sia connesso e che l\'app sia in esecuzione. Poi, riprova.</string>
     <string name="retriable_error_retry">Riprova</string>
+
+<!--    Rest hints -->
+    <string name="rest_hint_change_exercise_title">Preparati per:</string>
+    <string name="rest_hint_change_exercise">%1$s</string>
+    <string name="rest_hint_increase_weight_title">Aumenta il peso</string>
+    <string name="rest_hint_decrease_weight_title">Diminuisci il peso</string>
+    <string name="rest_hint_increase_weight_dumbbell">Prendi i manubri da %1$s%2$s</string>
+    <string name="rest_hint_increase_weight_barbell">Aggiungi a entrambi i lati del bilancere pesi da: %1$s</string>
+    <string name="rest_hint_increase_weight_generic">Cambia a %1$s%2$s</string>
+    <string name="rest_hint_decrease_weight_dumbbell">Prendi i manubri da %1$s%2$s</string>
+    <string name="rest_hint_decrease_weight_barbell">Cambia entrambi i lati a: %1$s%2$s</string>
+    <string name="rest_hint_decrease_weight_generic">Cambia a %1$s%2$s</string>
+    <string name="rest_hint_increase_reps_title">Aumenta le ripetizioni</string>
+    <string name="rest_hint_decrease_reps_title">Diminuisci le ripetizioni</string>
+    <string name="rest_hint_increase_reps">Questa volta, fai %1$s ripetizioni</string>
+    <string name="rest_hint_decrease_reps">Questa volta, fai %1$s ripetizioni</string>
+    <string name="rest_hint_start_weight_title">Carica peso</string>
+    <string name="rest_hint_start_weight_dumbbell">Prendi i manubri da %1$s%2$s</string>
+    <string name="rest_hint_start_weight_barbell">Aggiungi a entrambi i lati del bilancere pesi da: %1$s</string>
+    <string name="rest_hint_start_weight_generic">Carica %1$s%2$s</string>
+    <string name="rest_hint_start_reps_title">Ripetizioni</string>
+    <string name="rest_hint_start_reps">Inizia con %1$s ripetizioni</string>
+
 </resources>

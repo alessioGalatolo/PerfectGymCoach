@@ -17,6 +17,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -160,6 +161,8 @@ class WearRepository @Inject constructor(
             _service.value = null
         }
     }
+
+    fun stringResToString(@StringRes id: Int): String = context.getString(id)
 
     companion object {
 

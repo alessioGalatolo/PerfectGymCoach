@@ -186,6 +186,9 @@ fun Workout(
                             },
                             onPreviousExercise = {
                                 viewModel.onEvent(WorkoutEvent.PreviousExercise)
+                            },
+                            onDismissHint = {
+                                viewModel.onEvent(WorkoutEvent.DismissHint)
                             }
                         )
                         2 -> MediaPlayingPage(

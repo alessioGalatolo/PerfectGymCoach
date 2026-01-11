@@ -54,6 +54,8 @@ import agdesigns.elevatefitness.shared.barbellResFromWeight
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
+import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
+import androidx.compose.ui.text.style.TextDecoration
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -190,7 +192,11 @@ fun SharedTransitionScope.ExercisePages(
                         equipment = Equipment.EVERYTHING,
                         tare = null,
                         repsWeightRows = previewExercise.reps.map {
-                            it.toString() to "..."
+                            SetDisplayRow(
+                                reps = it.toString(),
+                                weight = "...",
+                                toBeDone = true
+                            )
                         },
                         setsDone = 0,
                         records = emptyList(),
@@ -329,7 +335,7 @@ fun ExercisePage(
     exerciseRest: Int,
     equipment: Equipment,
     tare: Float?,
-    repsWeightRows: List<Pair<String, String>>,
+    repsWeightRows: List<SetDisplayRow>,
     setsDone: Int,
     records: List<ExerciseRecordAndEquipment>,
     imperialSystem: Boolean,
@@ -412,6 +418,7 @@ fun ExercisePage(
                 Modifier.align(CenterHorizontally)
             )
             LaunchedEffect(restTimeSecs) {
+                // TODO: replace with alarm and vibrator
                 // do not vibrate on 0L as this will be called multiple times with 0L
                 if (restTimeSecs == 2L || restTimeSecs == 3L) {
                     haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
@@ -476,8 +483,7 @@ fun ExercisePage(
                             .align(CenterHorizontally)
                     )
                 }
-                repsWeightRows.forEachIndexed { setCount, (repsInRow, weightInRow) ->
-                    val toBeDone = setCount >= setsDone
+                repsWeightRows.forEachIndexed { setCount, (repsInRow, weightInRow, toBeDone, projectedRep, projectedWeight) ->
                     var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
                     ChangeRepsWeightDialog(
                         dialogIsOpen = dialogIsOpen,
@@ -510,8 +516,8 @@ fun ExercisePage(
                                     HapticFeedbackType.TextHandleMove // FIXME: not right haptic
                                 )
                                 updateBottomBar(
-                                    repsInRow.toInt(),
-                                    weightInRow.toFloatOrNull()
+                                    projectedRep?.toIntOrNull() ?: repsInRow.toIntOrNull(),
+                                    projectedWeight?.toFloatOrNull() ?: weightInRow.toFloatOrNull()
                                 )
                             })
                     ) {
@@ -523,17 +529,67 @@ fun ExercisePage(
                             Text((setCount + 1).toString())
                         }
                         Spacer(Modifier.width(8.dp))
+                        val textColor = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
+                        val unitString = if (imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
+
+                        // Reps section
                         Text(
-                            stringResource(
-                                R.string.reps_weight,
-                                repsInRow,
-                                weightInRow,
-                                if(imperialSystem)
-                                    stringResource(R.string.lb)
-                                else
-                                    stringResource(R.string.kg)
-                            ),
-                            color = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
+                            // FIXME: overflow in other languages
+                            text = stringResource(R.string.reps) + ": ",
+                            color = textColor
+                        )
+                        Text(
+                            text = repsInRow,
+                            color = textColor,
+                            textDecoration = if (projectedRep != null && repsInRow != projectedRep) TextDecoration.LineThrough else TextDecoration.None
+                        )
+                        if (projectedRep != null && repsInRow != projectedRep) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = textColor
+                            )
+                            Text(
+                                text = "$projectedRep ",
+                                color = textColor
+                            )
+                        } else {
+                            Text(
+                                text = " ",
+                                color = textColor,
+                            )
+                        }
+
+                        // Weight section
+                        Text(
+                            text = stringResource(R.string.weight) + ": ", // " Weight: "
+                            color = textColor
+                        )
+                        if (projectedWeight == null || weightInRow != "...") {
+                            Text(
+                                text = weightInRow,
+                                color = textColor,
+                                textDecoration = if (projectedWeight != null && weightInRow != projectedWeight) TextDecoration.LineThrough else TextDecoration.None
+                            )
+                        }
+                        if (projectedWeight != null && weightInRow != projectedWeight) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = textColor
+                            )
+                            Text(
+                                text = projectedWeight,
+                                color = textColor
+                            )
+                        }
+
+                        // Unit
+                        Text(
+                            text = " $unitString",
+                            color = textColor
                         )
                     }
                 }

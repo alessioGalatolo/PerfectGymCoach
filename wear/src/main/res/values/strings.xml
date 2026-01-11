@@ -39,6 +39,28 @@
     <string name="retriable_error_title">Could not communicate with phone!</string>
     <string name="retriable_error_info">Please make sure the phone is connected to your device and that the app is running. Then try again.</string>
     <string name="retriable_error_retry">Retry</string>
+
+    <string name="rest_hint_change_exercise_title">Prepare for:</string>
+    <string name="rest_hint_change_exercise">%1$s</string>
+    <string name="rest_hint_increase_weight_title">Increase weight</string>
+    <string name="rest_hint_decrease_weight_title">Decrease weight</string>
+    <string name="rest_hint_increase_weight_dumbbell">Grab %1$s%2$s dumbbells</string>
+    <string name="rest_hint_increase_weight_barbell">Add the following plates to both sides of the barbell: %1$s</string>
+    <string name="rest_hint_increase_weight_generic">Change to %1$s%2$s</string>
+    <string name="rest_hint_decrease_weight_dumbbell">Grab %1$s%2$s dumbbells</string>
+    <string name="rest_hint_decrease_weight_barbell">Change both sides to %1$s%2$s</string>
+    <string name="rest_hint_decrease_weight_generic">Change to %1$s%2$s</string>
+    <string name="rest_hint_increase_reps_title">Increase reps</string>
+    <string name="rest_hint_decrease_reps_title">Decrease reps</string>
+    <string name="rest_hint_increase_reps">This time, do %1$s reps</string>
+    <string name="rest_hint_decrease_reps">This time, do %1$s reps</string>
+    <string name="rest_hint_start_weight_title">Load weight</string>
+    <string name="rest_hint_start_weight_dumbbell">Grab %1$s%2$s dumbbells</string>
+    <string name="rest_hint_start_weight_barbell">Add the following plates to both sides of the barbell: %1$s</string>
+    <string name="rest_hint_start_weight_generic">Load %1$s%2$s</string>
+    <string name="rest_hint_start_reps_title">Reps</string>
+    <string name="rest_hint_start_reps">Start with %1$s reps</string>
+
     <!--
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.

@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.data
 
 import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
+import agdesigns.elevatefitness.shared.urgentProtoDataStore
 import android.util.Log
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoDataStore
@@ -24,7 +25,7 @@ class PhoneWorkoutRepository(
     private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
 ) {
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val workoutDatastore = registry.protoDataStore<Workout.WorkoutStaticData>(
+    private val workoutDatastore = registry.urgentProtoDataStore<Workout.WorkoutStaticData>(
         coroutineScope = secondaryScope
     )
 
@@ -56,7 +57,7 @@ class PhoneWorkoutRepository(
             } catch (e: StatusException) {
                 Log.e("PhoneWorkoutRepository", "Error stopping ongoing workout", e)
             }
-            workoutDatastore.updateData {
+            workoutDatastore.urgentUpdateData {
                 Workout.WorkoutStaticData.newBuilder()
                     .setActiveWorkout(false)
                     .build()

@@ -32,6 +32,7 @@ import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
+import agdesigns.elevatefitness.shared.urgentProtoDataStore
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoDataStore
 import com.google.android.horologist.data.WearDataLayerRegistry
@@ -82,12 +83,22 @@ annotation class OutOfSyncProperty
 @RequiresOptIn("This property is internal and should not be used.")
 annotation class InternalProperty
 
+data class SetDisplayRow(
+    val reps: String,
+    val weight: String,
+    val toBeDone: Boolean,
+    // expectations based on current session
+    val projectedReps: String? = null,
+    val projectedWeight: String? = null
+)
 
 data class WorkoutPagesContent(
     val exercises: List<WorkoutExercise> = emptyList(),
     val exerciseRecords: List<List<ExerciseRecordAndEquipment>> = emptyList(),
     val ongoingRecords: List<ExerciseRecordAndEquipment?> = emptyList(),
-    val exerciseRepsWeightRows: List<List<Pair<String, String>>> = emptyList(),  // values to display in each exercise set card
+    // values to display in each exercise set card e.g., completed sets will show input from user,
+    // incomplete sets will show **historic data** and have projected reps/weight
+    val exerciseRepsWeightRows: List<List<SetDisplayRow>> = emptyList(),
     val exerciseSetsDone: List<Int> = emptyList(),
     @OutOfSyncProperty
     @InternalProperty
@@ -209,8 +220,8 @@ class WorkoutViewModel @Inject constructor(
     private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
 ): ViewModel() {
     // split static data (e.g., exercises) with data that is frequently changing to avoid too many messages
-    private val wearWorkoutStatic = registry.protoDataStore<Workout.WorkoutStaticData>(viewModelScope)
-    private val wearWorkoutDynamic = registry.protoDataStore<Workout.WorkoutDynamicData>(viewModelScope)
+    private val wearWorkoutStatic = registry.urgentProtoDataStore<Workout.WorkoutStaticData>(viewModelScope)
+    private val wearWorkoutDynamic = registry.urgentProtoDataStore<Workout.WorkoutDynamicData>(viewModelScope)
     private val wearWorkoutImages = registry.bitmapArrayStore(viewModelScope, WORKOUT_IMAGES_PATH)
 
     // effects to happen in the UI
@@ -236,7 +247,8 @@ class WorkoutViewModel @Inject constructor(
         _allRecords,
         workoutState.map{ it.imperialSystem }.distinctUntilChanged(),
         workoutState.map { it.workoutId }.distinctUntilChanged(),
-    ) { exercises, records, imperialSystem, workoutId ->
+        workoutState.map { it.tares }.distinctUntilChanged()
+    ) { exercises, records, imperialSystem, workoutId, tares ->
         /**
          * Glocal stuff for pages, precompute all so that pager can cache stuff
          * Should be recomputed if exercises, records, imperialSystem, or workoutId changes
@@ -250,31 +262,59 @@ class WorkoutViewModel @Inject constructor(
             it.second?.reps?.size ?: 0
         }
         val exerciseRepsWeights =
-            exercises.zip(recordsAndOngoingForAllExercises).map { (exercise, records) ->
+            exercises.zip(recordsAndOngoingForAllExercises).mapIndexed { index, (exercise, records) ->
                 val ongoingRecord = records.second
                 val allRecords = records.first
+                var lastOne: SetDisplayRow? = null
+                val tare = tares.getOrNull(index) ?: 0f
                 exercise.reps.mapIndexed { setCount, reps ->
                     val toBeDone =
                         (ongoingRecord?.reps?.size ?: 0) <= setCount  // setsDone <= setCount
+                    var projectedWeight: String? = null
+                    var projectedReps: String? = null
                     val repsInRow: String
                     val weightInRow: String
+                    var tareDiff = 0f
                     if (toBeDone) {
+                        // user has not done this set
                         repsInRow = reps.toString()
-                        val currentRecord = allRecords.firstOrNull()
+                        val historicRecord = allRecords.firstOrNull()
+                        tareDiff = if (historicRecord != null && exercise.equipment == Equipment.BARBELL)
+                            tare - historicRecord.tare
+                        else
+                            0f
                         weightInRow =
-                            if (currentRecord != null && setCount < currentRecord.weights.size) {
+                            if (historicRecord != null && historicRecord.weights.isNotEmpty()) {
+                                // user has done this exercise in the past, place historic values
                                 maybeKgToLb(
-                                    currentRecord.weights[setCount],
+                                    historicRecord.weights.getOrNull(setCount) ?: historicRecord.weights.last(),
                                     imperialSystem
                                 ).toString()
-                            } else if (currentRecord != null && ongoingRecord != null) {
+                            } /*else if (ongoingRecord != null) {
+                                // user is doing this exercise for the first time, place ongoing values
                                 maybeKgToLb(
                                     ongoingRecord.weights.last(),
                                     imperialSystem
                                 ).toString()
-                            } else {
+                            }*/ else {
                                 "..."
                             }
+                        if (ongoingRecord != null) {
+                            // should not project if no records
+                            projectedReps = computeNextRep(
+                                exercise,
+                                allRecords,
+                                (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
+                                setCount
+                            )?.toString()
+                            projectedWeight = computeNextWeight(
+                                allRecords,
+                                (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
+                                setCount,
+                                tareDiff,
+                                imperialSystem
+                            )?.toString()
+                        }
                     } else {
                         // if ongoingRecord is null, it should go in the other branch anyway
                         repsInRow =
@@ -285,7 +325,29 @@ class WorkoutViewModel @Inject constructor(
                                 ?: 0f, imperialSystem
                         ).toString()
                     }
-                    repsInRow to weightInRow
+                    if (projectedWeight == weightInRow)
+                        projectedWeight = null
+                    if (projectedReps == repsInRow)
+                        projectedReps = null
+                    lastOne = SetDisplayRow(
+                        reps = repsInRow,
+                        weight = weightInRow,
+                        toBeDone = toBeDone,
+                        projectedReps = projectedReps,
+                        projectedWeight = projectedWeight
+                    )
+                    // result of mapping
+                    if (tareDiff == 0f) {
+                        lastOne // no changes needed
+                    } else {
+                        lastOne.copy(
+                            projectedWeight = (lastOne
+                                .projectedWeight
+                                ?.toFloatOrNull() ?: lastOne.weight.toFloatOrNull())
+                                // split by two as it is barbell
+                                ?.minus(tareDiff / 2)?.toString()
+                        )
+                    }
                 }
             }
         val exercisesTares = recordsAndOngoingForAllExercises.map {
@@ -375,7 +437,7 @@ class WorkoutViewModel @Inject constructor(
                     _currentExerciseState.update {
                         it.copy(
                             exerciseTitle = null,
-                            currentExercise = null,  // TODO: does this create problems?
+                            currentExercise = null,
                             currentExerciseOngoingRecord = null,
                         )
                     }
@@ -388,24 +450,21 @@ class WorkoutViewModel @Inject constructor(
                         pagesContent.exerciseRecords.getOrNull(page) ?: emptyList()
                     val currentExerciseOngoingRecord = pagesContent.ongoingRecords.getOrNull(page)
                     val setsDone = currentExerciseOngoingRecord?.reps?.size ?: 0
-                    val repsToShow = computeNextRep(
-                        currentExercise,
-                        recordsToDisplay,
-                        currentExerciseOngoingRecord,
-                        setsDone
-                    )?.toString()
-                    val weightToShow = computeNextWeight(
-                        recordsToDisplay,
-                        currentExerciseOngoingRecord,
-                        setsDone,
-                        pagesContent.imperialSystem
-                    )?.toString() ?: "0.0"
+                    val repsWeight = pagesContent.exerciseRepsWeightRows
+                        .getOrNull(page)
+                        ?.getOrNull(setsDone)
+                    val repsToShow = repsWeight?.let{ it.projectedReps ?: it.reps }
+                    var weightToShow = repsWeight?.let { it.projectedWeight ?: it.weight }
+                    if (weightToShow == "...") {
+                        // TODO: it would be cool to infer this value from other exercises
+                        weightToShow = null
+                    }
                     _currentExerciseState.update {
                         it.copy(
                             exerciseTitle = title,
                             repsBottomBar = repsToShow ?: it.repsBottomBar,
                             repsIsValid = true,
-                            weightBottomBar = weightToShow,
+                            weightBottomBar = weightToShow ?: "0.0",
                             weightIsValid = true,
                             currentExerciseOngoingRecord = currentExerciseOngoingRecord,
                             currentExercise = currentExercise,
@@ -907,8 +966,9 @@ class WorkoutViewModel @Inject constructor(
 
     private fun computeNextWeight(
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
-        currentExerciseOngoingRecord: ExerciseRecordAndEquipment?,
+        ongoingLastWeight: Float?,
         setsDone: Int,
+        tareDiff: Float,
         imperialSystem: Boolean
     ): Float? {
         /*
@@ -920,13 +980,8 @@ class WorkoutViewModel @Inject constructor(
          2a. If not, keep weight from previous set
          3. Otherwise, take last record increased/decreased by same amount as previous set
          */
-        // FIXME: this heuristic is not transparent to the user that might question what these
-        //  "random" changes in weight are. Perhaps it is better to always have ongoingRecord and
-        //  have the rest as a suggestion
-
         val recordsToDisplay = recordsToDisplay
         val setsDone = setsDone
-        val ongoingRecord = currentExerciseOngoingRecord
 
         // this is the record of the last record before current workout
         val lastOldRecord = recordsToDisplay.firstOrNull()
@@ -940,15 +995,21 @@ class WorkoutViewModel @Inject constructor(
             oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone)
             oldRecordWeightPreviousSet = lastOldRecord.weights.getOrNull(setsDone-1)
         }
-        if (ongoingRecord != null) {
-            ongoingRecordWeightPreviousSet = ongoingRecord.weights.getOrNull(setsDone-1)
+        if (ongoingLastWeight != null) {
+            ongoingRecordWeightPreviousSet = ongoingLastWeight
         }
         if (setsDone == 0) {
             weightCandidate = oldRecordWeightCurrentSet
         } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet == ongoingRecordWeightPreviousSet) {
             weightCandidate = oldRecordWeightCurrentSet
         } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet != oldRecordWeightCurrentSet) {
-            val delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
+            var delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
+            // if delta is due to tareDiff, it should not be propagated
+            // FIXME: if user does not follow tarediff suggestion, this does not behave well
+            //  example: historic is: 5 with 20 tare. Change to 25, suggest 2.5.
+            //  If user enters 2.5, then next set suggests 0 (while it should suggest 2.5)
+            //  If user enters 5, then next set suggests 2.5 (while it should give up and say 5)
+            delta = delta?.plus(tareDiff / 2)
             weightCandidate = oldRecordWeightCurrentSet.plus(delta ?: 0f)
         } else {
             weightCandidate = ongoingRecordWeightPreviousSet
@@ -961,11 +1022,11 @@ class WorkoutViewModel @Inject constructor(
     fun computeNextRep(
         currentExercise: WorkoutExercise,
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
-        currentExerciseOngoingRecord: ExerciseRecordAndEquipment?,
+        ongoingLastRep: Int?,
         setsDone: Int
     ): Int? {
         // reps done last set
-        val lastRepsDone = currentExerciseOngoingRecord?.reps?.last()
+        val lastRepsDone = ongoingLastRep
         // reps user should do
         val upcomingReps = currentExercise.reps.getOrNull(setsDone)
         val lastRepsThatShouldHaveBeenDone = currentExercise.reps.getOrNull(setsDone-1)
@@ -1216,7 +1277,7 @@ class WorkoutViewModel @Inject constructor(
                 val imperialSystem = values[9] as Boolean
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
-                wearWorkoutStatic.updateData { _ ->
+                wearWorkoutStatic.urgentUpdateData { _ ->
                     Workout.WorkoutStaticData.newBuilder()
                         .setWorkoutId(workoutId)
                         .setStartDate(startDateTimestamp)
@@ -1242,13 +1303,17 @@ class WorkoutViewModel @Inject constructor(
                 pagesContent.map { it.exerciseRepsWeightRows }.distinctUntilChanged(),
                 pagesContent.map { it.exerciseSetsDone }.distinctUntilChanged()
             ) { repsWeightRows, setsDone ->
-                wearWorkoutDynamic.updateData { _ ->
+                wearWorkoutDynamic.urgentUpdateData { _ ->
                     Workout.WorkoutDynamicData.newBuilder()
                         .addAllSuggestedRepsWeight(
                             repsWeightRows.map { repsWeights ->
                                 Workout.SuggestedRepsWeight.newBuilder()
-                                    .addAllReps(repsWeights.map { it.first })
-                                    .addAllWeight(repsWeights.map { it.second })
+                                    .addAllReps(repsWeights.map {
+                                        it.projectedReps ?: it.reps
+                                    })
+                                    .addAllWeight(repsWeights.map {
+                                        it.projectedWeight ?: it.weight
+                                    })
                                     .build()
                             }
                         )

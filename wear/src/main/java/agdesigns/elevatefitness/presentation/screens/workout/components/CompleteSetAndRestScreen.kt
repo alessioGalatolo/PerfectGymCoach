@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
+import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AnimatedText
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ButtonGroup
@@ -76,13 +78,16 @@ import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
 import agdesigns.elevatefitness.shared.BarbellType
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
+import agdesigns.elevatefitness.presentation.screens.workout.InRestHint
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.focus.FocusRequester
 import androidx.wear.compose.foundation.rotary.rotaryScrollable
+import androidx.wear.compose.material3.AlertDialogDefaults
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.compose.ambient.AmbientState
@@ -91,6 +96,7 @@ import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 import com.google.android.horologist.media.ui.util.isLargeScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.floor
 
@@ -108,7 +114,8 @@ fun CompleteSetAndRestScreen(
     fineGrainedChangeWeight: (Int) -> Unit,
     changeTare: (Int) -> Unit,
     skipRest: () -> Unit,
-    completeSet: () -> Unit
+    completeSet: () -> Unit,
+    onDismissHint: () -> Unit
 ) {
     var previousRestProgression by remember { mutableFloatStateOf(restProgression) }
 
@@ -208,13 +215,19 @@ fun CompleteSetAndRestScreen(
                     }
                 },
             )
-            totalPages -> ShowRestScreen(
-                nextSetExerciseName = nextSetExerciseName,
-                currentRestSeconds = currentRestSeconds,
-                ambientState = ambientState,
-                skipRest = skipRest
-            )
+            totalPages -> {
+                ShowRestScreen(
+                    nextSetExerciseName = nextSetExerciseName,
+                    currentRestSeconds = currentRestSeconds,
+                    ambientState = ambientState,
+                    hints = workoutState.inRestHints,
+                    onDismissHint = onDismissHint,
+                    skipRest = skipRest
+                )
+            }
             2 -> {
+                // TODO: move barbell selection to first place so that we can change the suggested
+                //  weight if barbell changes
                 // if barbell is other, use weight from user
                 val type = BarbellType.entries[workoutState.tareIndex]
                 val weight = if (type == BarbellType.OTHER)
@@ -240,7 +253,9 @@ fun CompleteSetAndRestScreen(
                     ambientState = ambientState,
                     changeValue = changeTare
                 ) {
-                    page = totalPages
+                    // Do not manually change page, "completeSet" already causes to end up in rest screen
+                    // also setting page here causes double animation
+//                    page = totalPages
                     completeSet()
                 }
             }
@@ -272,7 +287,14 @@ fun SelectValueScreen(
     }
 
     val scope = rememberCoroutineScope()
-    val restTextStyle = MaterialTheme.typography.numeralLarge
+    // Scale down with length of value to show, this is roughly right but definitely not optimal
+    val restTextStyle = when (value.length) {
+        1 -> MaterialTheme.typography.numeralExtraLarge
+        2 -> MaterialTheme.typography.numeralLarge
+        3 -> MaterialTheme.typography.numeralMedium
+        4 -> MaterialTheme.typography.numeralSmall
+        else -> MaterialTheme.typography.numeralExtraSmall
+    }
     val animatedTextFontRegistry =
         rememberAnimatedTextFontRegistry(
             // Variation axes at the start of the animation, width 10, weight 200
@@ -445,7 +467,9 @@ fun ShowRestScreen(
     nextSetExerciseName: String,
     currentRestSeconds: Long,
     ambientState: AmbientState,
-    skipRest: () -> Unit
+    hints: List<InRestHint>,
+    onDismissHint: () -> Unit,
+    skipRest: () -> Unit,
 ) {
     val nextThingString = if (nextSetExerciseName.isNotBlank())
         stringResource(R.string.next_thing)
@@ -453,6 +477,71 @@ fun ShowRestScreen(
         stringResource(R.string.all_done)  // we are likely at the end of workout
     val middleSize = if (LocalConfiguration.current.isLargeScreen) 88.dp else 72.dp
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+
+    // Dialog state and helpful message generation
+    var showDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(hints) {
+        if (hints.isNotEmpty()) {
+            delay(5000)
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            showDialog = true
+        }
+    }
+    val hint = hints.firstOrNull()
+
+    // Show dialog only if there's rest time and we have a helpful message
+    AlertDialog(
+        visible = hint != null && showDialog && currentRestSeconds > 0 && hints.isNotEmpty(),
+        onDismissRequest = { showDialog = false },
+        icon = {
+
+        },
+        title = {
+            if (hint != null) {
+                Text(stringResource(hint.titleResId))
+            }
+        },
+        text = {
+            if (hint != null) {
+                Text(
+                    stringResource(hint.descResId, *hint.descVarArgs.toTypedArray())
+                )
+            }
+        },
+        edgeButton = {
+            AlertDialogDefaults.EdgeButton(
+                onClick = {
+                    // Perform confirm action here
+                    showDialog = false
+                    scope.launch {
+                        // wait for the dialog to disappear, then dismiss hint
+                        // otherwise a new hint will briefly appear before the dialog disappears
+                        delay(1000)
+                        onDismissHint()
+                    }
+                }
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = stringResource(R.string.done_icon)
+                )
+            }
+
+        }
+    )
+
+    // Reset dialog when rest ends
+    LaunchedEffect(currentRestSeconds) {
+        if (currentRestSeconds == 0L) {
+            showDialog = true // Reset for next rest period
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        delay(5000)
+        showDialog = true
+    }
 
     PlayerScreen(
         mediaDisplay = {

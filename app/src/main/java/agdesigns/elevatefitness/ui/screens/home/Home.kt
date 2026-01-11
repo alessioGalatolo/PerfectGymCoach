@@ -134,7 +134,6 @@ fun SharedTransitionScope.Home(
                 )
             }
         }
-        Log.d("Home", "shortcuts: $shortcuts")
         // Replaces existing dynamic shortcuts
         if (shortcuts.isNotEmpty()) {
             ShortcutManagerCompat.removeAllDynamicShortcuts(context)

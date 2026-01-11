@@ -69,6 +69,7 @@ fun WorkoutPage(
     completeSet: () -> Unit,
     onNextExercise: () -> Unit,
     onPreviousExercise: () -> Unit,
+    onDismissHint: () -> Unit
 ) {
     val currentExercise = remember(workoutState.currentExerciseIndex, exercisesState.exercises) {
         exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex)
@@ -122,7 +123,8 @@ fun WorkoutPage(
                 fineGrainedChangeWeight = fineGrainedChangeWeight,
                 changeTare = changeTare,
                 skipRest = resetRest,
-                completeSet = completeSet
+                completeSet = completeSet,
+                onDismissHint = onDismissHint
             )
         } else {
             val exerciseName = remember(
