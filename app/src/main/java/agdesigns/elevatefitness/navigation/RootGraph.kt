@@ -22,6 +22,12 @@ import agdesigns.elevatefitness.R
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
+import androidx.compose.runtime.LaunchedEffect
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -60,79 +66,79 @@ fun RootDestinationGraph(){
     val currentDestination = navController.currentDestinationAsState().value
         ?: NavGraphs.root.startDestination
 
-    Scaffold(
-        content = { innerPadding ->
-            // remove navigation bar padding, not needed as it will be applied inside content
-            val bottomPadding by animateDpAsState(
-                if (BottomBarDestination.entries.any { currentDestination == it.direction })
-                    innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                else 0.dp, label = ""
-            )
-            SharedTransitionLayout {
-                DestinationsNavHost(
-                    navGraph = NavGraphs.bottomNavigation,
-                    navController = navController,
-                    modifier = Modifier.padding(bottom = bottomPadding),
-                    dependenciesContainerBuilder = {
-                        dependency(this@SharedTransitionLayout)
+    val navSuiteType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfo())
+    val state = rememberNavigationSuiteScaffoldState()
+    LaunchedEffect(currentDestination) {
+        if (BottomBarDestination.entries.any { currentDestination == it.direction })
+            state.show()
+        else
+            state.hide()
+    }
+    NavigationSuiteScaffold(
+        state = state,
+        navigationItems = {
+            BottomBarDestination.entries.forEach { destination ->
+                val selected = currentDestination == destination.direction
+                NavigationSuiteItem(
+                    icon = {
+                        if (selected)
+                            Icon(
+                                destination.iconSelected,
+                                contentDescription = stringResource(destination.label) + " (current)" // FIXME: locale
+                            )
+                        else
+                            Icon(
+                                destination.icon,
+                                contentDescription = stringResource(destination.label)
+                            )
+                    },
+                    label = { Text(stringResource(destination.label)) },
+                    selected = selected,
+                    onClick = {
+                        if (selected) {
+                            // When we click again on a bottom bar item and it was already selected
+                            // we want to pop the back stack until the initial destination of this bottom bar item
+                            navigator.popBackStack(
+                                destination.direction,
+                                false  // FIXME: double check the meaning of this did not change between versions
+                                // FIXME: now it is "inclusive: false" make sure this is the desired behaviour
+                            )
+                            return@NavigationSuiteItem
+                        }
+                        navigator.navigate(destination.direction) {
+                            // Pop up to the root of the graph to
+                            // avoid building up a large stack of destinations
+                            // on the back stack as users select items
+                            popUpTo(NavGraphs.bottomNavigation.startRoute) {
+                                saveState = true
+                            }
+
+                            // Avoid multiple copies of the same destination when
+                            // reselecting the same item
+                            launchSingleTop = true
+                            // Restore state when reselecting a previously selected item
+                            restoreState = true
+                        }
                     }
                 )
             }
-        }, bottomBar = {
-            AnimatedVisibility(
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-                visible = BottomBarDestination.entries.any { currentDestination == it.direction }
-            ) {
-                NavigationBar {
-                    BottomBarDestination.entries.forEach { destination ->
-                        val selected = currentDestination == destination.direction
-                        //                    navController.isRouteOnBackStack(destination.direction)
-                        NavigationBarItem(
-                            icon = {
-                                if (selected)
-                                    Icon(
-                                        destination.iconSelected,
-                                        contentDescription = stringResource(destination.label) + " (current)"
-                                    )
-                                else
-                                    Icon(
-                                        destination.icon,
-                                        contentDescription = stringResource(destination.label)
-                                    )
-                            },
-                            label = { Text(stringResource(destination.label)) },
-                            selected = selected,
-                            onClick = {
-                                if (selected) {
-                                    // When we click again on a bottom bar item and it was already selected
-                                    // we want to pop the back stack until the initial destination of this bottom bar item
-                                    navigator.popBackStack(
-                                        destination.direction,
-                                        false  // FIXME: double check the meaning of this did not change between versions
-                                        // FIXME: now it is "inclusive: false" make sure this is the desired behaviour
-                                    )
-                                    return@NavigationBarItem
-                                }
-                                navigator.navigate(destination.direction) {
-                                    // Pop up to the root of the graph to
-                                    // avoid building up a large stack of destinations
-                                    // on the back stack as users select items
-                                    popUpTo(NavGraphs.bottomNavigation.startRoute) {
-                                        saveState = true
-                                    }
-
-                                    // Avoid multiple copies of the same destination when
-                                    // reselecting the same item
-                                    launchSingleTop = true
-                                    // Restore state when reselecting a previously selected item
-                                    restoreState = true
-                                }
-                            }
-                        )
-                    }
-                }
-            }
         }
-    )
+    ) { /*innerPadding ->*/
+        // remove navigation bar padding, not needed as it will be applied inside content
+//        val bottomPadding by animateDpAsState(
+//            if (BottomBarDestination.entries.any { currentDestination == it.direction })
+//                innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+//            else 0.dp, label = ""
+//        )
+        SharedTransitionLayout {
+            DestinationsNavHost(
+                navGraph = NavGraphs.bottomNavigation,
+                navController = navController,
+//                modifier = Modifier.padding(bottom = bottomPadding),
+                dependenciesContainerBuilder = {
+                    dependency(this@SharedTransitionLayout)
+                }
+            )
+        }
+    }
 }

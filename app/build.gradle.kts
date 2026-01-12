@@ -120,6 +120,8 @@ dependencies {
     implementation(libs.wear.remote.interactions)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.accompanist.permissions)
+    implementation(libs.material3.adaptive.navigation.suite)
+    implementation(libs.adaptive)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)
