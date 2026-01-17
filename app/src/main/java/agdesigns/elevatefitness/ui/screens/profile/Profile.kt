@@ -24,6 +24,7 @@ import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
+import agdesigns.elevatefitness.navigation.TopLevelBackStack
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
@@ -69,7 +70,7 @@ import kotlin.math.roundToInt
     ExperimentalMaterial3ExpressiveApi::class
 )
 fun Profile(
-    destinationsNavigator: DestinationsNavigator,
+    backStack: TopLevelBackStack<Any>,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.state.collectAsState()

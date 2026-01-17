@@ -32,6 +32,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.navigation.FadeTransition
+import agdesigns.elevatefitness.navigation.TopLevelBackStack
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CancelWorkoutDialog
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
@@ -106,7 +107,7 @@ import java.time.ZonedDateTime
 @Composable
 fun SharedTransitionScope.Workout(
     animatedVisibilityScope: AnimatedVisibilityScope,
-    navigator: DestinationsNavigator,
+    backStack: TopLevelBackStack<Any>,
     programId: Long = 0L,
     previewExercise: ProgramExerciseAndInfo? = null, // preview of the first exercise, used for transition
     quickStart: Boolean = false,
@@ -180,10 +181,10 @@ fun SharedTransitionScope.Workout(
     // FIXME: should use WorkoutEffect
     LaunchedEffect (workoutState.shutDown){
         if (workoutState.shutDown) {
-            navigator.navigateUp()
-            navigator.navigate(
-                WorkoutRecapDestination(workoutId = workoutState.workoutId)
-            )
+//            navigator.navigateUp()
+//            navigator.navigate(
+//                WorkoutRecapDestination(workoutId = workoutState.workoutId)
+//            )
         }
     }
 
@@ -201,7 +202,10 @@ fun SharedTransitionScope.Workout(
     CancelWorkoutDialog(
         dialogueOpenProgress = cancelWorkoutDialogProgress,
         dismissDialog = { cancelWorkoutDialogProgress = 0f },
-        cancelWorkout = { viewModel.onEvent(WorkoutEvent.CancelWorkout); navigator.navigateUp() },
+        cancelWorkout = {
+            viewModel.onEvent(WorkoutEvent.CancelWorkout)
+            backStack.removeLast()
+        },
         deleteData = { viewModel.onEvent(WorkoutEvent.DeleteCurrentRecords) },
         hasRecords = workoutState.hasRecordedExercise
     )
@@ -237,11 +241,11 @@ fun SharedTransitionScope.Workout(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is WorkoutEffect.NavigateBack -> navigator.navigateUp()
+                is WorkoutEffect.NavigateBack -> backStack.removeLast()
                 is WorkoutEffect.ShowMessage -> snackbarHostState.showSnackbar(context.getString(effect.message))
                 is WorkoutEffect.ShowErrorAndBack -> {
                     snackbarHostState.showSnackbar(context.getString(effect.message))
-                    navigator.navigateUp()
+                    backStack.removeLast()
                 }
                 is WorkoutEffect.AdvancePage -> {
                     pagerState.animateScrollToPage(effect.page)
@@ -642,92 +646,92 @@ fun SharedTransitionScope.Workout(
                 }
             }
 
-            ExercisePages(
-                navigator = navigator,
-                horizontalPagerState = pagerState,
-                currentExerciseState = currentExerciseState,
-                pagesContent = pagesContent,
-                previewExercise = previewExercise,
-                workoutState = workoutState,
-                bottomPadding = bottomPadding,
-                fabHeight = fabHeight,
-                restCounterProgress = progressAnim.value,
-                title = title,
-                addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
-                updateExerciseProbability = { probability ->
-                    scope.launch {
-                        // if already snackbarring, dismiss it before a new one.
-                        snackbarHostState.currentSnackbarData?.dismiss()
-                        if (probability > 0)
-                            snackbarHostState.showSnackbar(context.getString(R.string.increasing_exercise_probability))
-                        else
-                            snackbarHostState.showSnackbar(context.getString(R.string.decreasing_exercise_probability))
-                    }
-                    viewModel.onEvent(
-                        WorkoutEvent.UpdateExerciseProbability(
-                            pagerState.currentPage,
-                            probability
-                        )
-                    )
-                },
-                updateBottomBar = { rep, weight ->
-                    if (rep != null)
-                        viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
-                    else
-                    // this should never happen. Log it
-                        Log.e("Workout", "updateBottomBar called with null rep")
-                    if (weight != null)
-                        viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
-                },
-                updateValues = { a, b, c, d ->
-                    viewModel.onEvent(
-                        WorkoutEvent.EditSetRecord(
-                            a,
-                            b,
-                            c,
-                            d
-                        )
-                    )
-                },
-                deleteSet = { exerciseInWorkout, set ->
-                    viewModel.onEvent(
-                        WorkoutEvent.DeleteSetRecord(
-                            exerciseInWorkout,
-                            set
-                        )
-                    )
-                },
-                updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
-                toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
-                changeExercise = { exerciseInWorkout, originalSize ->
-                    scope.launch {
-                        viewModel.onEvent(
-                            WorkoutEvent.ReplaceExercise(
-                                exerciseInWorkout,
-                                originalSize
-                            )
-                        )
-                    }
-                },
-                removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) },
-                mediaControlsDismissed = mediaControlsDismissed,
-                resetMediaControlVisibility = {
-                    scope.launch {
-                        mediaSwipeState.reset()
-                        mediaControlsDismissed = false
-                    }
-                },
-                dontRequestOngoingWorkoutNotification = {
-                    viewModel.onEvent(
-                        WorkoutEvent.DontRequestOngoingWorkoutNotification
-                    )
-                },
-                refreshPromotedNotificationAccess = {
-                    viewModel.onEvent(
-                        WorkoutEvent.RefreshHasPromptedNotificationsAccess
-                    )
-                }
-            )
+//            ExercisePages(
+//                navigator = navigator,
+//                horizontalPagerState = pagerState,
+//                currentExerciseState = currentExerciseState,
+//                pagesContent = pagesContent,
+//                previewExercise = previewExercise,
+//                workoutState = workoutState,
+//                bottomPadding = bottomPadding,
+//                fabHeight = fabHeight,
+//                restCounterProgress = progressAnim.value,
+//                title = title,
+//                addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
+//                updateExerciseProbability = { probability ->
+//                    scope.launch {
+//                        // if already snackbarring, dismiss it before a new one.
+//                        snackbarHostState.currentSnackbarData?.dismiss()
+//                        if (probability > 0)
+//                            snackbarHostState.showSnackbar(context.getString(R.string.increasing_exercise_probability))
+//                        else
+//                            snackbarHostState.showSnackbar(context.getString(R.string.decreasing_exercise_probability))
+//                    }
+//                    viewModel.onEvent(
+//                        WorkoutEvent.UpdateExerciseProbability(
+//                            pagerState.currentPage,
+//                            probability
+//                        )
+//                    )
+//                },
+//                updateBottomBar = { rep, weight ->
+//                    if (rep != null)
+//                        viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
+//                    else
+//                    // this should never happen. Log it
+//                        Log.e("Workout", "updateBottomBar called with null rep")
+//                    if (weight != null)
+//                        viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
+//                },
+//                updateValues = { a, b, c, d ->
+//                    viewModel.onEvent(
+//                        WorkoutEvent.EditSetRecord(
+//                            a,
+//                            b,
+//                            c,
+//                            d
+//                        )
+//                    )
+//                },
+//                deleteSet = { exerciseInWorkout, set ->
+//                    viewModel.onEvent(
+//                        WorkoutEvent.DeleteSetRecord(
+//                            exerciseInWorkout,
+//                            set
+//                        )
+//                    )
+//                },
+//                updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
+//                toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
+//                changeExercise = { exerciseInWorkout, originalSize ->
+//                    scope.launch {
+//                        viewModel.onEvent(
+//                            WorkoutEvent.ReplaceExercise(
+//                                exerciseInWorkout,
+//                                originalSize
+//                            )
+//                        )
+//                    }
+//                },
+//                removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) },
+//                mediaControlsDismissed = mediaControlsDismissed,
+//                resetMediaControlVisibility = {
+//                    scope.launch {
+//                        mediaSwipeState.reset()
+//                        mediaControlsDismissed = false
+//                    }
+//                },
+//                dontRequestOngoingWorkoutNotification = {
+//                    viewModel.onEvent(
+//                        WorkoutEvent.DontRequestOngoingWorkoutNotification
+//                    )
+//                },
+//                refreshPromotedNotificationAccess = {
+//                    viewModel.onEvent(
+//                        WorkoutEvent.RefreshHasPromptedNotificationsAccess
+//                    )
+//                }
+//            )
         }
     } else if (workoutState.workoutId != 0L){
         Log.d("Workout", "pagesContent.exercises: ${pagesContent.exercises}, isLoading: ${currentExerciseState.isLoading}, previewExercise: $previewExercise")
@@ -744,7 +748,7 @@ fun SharedTransitionScope.Workout(
                     ),
                     title = {},
                     navigationIcon = {
-                        IconButton(onClick = { navigator.navigateUp() }) {
+                        IconButton(onClick = { backStack.removeLast() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.go_back_icon)
@@ -761,25 +765,25 @@ fun SharedTransitionScope.Workout(
                             Icons.Default.Add,
                             R.string.empty_workout_add_text,
                         ) {
-                            navigator.navigate(
-                                ExercisesByMuscleDestination(
-                                    programName = context.getString(R.string.current_workout),
-                                    workoutId = workoutState.workoutId,
-                                )
-                            )
+//                            navigator.navigate(
+//                                ExercisesByMuscleDestination(
+//                                    programName = context.getString(R.string.current_workout),
+//                                    workoutId = workoutState.workoutId,
+//                                )
+//                            )
                         },
                         FabItemData(
                             Icons.Default.Edit,
                             R.string.empty_workout_edit_text,
 
                         ) {
-                            navigator.navigate(
-                                ExercisesByMuscleDestination(
-                                    programName = context.getString(R.string.current_and_future_workouts),  // FIXME: all workouts?
-                                    workoutId = workoutState.workoutId,
-                                    programId = workoutState.programId
-                                )
-                            )
+//                            navigator.navigate(
+//                                ExercisesByMuscleDestination(
+//                                    programName = context.getString(R.string.current_and_future_workouts),  // FIXME: all workouts?
+//                                    workoutId = workoutState.workoutId,
+//                                    programId = workoutState.programId
+//                                )
+//                            )
                         }
                     )
 

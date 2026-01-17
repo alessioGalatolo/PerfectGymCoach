@@ -28,6 +28,8 @@ import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
+import agdesigns.elevatefitness.navigation.TopLevelBackStack
+import agdesigns.elevatefitness.navigation.WorkoutRoute
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
@@ -70,11 +72,39 @@ import kotlin.math.min
 )
 fun SharedTransitionScope.Home(
     animatedVisibilityScope: AnimatedVisibilityScope,
-    navigator: DestinationsNavigator,
+    backStack: TopLevelBackStack<Any>,
+    changePrimaryAction: (@Composable () -> Unit) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val homeState by viewModel.state.collectAsState()
     val haptic = LocalHapticFeedback.current
+
+    DisposableEffect(changePrimaryAction) {
+        changePrimaryAction {
+            if (homeState.currentPlan == null) {
+                MediumFloatingActionButton(
+                    onClick = {
+//                        navigator.navigate(
+//                            AddWorkoutPlanDestination(openDialogNow = true)
+//                        )
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(
+                            FloatingActionButtonDefaults.MediumIconSize
+                        )
+                    )
+                }
+            }
+        }
+        onDispose {
+            changePrimaryAction {
+                // no action
+            }
+        }
+    }
 
     var resumeWorkoutDialogOpen by remember {
         mutableStateOf(false)
@@ -85,8 +115,8 @@ fun SharedTransitionScope.Home(
             resumeWorkoutDialogOpen = false
         }) {
         resumeWorkoutDialogOpen = false
-        navigator.navigate(
-            WorkoutDestination(
+        backStack.add(
+            WorkoutRoute(
                 programId = 0L,
                 resumeWorkout = true
             )
@@ -148,25 +178,6 @@ fun SharedTransitionScope.Home(
     Scaffold(
         // use a primary container to put emphasis on upcoming workout in elevated card
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        floatingActionButton = {
-            if (homeState.currentPlan == null) {
-                MediumFloatingActionButton(
-                    onClick = {
-                        navigator.navigate(
-                            AddWorkoutPlanDestination(openDialogNow = true)
-                        )
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(
-                            FloatingActionButtonDefaults.MediumIconSize
-                        )
-                    )
-                }
-            }
-        }
     ) { innerPadding ->
         if (homeState.currentPlan == null) {
             EmptyScreenInfo(
@@ -176,7 +187,7 @@ fun SharedTransitionScope.Home(
                 subtitleRes = R.string.empty_home_subtitle
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
-                GeneratePlanButton(navigator)
+//                GeneratePlanButton(navigator)
             }
         } else if (homeState.programs?.isEmpty() == true) {
             EmptyScreenInfo(
@@ -186,12 +197,12 @@ fun SharedTransitionScope.Home(
                 subtitleRes = R.string.empty_home_program
             ) {
                 Button(onClick = {
-                    navigator.navigate(
-                        AddProgramDestination(
-                            planId = homeState.currentPlan!!,
-                            openDialogNow = true
-                        )
-                    )
+//                    navigator.navigate(
+//                        AddProgramDestination(
+//                            planId = homeState.currentPlan!!,
+//                            openDialogNow = true
+//                        )
+//                    )
                 }, modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(top = 16.dp)
@@ -200,9 +211,9 @@ fun SharedTransitionScope.Home(
                 }
                 TextButton(
                     onClick = {
-                        navigator.navigate(
+                        /*navigator.navigate(
                             AddWorkoutPlanDestination()
-                        ) },
+                        )*/ },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) { Text(stringResource(R.string.change_workout_plan)) }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -232,12 +243,12 @@ fun SharedTransitionScope.Home(
                 if (homeState.showPlanChangeReminder) {
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
-                        PlanChangeReminder(
-                            cycleCount = homeState.planCycleCount,
-                            navigator = navigator,
-                            onDismiss = { viewModel.onEvent(HomeEvent.DismissPlanChangeReminder) },
-                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
-                        )
+//                        PlanChangeReminder(
+//                            cycleCount = homeState.planCycleCount,
+//                            navigator = navigator,
+//                            onDismiss = { viewModel.onEvent(HomeEvent.DismissPlanChangeReminder) },
+//                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+//                        )
                     }
                 }
                 item {
@@ -250,72 +261,72 @@ fun SharedTransitionScope.Home(
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.header_to_content_padding)))
-                    WorkoutCard(
-                        program = currentProgram,
-                        exercises = currentExercises,
-                        cardShape = MaterialTheme.shapes.extraLarge,
-                        cardElevation = 2.dp,
-                        // TODO: add message when no exercises in the program
-                        onCardClick = { previewExercise ->
-                            navigator.navigate(
-                                WorkoutDestination(
-                                    programId = currentProgram.programId,
-                                    previewExercise = previewExercise
-                                ),
-                            )
-                        },
-                        navigator = navigator,
-                        // FIXME: suboptimal solution
-                        cardModifier = Modifier
-                            .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
-                            .sharedBounds(
-                                sharedContentState = rememberSharedContentState(
-                                    SharedElementKey(
-                                        "Workout",
-                                        SharedElementType.Bounds,
-                                        idLong = currentProgram.programId
-                                    )
-                                ),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ ->
-                                    MotionScheme.expressive().slowSpatialSpec()
-                                }
-//                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                            ),
-                        imageModifier = Modifier
-                            .sharedBounds(
-                                sharedContentState =
-                                    rememberSharedContentState(
-                                        SharedElementKey(
-                                            "Workout",
-                                            SharedElementType.Image,
-                                            idLong = currentProgram.programId
-                                        )
-                                    ),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge),
-                                boundsTransform = { _, _ ->
-                                    MotionScheme.expressive().slowSpatialSpec()
-                                }
-                            ).graphicsLayer(
-                                shape = MaterialTheme.shapes.extraLarge,
-                                clip = true
-                            ),
-                        exerciseModifier = Modifier
-                            .sharedElement(
-                                sharedContentState = rememberSharedContentState(
-                                    SharedElementKey(
-                                        "Workout",
-                                        SharedElementType.Title,
-                                        idLong = currentProgram.programId
-                                    )
-                                ),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ ->
-                                    MotionScheme.expressive().slowSpatialSpec()
-                                }
-                            )
-                    )
+//                    WorkoutCard(
+//                        program = currentProgram,
+//                        exercises = currentExercises,
+//                        cardShape = MaterialTheme.shapes.extraLarge,
+//                        cardElevation = 2.dp,
+//                        // TODO: add message when no exercises in the program
+//                        onCardClick = { previewExercise ->
+////                            navigator.navigate(
+////                                WorkoutDestination(
+////                                    programId = currentProgram.programId,
+////                                    previewExercise = previewExercise
+////                                ),
+////                            )
+//                        },
+//                        navigator = navigator,
+//                        // FIXME: suboptimal solution
+//                        cardModifier = Modifier
+//                            .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+//                            .sharedBounds(
+//                                sharedContentState = rememberSharedContentState(
+//                                    SharedElementKey(
+//                                        "Workout",
+//                                        SharedElementType.Bounds,
+//                                        idLong = currentProgram.programId
+//                                    )
+//                                ),
+//                                animatedVisibilityScope = animatedVisibilityScope,
+//                                boundsTransform = { _, _ ->
+//                                    MotionScheme.expressive().slowSpatialSpec()
+//                                }
+////                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+//                            ),
+//                        imageModifier = Modifier
+//                            .sharedBounds(
+//                                sharedContentState =
+//                                    rememberSharedContentState(
+//                                        SharedElementKey(
+//                                            "Workout",
+//                                            SharedElementType.Image,
+//                                            idLong = currentProgram.programId
+//                                        )
+//                                    ),
+//                                animatedVisibilityScope = animatedVisibilityScope,
+//                                clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge),
+//                                boundsTransform = { _, _ ->
+//                                    MotionScheme.expressive().slowSpatialSpec()
+//                                }
+//                            ).graphicsLayer(
+//                                shape = MaterialTheme.shapes.extraLarge,
+//                                clip = true
+//                            ),
+//                        exerciseModifier = Modifier
+//                            .sharedElement(
+//                                sharedContentState = rememberSharedContentState(
+//                                    SharedElementKey(
+//                                        "Workout",
+//                                        SharedElementType.Title,
+//                                        idLong = currentProgram.programId
+//                                    )
+//                                ),
+//                                animatedVisibilityScope = animatedVisibilityScope,
+//                                boundsTransform = { _, _ ->
+//                                    MotionScheme.expressive().slowSpatialSpec()
+//                                }
+//                            )
+//                    )
                 }
                 item {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.section_spacing)))
@@ -380,16 +391,16 @@ fun SharedTransitionScope.Home(
                                 .combinedClickable(
                                     onLongClick = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        navigator.navigate(
-                                            AddProgramExerciseDestination(
-                                                programName = program.name,
-                                                programId = program.programId
-                                            )
-                                        )
+//                                        navigator.navigate(
+//                                            AddProgramExerciseDestination(
+//                                                programName = program.name,
+//                                                programId = program.programId
+//                                            )
+//                                        )
                                     }
                                 ) {
-                                    navigator.navigate(
-                                        WorkoutDestination(
+                                    backStack.add(
+                                        WorkoutRoute(
                                             programId = program.programId,
                                             previewExercise = exs.getOrNull(0)
                                         )
@@ -533,12 +544,12 @@ fun SharedTransitionScope.Home(
                                     ) {
                                         IconButton(
                                             onClick = {
-                                                navigator.navigate(
-                                                    AddProgramExerciseDestination(
-                                                        programName = program.name,
-                                                        programId = program.programId
-                                                    )
-                                                )
+//                                                navigator.navigate(
+//                                                    AddProgramExerciseDestination(
+//                                                        programName = program.name,
+//                                                        programId = program.programId
+//                                                    )
+//                                                )
                                             },
                                             modifier = Modifier.size(36.dp)
                                         ) {
@@ -552,8 +563,8 @@ fun SharedTransitionScope.Home(
                                         if (exs.isNotEmpty()) {
                                             IconButton(
                                                 onClick = {
-                                                    navigator.navigate(
-                                                        WorkoutDestination(
+                                                    backStack.add(
+                                                        WorkoutRoute(
                                                             programId = program.programId,
                                                             previewExercise = exs[pagerState.currentPage],
                                                             quickStart = true
@@ -588,17 +599,17 @@ fun SharedTransitionScope.Home(
                     ) {
                         TextButton(
                             onClick = {
-                                navigator.navigate(
-                                    AddWorkoutPlanDestination()
-                                )
+//                                navigator.navigate(
+//                                    AddWorkoutPlanDestination()
+//                                )
                             }, modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) { Text(stringResource(R.string.change_workout_plan)) }
                         TextButton(onClick = {
-                            navigator.navigate(
-                                AddProgramDestination(
-                                    planId = homeState.currentPlan!!
-                                )
-                            )
+//                            navigator.navigate(
+//                                AddProgramDestination(
+//                                    planId = homeState.currentPlan!!
+//                                )
+//                            )
                         }) {
                             Text(stringResource(R.string.change_programs))
                         }

@@ -1,9 +1,6 @@
 package agdesigns.elevatefitness.navigation
 
-import androidx.annotation.StringRes
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Analytics
@@ -13,72 +10,162 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
 import agdesigns.elevatefitness.R
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
+import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.ui.screens.history.History
+import agdesigns.elevatefitness.ui.screens.home.Home
+import agdesigns.elevatefitness.ui.screens.profile.Profile
+import agdesigns.elevatefitness.ui.screens.statistics.Statistics
+import agdesigns.elevatefitness.ui.screens.workout.Workout
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.LaunchedEffect
-import com.ramcosta.composedestinations.DestinationsNavHost
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import androidx.navigation3.ui.NavDisplay
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
-import com.ramcosta.composedestinations.generated.destinations.HomeDestination
-import com.ramcosta.composedestinations.generated.destinations.ProfileDestination
-import com.ramcosta.composedestinations.generated.destinations.StatisticsDestination
-import com.ramcosta.composedestinations.navigation.dependency
-import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
-import com.ramcosta.composedestinations.utils.currentDestinationAsState
-import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
-import com.ramcosta.composedestinations.utils.startDestination
 
-enum class BottomBarDestination(
-    val direction: DirectionDestinationSpec,
-    @StringRes val label: Int,
-    val icon: ImageVector,
+private sealed interface TopLevelRoute {
+//    val label: Int
+//    val icon: ImageVector
+//    val iconSelected: ImageVector
+}
+
+private sealed interface BottomBarDestination: TopLevelRoute {
+    val label: Int
+    val icon: ImageVector
     val iconSelected: ImageVector
-) {
-    Home(HomeDestination, R.string.home, Icons.Outlined.Home, Icons.Filled.Home),
-    History(HistoryDestination, R.string.history, Icons.Outlined.History, Icons.Filled.History),
-    Statistics(StatisticsDestination, R.string.statistics, Icons.Outlined.Analytics, Icons.Filled.Analytics),
-    Profile(ProfileDestination, R.string.profile, Icons.Outlined.Person, Icons.Filled.Person)
 }
 
 
+private data object Home: BottomBarDestination {
+    override val label = R.string.home
+    override val icon = Icons.Outlined.Home
+    override val iconSelected = Icons.Filled.Home
+}
+
+private data object History: BottomBarDestination {
+    override val label = R.string.history
+    override val icon = Icons.Outlined.History
+    override val iconSelected = Icons.Filled.History
+}
+
+private data object Statistics: BottomBarDestination {
+    override val label = R.string.statistics
+    override val icon = Icons.Outlined.Analytics
+    override val iconSelected = Icons.Filled.Analytics
+}
+
+private data object Profile: BottomBarDestination {
+    override val label = R.string.profile
+    override val icon = Icons.Outlined.Person
+    override val iconSelected = Icons.Filled.Person
+}
+
+data class WorkoutRoute (
+    val programId: Long,
+    val previewExercise: ProgramExerciseAndInfo? = null,
+    val quickStart: Boolean = false,
+    val resumeWorkout: Boolean = false
+): TopLevelRoute
+
+private val BOTTOM_BAR_ROUTES : List<BottomBarDestination> = listOf(
+    Home,
+    History,
+    Statistics,
+    Profile
+)
+
+
+class TopLevelBackStack<T: Any>(startKey: T) {
+
+    // Maintain a stack for each top level route
+    private var topLevelStacks : LinkedHashMap<T, SnapshotStateList<T>> = linkedMapOf(
+        startKey to mutableStateListOf(startKey)
+    )
+
+    // Expose the current top level route for consumers
+    var topLevelKey by mutableStateOf(startKey)
+        private set
+
+    // Expose the back stack so it can be rendered by the NavDisplay
+    val backStack = mutableStateListOf(startKey)
+
+    private fun updateBackStack() =
+        backStack.apply {
+            clear()
+            addAll(topLevelStacks.flatMap { it.value })
+        }
+
+    private fun addTopLevel(key: T){
+        // If the top level doesn't exist, add it
+        if (topLevelStacks[key] == null){
+            topLevelStacks[key] = mutableStateListOf(key)
+        } else {
+            // Otherwise just move it to the end of the stacks
+            topLevelStacks.apply {
+                remove(key)?.let {
+                    put(key, it)
+                }
+            }
+        }
+        topLevelKey = key
+        updateBackStack()
+    }
+
+    fun add(key: T){
+        if (key is TopLevelRoute) {
+            addTopLevel(key)
+            return
+        }
+        topLevelStacks[topLevelKey]?.add(key)
+        updateBackStack()
+    }
+
+    fun removeLast(){
+        val removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
+        // If the removed key was a top level key, remove the associated top level stack
+        topLevelStacks.remove(removedKey)
+        topLevelKey = topLevelStacks.keys.last()
+        updateBackStack()
+    }
+}
+
 @Destination<RootGraph>(start=true, style = FadeTransition::class)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class,
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalAnimationApi::class,
     ExperimentalSharedTransitionApi::class
 )
 @Composable
 fun RootDestinationGraph(){
-    val navController = rememberNavController()
-    val navigator = navController.rememberDestinationsNavigator()
-    val currentDestination = navController.currentDestinationAsState().value
-        ?: NavGraphs.root.startDestination
 
     val navSuiteType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfo())
     val state = rememberNavigationSuiteScaffoldState()
-    LaunchedEffect(currentDestination) {
-        if (BottomBarDestination.entries.any { currentDestination == it.direction })
+    val topLevelBackStack = remember { TopLevelBackStack<Any>(Home) }
+    LaunchedEffect(topLevelBackStack.topLevelKey) {
+        if (topLevelBackStack.topLevelKey in BOTTOM_BAR_ROUTES)
             state.show()
         else
             state.hide()
     }
+    var primaryActionContent by remember { mutableStateOf<(@Composable () -> Unit)>({ }) }
     NavigationSuiteScaffold(
         state = state,
         navigationItems = {
-            BottomBarDestination.entries.forEach { destination ->
-                val selected = currentDestination == destination.direction
+            BOTTOM_BAR_ROUTES.forEach { destination ->
+                val selected = destination == topLevelBackStack.topLevelKey
                 NavigationSuiteItem(
                     icon = {
                         if (selected)
@@ -95,48 +182,50 @@ fun RootDestinationGraph(){
                     label = { Text(stringResource(destination.label)) },
                     selected = selected,
                     onClick = {
-                        if (selected) {
-                            // When we click again on a bottom bar item and it was already selected
-                            // we want to pop the back stack until the initial destination of this bottom bar item
-                            navigator.popBackStack(
-                                destination.direction,
-                                false  // FIXME: double check the meaning of this did not change between versions
-                                // FIXME: now it is "inclusive: false" make sure this is the desired behaviour
-                            )
-                            return@NavigationSuiteItem
-                        }
-                        navigator.navigate(destination.direction) {
-                            // Pop up to the root of the graph to
-                            // avoid building up a large stack of destinations
-                            // on the back stack as users select items
-                            popUpTo(NavGraphs.bottomNavigation.startRoute) {
-                                saveState = true
-                            }
-
-                            // Avoid multiple copies of the same destination when
-                            // reselecting the same item
-                            launchSingleTop = true
-                            // Restore state when reselecting a previously selected item
-                            restoreState = true
-                        }
+                        topLevelBackStack.add(destination)
                     }
                 )
             }
-        }
-    ) { /*innerPadding ->*/
-        // remove navigation bar padding, not needed as it will be applied inside content
-//        val bottomPadding by animateDpAsState(
-//            if (BottomBarDestination.entries.any { currentDestination == it.direction })
-//                innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-//            else 0.dp, label = ""
-//        )
+        },
+        primaryActionContent = primaryActionContent
+    ) {
         SharedTransitionLayout {
-            DestinationsNavHost(
-                navGraph = NavGraphs.bottomNavigation,
-                navController = navController,
-//                modifier = Modifier.padding(bottom = bottomPadding),
-                dependenciesContainerBuilder = {
-                    dependency(this@SharedTransitionLayout)
+            NavDisplay(
+                backStack = topLevelBackStack.backStack,
+                onBack = { topLevelBackStack.removeLast() },
+                entryProvider = entryProvider {
+                    entry<Home> {
+                        Home(
+                            animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                            backStack = topLevelBackStack,
+                            changePrimaryAction = { primaryActionContent = it }
+                        )
+                    }
+                    entry<History> {
+                        History(
+                            backStack = topLevelBackStack
+                        )
+                    }
+                    entry<Statistics> {
+                        Statistics(
+                            backStack = topLevelBackStack
+                        )
+                    }
+                    entry<Profile> {
+                        Profile(
+                            backStack = topLevelBackStack
+                        )
+                    }
+                    entry<WorkoutRoute> {
+                        Workout(
+                            animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                            backStack = topLevelBackStack,
+                            programId = it.programId,
+                            previewExercise = it.previewExercise,
+                            quickStart = it.quickStart,
+                            resumeWorkout = it.resumeWorkout
+                        )
+                    }
                 }
             )
         }

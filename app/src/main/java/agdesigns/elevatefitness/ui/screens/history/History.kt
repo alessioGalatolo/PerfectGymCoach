@@ -18,6 +18,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
+import agdesigns.elevatefitness.navigation.TopLevelBackStack
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.history.components.WorkoutCalendarCards
 import agdesigns.elevatefitness.shared.maybeKgToLb
@@ -39,7 +40,7 @@ import java.time.format.DateTimeFormatter
 @Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun History(
-    navigator: DestinationsNavigator,
+    backStack: TopLevelBackStack<Any>,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -129,9 +130,9 @@ fun History(
                 OutlinedCard(
                     shape = MaterialTheme.shapes.large,
                     onClick = {
-                        navigator.navigate(
-                            WorkoutRecapDestination(workoutId = listItem.workout.workoutId)
-                        )
+//                        navigator.navigate(
+//                            WorkoutRecapDestination(workoutId = listItem.workout.workoutId)
+//                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth()

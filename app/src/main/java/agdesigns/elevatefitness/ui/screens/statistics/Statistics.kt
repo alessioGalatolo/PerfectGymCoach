@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
+import agdesigns.elevatefitness.navigation.TopLevelBackStack
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
@@ -70,7 +71,7 @@ import java.time.format.DateTimeFormatter
 @Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun Statistics(
-    navigator: DestinationsNavigator,
+    backStack: TopLevelBackStack<Any>,
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -365,7 +366,7 @@ fun Statistics(
                                     ),
                                     onClicks = state.topExercises.map { exercise ->
                                         {
-                                            navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
+//                                            backStack.add(ExerciseStats) .navigate(ExerciseStatsDestination(exercise.exerciseId))
                                         }
                                     },
                                     items = state.topExercises.map { exercise ->
@@ -411,7 +412,7 @@ fun Statistics(
                                     },
                                     onClicks = state.recentPRs.map {
                                         {
-                                            navigator.navigate(ExerciseStatsDestination(it.exerciseId))
+//                                            navigator.navigate(ExerciseStatsDestination(it.exerciseId))
                                         }
                                     }
                                 )

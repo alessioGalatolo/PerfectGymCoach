@@ -1,11 +1,14 @@
 [versions]
 # Jetpack compose
 compose_bom = "2025.12.01"
-kotlinx_json = "1.9.0"
+kotlinxSerialization = "1.9.0"
 material3 = "1.5.0-alpha11"  # handle material 3 seperately to get latest
 activity_compose = "1.12.2"  # back handler, etc.
 accompanist = "0.37.3"
 coil = "3.3.0"
+# navigation and adaptive
+nav3Core = "1.0.0"
+lifecycleViewmodelNav3 = "2.10.0"
 material3AdaptiveNavigationSuite = "1.4.0"
 adaptive = "1.2.0"
 # facilitators
@@ -74,7 +77,12 @@ compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = 
 compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx_json" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
+# Allows ViewModels to be scoped to entries in the back stack.
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest"}
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
