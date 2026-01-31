@@ -48,8 +48,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.AddProgramDestination
+import agdesigns.elevatefitness.navigation.ArchivedPlansDestination
+import agdesigns.elevatefitness.navigation.CustomizePlanGenerationDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
 import androidx.compose.foundation.layout.Arrangement
@@ -67,17 +69,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
-import com.ramcosta.composedestinations.generated.destinations.ArchivedPlansDestination
-import com.ramcosta.composedestinations.generated.destinations.CustomizePlanGenerationDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import kotlin.math.abs
 
-@Destination<ChangePlanGraph>(start=true, style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
@@ -619,7 +615,7 @@ enum class CardPositionInGroup {
 fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
     FilledTonalButton(
         onClick = {
-            navigator.navigate(CustomizePlanGenerationDestination())
+            navigator.navigate(CustomizePlanGenerationDestination)
         },
         modifier = Modifier.align(Alignment.CenterHorizontally))
     {

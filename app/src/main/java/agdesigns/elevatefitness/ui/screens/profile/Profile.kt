@@ -22,9 +22,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
-import agdesigns.elevatefitness.navigation.BottomNavigationGraph
-import agdesigns.elevatefitness.navigation.FadeTransition
-import agdesigns.elevatefitness.navigation.TopLevelBackStack
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
@@ -54,14 +52,11 @@ import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 import java.time.ZonedDateTime
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -70,7 +65,7 @@ import kotlin.math.roundToInt
     ExperimentalMaterial3ExpressiveApi::class
 )
 fun Profile(
-    backStack: TopLevelBackStack<Any>,
+    navigator: DestinationsNavigator,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.state.collectAsState()

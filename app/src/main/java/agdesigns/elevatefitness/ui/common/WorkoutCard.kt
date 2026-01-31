@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
+import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.WorkoutDestination
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.draw.clip
@@ -36,9 +39,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
-import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
-import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable

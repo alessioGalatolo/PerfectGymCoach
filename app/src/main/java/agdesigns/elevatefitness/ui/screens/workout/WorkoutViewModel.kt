@@ -25,17 +25,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.shared.Equipment
-import agdesigns.elevatefitness.shared.WORKOUT_IMAGES_PATH
-import agdesigns.elevatefitness.shared.bitmapArrayStore
 import agdesigns.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
-import agdesigns.elevatefitness.shared.urgentProtoDataStore
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.data.ProtoDataStoreHelper.protoDataStore
-import com.google.android.horologist.data.WearDataLayerRegistry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -215,14 +210,9 @@ class WorkoutViewModel @Inject constructor(
     private val repository: Repository,
     private val preferences: PreferenceRepository,
     private val notificationService: NotificationService,
-    private val registry: WearDataLayerRegistry,
     private val phoneWorkoutRepository: PhoneWorkoutRepository,
     private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
 ): ViewModel() {
-    // split static data (e.g., exercises) with data that is frequently changing to avoid too many messages
-    private val wearWorkoutStatic = registry.urgentProtoDataStore<Workout.WorkoutStaticData>(viewModelScope)
-    private val wearWorkoutDynamic = registry.urgentProtoDataStore<Workout.WorkoutDynamicData>(viewModelScope)
-    private val wearWorkoutImages = registry.bitmapArrayStore(viewModelScope, WORKOUT_IMAGES_PATH)
 
     // effects to happen in the UI
     private val _effects = Channel<WorkoutEffect>(capacity = Channel.BUFFERED)
@@ -387,42 +377,13 @@ class WorkoutViewModel @Inject constructor(
 
     init {
         phoneWorkoutRepository.startOngoingWorkout()
-        viewModelScope.launch {
-            combine(
-                preferences.getTheme(),
-                preferences.getImperialSystem(),
-                preferences.getBodyweightIncrement(),
-                preferences.getBarbellIncrement(),
-                preferences.getDumbbellIncrement(),
-                preferences.getMachineIncrement(),
-                preferences.getCableIncrement(),
-                preferences.getDontWantNotificationAccess(),
-                preferences.getLockHorizontalScroll(),
-                preferences.getAutoOpenWear(),
-                preferences.getDontWantOngoingWorkoutNotification()
-            ) { values: Array<Any?> ->
-                _workoutState.update {
-                    it.copy(
-                        userTheme = values[0] as Theme,
-                        imperialSystem = values[1] as Boolean,
-                        incrementBodyweight = values[2] as Float,
-                        incrementBarbell = values[3] as Float,
-                        incrementDumbbell = values[4] as Float,
-                        incrementMachine = values[5] as Float,
-                        incrementCable = values[6] as Float,
-                        cantRequestNotificationAccess = values[7] as Boolean,
-                        lockHorizontalScroll = values[8] as Boolean,
-                        autoOpenWear = values[9] as Boolean,
-                        cantRequestOngoingWorkoutNotification = values[10] as Boolean
-                    )
-                }
-            }.collect()
-        }
+
+        observeUserPreferences()
+
         // listens to relevant changes and sends them to wear
         checkWorkoutDataChangesForWear()
-        viewModelScope.launch {
-            observeSetCompletionsFromWear()
-        }
+        observeSetCompletionsFromWear()
+
         /*
           Compute stuff specific to current exercise (should be recomputed if any value changes)
          */
@@ -448,12 +409,13 @@ class WorkoutViewModel @Inject constructor(
                     val title = currentExercise.name.plus(variation)
                     val recordsToDisplay =
                         pagesContent.exerciseRecords.getOrNull(page) ?: emptyList()
-                    val currentExerciseOngoingRecord = pagesContent.ongoingRecords.getOrNull(page)
+                    val currentExerciseOngoingRecord =
+                        pagesContent.ongoingRecords.getOrNull(page)
                     val setsDone = currentExerciseOngoingRecord?.reps?.size ?: 0
                     val repsWeight = pagesContent.exerciseRepsWeightRows
                         .getOrNull(page)
                         ?.getOrNull(setsDone)
-                    val repsToShow = repsWeight?.let{ it.projectedReps ?: it.reps }
+                    val repsToShow = repsWeight?.let { it.projectedReps ?: it.reps }
                     var weightToShow = repsWeight?.let { it.projectedWeight ?: it.weight }
                     if (weightToShow == "...") {
                         // TODO: it would be cool to infer this value from other exercises
@@ -508,8 +470,8 @@ class WorkoutViewModel @Inject constructor(
                     setsDonePerExercise = exerciseSetsDone,
                     currentExercise = currentPage,
                     restTimeSecs = restTime,
-                    restTimestamp = restTimestamp?.toInstant()?.toEpochMilli() ?:
-                        (Date().time + (restTime ?: 0L) * 1000L),
+                    restTimestamp = restTimestamp?.toInstant()?.toEpochMilli()
+                        ?: (Date().time + (restTime ?: 0L) * 1000L),
                     totalRest = totalRest,
                     workoutStarted = workoutStarted
                 )
@@ -661,23 +623,21 @@ class WorkoutViewModel @Inject constructor(
                         } else {
                             _currentPage.value
                         }
-                        phoneToWatchService.scrollToExercise(
-                            Workout.ExerciseToScrollTo.newBuilder()
-                                .setExerciseIndex(exerciseToScrollTo)
-                                .build()
-                        )
+                        if (phoneWorkoutRepository.apiIsAvailable()) {
+                            phoneToWatchService.scrollToExercise(
+                                Workout.ExerciseToScrollTo.newBuilder()
+                                    .setExerciseIndex(exerciseToScrollTo)
+                                    .build()
+                            )
+                            phoneToWatchService.setRest(
+                                Workout.RestPhone2Watch.newBuilder()
+                                    .setRest(exerciseRest)
+                                    .setRestTimestamp(restTimestamp.toProtoTimestamp())
+                                    .build()
+                            )
+                        }
                     } catch (e: Exception) {
-                        Log.e("WorkoutViewModel", "Failed to scroll to exercise on watch", e)
-                    }
-                    try {
-                        phoneToWatchService.setRest(
-                            Workout.RestPhone2Watch.newBuilder()
-                                .setRest(exerciseRest)
-                                .setRestTimestamp(restTimestamp.toProtoTimestamp())
-                                .build()
-                        )
-                    } catch (e: Exception) {
-                        Log.e("WorkoutViewModel", "Failed to set rest on watch", e)
+                        Log.e("WorkoutViewModel", "Failed to set rest/scroll to exercise on watch", e)
                     }
                 }
                 completeSet(
@@ -1123,7 +1083,7 @@ class WorkoutViewModel @Inject constructor(
 
                 val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
                 if (autoOpenWear) {
-                    repository.openWearWorkout()
+                    phoneWorkoutRepository.openWearWorkout()
                 }
             }
         }
@@ -1150,7 +1110,7 @@ class WorkoutViewModel @Inject constructor(
             }
             val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
             if (autoOpenWear) {
-                repository.openWearWorkout()
+                phoneWorkoutRepository.openWearWorkout()
             }
         } else {
             Log.e(
@@ -1277,7 +1237,7 @@ class WorkoutViewModel @Inject constructor(
                 val imperialSystem = values[9] as Boolean
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
-                wearWorkoutStatic.urgentUpdateData { _ ->
+                phoneWorkoutRepository.wearWorkoutStaticDeferred.await().urgentUpdateData { _ ->
                     Workout.WorkoutStaticData.newBuilder()
                         .setWorkoutId(workoutId)
                         .setStartDate(startDateTimestamp)
@@ -1303,7 +1263,7 @@ class WorkoutViewModel @Inject constructor(
                 pagesContent.map { it.exerciseRepsWeightRows }.distinctUntilChanged(),
                 pagesContent.map { it.exerciseSetsDone }.distinctUntilChanged()
             ) { repsWeightRows, setsDone ->
-                wearWorkoutDynamic.urgentUpdateData { _ ->
+                phoneWorkoutRepository.wearWorkoutDynamicDeferred.await().urgentUpdateData { _ ->
                     Workout.WorkoutDynamicData.newBuilder()
                         .addAllSuggestedRepsWeight(
                             repsWeightRows.map { repsWeights ->
@@ -1325,9 +1285,9 @@ class WorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             pagesContent.map { it.exercises }.map { it.map{ it.image } }.distinctUntilChanged().collect {
                 images ->
-                wearWorkoutImages.updateData {
-                    images.map { repository.getBitmapFromResId(it) }
-                }
+                    phoneWorkoutRepository.wearWorkoutImagesDeferred.await().updateData {
+                        images.map { repository.getBitmapFromResId(it) }
+                    }
             }
         }
     }
@@ -1342,64 +1302,111 @@ class WorkoutViewModel @Inject constructor(
         )
     }
 
-    private suspend fun observeSetCompletionsFromWear() {
-        for (setCompletion in phoneWorkoutRepository.setCompletions) {
-            if (setCompletion.workoutId != workoutState.value.workoutId) {
-                Log.d("WorkoutViewModel", "Received set completion from wear for wrong workout")
-                continue
-            }
-            if (workoutState.value.startDate == null) {
-                // user completed set from watch before starting workout
-                onEvent(WorkoutEvent.StartWorkout)
-                // StartWorkout is async, need to wait for it to finish
-                startWorkoutJob?.join()
-            }
-            if (setCompletion.reps > 0) {
-                val exerciseIndex = pagesContent.value.exercises.indexOfFirst { it.workoutExerciseId == setCompletion.exerciseId }
-                if (exerciseIndex == -1) {
-                    Log.e("WorkoutViewModel", "Tried to complete a set from watch with no current exercise")
-                    _effects.trySend(
-                        WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
-                    )
+    private fun observeSetCompletionsFromWear() {
+        viewModelScope.launch {
+            for (setCompletion in phoneWorkoutRepository.setCompletions) {
+                if (setCompletion.workoutId != workoutState.value.workoutId) {
+                    Log.d("WorkoutViewModel", "Received set completion from wear for wrong workout")
                     continue
                 }
-                val exercise = pagesContent.value.exercises.getOrNull(exerciseIndex)
-                if (exercise == null) {
-                    // Should never happen, but just in case...
-                    Log.e("WorkoutViewModel", "Tried to complete a set from watch with no current exercise set")
-                    _effects.trySend(
-                        WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
-                    )
-                    continue
+                if (workoutState.value.startDate == null) {
+                    // user completed set from watch before starting workout
+                    onEvent(WorkoutEvent.StartWorkout)
+                    // StartWorkout is async, need to wait for it to finish
+                    startWorkoutJob?.join()
                 }
+                if (setCompletion.reps > 0) {
+                    val exerciseIndex =
+                        pagesContent.value.exercises.indexOfFirst { it.workoutExerciseId == setCompletion.exerciseId }
+                    if (exerciseIndex == -1) {
+                        Log.e(
+                            "WorkoutViewModel",
+                            "Tried to complete a set from watch with no current exercise"
+                        )
+                        _effects.trySend(
+                            WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
+                        )
+                        continue
+                    }
+                    val exercise = pagesContent.value.exercises.getOrNull(exerciseIndex)
+                    if (exercise == null) {
+                        // Should never happen, but just in case...
+                        Log.e(
+                            "WorkoutViewModel",
+                            "Tried to complete a set from watch with no current exercise set"
+                        )
+                        _effects.trySend(
+                            WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
+                        )
+                        continue
+                    }
 
-                val setsDone = pagesContent.value.exerciseSetsDone.getOrNull(exerciseIndex) ?: 0
-                if (setsDone >= exercise.rest.size) {
-                    // user has done all sets and is adding another one from watch
-                    addSetToExercise(exercise)
-                }
-                if (exerciseIndex != _currentPage.value) {
-                    // index of exercise completed from watch is different than exercise currently
-                    // being shown to user, scroll to that index
-                    _effects.trySend(
-                        WorkoutEffect.AdvancePage(exerciseIndex)
+                    val setsDone = pagesContent.value.exerciseSetsDone.getOrNull(exerciseIndex) ?: 0
+                    if (setsDone >= exercise.rest.size) {
+                        // user has done all sets and is adding another one from watch
+                        addSetToExercise(exercise)
+                    }
+                    if (exerciseIndex != _currentPage.value) {
+                        // index of exercise completed from watch is different than exercise currently
+                        // being shown to user, scroll to that index
+                        _effects.trySend(
+                            WorkoutEffect.AdvancePage(exerciseIndex)
+                        )
+                    }
+                    completeSet(
+                        exercise = exercise,
+                        exerciseRest = setCompletion.rest,
+                        restTimestamp = setCompletion.restTimestamp.toZonedDateTime(),
+                        reps = setCompletion.reps,
+                        weight = setCompletion.weight,
+                        tare = if (setCompletion.tare != 0f)
+                            maybeLbToKg(setCompletion.tare, pagesContent.value.imperialSystem)
+                        else null
+                    )
+                } else {
+                    Log.d(
+                        "WorkoutViewModel",
+                        "Tried to complete a set from watch with no or negative reps"
                     )
                 }
-                completeSet(
-                    exercise = exercise,
-                    exerciseRest = setCompletion.rest,
-                    restTimestamp = setCompletion.restTimestamp.toZonedDateTime(),
-                    reps = setCompletion.reps,
-                    weight = setCompletion.weight,
-                    tare = if (setCompletion.tare != 0f)
-                        maybeLbToKg(setCompletion.tare, pagesContent.value.imperialSystem)
-                    else null
-                )
-            } else {
-                Log.d("WorkoutViewModel", "Tried to complete a set from watch with no or negative reps")
             }
         }
     }
+
+    private fun observeUserPreferences() {
+        viewModelScope.launch {
+            combine(
+                preferences.getTheme(),
+                preferences.getImperialSystem(),
+                preferences.getBodyweightIncrement(),
+                preferences.getBarbellIncrement(),
+                preferences.getDumbbellIncrement(),
+                preferences.getMachineIncrement(),
+                preferences.getCableIncrement(),
+                preferences.getDontWantNotificationAccess(),
+                preferences.getLockHorizontalScroll(),
+                preferences.getAutoOpenWear(),
+                preferences.getDontWantOngoingWorkoutNotification()
+            ) { values: Array<Any?> ->
+                _workoutState.update {
+                    it.copy(
+                        userTheme = values[0] as Theme,
+                        imperialSystem = values[1] as Boolean,
+                        incrementBodyweight = values[2] as Float,
+                        incrementBarbell = values[3] as Float,
+                        incrementDumbbell = values[4] as Float,
+                        incrementMachine = values[5] as Float,
+                        incrementCable = values[6] as Float,
+                        cantRequestNotificationAccess = values[7] as Boolean,
+                        lockHorizontalScroll = values[8] as Boolean,
+                        autoOpenWear = values[9] as Boolean,
+                        cantRequestOngoingWorkoutNotification = values[10] as Boolean
+                    )
+                }
+            }.collect()
+        }
+    }
+
     private fun startTimer(){
         timerJob?.cancel(CancellationException("Duplicate call"))
         timerJob = flow {

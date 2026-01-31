@@ -39,8 +39,9 @@ import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesEvent
 import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesViewModel
@@ -62,12 +63,8 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.toBitmap
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
-import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination<ChangePlanGraph>(style = SlideTransition::class)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )

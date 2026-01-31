@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ViewExercisesDestination
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -35,11 +35,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.ui.res.stringResource
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.ViewExercisesDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )

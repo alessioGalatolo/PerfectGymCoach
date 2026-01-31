@@ -19,6 +19,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.WearDataLayerRegistry
+import com.google.android.horologist.datalayer.phone.PhoneDataLayerAppHelper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -103,8 +104,9 @@ object AppModule {
     @OptIn(ExperimentalHorologistApi::class)
     fun provideMediaPlayingRepository(
         @ApplicationContext context: Context,
-        registry: WearDataLayerRegistry
-    ): MediaPlayingRepository = MediaPlayingRepository(context, registry)
+        registry: WearDataLayerRegistry,
+        datalayerHelper: PhoneDataLayerAppHelper
+    ): MediaPlayingRepository = MediaPlayingRepository(context, registry, datalayerHelper)
 
     @Provides
     @Singleton
@@ -117,10 +119,14 @@ object AppModule {
     @Singleton
     fun phoneWorkoutRepository(
         registry: WearDataLayerRegistry,
-        phone2WatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
+        phone2WatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub,
+        datalayerHelper: PhoneDataLayerAppHelper,
+        @ApplicationContext context: Context
     ): PhoneWorkoutRepository = PhoneWorkoutRepository(
         registry,
-        phone2WatchService
+        phone2WatchService,
+        datalayerHelper,
+        context
     )
 
 }

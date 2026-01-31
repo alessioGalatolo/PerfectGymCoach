@@ -6,9 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import agdesigns.elevatefitness.navigation.BottomNavigationGraph
-import agdesigns.elevatefitness.navigation.FadeTransition
-import agdesigns.elevatefitness.navigation.TopLevelBackStack
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
@@ -59,19 +58,15 @@ import com.jaikeerthick.composable_graphs.composables.pie.PieChart
 import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.text.DecimalFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
-@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun Statistics(
-    backStack: TopLevelBackStack<Any>,
+    navigator: DestinationsNavigator,
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -366,7 +361,7 @@ fun Statistics(
                                     ),
                                     onClicks = state.topExercises.map { exercise ->
                                         {
-//                                            backStack.add(ExerciseStats) .navigate(ExerciseStatsDestination(exercise.exerciseId))
+                                            navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
                                         }
                                     },
                                     items = state.topExercises.map { exercise ->
@@ -412,7 +407,7 @@ fun Statistics(
                                     },
                                     onClicks = state.recentPRs.map {
                                         {
-//                                            navigator.navigate(ExerciseStatsDestination(it.exerciseId))
+                                            navigator.navigate(ExerciseStatsDestination(it.exerciseId))
                                         }
                                     }
                                 )

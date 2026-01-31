@@ -830,4 +830,5 @@
     <string name="enable_live_notification_info">Il riposo mancante sarà sempre visibile nella barra di stato</string>
     <string name="workout_delete_completed_set">Cancella questa serie</string>
     <string name="complete_set_generic_error">Non è stato possibile completare la serie per via di un errore sconosciuto</string>
+    <string name="home_fap_create_plan">Nuovo piano</string>
 </resources>

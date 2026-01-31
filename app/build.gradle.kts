@@ -89,6 +89,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
+            freeCompilerArgs = listOf("-XXLanguage:+ContextParameters")
         }
     }
 
@@ -118,14 +119,11 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.compose.destinations.core)
-    implementation(libs.compose.destinations.bottom.sheet)
     implementation(libs.wear.remote.interactions)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.accompanist.permissions)
     implementation(libs.material3.adaptive.navigation.suite)
     implementation(libs.adaptive)
-    ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)
     implementation(libs.graphs)

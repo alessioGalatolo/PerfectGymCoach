@@ -25,8 +25,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getVariation
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.ui.common.ResetExerciseProbabilityDialog
@@ -56,16 +57,11 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import coil3.compose.AsyncImage
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
-import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.math.max
 
-@Destination<ChangePlanGraph>
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )

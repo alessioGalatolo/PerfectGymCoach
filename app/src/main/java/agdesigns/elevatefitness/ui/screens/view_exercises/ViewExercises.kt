@@ -33,8 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.navigation.CreateExerciseDialogDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
@@ -56,10 +57,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
-import com.ramcosta.composedestinations.generated.destinations.CreateExerciseDialogDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -70,7 +67,6 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ceil
 import kotlin.math.min
 
-@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class,
     ExperimentalSharedTransitionApi::class
 )

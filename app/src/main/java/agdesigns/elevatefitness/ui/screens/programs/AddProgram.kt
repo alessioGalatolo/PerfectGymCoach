@@ -26,18 +26,14 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
 import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.runtime.*
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
 
-@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )

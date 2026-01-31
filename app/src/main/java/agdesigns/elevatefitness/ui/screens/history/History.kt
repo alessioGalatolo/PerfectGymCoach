@@ -16,9 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.BottomNavigationGraph
-import agdesigns.elevatefitness.navigation.FadeTransition
-import agdesigns.elevatefitness.navigation.TopLevelBackStack
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.WorkoutRecapDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.history.components.WorkoutCalendarCards
 import agdesigns.elevatefitness.shared.maybeKgToLb
@@ -31,16 +30,12 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.WorkoutRecapDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.time.format.DateTimeFormatter
 
 
-@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun History(
-    backStack: TopLevelBackStack<Any>,
+    navigator: DestinationsNavigator,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -130,9 +125,9 @@ fun History(
                 OutlinedCard(
                     shape = MaterialTheme.shapes.large,
                     onClick = {
-//                        navigator.navigate(
-//                            WorkoutRecapDestination(workoutId = listItem.workout.workoutId)
-//                        )
+                        navigator.navigate(
+                            WorkoutRecapDestination(workoutId = listItem.workout.workoutId)
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth()

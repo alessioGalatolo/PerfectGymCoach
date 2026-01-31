@@ -15,8 +15,8 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
-import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
-import agdesigns.elevatefitness.navigation.GeneratePlanGraph
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ViewGeneratedPlanDestination
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,13 +26,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.max
 import coil3.compose.AsyncImage
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.generated.destinations.ViewGeneratedPlanDestination
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
-@Destination<GeneratePlanGraph>(start = true, style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )

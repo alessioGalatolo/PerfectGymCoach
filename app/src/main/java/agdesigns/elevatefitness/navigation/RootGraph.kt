@@ -3,26 +3,20 @@ package agdesigns.elevatefitness.navigation
 import androidx.compose.animation.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Analytics
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
-import agdesigns.elevatefitness.ui.screens.history.History
-import agdesigns.elevatefitness.ui.screens.home.Home
-import agdesigns.elevatefitness.ui.screens.profile.Profile
-import agdesigns.elevatefitness.ui.screens.statistics.Statistics
 import agdesigns.elevatefitness.ui.screens.workout.Workout
+import android.util.Log
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -30,68 +24,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-
-private sealed interface TopLevelRoute {
-//    val label: Int
-//    val icon: ImageVector
-//    val iconSelected: ImageVector
-}
-
-private sealed interface BottomBarDestination: TopLevelRoute {
-    val label: Int
-    val icon: ImageVector
-    val iconSelected: ImageVector
-}
+import androidx.window.core.layout.WindowSizeClass
 
 
-private data object Home: BottomBarDestination {
-    override val label = R.string.home
-    override val icon = Icons.Outlined.Home
-    override val iconSelected = Icons.Filled.Home
-}
-
-private data object History: BottomBarDestination {
-    override val label = R.string.history
-    override val icon = Icons.Outlined.History
-    override val iconSelected = Icons.Filled.History
-}
-
-private data object Statistics: BottomBarDestination {
-    override val label = R.string.statistics
-    override val icon = Icons.Outlined.Analytics
-    override val iconSelected = Icons.Filled.Analytics
-}
-
-private data object Profile: BottomBarDestination {
-    override val label = R.string.profile
-    override val icon = Icons.Outlined.Person
-    override val iconSelected = Icons.Filled.Person
-}
-
-data class WorkoutRoute (
-    val programId: Long,
-    val previewExercise: ProgramExerciseAndInfo? = null,
-    val quickStart: Boolean = false,
-    val resumeWorkout: Boolean = false
-): TopLevelRoute
-
-private val BOTTOM_BAR_ROUTES : List<BottomBarDestination> = listOf(
-    Home,
-    History,
-    Statistics,
-    Profile
-)
-
-
-class TopLevelBackStack<T: Any>(startKey: T) {
+class DestinationsNavigator(startKey: Any) {
 
     // Maintain a stack for each top level route
-    private var topLevelStacks : LinkedHashMap<T, SnapshotStateList<T>> = linkedMapOf(
+    private var topLevelStacks : LinkedHashMap<Any, SnapshotStateList<Any>> = linkedMapOf(
         startKey to mutableStateListOf(startKey)
     )
 
@@ -108,7 +56,7 @@ class TopLevelBackStack<T: Any>(startKey: T) {
             addAll(topLevelStacks.flatMap { it.value })
         }
 
-    private fun addTopLevel(key: T){
+    private fun addTopLevel(key: Any){
         // If the top level doesn't exist, add it
         if (topLevelStacks[key] == null){
             topLevelStacks[key] = mutableStateListOf(key)
@@ -124,7 +72,7 @@ class TopLevelBackStack<T: Any>(startKey: T) {
         updateBackStack()
     }
 
-    fun add(key: T){
+    fun navigate(key: Any){
         if (key is TopLevelRoute) {
             addTopLevel(key)
             return
@@ -133,7 +81,7 @@ class TopLevelBackStack<T: Any>(startKey: T) {
         updateBackStack()
     }
 
-    fun removeLast(){
+    fun navigateUp(){
         val removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
         // If the removed key was a top level key, remove the associated top level stack
         topLevelStacks.remove(removedKey)
@@ -142,31 +90,50 @@ class TopLevelBackStack<T: Any>(startKey: T) {
     }
 }
 
-@Destination<RootGraph>(start=true, style = FadeTransition::class)
+data class PrimaryActionContent(
+    val icon: ImageVector,
+    val labelId: Int,
+    val onClick: () -> Unit
+)
+
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalAnimationApi::class,
-    ExperimentalSharedTransitionApi::class
+    ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
-fun RootDestinationGraph(){
-
-    val navSuiteType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfo())
+fun RootDestinationGraph(startDestination: Any) {
     val state = rememberNavigationSuiteScaffoldState()
-    val topLevelBackStack = remember { TopLevelBackStack<Any>(Home) }
-    LaunchedEffect(topLevelBackStack.topLevelKey) {
-        if (topLevelBackStack.topLevelKey in BOTTOM_BAR_ROUTES)
+    val destinationsNavigator = remember { DestinationsNavigator(startDestination) }
+    LaunchedEffect(destinationsNavigator.topLevelKey) {
+        if (destinationsNavigator.topLevelKey in BOTTOM_BAR_ROUTES)
             state.show()
         else
             state.hide()
     }
-    var primaryActionContent by remember { mutableStateOf<(@Composable () -> Unit)>({ }) }
+    val primaryActionContent = remember { mutableStateOf<PrimaryActionContent?>(null) }
+    // whose action it is
+    val primaryActionOrigin = remember { mutableStateOf<Any?>(null) }
+    val navSuiteType =
+        with(currentWindowAdaptiveInfo()) {
+            Log.d("RootGraph", "Window class is $windowSizeClass")
+            when {
+                windowSizeClass.minWidthDp == 0 -> NavigationSuiteType.ShortNavigationBarCompact
+                windowSizeClass.minHeightDp == 0 -> NavigationSuiteType.ShortNavigationBarMedium
+                windowSizeClass.minWidthDp == WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND
+                    || windowSizeClass.minHeightDp >= windowSizeClass.minWidthDp ->
+                        NavigationSuiteType.WideNavigationRailCollapsed
+                else -> NavigationSuiteType.WideNavigationRailExpanded
+            }
+        }
     NavigationSuiteScaffold(
         state = state,
+        navigationSuiteType = navSuiteType,
         navigationItems = {
             BOTTOM_BAR_ROUTES.forEach { destination ->
-                val selected = destination == topLevelBackStack.topLevelKey
+                val selected = destination == destinationsNavigator.topLevelKey
                 NavigationSuiteItem(
+                    navigationSuiteType = navSuiteType,
                     icon = {
                         if (selected)
                             Icon(
@@ -182,50 +149,117 @@ fun RootDestinationGraph(){
                     label = { Text(stringResource(destination.label)) },
                     selected = selected,
                     onClick = {
-                        topLevelBackStack.add(destination)
+                        destinationsNavigator.navigate(destination)
                     }
                 )
             }
         },
-        primaryActionContent = primaryActionContent
+        primaryActionContent = {
+            AnimatedVisibility(
+                enter = fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec())
+                        + scaleIn(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
+                exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                        scaleOut(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
+                visible = primaryActionOrigin.value == destinationsNavigator.topLevelKey
+            ) {
+                if (primaryActionContent.value == null) {
+                    return@AnimatedVisibility
+                }
+                when (navSuiteType) {
+                    NavigationSuiteType.NavigationBar,
+                    NavigationSuiteType.ShortNavigationBarCompact,
+                    NavigationSuiteType.ShortNavigationBarMedium -> {
+                        MediumFloatingActionButton(
+                            onClick = { primaryActionContent.value?.onClick() },
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ) {
+                            Icon(
+                                imageVector = primaryActionContent.value?.icon ?: Icons.Default.AcUnit,
+                                contentDescription = primaryActionContent.value?.labelId?.let {
+                                    stringResource(it)
+                                },
+                                modifier = Modifier.size(
+                                    FloatingActionButtonDefaults.MediumIconSize
+                                )
+                            )
+                        }
+                    }
+                    NavigationSuiteType.WideNavigationRailCollapsed -> {
+                        // Bigger fabs go out of bounds
+                        FloatingActionButton(
+                            onClick = { primaryActionContent.value?.onClick() },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.navigation_rail_item_padding))
+                        ) {
+                            Icon(
+                                imageVector = primaryActionContent.value?.icon
+                                    ?: Icons.Default.AcUnit,
+                                contentDescription = primaryActionContent.value?.labelId?.let {
+                                    stringResource(it)
+                                },
+                                modifier = Modifier.size(
+                                    FloatingActionButtonDefaults.MediumIconSize
+                                )
+                            )
+                        }
+                    }
+                    NavigationSuiteType.WideNavigationRailExpanded -> {
+                        ExtendedFloatingActionButton(
+                            onClick = { primaryActionContent.value?.onClick() },
+                            icon = {
+                                Icon(
+                                    imageVector = primaryActionContent.value?.icon ?: Icons.Default.AcUnit,
+                                    contentDescription = null,
+                                )
+                            },
+                            text = {
+                                if (primaryActionContent.value != null) {
+                                    Text(
+                                        stringResource(
+                                            primaryActionContent.value?.labelId ?: R.string.app_name
+                                        )
+                                    )
+                                }
+                            },
+                            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.navigation_rail_item_padding))
+                        )
+                    }
+                    else -> {}
+                }
+            }
+        },
+        primaryActionContentHorizontalAlignment = Alignment.End
     ) {
         SharedTransitionLayout {
             NavDisplay(
-                backStack = topLevelBackStack.backStack,
-                onBack = { topLevelBackStack.removeLast() },
+                backStack = destinationsNavigator.backStack,
+                onBack = { destinationsNavigator.navigateUp() },
                 entryProvider = entryProvider {
-                    entry<Home> {
-                        Home(
-                            animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                            backStack = topLevelBackStack,
-                            changePrimaryAction = { primaryActionContent = it }
-                        )
-                    }
-                    entry<History> {
-                        History(
-                            backStack = topLevelBackStack
-                        )
-                    }
-                    entry<Statistics> {
-                        Statistics(
-                            backStack = topLevelBackStack
-                        )
-                    }
-                    entry<Profile> {
-                        Profile(
-                            backStack = topLevelBackStack
-                        )
-                    }
-                    entry<WorkoutRoute> {
-                        Workout(
-                            animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                            backStack = topLevelBackStack,
-                            programId = it.programId,
-                            previewExercise = it.previewExercise,
-                            quickStart = it.quickStart,
-                            resumeWorkout = it.resumeWorkout
-                        )
-                    }
+                    bottomBarEntryBuilder(destinationsNavigator, primaryActionOrigin, primaryActionContent)
+                    deepScreensEntryBuilder(destinationsNavigator)
+                    workoutScreenEntryBuilder(destinationsNavigator)
+                },
+                entryDecorators = listOf(
+                    // Add the default decorators for managing scenes and saving state
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    // Then add the view model store decorator
+                    rememberViewModelStoreNavEntryDecorator()
+                ),
+                transitionSpec = {
+                    fadeIn(MotionScheme.expressive().slowEffectsSpec()) togetherWith
+                            ExitTransition.None
+                },
+                popTransitionSpec = {
+                    EnterTransition.None togetherWith fadeOut(
+                        MotionScheme.expressive().slowEffectsSpec()
+                    )
+                },
+                predictivePopTransitionSpec = {
+                    EnterTransition.None togetherWith fadeOut(
+                        MotionScheme.expressive().slowEffectsSpec()
+                    )
                 }
             )
         }

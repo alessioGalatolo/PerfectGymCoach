@@ -19,8 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.SelectableCard
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.foundation.BorderStroke
@@ -54,11 +53,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.times
 import coil3.compose.AsyncImage
 import agdesigns.elevatefitness.shared.Equipment
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@Destination<ChangePlanGraph>(style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
     ExperimentalMaterial3ExpressiveApi::class
 )

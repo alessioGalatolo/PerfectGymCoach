@@ -23,13 +23,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.HistoryDestination
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
 import agdesigns.elevatefitness.ui.common.GroupedCard
@@ -70,14 +71,9 @@ import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.LegendItem
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import com.patrykandpatrick.vico.core.common.shape.Shape
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import java.time.format.DateTimeFormatter
 
 
-@Destination<WorkoutOnlyGraph>(style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
@@ -154,7 +150,7 @@ fun WorkoutRecap(
                             navigator.navigateUp()
                             navigator.navigateUp()
                             navigator.navigate(
-                                HistoryDestination()
+                                HistoryDestination
                             )
                         },
                         shapes = IconButtonDefaults.shapes()

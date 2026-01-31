@@ -18,6 +18,9 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
@@ -56,9 +59,6 @@ import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
 import androidx.compose.ui.text.style.TextDecoration
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
-import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
