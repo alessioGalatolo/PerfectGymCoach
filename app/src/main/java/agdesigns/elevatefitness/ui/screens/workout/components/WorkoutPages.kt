@@ -187,7 +187,7 @@ fun SharedTransitionScope.ExercisePages(
                     // placeholder for preview
                     ExercisePage(
                         exerciseNote = "",
-                        supersetExercise = null,
+                        supersetWith = null,
                         exerciseRest = previewExercise.rest.getOrNull(0) ?: 0,
                         equipment = Equipment.EVERYTHING,
                         tare = null,
@@ -243,7 +243,12 @@ fun SharedTransitionScope.ExercisePages(
                     } else {
                         ExercisePage(
                             exerciseNote = pagesContent.exercises[page].note,
-                            supersetExercise = pagesContent.exercises[page].supersetExercise,
+                            supersetWith = when (pagesContent.exercises[page].supersetExercise) {
+                                null -> null
+                                pagesContent.exercises.getOrNull(page + 1)?.extProgramExerciseId -> pagesContent.exercises[page + 1].name
+                                pagesContent.exercises.getOrNull(page - 1)?.extProgramExerciseId -> pagesContent.exercises[page - 1].name
+                                else -> null
+                            },
                             exerciseRest = pagesContent.exercises[page].rest[
                                 min(
                                     pagesContent.exerciseSetsDone[page],
@@ -332,7 +337,7 @@ fun SharedTransitionScope.ExercisePages(
 @Composable
 fun ExercisePage(
     exerciseNote: String,
-    supersetExercise: Long?,
+    supersetWith: String?,
     exerciseRest: Int,
     equipment: Equipment,
     tare: Float?,
@@ -365,52 +370,6 @@ fun ExercisePage(
                 append(exerciseNote)
             }, modifier = Modifier.align(CenterHorizontally))
         }
-        Row (Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
-            var likesExercise by rememberSaveable { mutableStateOf(false) }
-            var dislikesExercise by rememberSaveable { mutableStateOf(false) }
-
-            IconButton(onClick = {
-                // if already disliked, remove dislike
-                if (dislikesExercise) {
-                    dislikesExercise = false
-                    // increase prob to remove previous dislike
-                    updateExerciseProbability(1)
-                } else {
-                    val increment = if (likesExercise) -1 else -2
-                    updateExerciseProbability(increment)
-                    likesExercise = false
-                    dislikesExercise = true
-                }
-            }) {
-                Icon(
-                    if (dislikesExercise) Icons.Default.ThumbDown else Icons.Outlined.ThumbDown,
-                    stringResource(R.string.thumbdown_icon_dislike_ex)
-                )
-            }
-            // FIXME: it is not clear that this is info about the exercise, not about the like/dislike
-            IconButton(
-                onClick = toggleInfoDialog
-            ) {
-                Icon(Icons.Outlined.Info, stringResource(R.string.info_icon_ex_desc))
-            }
-            IconButton(onClick = {
-                if (likesExercise) {
-                    likesExercise = false
-                    updateExerciseProbability(-1)
-                } else {
-                    val increment = if (dislikesExercise) 1 else 2
-                    updateExerciseProbability(increment)
-                    likesExercise = true
-                    dislikesExercise = false
-                }
-
-            }) {
-                Icon(
-                    if (likesExercise) Icons.Default.ThumbUp else Icons.Outlined.ThumbUp,
-                    stringResource(R.string.thumbup_icon_like_ex)
-                )
-            }
-        }
         // content
         if (restTimeSecs != null && restCounterProgress != null){
             AdaptiveCircularTimer(
@@ -434,14 +393,24 @@ fun ExercisePage(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.current_exercise) +
-                    if (supersetExercise != null) stringResource(
-                        R.string.part_of_superset
-                    ) else "",
+            Text(
+                stringResource(R.string.current_exercise),
                 Modifier.padding(vertical = 8.dp),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+            IconButton(
+                onClick = toggleInfoDialog
+            ) {
+                Icon(Icons.Outlined.Info, stringResource(R.string.info_icon_ex_desc))
+            }
+            if (supersetWith != null) {
+                Text(
+                    stringResource(R.string.part_of_superset) + supersetWith,
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
 
             AnimatedVisibility(
                 visible = workoutStarted,

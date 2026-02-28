@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -92,28 +93,28 @@ fun WorkoutPage(
             CompleteSetAndRestScreen(
                 restProgression = workoutState.ongoingRestProgression ?: 1f,
                 currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
-                nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount }
-                        ?: false) {
-                    val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
-                        workoutState.currentExerciseIndex
-                    )
-                    val setsDone = exercisesState.exercisesSetsDone.getOrNull(
-                        workoutState.currentExerciseIndex
-                    ) ?: 0
-                    (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${
-                        repsWeight?.getWeight(
-                            setsDone
+                nextSetExerciseName =
+                    if (currentExercise?.let { setsDone < it.restCount } ?: false) {
+                        val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
+                            workoutState.currentExerciseIndex
                         )
-                    }${
-                        if (exercisesState.imperialSystem)
-                            stringResource(R.string.lb)
-                        else
-                            stringResource(R.string.kg)
-                    })"
-                } else {
-                    exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
-                        ?: ""
-                },
+                        val setsDone = exercisesState.exercisesSetsDone.getOrNull(
+                            workoutState.currentExerciseIndex
+                        ) ?: 0
+                        (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${
+                            repsWeight?.getWeight(
+                                setsDone
+                            )
+                        }${
+                            if (exercisesState.imperialSystem)
+                                stringResource(R.string.lb)
+                            else
+                                stringResource(R.string.kg)
+                        })"
+                    } else {
+                        exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
+                            ?: ""
+                    },
                 // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
                 workoutState = workoutState,
                 exercisesState = exercisesState,
@@ -143,6 +144,7 @@ fun WorkoutPage(
                             stringResource(agdesigns.elevatefitness.shared.R.string.lb)
                         else
                             stringResource(agdesigns.elevatefitness.shared.R.string.kg),
+                isSuperset = currentExercise?.supersetExercise != 0L,
                 bottomText = currentExercise?.note ?: "",
                 startRest = startRest,
                 hasPrevious = workoutState.currentExerciseIndex > 0,
@@ -169,6 +171,7 @@ fun WorkoutPage(
 fun ExercisePage(
     exerciseTitle: String,
     exerciseSubtitle: String,
+    isSuperset: Boolean,
     bottomText: String,
     hasPrevious: Boolean,
     hasNext: Boolean,
@@ -250,42 +253,69 @@ fun ExercisePage(
                     } else {
                         MaterialTheme.colorScheme.primary
                     }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .rotate(45f)
-                            .clip(
-                                MorphPolygonShape(morph, animatedProgress.value)
-                            )
-                            .border(
-                                1.dp,
-                                MaterialTheme.colorScheme.primary,
-                                MorphPolygonShape(morph, animatedProgress.value)
-                            )
-                            .rotate(-45f)
-                            .clickable(interactionSource = interactionSource, indication = null, onClick = startRest)
-                            .background(background),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.Default.Done,
+                    Box {
+                        Box(
                             modifier = Modifier
-                                .defaultMinSize(
-                                    minWidth = ButtonDefaults.DefaultButtonSize,
-                                    minHeight = ButtonDefaults.DefaultButtonSize,
+                                .fillMaxSize()
+                                .rotate(45f)
+                                .clip(
+                                    MorphPolygonShape(morph, animatedProgress.value)
                                 )
-                                .size(if (LocalConfiguration.current.isLargeScreen)
-                                    38.dp
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    MorphPolygonShape(morph, animatedProgress.value)
+                                )
+                                .rotate(-45f)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null,
+                                    onClick = startRest
+                                )
+                                .background(background),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Default.Done,
+                                modifier = Modifier
+                                    .defaultMinSize(
+                                        minWidth = ButtonDefaults.DefaultButtonSize,
+                                        minHeight = ButtonDefaults.DefaultButtonSize,
+                                    )
+                                    .size(
+                                        if (LocalConfiguration.current.isLargeScreen)
+                                            38.dp
+                                        else
+                                            32.dp
+                                    )
+                                    .align(Alignment.Center),
+                                contentDescription = stringResource(agdesigns.elevatefitness.R.string.done_icon),
+                                tint = if (ambientState.isAmbient)
+                                    MaterialTheme.colorScheme.primary
                                 else
-                                    32.dp
-                                )
-                                .align(Alignment.Center),
-                            contentDescription = "", // FIXME
-                            tint = if (ambientState.isAmbient)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onPrimary,
-                        )
+                                    MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                        if (isSuperset) {
+                            val buttonBackground = if (ambientState.isAmbient) {
+                                Color.Transparent
+                            } else {
+                                MaterialTheme.colorScheme.secondary
+                            }
+                            Icon(
+                                Icons.Default.Link,
+                                stringResource(agdesigns.elevatefitness.R.string.superset),
+                                tint = if (ambientState.isAmbient)
+                                    MaterialTheme.colorScheme.secondary
+                                else
+                                    MaterialTheme.colorScheme.onSecondary,
+                                modifier = Modifier
+                                    .rotate(-45f)
+                                    .align(Alignment.BottomEnd)
+                                    .clip(MaterialTheme.shapes.extraLarge)
+                                    .background(buttonBackground)
+                            )
+                        }
                     }
                 }
             )

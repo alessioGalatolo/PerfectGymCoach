@@ -118,7 +118,6 @@ data class WorkoutState(
     val cantRequestNotificationAccess: Boolean = true,
     val programId: Long = 0L,
     val startDate: ZonedDateTime? = null,
-    val shutDown: Boolean = false,  // used when finishing workout, waits to save then exit
     val userTheme: Theme = Theme.SYSTEM,
     val incrementBodyweight: Float = 0f,
     val incrementBarbell: Float = 0f,
@@ -142,6 +141,7 @@ sealed class WorkoutEffect {
     data class ShowMessage(val message: Int): WorkoutEffect()
     data class ShowErrorAndBack(val message: Int): WorkoutEffect()
     data class AdvancePage(val page: Int): WorkoutEffect()
+    data object ShutDown: WorkoutEffect()
 }
 
 sealed class WorkoutEvent{
@@ -377,6 +377,7 @@ class WorkoutViewModel @Inject constructor(
     private var startWorkoutJob: Job? = null
     private var pageChangeJob: Job? = null
     private var retrieveExercisesJob: Job? = null
+    private var completeSetJob: Job? = null
 
     override fun onCleared() {
         super.onCleared()
@@ -639,31 +640,52 @@ class WorkoutViewModel @Inject constructor(
                 }
             }
             is WorkoutEvent.CompleteSet -> {
-                // TODO: check if superset and if
-                if (currentExerciseState.value.repsBottomBar.toUIntOrNull() == null ||
-                    currentExerciseState.value.weightBottomBar.toFloatOrNull() == null) {
-                    // should not happen
-                    Log.d("WorkoutViewModel", "Tried to complete a set with invalid weight or reps: $currentExerciseState")
-                    _effects.trySend(WorkoutEffect.ShowMessage(R.string.complete_set_fail))
-                    return
-                }
-
-                val exerciseRest = currentExerciseState.value.currentExercise
-                    ?.rest
-                    ?.getOrNull(currentExerciseState.value.setsDone)
-                    ?.toLong() ?: 0L
-                val exercise = currentExerciseState.value.currentExercise
-                val restTimestamp = ZonedDateTime.now().plusSeconds(exerciseRest)
                 viewModelScope.launch {
+                    startWorkoutJob?.join()
+                    if (currentExerciseState.value.repsBottomBar.toUIntOrNull() == null ||
+                        currentExerciseState.value.weightBottomBar.toFloatOrNull() == null) {
+                        // should not happen
+                        Log.d("WorkoutViewModel", "Tried to complete a set with invalid weight or reps: $currentExerciseState")
+                        _effects.trySend(WorkoutEffect.ShowMessage(R.string.complete_set_fail))
+                        return@launch
+                    }
+
+                    var exerciseRest = currentExerciseState.value.currentExercise
+                        ?.rest
+                        ?.getOrNull(currentExerciseState.value.setsDone)
+                        ?.toLong() ?: 0L
+                    val exercise = currentExerciseState.value.currentExercise
+                    val nextExercise = pagesContent.value.exercises.getOrNull(
+                        _currentPage.value + 1
+                    )
+                    val prevExercise = pagesContent.value.exercises.getOrNull(
+                        _currentPage.value - 1
+                    )
+                    // if superset with next exercise, skip rest
+                    if (nextExercise != null && exercise?.supersetExercise == nextExercise.extProgramExerciseId) {
+                        exerciseRest = 0L
+                    }
+                    val restTimestamp = ZonedDateTime.now().plusSeconds(exerciseRest)
+                    // if sets done == total sets, scroll to next if any
+                    val setsDone = currentExerciseState.value.setsDone
+                    val totalSets = currentExerciseState.value.currentExercise?.reps?.size ?: 0
+                    val shouldAdvanceEx = setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)
+                    // check if superset
+                    val exerciseToScrollTo = if (prevExercise != null && exercise?.supersetExercise == prevExercise.extProgramExerciseId) {
+                        if (shouldAdvanceEx)
+                            _currentPage.value + 1
+                        else
+                            _currentPage.value - 1
+                    } else if (nextExercise != null && exercise?.supersetExercise == nextExercise.extProgramExerciseId) {
+                        _currentPage.value + 1
+                    } else if (shouldAdvanceEx) {
+                        _currentPage.value + 1
+                    } else
+                        _currentPage.value
+                    _effects.trySend(
+                        WorkoutEffect.AdvancePage(exerciseToScrollTo)
+                    )
                     try {
-                        // if sets done == total sets, scroll to next if any
-                        val setsDone = currentExerciseState.value.setsDone
-                        val totalSets = currentExerciseState.value.currentExercise?.reps?.size ?: 0
-                        val exerciseToScrollTo = if (setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)) {
-                            _currentPage.value+1
-                        } else {
-                            _currentPage.value
-                        }
                         phoneToWatchService.scrollToExercise(
                             Workout.ExerciseToScrollTo.newBuilder()
                                 .setExerciseIndex(exerciseToScrollTo)
@@ -682,14 +704,14 @@ class WorkoutViewModel @Inject constructor(
                     } catch (e: Exception) {
                         Log.e("WorkoutViewModel", "Failed to set rest on watch", e)
                     }
+                    completeSet(
+                        exercise = exercise,
+                        exerciseRest = exerciseRest,
+                        reps = currentExerciseState.value.repsBottomBar.toInt(),
+                        weight = currentExerciseState.value.weightBottomBar.toFloat(),
+                        restTimestamp = restTimestamp
+                    )
                 }
-                completeSet(
-                    exercise = exercise,
-                    exerciseRest = exerciseRest,
-                    reps = currentExerciseState.value.repsBottomBar.toInt(),
-                    weight = currentExerciseState.value.weightBottomBar.toFloat(),
-                    restTimestamp = restTimestamp
-                )
             }
             is WorkoutEvent.FinishWorkout -> {
                 viewModelScope.launch {
@@ -952,8 +974,18 @@ class WorkoutViewModel @Inject constructor(
         var ongoingRecordWeightPreviousSet: Float? = null
         // for the weight, try to copy from last old record
         if (lastOldRecord != null) {
-            oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone)
-            oldRecordWeightPreviousSet = lastOldRecord.weights.getOrNull(setsDone-1)
+            oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone)?.let {
+                maybeKgToLb(
+                    it,
+                    imperialSystem
+                )
+            }
+            oldRecordWeightPreviousSet = lastOldRecord.weights.getOrNull(setsDone-1)?.let {
+                maybeKgToLb(
+                    it,
+                    imperialSystem
+                )
+            }
         }
         if (ongoingLastWeight != null) {
             ongoingRecordWeightPreviousSet = ongoingLastWeight
@@ -974,7 +1006,6 @@ class WorkoutViewModel @Inject constructor(
         } else {
             weightCandidate = ongoingRecordWeightPreviousSet
         }
-        weightCandidate = weightCandidate?.let { maybeKgToLb(it, imperialSystem) }
 
         return weightCandidate
     }
@@ -1064,11 +1095,6 @@ class WorkoutViewModel @Inject constructor(
         if (workoutState.value.startDate == null) {
             startWorkoutJob = viewModelScope.launch {
                 val currentDateTime = ZonedDateTime.now()
-                _workoutState.update {
-                    it.copy(
-                        startDate = currentDateTime,
-                        workoutStarted = true
-                    ) }
                 // possibly blocking
                 val workoutId = workoutState.mapNotNull {
                     if (it.workoutId != 0L) it.workoutId else null
@@ -1084,6 +1110,12 @@ class WorkoutViewModel @Inject constructor(
                 val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
                 if (autoOpenWear) {
                     repository.openWearWorkout()
+                }
+                _workoutState.update {
+                    it.copy(
+                        startDate = currentDateTime,
+                        workoutStarted = true
+                    )
                 }
             }
         }
@@ -1112,6 +1144,7 @@ class WorkoutViewModel @Inject constructor(
             if (autoOpenWear) {
                 repository.openWearWorkout()
             }
+            // TODO: scroll to last exercise completed
         } else {
             Log.e(
                 "WorkoutViewModel",
@@ -1154,11 +1187,15 @@ class WorkoutViewModel @Inject constructor(
         weight: Float,
         tare: Float? = null
     ) {
-        viewModelScope.launch {
-            _currentExerciseState.update { it.copy(
-                restTimestamp = restTimestamp ?: ZonedDateTime.now().plusSeconds(exerciseRest),
-                currentExerciseRest = exerciseRest
-            ) }
+        if (completeSetJob?.isActive == true)
+            return
+        completeSetJob = viewModelScope.launch {
+            _currentExerciseState.update {
+                it.copy(
+                    restTimestamp = restTimestamp ?: ZonedDateTime.now().plusSeconds(exerciseRest),
+                    currentExerciseRest = exerciseRest
+                )
+            }
             if (exercise == null) {
                 Log.e("WorkoutViewModel", "Tried to complete a set but something went wrong")
                 _effects.trySend(WorkoutEffect.ShowMessage(R.string.complete_set_generic_error))
@@ -1179,7 +1216,6 @@ class WorkoutViewModel @Inject constructor(
                         date = ZonedDateTime.now(),  // FIXME? if completed from watch, this may be a few secs off
                         reps = listOf(reps),
                         weights = listOf(
-                            // TODO: make sure that watch sends weight in Lb if imperial system
                             maybeLbToKg(weight, pagesContent.value.imperialSystem)
                         ),
                         variation = exercise.variation,
@@ -1308,12 +1344,12 @@ class WorkoutViewModel @Inject constructor(
     private suspend fun observeSetCompletionsFromWear() {
         for (setCompletion in phoneWorkoutRepository.setCompletions) {
             if (setCompletion.workoutId != workoutState.value.workoutId) {
-                Log.d("WorkoutViewModel", "Received set completion from wear for wrong workout")
+                Log.e("WorkoutViewModel", "Received set completion from wear for wrong workout")
                 continue
             }
             if (workoutState.value.startDate == null) {
                 // user completed set from watch before starting workout
-                onEvent(WorkoutEvent.StartWorkout)
+                startWorkout()
                 // StartWorkout is async, need to wait for it to finish
                 startWorkoutJob?.join()
             }
@@ -1341,11 +1377,34 @@ class WorkoutViewModel @Inject constructor(
                     // user has done all sets and is adding another one from watch
                     addSetToExercise(exercise)
                 }
-                if (exerciseIndex != _currentPage.value) {
+
+
+                val nextExercise = pagesContent.value.exercises.getOrNull(
+                    exerciseIndex + 1
+                )
+                val prevExercise = pagesContent.value.exercises.getOrNull(
+                    exerciseIndex - 1
+                )
+                // if sets done == total sets, scroll to next if any
+                val totalSets = exercise.reps.size
+                val shouldAdvanceEx = setsDone == totalSets - 1 && (exerciseIndex+1 < pagesContent.value.exercises.size)
+                // check if superset
+                val exerciseToScrollTo = if (prevExercise != null && exercise.supersetExercise == prevExercise.extProgramExerciseId) {
+                    if (shouldAdvanceEx)
+                        exerciseIndex + 1
+                    else
+                        exerciseIndex - 1
+                } else if (nextExercise != null && exercise.supersetExercise == nextExercise.extProgramExerciseId) {
+                    exerciseIndex + 1
+                } else if (shouldAdvanceEx) {
+                    exerciseIndex + 1
+                } else
+                    exerciseIndex
+                if (exerciseToScrollTo != _currentPage.value) {
                     // index of exercise completed from watch is different than exercise currently
                     // being shown to user, scroll to that index
                     _effects.trySend(
-                        WorkoutEffect.AdvancePage(exerciseIndex)
+                        WorkoutEffect.AdvancePage(exerciseToScrollTo)
                     )
                 }
                 completeSet(
@@ -1353,9 +1412,10 @@ class WorkoutViewModel @Inject constructor(
                     exerciseRest = setCompletion.rest,
                     restTimestamp = setCompletion.restTimestamp.toZonedDateTime(),
                     reps = setCompletion.reps,
+                    // weight from watch is in lb
                     weight = setCompletion.weight,
                     tare = if (setCompletion.tare != 0f)
-                        maybeLbToKg(setCompletion.tare, pagesContent.value.imperialSystem)
+                        /*maybeLbToKg(*/setCompletion.tare/*, pagesContent.value.imperialSystem)*/
                     else null
                 )
             } else {
@@ -1369,7 +1429,7 @@ class WorkoutViewModel @Inject constructor(
             for (workoutIntensity in phoneWorkoutRepository.workoutCompletions) {
                 if (workoutState.value.startDate == null) {
                     // user completed workout from watch before starting workout, weird but anyway
-                    onEvent(WorkoutEvent.StartWorkout)
+                    startWorkout()
                     // StartWorkout is async, need to wait for it to finish
                     startWorkoutJob?.join()
                 }
@@ -1422,7 +1482,7 @@ class WorkoutViewModel @Inject constructor(
             currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
         ))
         preferences.setCurrentWorkout(null)
-        _workoutState.update { it.copy(shutDown = true) }
+        _effects.trySend(WorkoutEffect.ShutDown)
     }
 
     private fun startTimer(){

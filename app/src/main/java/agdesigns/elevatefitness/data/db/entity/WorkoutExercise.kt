@@ -86,7 +86,8 @@ data class WorkoutExercise (
 
     fun toProto(): Workout.Exercise {
         return Workout.Exercise.newBuilder()
-            .setExerciseId(this.workoutExerciseId)
+            .setWorkoutExerciseId(this.workoutExerciseId)
+            .setProgramExerciseId(this.extProgramExerciseId ?: 0L)
             .setName(this.name)
             .setEquipment(this.equipment.equipmentResKey)
             .setOrderInProgram(this.orderInProgram)

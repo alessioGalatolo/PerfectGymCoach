@@ -64,6 +64,7 @@
     <string name="how_intense_was_this_workout">How intense was this workout?</string>
     <string name="raise_audio_volume">Raise audio volume</string>
     <string name="lower_audio_volume">Lower audio volume</string>
+    <string name="superset">Superset</string>
 
     <!--
     This string is used for square devices and overridden by hello_world in

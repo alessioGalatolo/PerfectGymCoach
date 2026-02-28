@@ -270,7 +270,7 @@
     <string name="info_icon_ex_desc">Exercise description</string>
     <string name="thumbup_icon_like_ex">Like this exercise</string>
     <string name="current_exercise">Current</string>
-    <string name="part_of_superset">" - Part of superset"</string>
+    <string name="part_of_superset">"Superset with: "</string>
     <string name="current_workout">current workout</string>
     <string name="barbell">"Barbell: "</string>
     <string name="barbell_custom_value">%1$s (Custom value)</string>

@@ -66,5 +66,6 @@
     <string name="how_intense_was_this_workout">Quanto intenso era l\'allenamento?</string>
     <string name="raise_audio_volume">Aumenta il volume dell\'audio</string>
     <string name="lower_audio_volume">Diminuisci il volume dell\'audio</string>
+    <string name="superset">Superset</string>
 
 </resources>

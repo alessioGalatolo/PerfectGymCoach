@@ -204,6 +204,7 @@ class WorkoutViewModel
         viewModelScope.launch {
             // listen for set rest requests from phone
             for (event in repository.setRestChannel) {
+                // TODO: superset case
                 _state.update {
                     it.copy(
                         currentExerciseRest = event.rest,
@@ -224,8 +225,9 @@ class WorkoutViewModel
     }
 
     override fun onCleared() {
-        super.onCleared()
+        repository.cancelAlarm()
         repository.stopWorkout()
+        super.onCleared()
     }
 
     fun onEvent(event: WorkoutEvent){
@@ -265,13 +267,38 @@ class WorkoutViewModel
                         state.value.currentExerciseIndex
                     )
                     if (currentExercise != null) {
-                        val shouldAdvancePage = (exercisesState.value.exercisesSetsDone.getOrNull(
-                            state.value.currentExerciseIndex
-                        )?.plus(1) ?: 0) == currentExercise.restCount
-                        if (shouldAdvancePage && exercisesState.value.exercises.size > state.value.currentExerciseIndex + 1) {
+                        val shouldAdvancePage =
+                            (exercisesState.value.exercisesSetsDone.getOrNull(
+                                state.value.currentExerciseIndex
+                            )?.plus(1) ?: 0) == currentExercise.restCount
+                        // if part of superset with exercise before, go back
+                        // if part of superset with exercise after, go forward
+                        val prevExercise = exercisesState.value.exercises.getOrNull(
+                            state.value.currentExerciseIndex - 1
+                        )
+                        val nextExercise = exercisesState.value.exercises.getOrNull(
+                            state.value.currentExerciseIndex + 1
+                        )
+                        val nextSupersetIndex = if (nextExercise != null && currentExercise.supersetExercise == nextExercise.programExerciseId)
+                            state.value.currentExerciseIndex + 1
+                        else if (prevExercise != null && currentExercise.supersetExercise == prevExercise.programExerciseId) {
+                            if (shouldAdvancePage)
+                                state.value.currentExerciseIndex + 1
+                            else
+                                state.value.currentExerciseIndex - 1
+                        } else null
+                        if (nextSupersetIndex == null) {
+                            if (shouldAdvancePage && exercisesState.value.exercises.size > state.value.currentExerciseIndex + 1) {
+                                _state.update {
+                                    it.copy(
+                                        currentExerciseIndex = it.currentExerciseIndex + 1
+                                    )
+                                }
+                            }
+                        } else {
                             _state.update {
                                 it.copy(
-                                    currentExerciseIndex = it.currentExerciseIndex + 1
+                                    currentExerciseIndex = nextSupersetIndex
                                 )
                             }
                         }
@@ -283,7 +310,7 @@ class WorkoutViewModel
                         try {
                             val queuedSetCompleted = Workout.SetCompleted.newBuilder()
                                 .setWorkoutId(exercisesState.value.workoutId)
-                                .setExerciseId(currentExercise.exerciseId)
+                                .setExerciseId(currentExercise.workoutExerciseId)
                                 .setReps(state.value.currentReps)
                                 .setWeight(state.value.currentWeight)
                                 .setTare(tare)
@@ -347,24 +374,47 @@ class WorkoutViewModel
                     val currentExercise = exercisesState.value.exercises.getOrNull(
                         state.currentExerciseIndex
                     )
+                    if (currentExercise == null) {
+                        _effects.trySend(WorkoutEffect.NonRetriableError)
+                        return@update state
+                    }
+
                     val setsDone = exercisesState.value.exercisesSetsDone.getOrNull(
                         state.currentExerciseIndex
                     ) ?: 0
-                    val rest = if (currentExercise?.let { setsDone < it.restCount } ?: false)
+                    val rest = if (setsDone < currentExercise.restCount)
                         currentExercise.getRest(setsDone)
-                    else if (currentExercise?.let { it.restCount > 0 } ?: false)
+                    else if (currentExercise.restCount > 0)
                         currentExercise.restList.last()
                     else 0
-                    repository.scheduleVibrationAlarm((rest.toLong() - 2L) * 1000L)
-                    state.copy(
-                        restTimestamp = ZonedDateTime
-                            .now()
-                            .plusSeconds(
-                                rest.toLong()
-                            ),
-                        settingSetValues = true,
-                        currentExerciseRest = rest.toLong(),
+
+                    // check if superset
+                    val nextExercise = exercisesState.value.exercises.getOrNull(
+                        state.currentExerciseIndex + 1
                     )
+                    Log.d("WorkoutViewModel", "Next exercise: $nextExercise")
+                    if (nextExercise != null && currentExercise.supersetExercise == nextExercise.programExerciseId) {
+                        Log.d("WorkoutViewModel", "Next exercise is superset")
+                        // if superset with exercise after, we should move to next page and not start rest
+                        // vibrate now to hint user to start next exercise
+                        repository.scheduleVibrationAlarm(0L)
+                        state.copy(
+                            restTimestamp = null,
+                            settingSetValues = true,
+                            currentExerciseRest = null,
+                        )
+                    } else {
+                        repository.scheduleVibrationAlarm((rest.toLong() - 2L) * 1000L)
+                        state.copy(
+                            restTimestamp = ZonedDateTime
+                                .now()
+                                .plusSeconds(
+                                    rest.toLong()
+                                ),
+                            settingSetValues = true,
+                            currentExerciseRest = rest.toLong(),
+                        )
+                    }
                 }
             }
             is WorkoutEvent.NextExercise -> {

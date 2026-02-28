@@ -25,15 +25,16 @@ message WorkoutDynamicData {
 }
 
 message Exercise {
-  int64 exercise_id = 1;
-  string name = 2;
-  string equipment = 3;
-  int32 orderInProgram = 4;
-  repeated int32 reps = 5;
-  repeated int32 rest = 6;
-  string note = 7;
-  string variation = 8;
-  int64 superset_exercise = 9;
+  int64 workout_exercise_id = 1;
+  int64 program_exercise_id = 2;
+  string name = 3;
+  string equipment = 4;
+  int32 orderInProgram = 5;
+  repeated int32 reps = 6;
+  repeated int32 rest = 7;
+  string note = 8;
+  string variation = 9;
+  int64 superset_exercise = 10;
 }
 
 message SuggestedRepsWeight {

@@ -91,7 +91,7 @@ class NotificationService @Inject constructor(
     fun canPostPromotedNotifications() = notificationManager.canPostPromotedNotifications()
 
     fun buildBaseProgressStyle(state: WorkoutNotificationState): NotificationCompat.ProgressStyle {
-        if (state.restTimeSecs != null && state.totalRest != null && state.restTimeSecs != 0L) {
+        if (state.restTimeSecs != null && state.totalRest != null && state.restTimeSecs != 0L && state.totalRest != 0L) {
             return NotificationCompat.ProgressStyle()
                 .setProgress((state.restTimeSecs * 100 / state.totalRest).toInt())
         }

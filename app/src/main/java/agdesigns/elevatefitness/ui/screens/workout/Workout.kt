@@ -177,16 +177,6 @@ fun SharedTransitionScope.Workout(
         }
     }
 
-    // FIXME: should use WorkoutEffect
-    LaunchedEffect (workoutState.shutDown){
-        if (workoutState.shutDown) {
-            navigator.navigateUp()
-            navigator.navigate(
-                WorkoutRecapDestination(workoutId = workoutState.workoutId)
-            )
-        }
-    }
-
     RequestNotificationAccessDialog(
         dialogIsOpen = workoutState.requestNotificationAccessDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog) },
@@ -245,6 +235,12 @@ fun SharedTransitionScope.Workout(
                 }
                 is WorkoutEffect.AdvancePage -> {
                     pagerState.animateScrollToPage(effect.page)
+                }
+                is WorkoutEffect.ShutDown -> {
+                    navigator.navigateUp()
+                    navigator.navigate(
+                        WorkoutRecapDestination(workoutId = workoutState.workoutId)
+                    )
                 }
             }
         }
@@ -433,34 +429,10 @@ fun SharedTransitionScope.Workout(
                         },
                         completeWorkout = completeWorkout,
                         completeSet = {
-                            // FIXME: should only call VM.onEvent, then VM should emit a side effect if superset
                             scope.launch {
                                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                             }
                             viewModel.onEvent(WorkoutEvent.CompleteSet)
-                            if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
-                                val superExercise =
-                                    pagesContent.exercises.find {
-                                        it.extProgramExerciseId == currentExerciseState.currentExercise?.supersetExercise
-                                    }
-                                if (superExercise != null) {
-                                    if (pagesContent.exercises.indexOf(
-                                            superExercise
-                                        ) >
-                                        pagesContent.exercises.indexOf(
-                                            currentExerciseState.currentExercise
-                                        )
-                                    ) {
-                                        scope.launch {
-                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                        }
-                                    } else {
-                                        scope.launch {
-                                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                        }
-                                    }
-                                }
-                            }
                         },
                         addSet = {
                             scope.launch {

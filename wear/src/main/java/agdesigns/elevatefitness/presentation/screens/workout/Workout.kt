@@ -52,6 +52,8 @@ fun Workout(
     DisposableEffect(Unit) {
         onDispose {
             viewModel.onEvent(WorkoutEvent.StopActivity)
+            // exit otherwise home will keep trying to get to workout
+            exitProcess(0)
         }
     }
     var nonRetriableErrorDialogShown by rememberSaveable { mutableStateOf(false) }

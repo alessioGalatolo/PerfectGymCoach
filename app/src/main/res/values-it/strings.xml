@@ -271,7 +271,7 @@
     <string name="info_icon_ex_desc">Descrizione esercizio</string>
     <string name="thumbup_icon_like_ex">Mi piace questo esercizio</string>
     <string name="current_exercise">Attuale</string>
-    <string name="part_of_superset">" - Parte di un superset"</string>
+    <string name="part_of_superset">"Superset con: "</string>
     <string name="current_workout">allenamento attuale</string>
     <string name="barbell">"Bilanciere: "</string>
     <string name="barbell_custom_value">%1$s (Valore personalizzato)</string>
