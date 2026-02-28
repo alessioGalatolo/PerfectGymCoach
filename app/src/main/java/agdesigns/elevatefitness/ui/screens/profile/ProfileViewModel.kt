@@ -13,11 +13,12 @@ import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 import javax.inject.Inject
 
 data class ProfileState(
     val weight: Float = 0f,
-    val userYear: Int = 0,
+    val userBirthday: ZonedDateTime = ZonedDateTime.now(),
     val height: Float = 0f,
     val sex: Sex = Sex.OTHER,
     val theme: Theme = Theme.SYSTEM,
@@ -33,13 +34,13 @@ data class ProfileState(
     val isPreferencesBackupLoading: Boolean = false,
     val backupOutcomeResId: Int? = null,
     val lockHorizontalScroll: Boolean = false,
-    val autoOpenWear: Boolean = false
+    val autoOpenWear: Boolean = false,
 )
 
 sealed class ProfileEvent{
     data class UpdateWeight(val newWeight: Float): ProfileEvent()
 
-    data class UpdateAgeYear(val newYear: Int): ProfileEvent()
+    data class UpdateBirthday(val newBirthday: ZonedDateTime): ProfileEvent()
 
     data class UpdateHeight(val newHeight: Float): ProfileEvent()
 
@@ -93,7 +94,7 @@ class ProfileViewModel @Inject constructor(
                 preferences.getUserHeight(),
                 preferences.getUserSex(),
                 preferences.getUserName(),
-                preferences.getUserYear(),
+                preferences.getUserBirthday(),
                 preferences.getImperialSystem(),
                 preferences.getTheme(),
                 preferences.getBodyweightIncrement(),
@@ -103,7 +104,7 @@ class ProfileViewModel @Inject constructor(
                 preferences.getCableIncrement(),
                 preferences.getLanguage(),
                 preferences.getLockHorizontalScroll(),
-                preferences.getAutoOpenWear()
+                preferences.getAutoOpenWear(),
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -111,7 +112,7 @@ class ProfileViewModel @Inject constructor(
                         height = values[1] as Float,
                         sex = values[2] as Sex,
                         name = values[3] as String,
-                        userYear = values[4] as Int,
+                        userBirthday = values[4] as ZonedDateTime,
                         imperialSystem = values[5] as Boolean,
                         theme = values[6] as Theme,
                         incrementBodyweight = values[7] as Float,
@@ -121,7 +122,7 @@ class ProfileViewModel @Inject constructor(
                         incrementCable = values[11] as Float,
                         language = values[12] as String?,
                         lockHorizontalScroll = values[13] as Boolean,
-                        autoOpenWear = values[14] as Boolean
+                        autoOpenWear = values[14] as Boolean,
                     )
                 }
             }.collect()
@@ -150,9 +151,9 @@ class ProfileViewModel @Inject constructor(
                     preferences.setUserHeight(event.newHeight)
                 }
             }
-            is ProfileEvent.UpdateAgeYear -> {
+            is ProfileEvent.UpdateBirthday -> {
                 viewModelScope.launch {
-                    preferences.setUserYear(event.newYear)
+                    preferences.setUserBirthday(event.newBirthday)
                 }
             }
             is ProfileEvent.SwitchImperialSystem -> {

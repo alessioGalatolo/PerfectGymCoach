@@ -53,6 +53,11 @@ class WearWorkoutDataService: BaseGrpcDataService<WorkoutServiceGrpcKt.WorkoutSe
                     .setActive(repository.ongoingWorkout)
                     .build()
             }
+
+            override suspend fun completeWorkout(request: Workout.CompleteWorkout): Empty {
+                repository.handleCompleteWorkout(request.intensity)
+                return Empty.newBuilder().build()
+            }
         }
     }
 

@@ -66,6 +66,22 @@ class WearMediaDataService: BaseGrpcDataService<MediaServiceGrpcKt.MediaServiceC
                     .build()
             }
 
+            override suspend fun raiseVolume(request: Empty): Media.setMediaResponse {
+                repository.raiseVolume()
+                return Media.setMediaResponse.newBuilder()
+                    .setSuccess(true)
+                    .setMessage("Volume raised")
+                    .build()
+            }
+
+            override suspend fun lowerVolume(request: Empty): Media.setMediaResponse {
+                repository.lowerVolume()
+                return Media.setMediaResponse.newBuilder()
+                    .setSuccess(true)
+                    .setMessage("Volume lowered")
+                    .build()
+            }
+
         }
     }
 

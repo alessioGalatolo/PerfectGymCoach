@@ -132,7 +132,11 @@ fun Workout(
         ScreenScaffold(
             modifier = Modifier.background(Color.Transparent),
             scrollState = listState,
-            timeText = { TimeText() },
+            timeText = {
+                if (pagerState.currentPage != 0) {
+                    TimeText()
+                }
+            },
         ) { contentPadding ->
             HorizontalPagerScaffold(
                 pagerState = pagerState,
@@ -145,8 +149,10 @@ fun Workout(
                     when (page) {
                         0 -> EndWorkoutPage(
                             contentPadding,
-                            endWorkout = {
+                            exercisesState.lastIntensity,
+                            endWorkout = { intensity ->
                                 scope.launch {
+                                    viewModel.onEvent(WorkoutEvent.EndWorkout(workoutIntensity = intensity))
                                     viewModel.onEvent(WorkoutEvent.StopActivity)
                                     openOnPhone = true
                                     delay(OpenOnPhoneDialogDefaults.DurationMillis)
@@ -199,6 +205,10 @@ fun Workout(
                                 viewModel.onEvent(WorkoutEvent.NextMedia)
                             }, onPrevious = {
                                 viewModel.onEvent(WorkoutEvent.PreviousMedia)
+                            }, raiseVolume = {
+                                viewModel.onEvent(WorkoutEvent.RaiseVolume)
+                            }, lowerVolume = {
+                                viewModel.onEvent(WorkoutEvent.LowerVolume)
                             }
                         )
                     }

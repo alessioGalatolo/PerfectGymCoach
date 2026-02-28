@@ -21,9 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.FadeTransition
-import agdesigns.elevatefitness.ui.common.ResumeWorkout
 import agdesigns.elevatefitness.ui.common.WorkoutCard
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -31,13 +31,17 @@ import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
-import agdesigns.elevatefitness.ui.screens.plans.CustomizePlanGeneration
 import agdesigns.elevatefitness.ui.screens.plans.GeneratePlanButton
 import android.content.Intent
-import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.BlendMode
@@ -46,6 +50,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -73,36 +78,24 @@ fun SharedTransitionScope.Home(
     navigator: DestinationsNavigator,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val homeState by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState()
     val haptic = LocalHapticFeedback.current
 
-    var resumeWorkoutDialogOpen by remember {
+    var resumeWorkoutPossible by remember {
         mutableStateOf(false)
     }
-    ResumeWorkout(dialogueIsOpen = resumeWorkoutDialogOpen,
-        discardWorkout = {
-            viewModel.onEvent(HomeEvent.ResetCurrentWorkout)
-            resumeWorkoutDialogOpen = false
-        }) {
-        resumeWorkoutDialogOpen = false
-        navigator.navigate(
-            WorkoutDestination(
-                programId = 0L,
-                resumeWorkout = true
-            )
-        )
-    }
+
     val context = LocalContext.current
 
-    LaunchedEffect(homeState.currentWorkout){
+    LaunchedEffect(state.currentWorkout){
         // done in order to avoid double dialog showing especially when slow transitioning into workout
-        delay(2000)
-        resumeWorkoutDialogOpen = homeState.currentWorkout != null
+        delay(500)
+        resumeWorkoutPossible = state.currentWorkout != null
     }
     // add dynamic launcher shortcuts based on current plan
-    LaunchedEffect(homeState.currentProgram, homeState.programs) {
-        val shortcuts = homeState.programs?.filterIndexed {
-            index, program -> index != homeState.currentProgram
+    LaunchedEffect(state.currentProgram, state.programs) {
+        val shortcuts = state.programs?.filterIndexed {
+            index, program -> index != state.currentProgram
         }?.map {
             ShortcutInfoCompat.Builder(context, "start_workout_dyn_${it.programId}")
                 .setShortLabel(getProgramDisplayName(it.name, context))
@@ -115,8 +108,8 @@ fun SharedTransitionScope.Home(
                 .build()
         }?.toMutableList() ?: mutableListOf()
 
-        if (homeState.currentProgram != null) {
-            val program = homeState.programs?.getOrNull(homeState.currentProgram!!)
+        if (state.currentProgram != null) {
+            val program = state.programs?.getOrNull(state.currentProgram!!)
             if (program != null) {
                 shortcuts.add(0,
                     ShortcutInfoCompat.Builder(context, "start_workout_dyn_${program.programId}")
@@ -149,7 +142,7 @@ fun SharedTransitionScope.Home(
         // use a primary container to put emphasis on upcoming workout in elevated card
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         floatingActionButton = {
-            if (homeState.currentPlan == null) {
+            if (state.currentPlan == null) {
                 MediumFloatingActionButton(
                     onClick = {
                         navigator.navigate(
@@ -168,7 +161,7 @@ fun SharedTransitionScope.Home(
             }
         }
     ) { innerPadding ->
-        if (homeState.currentPlan == null) {
+        if (state.currentPlan == null) {
             EmptyScreenInfo(
                 icon = Icons.Default.Home,
                 iconDescriptionRes = R.string.home,
@@ -178,7 +171,7 @@ fun SharedTransitionScope.Home(
                 Spacer(modifier = Modifier.height(8.dp))
                 GeneratePlanButton(navigator)
             }
-        } else if (homeState.programs?.isEmpty() == true) {
+        } else if (state.programs?.isEmpty() == true) {
             EmptyScreenInfo(
                 icon = Icons.Outlined.Description,
                 iconDescriptionRes = R.string.empty_home_program,
@@ -188,7 +181,7 @@ fun SharedTransitionScope.Home(
                 Button(onClick = {
                     navigator.navigate(
                         AddProgramDestination(
-                            planId = homeState.currentPlan!!,
+                            planId = state.currentPlan!!,
                             openDialogNow = true
                         )
                     )
@@ -207,33 +200,64 @@ fun SharedTransitionScope.Home(
                 ) { Text(stringResource(R.string.change_workout_plan)) }
                 Spacer(modifier = Modifier.height(8.dp))
             }
-        } else if (homeState.programs?.isNotEmpty() == true
-            && homeState.currentProgram != null
+        } else if (state.programs?.isNotEmpty() == true
+            && state.currentProgram != null
         ) {
             LazyColumn(
                 contentPadding = innerPadding
             ) {
-                var currentProgram = homeState.programs?.getOrNull(homeState.currentProgram!!)
+                var currentProgram = state.programs?.getOrNull(state.currentProgram!!)
                 // the check below should not be necessary anymore, the bug was fixed elsewhere
                 if (currentProgram == null) {
-                    currentProgram = homeState.programs?.get(0)!!
+                    currentProgram = state.programs?.get(0)!!
                 }
                 val currentExercises =
-                    homeState.exercisesAndInfo[currentProgram.programId]?.sortedBy {
+                    state.exercisesAndInfo[currentProgram.programId]?.sortedBy {
                         it.orderInProgram
                     } ?: emptyList()
                 // now that we got current program, roll homeState.programs so that currentProgram.orderInWorkoutPlan+1 is first
                 val otherPrograms by derivedStateOf {
-                    homeState.programs!!.minus(currentProgram).sortedBy {
-                        (it.orderInWorkoutPlan - currentProgram.orderInWorkoutPlan).mod(homeState.programs!!.size)
+                    state.programs!!.minus(currentProgram).sortedBy {
+                        (it.orderInWorkoutPlan - currentProgram.orderInWorkoutPlan).mod(state.programs!!.size)
+                    }
+                }
+                // Resume workout if available
+                item {
+                    AnimatedVisibility(
+                        resumeWorkoutPossible,
+                        enter = fadeIn() + slideInVertically(),
+                        exit = fadeOut() + slideOutVertically()
+                    ) {
+                        ResumeWorkoutCard(
+                            resumeExercises = state.resumedWorkoutExercises,
+                            modifier = Modifier
+                                .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                                .padding(top = 16.dp),
+                            onClose = {
+                                viewModel.onEvent(HomeEvent.ResetCurrentWorkout)
+                                resumeWorkoutPossible = false
+                            },
+                            onResume = {
+                                navigator.navigate(
+                                    WorkoutDestination(
+                                        programId = 0L,
+                                        resumeWorkout = true
+                                    )
+                                )
+                            }
+                        )
                     }
                 }
                 // Plan change reminder
-                if (homeState.showPlanChangeReminder) {
-                    item {
+                item {
+                    AnimatedVisibility(
+                        visible = state.showPlanChangeReminder,
+                        enter = fadeIn() + slideInVertically(),
+                        exit = fadeOut() + scaleOut()
+                    ) {
                         Spacer(modifier = Modifier.height(16.dp))
                         PlanChangeReminder(
-                            cycleCount = homeState.planCycleCount,
+                            cycleCount = state.planCycleCount,
                             navigator = navigator,
                             onDismiss = { viewModel.onEvent(HomeEvent.DismissPlanChangeReminder) },
                             modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
@@ -297,7 +321,8 @@ fun SharedTransitionScope.Home(
                                 boundsTransform = { _, _ ->
                                     MotionScheme.expressive().slowSpatialSpec()
                                 }
-                            ).graphicsLayer(
+                            )
+                            .graphicsLayer(
                                 shape = MaterialTheme.shapes.extraLarge,
                                 clip = true
                             ),
@@ -332,7 +357,7 @@ fun SharedTransitionScope.Home(
                         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.header_to_content_padding)))
                     }
                     itemsIndexed(items = otherPrograms, key = { _, it -> it.programId }) { index, program ->
-                        val exs = homeState.exercisesAndInfo[program.programId]?.sortedBy {
+                        val exs = state.exercisesAndInfo[program.programId]?.sortedBy {
                             it.orderInProgram
                         } ?: emptyList()
 
@@ -442,7 +467,7 @@ fun SharedTransitionScope.Home(
                                             )
                                         }
 
-                                        LaunchedEffect(homeState.animationTick) {
+                                        LaunchedEffect(state.animationTick) {
                                             if (!animatedVisibilityScope.transition.isRunning) {
                                                 pagerState.animateScrollToPage(
                                                     (pagerState.currentPage + 1) % exs.size
@@ -596,7 +621,7 @@ fun SharedTransitionScope.Home(
                         TextButton(onClick = {
                             navigator.navigate(
                                 AddProgramDestination(
-                                    planId = homeState.currentPlan!!
+                                    planId = state.currentPlan!!
                                 )
                             )
                         }) {
@@ -711,6 +736,78 @@ fun PlanChangeReminder(
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                     Text(stringResource(R.string.generate_plan))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ResumeWorkoutCard(
+    resumeExercises: List<ExerciseRecordAndInfo>,
+    modifier: Modifier = Modifier,
+    onClose: () -> Unit,
+    onResume: () -> Unit,
+) {
+    Card(
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.resume_unfinished_workout),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .weight(1f),
+                style = MaterialTheme.typography.titleLarge
+            )
+            IconButton(
+                onClose,
+                modifier = Modifier.padding(8.dp),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close_icon)
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.resume_workout_info),
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        if (resumeExercises.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider()
+            Text(stringResource(R.string.exercises_completed), style = MaterialTheme.typography.titleMedium, modifier = Modifier
+                .padding(top = 8.dp)
+                .padding(horizontal = 16.dp))
+        }
+        for (ex in resumeExercises) {
+            Text(
+                fontStyle = FontStyle.Italic,
+                text = "${ex.name} • ${ex.reps.size} ${stringResource(R.string.sets)}",
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(start = 8.dp),
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(onClick = onClose) {
+                Text(text = stringResource(R.string.discard_workout))
+            }
+            Button(onClick = onResume) {
+                Text(text = stringResource(R.string.resume))
             }
         }
     }

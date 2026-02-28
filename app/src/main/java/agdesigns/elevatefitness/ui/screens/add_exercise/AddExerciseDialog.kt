@@ -80,6 +80,7 @@ fun SharedTransitionScope.AddExerciseDialog(
     programName: String = "",
     returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
     continueAdding: Boolean = true,  // if true, expects user to continue adding exercise,
+    insertAtPosition: Int? = null,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     assert(workoutId != 0L || programId != 0L)
@@ -91,10 +92,11 @@ fun SharedTransitionScope.AddExerciseDialog(
     LaunchedEffect(Unit) {
         viewModel.onEvent(
             AddExerciseEvent.StartRetrievingData(
-                previewExercise.exerciseId,
-                programId,
-                workoutId,
-                programExerciseId
+                exerciseId = previewExercise.exerciseId,
+                programId = programId,
+                workoutId = workoutId,
+                insertAtPosition = insertAtPosition,
+                programExerciseId = programExerciseId
             )
         )
     }

@@ -16,6 +16,7 @@ message WorkoutStaticData {
   DefaultIncrements default_increments = 7;
   bool imperial_system = 8;
   bool active_workout = 9;
+  float previous_intensity = 10;
 }
 
 message WorkoutDynamicData {
@@ -68,10 +69,15 @@ message WorkoutActiveResponse {
   bool active = 1;
 }
 
+message CompleteWorkout {
+  float intensity = 1;
+}
+
 // gRPC service for events
 service WorkoutService {
   rpc workoutActive(google.protobuf.Empty) returns (WorkoutActiveResponse);
   rpc setCompleted(SetCompleted) returns (SetCompletedResponse);
+  rpc completeWorkout(CompleteWorkout) returns (google.protobuf.Empty);
 }
 
 message ExerciseToScrollTo {

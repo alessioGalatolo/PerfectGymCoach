@@ -282,13 +282,14 @@ fun SharedTransitionScope.ExercisePages(
                                             ExercisesByMuscleDestination(
                                                 programName = currentWorkoutString,
                                                 workoutId = workoutState.workoutId,
-                                                returnAfterAdding = true
+                                                returnAfterAdding = true,
+                                                insertAtPosition = page+1
                                             )
                                         )
                                         // FIXME: if unsuccessful add (e.g., user goes back) do not scroll
                                         scope.launch {
                                             horizontalPagerState.animateScrollToPage(
-                                                horizontalPagerState.pageCount - 1
+                                                page + 1
                                             )
                                         }
                                     },
@@ -757,7 +758,6 @@ fun ExerciseSettingsMenu(
     ) {
         var expanded by remember { mutableStateOf(false) }
 
-        // TODO: add "show media controls" if swiped away
         IconButton(onClick = { expanded = true }) {
             Icon(
                 Icons.Default.MoreVert,
@@ -784,7 +784,6 @@ fun ExerciseSettingsMenu(
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.skip_exercise_this_workout_only)) },
                 onClick = {
-                    // FIXME does not close automatically TODO: find actual issue
                     expanded = false
                     removeExercise()
                 },
@@ -831,7 +830,7 @@ fun ExerciseSettingsMenu(
                     leadingIcon = {
                         Icon(
                             Icons.Outlined.PlayArrow,
-                            contentDescription = "Show media controls"
+                            contentDescription = stringResource(R.string.show_media_controls)
                         )
                     }
                 )

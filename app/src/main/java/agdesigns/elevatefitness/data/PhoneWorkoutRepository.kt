@@ -31,9 +31,15 @@ class PhoneWorkoutRepository(
 
     // Channel - only ONE subscriber, all events delivered
     private val _setCompletions = Channel<Workout.SetCompleted>(
-        capacity = Channel.UNLIMITED // Or use a specific buffer size
+        capacity = Channel.UNLIMITED
     )
     val setCompletions: ReceiveChannel<Workout.SetCompleted> = _setCompletions
+
+    private val _workoutCompletions = Channel<Float>(
+        capacity = Channel.UNLIMITED
+    )
+    val workoutCompletions: ReceiveChannel<Float> = _workoutCompletions
+
 
     var ongoingWorkout: Boolean = false
 
@@ -43,6 +49,10 @@ class PhoneWorkoutRepository(
         _setCompletions.send(setCompleted)
 
         // Optional: persist immediately as backup
+    }
+
+    fun handleCompleteWorkout(intensity: Float) {
+        _workoutCompletions.trySend(intensity)
     }
 
     fun startOngoingWorkout() {

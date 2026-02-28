@@ -48,10 +48,11 @@ fun SharedTransitionScope.ExercisesByMuscle(
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     programName: String,
-    programId: Long = 0,
-    workoutId: Long = 0,
-    successfulAddExercise: Boolean = false,
-    returnAfterAdding: Boolean = false // if adding a single exercise to workout, return to workout instead of program
+    programId: Long = 0L,
+    workoutId: Long = 0L,
+    successfulAddExercise: Boolean = false,  // FIXME: should navigate back with result instead
+    returnAfterAdding: Boolean = false, // if adding a single exercise to workout, return to workout instead of program
+    insertAtPosition: Int? = null,
 ) {
     // scroll behaviour for top bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -131,6 +132,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
                                 ViewExercisesDestination(
                                     programId = programId,
                                     workoutId = workoutId,
+                                    insertAtPosition = insertAtPosition,
                                     muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
                                     focusSearch = true,
                                     programName = programName,
@@ -152,6 +154,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
                             ViewExercisesDestination(
                                 programId = programId,
                                 workoutId = workoutId,
+                                insertAtPosition = insertAtPosition,
                                 muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
                                 focusSearch = true,
                                 programName = programName,
@@ -190,6 +193,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
                                 ViewExercisesDestination(
                                     programId = programId,
                                     workoutId = workoutId,
+                                    insertAtPosition = insertAtPosition,
                                     muscleOrdinal = muscle.ordinal,
                                     programName = programName,
                                     returnAfterAdding = returnAfterAdding

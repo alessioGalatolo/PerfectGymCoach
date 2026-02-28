@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +29,8 @@ data class HomeState(
     val currentWorkout: Long? = null,
     val animationTick: Int = 0,
     val planCycleCount: Int = 0,
-    val showPlanChangeReminder: Boolean = false
+    val showPlanChangeReminder: Boolean = false,
+    val resumedWorkoutExercises: List<ExerciseRecordAndInfo> = emptyList()
 )
 
 sealed class HomeEvent{
@@ -48,6 +50,8 @@ class HomeViewModel @Inject constructor(
     private var collectCurrentProgram: Job? = null
     private var getProgramExercisesJob: Job? = null
     private var animateJob: Job? = null
+    private var retrieveResumeWorkoutJob: Job? = null
+
 
     init {
         viewModelScope.launch {
@@ -110,9 +114,23 @@ class HomeViewModel @Inject constructor(
         }
         viewModelScope.launch {
             preferences.getCurrentWorkout().collect{ workout ->
-                _state.update { it.copy(
-                    currentWorkout = workout
-                ) }
+                _state.update {
+                    it.copy(
+                        currentWorkout = workout
+                    )
+                }
+                if (workout != null) {
+                    retrieveResumeWorkoutJob?.cancel()
+                    retrieveResumeWorkoutJob = this.launch {
+                        repository.getWorkoutExerciseRecordsAndInfo(workout).collect { exs ->
+                            _state.update {
+                                it.copy(
+                                    resumedWorkoutExercises = exs
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
         animateJob?.cancel(CancellationException("Duplicate call"))

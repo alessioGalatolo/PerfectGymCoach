@@ -423,6 +423,7 @@ class WorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             observeSetCompletionsFromWear()
         }
+        observeWorkoutCompletionsFromWear()
         /*
           Compute stuff specific to current exercise (should be recomputed if any value changes)
          */
@@ -554,17 +555,6 @@ class WorkoutViewModel @Inject constructor(
                         }
 
                         _workoutState.update { it.copy(programId = programId) }
-                        // get records to gather last workout's intensity
-                        val records =
-                            repository.getWorkoutRecordsByProgram(programId).first()
-                        if (records.isNotEmpty()) {
-                            _workoutState.update { state ->
-                                state.copy(
-                                    lastWorkoutIntensity = records.sortedBy { it.startDate }
-                                        .last().intensityPercent
-                                )
-                            }
-                        }
                         // get workout id
                         var workoutId = 0L
                         _workoutState.update {
@@ -604,6 +594,19 @@ class WorkoutViewModel @Inject constructor(
                     }
                     if (event.quickStart) {
                         startWorkout()
+                    }
+                    // get records to gather last workout's intensity
+                    val records =
+                        repository.getWorkoutRecordsByProgram(workoutState.value.programId).first()
+                    if (records.isNotEmpty()) {
+                        _workoutState.update { state ->
+                            state.copy(
+                                lastWorkoutIntensity = records
+                                    .filter{ it.workoutId != state.workoutId } // if resuming, last record will be this workout
+                                    .sortedBy { it.startDate }
+                                    .last().intensityPercent
+                            )
+                        }
                     }
                     startRetrievingExercises()
                 }
@@ -690,50 +693,7 @@ class WorkoutViewModel @Inject constructor(
             }
             is WorkoutEvent.FinishWorkout -> {
                 viewModelScope.launch {
-                    val exercises = repository.getWorkoutExerciseRecordsAndInfo(workoutState.value.workoutId).first().distinct()
-                    val workoutTimeMillis = currentExerciseState.value.currentTime.toInstant().toEpochMilli() - workoutState.value.startDate!!.toInstant().toEpochMilli()
-                    val workoutTimeSeconds = workoutTimeMillis / 1000
-                    // event.workoutIntensity is 0-100, need to convert within reasonable met values
-                    val intensityMet = getMetFromIntensity(event.workoutIntensity)
-                    repository.completeWorkoutRecord(
-                        WorkoutRecordFinish(
-                            workoutId = workoutState.value.workoutId,
-                            intensity = WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY, // deprecated
-                            intensityPercent = event.workoutIntensity,
-                            durationSeconds = workoutTimeSeconds,
-                            volume = exercises.sumOf {
-                                computeVolume(
-                                    it.weights,
-                                    it.reps,
-                                    it.tare,
-                                    it.equipment
-                                ).toDouble() },
-                            activeTimeSeconds = max(0L, workoutTimeSeconds -
-                                    exercises.sumOf { it.rest.sum() }),
-                            calories = intensityMet *
-                                    preferences.getUserWeight().first() *
-                                    workoutTimeSeconds / 3600
-                        )
-                    )
-                    val planPrograms = repository.getPlanMapPrograms().first().entries.find {
-                        it.value.find { it1 -> it1.programId == workoutState.value.programId } != null
-                    }!!
-                    val currentProgram = planPrograms.value.find {
-                        it.programId == workoutState.value.programId
-                    }!!
-                    /*
-                    scenario: user does not do the upcoming workout, does another one instead
-                        Now, after he finishes, should the next workout be the old upcoming one
-                        or the one following the workout the user actually do?
-
-                        Currently the latter
-                     */
-                    repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
-                        planId = planPrograms.key.planId,
-                        currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
-                    ))
-                    preferences.setCurrentWorkout(null)
-                    _workoutState.update { it.copy(shutDown = true) }
+                    finishWorkout(intensity = event.workoutIntensity)
                 }
             }
             is WorkoutEvent.CancelWorkout -> {
@@ -1263,7 +1223,8 @@ class WorkoutViewModel @Inject constructor(
                 workoutState.map { it.incrementCable }.distinctUntilChanged(),
                 workoutState.map { it.incrementDumbbell }.distinctUntilChanged(),
                 workoutState.map { it.incrementMachine }.distinctUntilChanged(),
-                workoutState.map { it.imperialSystem }.distinctUntilChanged()
+                workoutState.map { it.imperialSystem }.distinctUntilChanged(),
+                workoutState.map { it.lastWorkoutIntensity }.distinctUntilChanged()
             ) { values: Array<Any?> ->
                 val workoutId = values[0] as Long
                 val startDate = values[1] as ZonedDateTime?
@@ -1275,6 +1236,7 @@ class WorkoutViewModel @Inject constructor(
                 val incrementDumbbell = values[7] as Float
                 val incrementMachine = values[8] as Float
                 val imperialSystem = values[9] as Boolean
+                val lastWorkoutIntensity = values[10] as Float?
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
                 wearWorkoutStatic.urgentUpdateData { _ ->
@@ -1294,6 +1256,7 @@ class WorkoutViewModel @Inject constructor(
                         )
                         .setImperialSystem(imperialSystem)
                         .setActiveWorkout(true)
+                        .setPreviousIntensity(lastWorkoutIntensity ?: -1f)
                         .build()
                 }
             }.collect()
@@ -1400,6 +1363,68 @@ class WorkoutViewModel @Inject constructor(
             }
         }
     }
+
+    private fun observeWorkoutCompletionsFromWear() {
+        viewModelScope.launch {
+            for (workoutIntensity in phoneWorkoutRepository.workoutCompletions) {
+                if (workoutState.value.startDate == null) {
+                    // user completed workout from watch before starting workout, weird but anyway
+                    onEvent(WorkoutEvent.StartWorkout)
+                    // StartWorkout is async, need to wait for it to finish
+                    startWorkoutJob?.join()
+                }
+                finishWorkout(workoutIntensity)
+            }
+        }
+    }
+
+    private suspend fun finishWorkout(intensity: Float) {
+        val exercises = repository.getWorkoutExerciseRecordsAndInfo(workoutState.value.workoutId).first().distinct()
+        val workoutTimeMillis = currentExerciseState.value.currentTime.toInstant().toEpochMilli() - workoutState.value.startDate!!.toInstant().toEpochMilli()
+        val workoutTimeSeconds = workoutTimeMillis / 1000
+        // intensity is 0-100, need to convert within reasonable met values
+        val intensityMet = getMetFromIntensity(intensity)
+        repository.completeWorkoutRecord(
+            WorkoutRecordFinish(
+                workoutId = workoutState.value.workoutId,
+                intensity = WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY, // deprecated
+                intensityPercent = intensity,
+                durationSeconds = workoutTimeSeconds,
+                volume = exercises.sumOf {
+                    computeVolume(
+                        it.weights,
+                        it.reps,
+                        it.tare,
+                        it.equipment
+                    ).toDouble() },
+                activeTimeSeconds = max(0L, workoutTimeSeconds -
+                        exercises.sumOf { it.rest.sum() }),
+                calories = intensityMet *
+                        preferences.getUserWeight().first() *
+                        workoutTimeSeconds / 3600
+            )
+        )
+        val planPrograms = repository.getPlanMapPrograms().first().entries.find {
+            it.value.find { it1 -> it1.programId == workoutState.value.programId } != null
+        }!!
+        val currentProgram = planPrograms.value.find {
+            it.programId == workoutState.value.programId
+        }!!
+        /*
+        scenario: user does not do the upcoming workout, does another one instead
+            Now, after he finishes, should the next workout be the old upcoming one
+            or the one following the workout the user actually do?
+
+            Currently the latter
+         */
+        repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
+            planId = planPrograms.key.planId,
+            currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
+        ))
+        preferences.setCurrentWorkout(null)
+        _workoutState.update { it.copy(shutDown = true) }
+    }
+
     private fun startTimer(){
         timerJob?.cancel(CancellationException("Duplicate call"))
         timerJob = flow {
@@ -1432,11 +1457,12 @@ class WorkoutViewModel @Inject constructor(
                     )
                     val restTimeSecs = restTimeMillis / 1000  // convert from millis to secs
                     _currentExerciseState.update {
+                        var rest = it.currentExerciseRest?.times(1000L)?.toFloat() ?: 1f
+                        if (rest == 0f)
+                            rest = 1f
                         it.copy(
                             restTimeSecs = restTimeSecs,
-                            restProgress = restTimeMillis.toFloat().div(
-                                it.currentExerciseRest?.times(1000L)?.toFloat() ?: 1f
-                            )
+                            restProgress = restTimeMillis.toFloat().div(rest)
                         )
                     }
                 } else {

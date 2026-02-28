@@ -62,5 +62,9 @@
     <string name="rest_hint_start_weight_generic">Carica %1$s%2$s</string>
     <string name="rest_hint_start_reps_title">Ripetizioni</string>
     <string name="rest_hint_start_reps">Inizia con %1$s ripetizioni</string>
+    <string name="end_workout">Fine allenamento</string>
+    <string name="how_intense_was_this_workout">Quanto intenso era l\'allenamento?</string>
+    <string name="raise_audio_volume">Aumenta il volume dell\'audio</string>
+    <string name="lower_audio_volume">Diminuisci il volume dell\'audio</string>
 
 </resources>

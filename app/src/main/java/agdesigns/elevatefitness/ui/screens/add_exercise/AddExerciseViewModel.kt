@@ -6,6 +6,7 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
+import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,7 +34,8 @@ data class AddExerciseState(
     val repsArray: List<UInt> = List(5) { 8U },
     val restArray: List<UInt> = List(5) { 90U },
     val advancedSets: Boolean = false,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val insertAtPosition: Int? = null
 )
 
 sealed class AddExerciseEvent{
@@ -43,6 +46,7 @@ sealed class AddExerciseEvent{
         val exerciseId: Long,
         val programId: Long = 0L,
         val workoutId: Long = 0L,
+        val insertAtPosition: Int? = null,
         val programExerciseId: Long = 0L
     ): AddExerciseEvent()
 
@@ -78,6 +82,11 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
             is AddExerciseEvent.StartRetrievingData -> {
                 if (getDataJob == null) {
                     getDataJob = viewModelScope.launch {
+                        _state.update {
+                            it.copy(
+                                insertAtPosition = event.insertAtPosition
+                            )
+                        }
                         retrieveData(
                             event.exerciseId,
                             event.programId,
@@ -99,6 +108,32 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 viewModelScope.launch {
                     if (state.value.workoutId != 0L) {
                         // need to add exercise to workout
+
+                        if (state.value.insertAtPosition != null) {
+                            // we need to shift all the exercises after the insert position
+                            val exs = repository.getWorkoutExercises(state.value.workoutId).first()
+                            val exsToShift = buildList {
+                                // the "orderInProgram" of the last ex added to the list
+                                var lastInsertedIndex = state.value.insertAtPosition!!
+                                // we should assume that some orderInProgram may be missing
+                                for (ex in exs.sortedBy { it.orderInProgram }) {
+                                    if (ex.orderInProgram > lastInsertedIndex+1)
+                                        break
+                                    if (ex.orderInProgram >= lastInsertedIndex) {
+                                        add(ex)
+                                        lastInsertedIndex = ex.orderInProgram
+                                    }
+                                }
+                            }
+                            for (ex in exsToShift.reversed())
+                                repository.updateWorkoutExerciseNumber(
+                                    WorkoutExerciseReorder(
+                                        ex.workoutExerciseId,
+                                        ex.orderInProgram + 1
+                                    )
+                                )
+                        }
+                        val orderInProgram = state.value.insertAtPosition ?: state.value.exerciseNumber
                         repository.addWorkoutExercise(
                             WorkoutExercise(
                                 extWorkoutId = state.value.workoutId,
@@ -110,7 +145,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 description = state.value.exercise!!.description,
                                 descriptionResKey = state.value.exercise!!.descriptionResKey,
                                 equipment = state.value.exercise!!.equipment,
-                                orderInProgram = state.value.exerciseNumber,
+                                orderInProgram = orderInProgram,
                                 reps = state.value.repsArray.map { it.toInt() },
                                 rest = state.value.restArray.map { it.toInt() },
                                 note = state.value.note,

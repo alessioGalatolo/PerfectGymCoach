@@ -23,6 +23,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,12 +69,36 @@ class PreferenceRepository @Inject constructor(
     }
 
 
+    @Deprecated("Use getUserBirthday instead")
     fun getUserYear(): Flow<Int> = dataStore.data.map{
         it[PrefKeys.userAgeYear] ?: 2000
     }
 
+    @Deprecated("Use setUserBirthday instead")
     suspend fun setUserYear(newYear: Int) = dataStore.edit {
         it[PrefKeys.userAgeYear] = newYear
+    }
+
+    fun getUserBirthday(): Flow<ZonedDateTime> = dataStore.data.map{
+        it[PrefKeys.userBirthday]?.let {
+            ZonedDateTime.ofInstant(
+                Instant.ofEpochSecond(it),
+                ZoneId.systemDefault()
+            )
+        } ?: ZonedDateTime.of(
+        it[PrefKeys.userAgeYear] ?: 2000, // year
+            1, // month
+            1, // day
+            0, // hour
+            0, // minute
+            0, // second
+            0, // nanoOfSecond
+            ZoneId.systemDefault() // zone
+        )
+    }
+
+    suspend fun setUserBirthday(newBirthday: ZonedDateTime) = dataStore.edit {
+        it[PrefKeys.userBirthday] = newBirthday.toEpochSecond()
     }
 
 
@@ -227,6 +254,7 @@ internal object PrefKeys {
     val theme = stringPreferencesKey("Theme")
     val userName = stringPreferencesKey("User name")
     val userAgeYear = intPreferencesKey("User age year")
+    val userBirthday = longPreferencesKey("User birthday")
     val imperialSystem = booleanPreferencesKey("Imperial system user")
     val dontWantNotificationAccess = booleanPreferencesKey("Don't want notification access")
     val dontWantOngoingWorkoutNotification = booleanPreferencesKey("Don't want ongoing workout notification")

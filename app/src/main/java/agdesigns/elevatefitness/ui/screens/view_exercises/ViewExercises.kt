@@ -84,6 +84,7 @@ fun SharedTransitionScope.ViewExercises(
     focusSearch: Boolean = false,
     programName: String = "",
     returnAfterAdding: Boolean = false,
+    insertAtPosition: Int? = null,
     viewModel: ExercisesViewModel = hiltViewModel()
 ) {
     val sharedTransitionScope: SharedTransitionScope = this
@@ -359,6 +360,7 @@ fun SharedTransitionScope.ViewExercises(
                                                         previewExercise = result.exercise,
                                                         programId = programId,
                                                         workoutId = workoutId,
+                                                        insertAtPosition = insertAtPosition,
                                                         programName = programName,
                                                         returnAfterAdding = returnAfterAdding,
                                                     )
@@ -416,6 +418,7 @@ fun SharedTransitionScope.ViewExercises(
                                     previewExercise = exercise,
                                     programId = programId,
                                     workoutId = workoutId,
+                                    insertAtPosition = insertAtPosition,
                                     programName = programName,
                                     returnAfterAdding = returnAfterAdding,
                                 )

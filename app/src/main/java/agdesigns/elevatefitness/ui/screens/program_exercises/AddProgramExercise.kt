@@ -6,66 +6,51 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.AbsoluteAlignment.TopRight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.ColorUtils
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.palette.graphics.Palette
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
-import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesEvent
-import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesViewModel
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
-import agdesigns.elevatefitness.ui.common.SharedElementKey
-import agdesigns.elevatefitness.ui.common.SharedElementType
+import agdesigns.elevatefitness.ui.screens.program_exercises.components.ProgramExerciseCard
+import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.allowHardware
-import coil3.request.crossfade
-import coil3.toBitmap
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.delay
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
@@ -80,12 +65,43 @@ fun SharedTransitionScope.AddProgramExercise(
     viewModel: ProgramExercisesViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    viewModel.onEvent(ProgramExercisesEvent.GetProgramExercises(programId))
+    LaunchedEffect(programId) {
+        viewModel.onEvent(ProgramExercisesEvent.GetProgramExercises(programId))
+    }
+    val haptic = LocalHapticFeedback.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val listState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(listState) { from, to ->
+        val toIndex = state.programExercises.find { it.programExerciseId == to.key }!!.orderInProgram
+        val fromIndex = state.programExercises.find { it.programExerciseId == from.key }!!.orderInProgram
+        Log.d("AddProgramExercise", "Reorder from: $fromIndex to $toIndex")
+        while (viewModel.reorderCompleted.tryReceive().isSuccess);
+        viewModel.onEvent(
+            ProgramExercisesEvent.ReorderExercises(
+                listOf(
+                    ProgramExerciseReorder(
+                        from.key as Long,
+                        toIndex
+                    ),
+                    ProgramExerciseReorder(
+                        to.key as Long,
+                        fromIndex
+                    )
+                )
+            )
+        )
+        haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+        while (viewModel.reorderCompleted.receive()) {
+            // check reorder completed
+            if (state.programExercises.find { it.programExerciseId == from.key }!!.orderInProgram == toIndex &&
+                state.programExercises.find { it.programExerciseId == to.key }!!.orderInProgram == fromIndex
+            )
+                break
+        }
+    }
     val expandedFab by remember { derivedStateOf { !listState.isScrollInProgress } }
-    val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
+    val dragStarted = rememberSaveable { mutableStateOf(false) }
+
     /*
     If user is coming back from a screen with a transition and tries to go back rapidly
     the old screen will flash. This feels like a bug for compose to solve but until then,
@@ -167,280 +183,115 @@ fun SharedTransitionScope.AddProgramExercise(
                     contentPadding = innerPadding,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    itemsIndexed(items = state.programExercises,
-                        key = { _, it -> it.programExerciseId }) { index, programExercise ->
+                    itemsIndexed(
+                        items = state.programExercises,
+                        key = { _, it -> it.programExerciseId }
+                    ) { index, programExercise ->
                         val exercise = remember(index) { state.exercises[index] }
                         val brightImage = remember { mutableStateOf(false) }
-                        var expanded by remember { mutableStateOf(false) }
                         if (index != 0){
-                            Row (  // row with button for superset
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier
-                                    .clip(CardDefaults.shape)
-                                    .combinedClickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                        onClick = {
-                                            viewModel.onEvent(
-                                                ProgramExercisesEvent.UpdateSuperset(
-                                                    index,
-                                                    index - 1
-                                                )
-                                            )
-                                        }, onLongClick = {})
-                                    .wrapContentHeight()
-                            ){
-                                val linked = programExercise.supersetExercise == state.programExercises[index-1].programExerciseId
-                                val orientation = remember { Animatable(0f) }
-                                val scale = remember { Animatable(1f) }
-                                LaunchedEffect(linked) {
-                                    orientation.animateTo(if (linked) 90f else 0f)
-                                }
-                                LaunchedEffect(linked){
-                                    scale.animateTo(if (linked) 1.1f else 1f)
-                                }
-                                Icon(if (linked)
-                                    Icons.Default.Link
-                                else
-                                    Icons.Default.LinkOff,
-                                    stringResource(if (linked) R.string.superset else R.string.superset_off),
-                                    Modifier
-                                        .scale(scale.value)
-                                        .rotate(orientation.value)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    stringResource(R.string.superset),
-                                    fontStyle = FontStyle.Italic,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
-                        ElevatedCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .animateItem()
-                                .padding(
-                                    horizontal = dimensionResource(R.dimen.card_outside_padding),
-                                    vertical = dimensionResource(R.dimen.card_space_between) / 2
-                                )
-                                .sharedBounds(
-                                    rememberSharedContentState(
-                                        SharedElementKey(
-                                            "AddExerciseDialog",
-                                            SharedElementType.Bounds,
-                                            idLong = exercise?.exerciseId ?: 0L
-                                        )
-                                    ),
-                                    animatedVisibilityScope
-                                )
-                                // clip removes card elevation, we need to reapply the shadow
-                                .shadow(1.dp, CardDefaults.shape)
-                                .clip(CardDefaults.shape)
-                                .combinedClickable(
-                                    onLongClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        expanded = true
-                                    },
-                                    onClick = {
-                                        navigator.navigate(
-                                            AddExerciseDialogDestination(
-                                                previewExercise = exercise!!,
-                                                programId = programExercise.extProgramId,
-                                                programExerciseId = programExercise.programExerciseId,
-                                                continueAdding = false
-                                            )
-                                        )
-                                    }
-                                )
-                        ) {
-                            Box (Modifier.fillMaxWidth()){
-                                AsyncImage(
-                                    ImageRequest.Builder(context)
-                                        .allowHardware(false)
-                                        .data(exercise?.image ?: R.drawable.finish_workout)
-                                        .crossfade(true)
-                                        .listener { _, result ->
-                                            val image = result.image.toBitmap()
-                                            Palette.from(image).maximumColorCount(3)
-                                                .clearFilters()
-                                                .setRegion(image.width-50, 0, image.width,50)
-                                                .generate {
-                                                    brightImage.value = (ColorUtils.calculateLuminance(it?.getDominantColor(
-                                                        Color.Black.toArgb()) ?: 0)) > 0.5
-                                                }
-                                        }
-                                        .build(),
-                                    stringResource(R.string.exercise_image),
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 3)
-                                        .align(Alignment.TopCenter)
-                                        .sharedElement(
-                                            rememberSharedContentState(
-                                                SharedElementKey(
-                                                    "AddExerciseDialog",
-                                                    SharedElementType.Image,
-                                                    idLong = exercise?.exerciseId ?: 0L
-                                                )
-                                            ),
-                                            animatedVisibilityScope,
-                                            boundsTransform = BoundsTransform { _, _ ->
-                                                MotionScheme.expressive().slowSpatialSpec()
-                                            }
-                                        )
-                                        .clip(RoundedCornerShape(12.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Box(
+                            AnimatedVisibility(
+                                !dragStarted.value,
+                                enter = fadeIn() + slideInVertically(),
+                                exit = fadeOut() + slideOutVertically()
+                            ) {
+                                Row(  // row with button for superset
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
                                     modifier = Modifier
-                                        .wrapContentSize()
-                                        .align(TopRight)
-                                ) {
-
-                                    IconButton(onClick = { expanded = true }) {
-                                        Icon(
-                                            Icons.Default.MoreVert,
-                                            contentDescription = stringResource(R.string.morevert_icon_options),
-                                            tint = if (brightImage.value) Color.Black else Color.White
-                                        )
-                                    }
-                                    DropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.move_up)) },
+                                        .clip(CardDefaults.shape)
+                                        .combinedClickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
                                             onClick = {
-                                                viewModel.onEvent(ProgramExercisesEvent.ReorderExercises(
-                                                    listOf(
-                                                        ProgramExerciseReorder(
-                                                            programExercise.programExerciseId,
-                                                            programExercise.orderInProgram-1
-                                                        ),
-                                                        ProgramExerciseReorder(
-                                                            state.programExercises[index-1].programExerciseId,
-                                                            programExercise.orderInProgram
-                                                        )
-                                                )))
-                                                expanded = false
-                                            },
-                                            enabled = index > 0,
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Outlined.ArrowUpward,
-                                                    contentDescription = stringResource(R.string.move_up)
-                                                )
-                                            })
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.move_down)) },
-                                            onClick = {
-                                                viewModel.onEvent(ProgramExercisesEvent.ReorderExercises(
-                                                    listOf(
-                                                        ProgramExerciseReorder(
-                                                            programExercise.programExerciseId,
-                                                            programExercise.orderInProgram+1
-                                                        ),
-                                                        ProgramExerciseReorder(
-                                                            state.programExercises[index+1].programExerciseId,
-                                                            programExercise.orderInProgram
-                                                        )
-                                                )))
-                                                expanded = false
-                                            },
-                                            enabled = index+1 < state.programExercises.size,
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Outlined.ArrowDownward,
-                                                    contentDescription = stringResource(R.string.move_down)
-                                                )
-                                            })
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.edit)) },
-                                            onClick = {
-                                                navigator.navigate(
-                                                    AddExerciseDialogDestination(
-                                                        previewExercise = exercise!!,
-                                                        programId = programExercise.extProgramId,
-                                                        programExerciseId = programExercise.programExerciseId,
-                                                        continueAdding = false
+                                                viewModel.onEvent(
+                                                    ProgramExercisesEvent.UpdateSuperset(
+                                                        index,
+                                                        index - 1
                                                     )
                                                 )
-                                                expanded = false
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Outlined.Edit,
-                                                    contentDescription = stringResource(R.string.edit)
-                                                )
-                                            })
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.remove)) },
-                                            onClick = {
-                                                viewModel.onEvent(ProgramExercisesEvent.DeleteExercise(
-                                                    programExercise.programExerciseId
-                                                ))
-                                                expanded = false
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.Outlined.Delete,
-                                                    contentDescription = stringResource(R.string.delete)
-                                                )
-                                            })
+                                            }, onLongClick = {})
+                                        .wrapContentHeight()
+                                ) {
+                                    val linked =
+                                        programExercise.supersetExercise == state.programExercises[index - 1].programExerciseId
+                                    val orientation = remember { Animatable(0f) }
+                                    val scale = remember { Animatable(1f) }
+                                    LaunchedEffect(linked) {
+                                        orientation.animateTo(if (linked) 90f else 0f)
                                     }
+                                    LaunchedEffect(linked) {
+                                        scale.animateTo(if (linked) 1.1f else 1f)
+                                    }
+                                    Icon(
+                                        if (linked)
+                                            Icons.Default.Link
+                                        else
+                                            Icons.Default.LinkOff,
+                                        stringResource(if (linked) R.string.superset else R.string.superset_off),
+                                        Modifier
+                                            .scale(scale.value)
+                                            .rotate(orientation.value)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        stringResource(R.string.superset),
+                                        fontStyle = FontStyle.Italic,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                 }
                             }
-                            Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                                val variation = if (programExercise.variation.isBlank()) "" else " (${programExercise.variation})"
-                                Text(
-                                    text = (exercise?.name ?: "") + variation,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier.sharedElement(
-                                        rememberSharedContentState(
-                                            SharedElementKey(
-                                                "AddExerciseDialog",
-                                                SharedElementType.Title,
-                                                idLong = exercise?.exerciseId ?: 0L
+                        }
+                        ProgramExerciseCard(
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            navigator = navigator,
+                            reorderableListState = reorderableLazyListState,
+                            exercise = exercise,
+                            programExercise = programExercise,
+                            brightImage = brightImage,
+                            dragStarted = dragStarted,
+                            canMoveUp = index > 0,
+                            canMoveDown = index + 1 < state.programExercises.size,
+                            moveUp = {
+                                viewModel.onEvent(
+                                    ProgramExercisesEvent.ReorderExercises(
+                                        listOf(
+                                            ProgramExerciseReorder(
+                                                programExercise.programExerciseId,
+                                                programExercise.orderInProgram - 1
+                                            ),
+                                            ProgramExerciseReorder(
+                                                state.programExercises[index - 1].programExerciseId,
+                                                programExercise.orderInProgram
                                             )
-                                        ),
-                                        animatedVisibilityScope,
-                                        boundsTransform = BoundsTransform { _, _ ->
-                                            MotionScheme.expressive().slowSpatialSpec()
-                                        }
+                                        )
                                     )
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = buildAnnotatedString {
-                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                        append(stringResource(R.string.sets))
-                                        append(": ")
-                                    }
-                                    append(programExercise.reps.size.toString())
-                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                        append(" • ")
-                                        append(stringResource(R.string.reps))
-                                        append(": ")
-                                    }
-                                    append(programExercise.reps.joinToString(", "))
-                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                        append(" • ")
-                                        append(stringResource(R.string.rest))
-                                        append(": ")
-                                    }
-                                    append(programExercise.rest.joinToString("s, ") + "s")
-                                })
-                                if (programExercise.note.isNotBlank())
-                                    Text(text = buildAnnotatedString {
-                                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                            append(stringResource(R.string.note))
-                                        }
-                                        append(programExercise.note)
-                                    })
-                            }
-                        }
-//                        }
+                            },
+                            moveDown = {
+                                viewModel.onEvent(
+                                    ProgramExercisesEvent.ReorderExercises(
+                                        listOf(
+                                            ProgramExerciseReorder(
+                                                programExercise.programExerciseId,
+                                                programExercise.orderInProgram + 1
+                                            ),
+                                            ProgramExerciseReorder(
+                                                state.programExercises[index + 1].programExerciseId,
+                                                programExercise.orderInProgram
+                                            )
+                                        )
+                                    )
+                                )
+                            },
+                            deleteExercise = {
+                                viewModel.onEvent(
+                                    ProgramExercisesEvent.DeleteExercise(
+                                        programExercise.programExerciseId
+                                    )
+                                )
+                            },
+                        )
                     }
                     item{
                         var finalSpacerSize = 56.dp + 16.dp// large fab size + its padding FIXME: not hardcode

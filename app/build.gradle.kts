@@ -89,6 +89,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
+            freeCompilerArgs = listOf("-XXLanguage:+ContextParameters")
         }
     }
 
@@ -120,6 +121,7 @@ dependencies {
     implementation(libs.wear.remote.interactions)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.accompanist.permissions)
+    implementation(libs.reorderable)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)

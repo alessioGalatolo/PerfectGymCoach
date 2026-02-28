@@ -64,7 +64,8 @@ data class ExercisesState(
     val suggestedRepsWeight: List<Workout.SuggestedRepsWeight> = emptyList(),
     val suggestedTare: List<Float> = emptyList(),
     val imperialSystem: Boolean = false,
-    val activeWorkout: Boolean = true
+    val activeWorkout: Boolean = true,
+    val lastIntensity: Float? = null
 )
 
 data class InRestHint(
@@ -98,6 +99,7 @@ sealed class WorkoutEvent {
     data class FineGrainedChangeWeight(val change: Int): WorkoutEvent()
     data object CompleteSet: WorkoutEvent()
     data object StopActivity: WorkoutEvent()
+    data class EndWorkout(val workoutIntensity: Float): WorkoutEvent()
     data class ChangeTare(val change: Int): WorkoutEvent()
     data object StartRest: WorkoutEvent()
     data object NextExercise: WorkoutEvent()
@@ -107,6 +109,8 @@ sealed class WorkoutEvent {
     data object PlayPauseMedia: WorkoutEvent()
     data object NextMedia: WorkoutEvent()
     data object PreviousMedia: WorkoutEvent()
+    data object RaiseVolume: WorkoutEvent()
+    data object LowerVolume: WorkoutEvent()
 
     data object DismissHint: WorkoutEvent()
 }
@@ -142,7 +146,8 @@ class WorkoutViewModel
             suggestedRepsWeight = dynamicData.suggestedRepsWeightList,
             imperialSystem = staticData.imperialSystem,
             activeWorkout = staticData.activeWorkout,
-            suggestedTare = staticData.suggestedTaresList
+            suggestedTare = staticData.suggestedTaresList,
+            lastIntensity = if (staticData.previousIntensity == -1f) null else staticData.previousIntensity / 100f
         )
     }.stateIn(
         viewModelScope,
@@ -226,6 +231,7 @@ class WorkoutViewModel
     fun onEvent(event: WorkoutEvent){
         when (event) {
             is WorkoutEvent.ResetRest -> {
+                repository.cancelAlarm()
                 viewModelScope.launch {
                     _state.update { it.copy(restTimestamp = ZonedDateTime.now()) }
                 }
@@ -262,7 +268,7 @@ class WorkoutViewModel
                         val shouldAdvancePage = (exercisesState.value.exercisesSetsDone.getOrNull(
                             state.value.currentExerciseIndex
                         )?.plus(1) ?: 0) == currentExercise.restCount
-                        if (shouldAdvancePage) {
+                        if (shouldAdvancePage && exercisesState.value.exercises.size > state.value.currentExerciseIndex + 1) {
                             _state.update {
                                 it.copy(
                                     currentExerciseIndex = it.currentExerciseIndex + 1
@@ -318,6 +324,22 @@ class WorkoutViewModel
             is WorkoutEvent.StopActivity -> {
                 viewModelScope.launch {
                     repository.service.firstOrNull()?.stopWorkout()
+                }
+            }
+            is WorkoutEvent.EndWorkout -> {
+                viewModelScope.launch {
+                    try {
+                        workoutService.completeWorkout(
+                            Workout.CompleteWorkout.newBuilder()
+                                .setIntensity(event.workoutIntensity * 100f) // phone expects values 0-100
+                                .build()
+                        )
+                    } catch (e: StatusException) {
+                        Log.e(
+                            "WorkoutViewModel",
+                            "Error completing workout with error: ${e.message}"
+                        )
+                    }
                 }
             }
             is WorkoutEvent.StartRest -> {
@@ -389,6 +411,26 @@ class WorkoutViewModel
                     } catch (e: StatusException) {
                         _effects.trySend(WorkoutEffect.NonRetriableError)
                         Log.e("WorkoutViewModel", "Error skipping media with error: ${e.message}")
+                    }
+                }
+            }
+            is WorkoutEvent.RaiseVolume -> {
+                viewModelScope.launch {
+                    try {
+                        mediaService.raiseVolume(Empty.getDefaultInstance())
+                    } catch (e: StatusException) {
+                        _effects.trySend(WorkoutEffect.NonRetriableError)
+                        Log.e("WorkoutViewModel", "Error raising volume with error: ${e.message}")
+                    }
+                }
+            }
+            is WorkoutEvent.LowerVolume -> {
+                viewModelScope.launch {
+                    try {
+                        mediaService.lowerVolume(Empty.getDefaultInstance())
+                    } catch (e: StatusException) {
+                        _effects.trySend(WorkoutEffect.NonRetriableError)
+                        Log.e("WorkoutViewModel", "Error lowering volume with error: ${e.message}")
                     }
                 }
             }
@@ -523,8 +565,6 @@ class WorkoutViewModel
             else
                 suggestedRepsWeight.getOrNull(index-1)
             if (repsWeight == null) {
-                Log.e("WorkoutViewModel", "Creating inRestHint: repsWeight is null")
-                Log.d("WorkoutViewModel", "Index is $index and suggestedRepsWeight is $suggestedRepsWeight")
                 return@combine
             }
 
@@ -725,7 +765,6 @@ class WorkoutViewModel
                     }
                 }
             }
-            Log.d("WorkoutViewModel", "Creating inRestHints: ${hintList.map { repository.stringResToString(it.titleResId) }}")
             _state.update {
                 it.copy(
                     inRestHints = hintList

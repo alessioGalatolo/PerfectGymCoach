@@ -195,7 +195,7 @@ fun CompleteSetAndRestScreen(
             1 -> SelectValueScreen(
                 title = stringResource(R.string.weight),
                 subtitle = "",
-                value = "%.0f".format(floor(workoutState.currentWeight)),
+                value = "${workoutState.currentWeight.toInt()}",
                 subValue = if ("%.2f".format(workoutState.currentWeight % 1) != "0.00")
                     "%.2f".format(workoutState.currentWeight % 1).substring(1)
                 else

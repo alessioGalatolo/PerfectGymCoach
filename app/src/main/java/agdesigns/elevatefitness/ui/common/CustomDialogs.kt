@@ -139,39 +139,6 @@ fun InsertNameDialog(
     }
 }
 
-@Composable
-fun ResumeWorkout(
-    dialogueIsOpen: Boolean,
-    discardWorkout: () -> Unit,
-    resumeWorkout: () -> Unit
-) {
-    if (dialogueIsOpen) {
-        AlertDialog(
-            onDismissRequest = {
-            },
-            title = {
-                Text(text = stringResource(R.string.resume_unfinished_workout))
-            },
-            text = {
-               Text(stringResource(R.string.resume_workout_info))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = resumeWorkout
-                ) {
-                    Text(stringResource(R.string.resume))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = discardWorkout
-                ) {
-                    Text(stringResource(R.string.discard_workout))
-                }
-            }
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
