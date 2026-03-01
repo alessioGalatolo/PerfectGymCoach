@@ -78,7 +78,7 @@ class WearRepository @Inject constructor(
         )
 
         // This will fire even in ambient mode!
-        alarmManager.setExactAndAllowWhileIdle(
+        alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             System.currentTimeMillis() + durationMillis,
             pendingIntent
