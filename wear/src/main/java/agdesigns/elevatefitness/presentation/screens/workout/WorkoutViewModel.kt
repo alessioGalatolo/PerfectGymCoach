@@ -130,6 +130,9 @@ class WorkoutViewModel
     private val workoutService: WorkoutServiceGrpcKt.WorkoutServiceCoroutineStub,
     private val mediaService: MediaServiceGrpcKt.MediaServiceCoroutineStub
 ): ViewModel() {
+    val permissionStateDataStore = repository.permissionStateDataStore
+    val hasExactAlarm = repository.hasExactAlarm
+
     val exercisesState = combine(
         registry.protoFlow<Workout.WorkoutStaticData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
         registry.protoFlow<Workout.WorkoutDynamicData>(TargetNodeId.PairedPhone).distinctUntilChanged(),

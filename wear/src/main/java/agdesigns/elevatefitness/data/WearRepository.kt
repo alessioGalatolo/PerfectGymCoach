@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.graphics.Bitmap
 import android.os.Build
@@ -25,12 +26,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -60,11 +63,42 @@ class TimerAlarmReceiver : BroadcastReceiver() {
     }
 }
 
+fun Context.exactAlarmPermissionFlow(): Flow<Boolean> = callbackFlow {
+    // Only relevant on Android 12+
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        trySend(true) // Permission not required below S
+        close()
+        return@callbackFlow
+    }
+
+    val alarmManager = getSystemService(AlarmManager::class.java)
+
+    // Emit the current state immediately
+    trySend(alarmManager.canScheduleExactAlarms())
+
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) {
+                trySend(alarmManager.canScheduleExactAlarms())
+            }
+        }
+    }
+
+    val filter = IntentFilter(AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)
+    registerReceiver(receiver, filter)
+
+    // Unregister when the flow is cancelled
+    awaitClose {
+        unregisterReceiver(receiver)
+    }
+}
+
 @Singleton
 class WearRepository @Inject constructor(
     val permissionStateDataStore: PermissionStateDataStore,
     @ApplicationContext private val context: Context
 ) {
+    val hasExactAlarm = context.exactAlarmPermissionFlow()
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun scheduleVibrationAlarm(durationMillis: Long) {
@@ -77,12 +111,21 @@ class WearRepository @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // This will fire even in ambient mode!
-        alarmManager.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis() + durationMillis,
-            pendingIntent
-        )
+        val canScheduleExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+        if (canScheduleExact) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + durationMillis,
+                pendingIntent
+            )
+        } else {
+            Log.d("WearRepository", "Cannot schedule exact alarm")
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + durationMillis,
+                pendingIntent
+            )
+        }
     }
 
     fun cancelAlarm() {

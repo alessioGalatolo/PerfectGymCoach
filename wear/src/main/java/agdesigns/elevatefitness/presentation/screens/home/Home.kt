@@ -11,15 +11,10 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.runtime.Composable
@@ -30,18 +25,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.center
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,9 +38,7 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
-import androidx.wear.compose.material3.ButtonGroup
 import androidx.wear.compose.material3.Icon
-import androidx.wear.compose.material3.IconButton
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.ScreenScaffold
@@ -82,7 +67,7 @@ fun Home(
     }
 
     // On T and upwards, POST_NOTIFICATIONS must be requested at runtime.
-    val permissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
     } else {
         // Below T, POST_NOTIFICATIONS does not need to be requested at runtime but must still be
@@ -119,25 +104,27 @@ fun Home(
                 onDismissRequest = { showConfirmation = false },
                 curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
             )
-            if (permissionState.status == PermissionStatus.Granted) {
+            if (notificationPermissionState.status == PermissionStatus.Granted) {
                 LaunchedEffect(Unit) {
                     // Reset the status of having shown permission rationale.
                     viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                        ShownRationaleStatus.UNKNOWN
+                        ShownRationaleStatus.UNKNOWN,
+                        permission = notificationPermissionState.permission
                     )
                 }
             }
             var notNow by rememberSaveable { mutableStateOf(false) }
-            if (permissionState.status is PermissionStatus.Denied && !notNow) {
-                val denied = permissionState.status as PermissionStatus.Denied
+            if (notificationPermissionState.status is PermissionStatus.Denied && !notNow) {
+                val denied = notificationPermissionState.status as PermissionStatus.Denied
                 val hasPreviouslyShown by viewModel.permissionStateDataStore
-                    .hasPreviouslyShownRationaleFlow
+                    .hasPreviouslyShownRationale(notificationPermissionState.permission)
                     .collectAsStateWithLifecycle(initialValue = ShownRationaleStatus.UNKNOWN)
 
                 if (denied.shouldShowRationale) {
                     LaunchedEffect(Unit) {
                         viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                            ShownRationaleStatus.HAS_SHOWN
+                            ShownRationaleStatus.HAS_SHOWN,
+                            permission = notificationPermissionState.permission
                         )
                     }
                     // ShouldShowRationale returns true if:
@@ -148,7 +135,8 @@ fun Home(
                     // now, as opposed to the false seen from shouldShowRationale on first ever launch
                     PermissionRequiredScreen(
                         listState,
-                        onPermissionClick = { permissionState.launchPermissionRequest() },
+                        descResId = R.string.notification_permission_explanation,
+                        onPermissionClick = { notificationPermissionState.launchPermissionRequest() },
                         buttonLabelResId = R.string.show_permission,
                         onNotNowClick = { notNow = true }
                     )
@@ -157,6 +145,7 @@ fun Home(
                     // Offer the user the option to go to permission settings.
                     PermissionRequiredScreen(
                         listState,
+                        descResId = R.string.notification_permission_explanation,
                         onPermissionClick = { launchPermissionsSettings(context) },
                         buttonLabelResId = R.string.show_settings,
                         onNotNowClick = { notNow = true }
@@ -164,7 +153,7 @@ fun Home(
                 } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_NOT_SHOWN) {
                     // First launch of permissions, show the permission request without any rationale.
                     LaunchedEffect(Unit) {
-                        permissionState.launchPermissionRequest()
+                        notificationPermissionState.launchPermissionRequest()
                     }
                 }
             } else {
@@ -241,6 +230,6 @@ fun Home(
 private fun launchPermissionsSettings(context: Context) {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
     val uri = Uri.fromParts("package", context.packageName, null)
-    intent.setData(uri)
+    intent.data = uri
     context.startActivity(intent)
 }

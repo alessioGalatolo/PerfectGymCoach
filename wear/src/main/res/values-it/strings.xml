@@ -67,5 +67,7 @@
     <string name="raise_audio_volume">Aumenta il volume dell\'audio</string>
     <string name="lower_audio_volume">Diminuisci il volume dell\'audio</string>
     <string name="superset">Superset</string>
+    <string name="permission_request_alarm">Questa app usa questo permesso per vibrare alla fine del riposo tra una serie e l\'altra. Negare questo permesso causerà vibrazioni a tempi inesatti.</string>
+    <string name="permission_exact_alarm_title"><![CDATA[Concedere permesso \'Sveglie & Promemoria\'?]]></string>
 
 </resources>
