@@ -177,8 +177,6 @@ sealed class WorkoutEvent{
 
     data object AddSetToCurrentExercise: WorkoutEvent()
 
-    data class UpdateExerciseProbability(val exerciseInWorkout: Int, val probability: Int): WorkoutEvent()
-
     data class UpdateReps(val newValue: String): WorkoutEvent()
 
     data class UpdateWeight(val newValue: String): WorkoutEvent()
@@ -650,11 +648,11 @@ class WorkoutViewModel @Inject constructor(
                         return@launch
                     }
 
-                    var exerciseRest = currentExerciseState.value.currentExercise
+                    val exercise = currentExerciseState.value.currentExercise
+                    var exerciseRest = exercise
                         ?.rest
                         ?.getOrNull(currentExerciseState.value.setsDone)
                         ?.toLong() ?: 0L
-                    val exercise = currentExerciseState.value.currentExercise
                     val nextExercise = pagesContent.value.exercises.getOrNull(
                         _currentPage.value + 1
                     )
@@ -662,7 +660,7 @@ class WorkoutViewModel @Inject constructor(
                         _currentPage.value - 1
                     )
                     // if superset with next exercise, skip rest
-                    if (nextExercise != null && exercise?.supersetExercise == nextExercise.extProgramExerciseId) {
+                    if (exercise?.supersetExercise != null && exercise.supersetExercise == nextExercise?.extProgramExerciseId) {
                         exerciseRest = 0L
                     }
                     val restTimestamp = ZonedDateTime.now().plusSeconds(exerciseRest)
@@ -671,12 +669,12 @@ class WorkoutViewModel @Inject constructor(
                     val totalSets = currentExerciseState.value.currentExercise?.reps?.size ?: 0
                     val shouldAdvanceEx = setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)
                     // check if superset
-                    val exerciseToScrollTo = if (prevExercise != null && exercise?.supersetExercise == prevExercise.extProgramExerciseId) {
+                    val exerciseToScrollTo = if (exercise?.supersetExercise != null && exercise.supersetExercise == prevExercise?.extProgramExerciseId) {
                         if (shouldAdvanceEx)
                             _currentPage.value + 1
                         else
                             _currentPage.value - 1
-                    } else if (nextExercise != null && exercise?.supersetExercise == nextExercise.extProgramExerciseId) {
+                    } else if (exercise?.supersetExercise != null && exercise.supersetExercise == nextExercise?.extProgramExerciseId) {
                         _currentPage.value + 1
                     } else if (shouldAdvanceEx) {
                         _currentPage.value + 1
@@ -821,21 +819,26 @@ class WorkoutViewModel @Inject constructor(
                         }
                         reps.removeAt(event.set)
                         weights.removeAt(event.set)
-                        repository.addExerciseRecord(
-                            ExerciseRecord(
-                                recordId = record.recordId,
-                                extExerciseId = record.extExerciseId,
-                                extWorkoutId = record.extWorkoutId,
-                                exerciseInWorkout = record.exerciseInWorkout,
-                                date = record.date,
-                                reps = reps,
-                                weights = weights,
-                                variation = record.variation,
-                                variationResKey = record.variationResKey,
-                                rest = record.rest,
-                                tare = record.tare
+                        if (reps.isEmpty()) {
+                            // delete record instead
+                            repository.deleteExerciseRecord(record.recordId)
+                        } else {
+                            repository.addExerciseRecord(
+                                ExerciseRecord(
+                                    recordId = record.recordId,
+                                    extExerciseId = record.extExerciseId,
+                                    extWorkoutId = record.extWorkoutId,
+                                    exerciseInWorkout = record.exerciseInWorkout,
+                                    date = record.date,
+                                    reps = reps,
+                                    weights = weights,
+                                    variation = record.variation,
+                                    variationResKey = record.variationResKey,
+                                    rest = record.rest,
+                                    tare = record.tare
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -874,27 +877,6 @@ class WorkoutViewModel @Inject constructor(
                 _workoutState.update { it.copy(
                     otherEquipmentDialogOpen = !workoutState.value.otherEquipmentDialogOpen
                 ) }
-            }
-
-            is WorkoutEvent.UpdateExerciseProbability -> {
-                val exerciseId = pagesContent.value.exercises[event.exerciseInWorkout].extExerciseId
-                viewModelScope.launch {
-                    var probability = repository.getExercise(exerciseId).first().probability
-                    when (event.probability) {
-                        1 -> probability *= 1.1
-                        2 -> probability = (probability / 0.9) * 1.1
-                        -1 -> probability *= 0.9
-                        -2 -> probability = (probability / 1.1) * 0.9
-                    }
-                    if (probability <= 0.0)
-                        probability = 0.01
-                    else if (probability > 2.0)
-                        probability = 2.0
-                    repository.updateExerciseProbability(
-                        exerciseId,
-                        probability
-                    )
-                }
             }
 
             is WorkoutEvent.UpdateCurrentPage -> {

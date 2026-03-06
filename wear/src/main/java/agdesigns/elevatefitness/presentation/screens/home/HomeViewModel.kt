@@ -41,6 +41,7 @@ class HomeViewModel @Inject constructor(
     private val registry: WearDataLayerRegistry,
     private val phoneInfoService: PhoneInfoServiceGrpcKt.PhoneInfoServiceCoroutineStub
 ): ViewModel() {
+    val hasExactAlarm = repository.hasExactAlarm
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
     val activeWorkout = registry.protoFlow<Workout.WorkoutStaticData>(TargetNodeId.PairedPhone).map {

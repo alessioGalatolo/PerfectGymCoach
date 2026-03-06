@@ -626,22 +626,6 @@ fun SharedTransitionScope.Workout(
                 restCounterProgress = progressAnim.value,
                 title = title,
                 addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
-                updateExerciseProbability = { probability ->
-                    scope.launch {
-                        // if already snackbarring, dismiss it before a new one.
-                        snackbarHostState.currentSnackbarData?.dismiss()
-                        if (probability > 0)
-                            snackbarHostState.showSnackbar(context.getString(R.string.increasing_exercise_probability))
-                        else
-                            snackbarHostState.showSnackbar(context.getString(R.string.decreasing_exercise_probability))
-                    }
-                    viewModel.onEvent(
-                        WorkoutEvent.UpdateExerciseProbability(
-                            pagerState.currentPage,
-                            probability
-                        )
-                    )
-                },
                 updateBottomBar = { rep, weight ->
                     if (rep != null)
                         viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))

@@ -81,6 +81,7 @@ class RecapViewModel @Inject constructor(
                                     .sortedBy { it.startDate }
                                 val sortedDistinctExercises = exerciseRecords
                                     .distinct()
+                                    .filter { it.reps.isNotEmpty() }  // only keep records with actual data inside
                                     .sortedBy { it.exerciseInWorkout }
                                 val index2date = sortedRecords.mapIndexed { index, workoutRecord ->
                                     index to (workoutRecord.startDate ?: (state.value.exerciseRecords.firstOrNull()?.date ?: ZonedDateTime.now()))
@@ -94,7 +95,6 @@ class RecapViewModel @Inject constructor(
                                         it[highlightSeriesKey] = listOf(1)
                                     }
                                 }
-                                Log.d ("RecapViewModel", "Calories chart data: ${sortedRecords.map{it.calories}}")
                                 state.value.caloriesChartProducer.runTransaction {
                                     columnSeries {
                                         series(sortedRecords.indices.toList(), sortedRecords.map{it.calories})

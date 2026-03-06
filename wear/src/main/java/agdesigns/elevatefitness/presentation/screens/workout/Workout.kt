@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.presentation.screens.workout
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.datastore.ShownRationaleStatus
+import agdesigns.elevatefitness.presentation.screens.home.HomeViewModel
 import agdesigns.elevatefitness.presentation.screens.home.components.PermissionRequiredScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.EndWorkoutPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingWorkoutScreen
@@ -55,6 +56,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.horologist.compose.ambient.AmbientAware
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
@@ -66,10 +68,7 @@ fun Workout(
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
     val listState = rememberScalingLazyListState()
-    RequestAlarmPermission(
-        listState,
-        viewModel
-    )
+
     DisposableEffect(Unit) {
         onDispose {
             viewModel.onEvent(WorkoutEvent.StopActivity)
@@ -146,93 +145,98 @@ fun Workout(
         val text = OpenOnPhoneDialogDefaults.text
         val style = OpenOnPhoneDialogDefaults.curvedTextStyle
         var openOnPhone by remember { mutableStateOf(false) }
-        OpenOnPhoneDialog(
-            visible = openOnPhone,
-            onDismissRequest = { openOnPhone = false },
-            curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
-        )
-        ScreenScaffold(
-            modifier = Modifier.background(Color.Transparent),
-            scrollState = listState,
-            timeText = {
-                if (pagerState.currentPage != 0) {
-                    TimeText()
-                }
-            },
-        ) { contentPadding ->
-            HorizontalPagerScaffold(
-                pagerState = pagerState,
-                pageIndicator = { HorizontalPageIndicator(pagerState = pagerState) },
-            ) {
-                HorizontalPager(
-                    pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    when (page) {
-                        0 -> EndWorkoutPage(
-                            contentPadding,
-                            exercisesState.lastIntensity,
-                            endWorkout = { intensity ->
-                                scope.launch {
-                                    viewModel.onEvent(WorkoutEvent.EndWorkout(workoutIntensity = intensity))
-                                    viewModel.onEvent(WorkoutEvent.StopActivity)
-                                    openOnPhone = true
-                                    delay(OpenOnPhoneDialogDefaults.DurationMillis)
-                                    delay(500L)
-                                    exitProcess(0) // FIXME
+        AmbientAware { ambientState ->
+            OpenOnPhoneDialog(
+                visible = openOnPhone,
+                onDismissRequest = { openOnPhone = false },
+                curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
+            )
+            ScreenScaffold(
+                modifier = Modifier.background(Color.Transparent),
+                scrollState = listState,
+                timeText = {
+                    if (pagerState.currentPage != 0) {
+                        TimeText()
+                    }
+                },
+            ) { contentPadding ->
+                HorizontalPagerScaffold(
+                    pagerState = pagerState,
+                    pageIndicator = { HorizontalPageIndicator(pagerState = pagerState) },
+                ) {
+                    HorizontalPager(
+                        pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        when (page) {
+                            0 -> EndWorkoutPage(
+                                contentPadding,
+                                exercisesState.lastIntensity,
+                                endWorkout = { intensity ->
+                                    scope.launch {
+                                        viewModel.onEvent(WorkoutEvent.EndWorkout(workoutIntensity = intensity))
+                                        openOnPhone = true
+                                        delay(OpenOnPhoneDialogDefaults.DurationMillis)
+                                        delay(500L)
+                                        exitProcess(0) // FIXME
+                                    }
                                 }
-                            }
-                        )
-                        1 -> WorkoutPage(
-                            contentPadding,
-                            workoutState = state,
-                            exercisesState = exercisesState,
-                            listState = listState,
-                            changeWeight = {
-                                viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
-                            },
-                            fineGrainedChangeWeight = {
-                                viewModel.onEvent(WorkoutEvent.FineGrainedChangeWeight(it))
-                            },
-                            changeReps = {
-                                viewModel.onEvent(WorkoutEvent.ChangeReps(it))
-                            },
-                            changeTare = {
-                                viewModel.onEvent(WorkoutEvent.ChangeTare(it))
-                            },
-                            resetRest = {
-                                viewModel.onEvent(WorkoutEvent.ResetRest)
-                            },
-                            startRest = {
-                                viewModel.onEvent(WorkoutEvent.StartRest)
-                            },
-                            completeSet = {
-                                viewModel.onEvent(WorkoutEvent.CompleteSet)
-                            },
-                            onNextExercise = {
-                                viewModel.onEvent(WorkoutEvent.NextExercise)
-                            },
-                            onPreviousExercise = {
-                                viewModel.onEvent(WorkoutEvent.PreviousExercise)
-                            },
-                            onDismissHint = {
-                                viewModel.onEvent(WorkoutEvent.DismissHint)
-                            }
-                        )
-                        2 -> MediaPlayingPage(
-                            mediaState,
-                            onPlayPause = {
-                                viewModel.onEvent(WorkoutEvent.PlayPauseMedia)
-                            }, onNext = {
-                                viewModel.onEvent(WorkoutEvent.NextMedia)
-                            }, onPrevious = {
-                                viewModel.onEvent(WorkoutEvent.PreviousMedia)
-                            }, raiseVolume = {
-                                viewModel.onEvent(WorkoutEvent.RaiseVolume)
-                            }, lowerVolume = {
-                                viewModel.onEvent(WorkoutEvent.LowerVolume)
-                            }
-                        )
+                            )
+
+                            1 -> WorkoutPage(
+                                contentPadding,
+                                workoutState = state,
+                                exercisesState = exercisesState,
+                                listState = listState,
+                                ambientState = ambientState,
+                                changeWeight = {
+                                    viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
+                                },
+                                fineGrainedChangeWeight = {
+                                    viewModel.onEvent(WorkoutEvent.FineGrainedChangeWeight(it))
+                                },
+                                changeReps = {
+                                    viewModel.onEvent(WorkoutEvent.ChangeReps(it))
+                                },
+                                changeTare = {
+                                    viewModel.onEvent(WorkoutEvent.ChangeTare(it))
+                                },
+                                resetRest = {
+                                    viewModel.onEvent(WorkoutEvent.ResetRest)
+                                },
+                                startRest = {
+                                    viewModel.onEvent(WorkoutEvent.StartRest)
+                                },
+                                completeSet = {
+                                    viewModel.onEvent(WorkoutEvent.CompleteSet)
+                                },
+                                onNextExercise = {
+                                    viewModel.onEvent(WorkoutEvent.NextExercise)
+                                },
+                                onPreviousExercise = {
+                                    viewModel.onEvent(WorkoutEvent.PreviousExercise)
+                                },
+                                onDismissHint = {
+                                    viewModel.onEvent(WorkoutEvent.DismissHint)
+                                }
+                            )
+
+                            2 -> MediaPlayingPage(
+                                mediaState,
+                                ambientState = ambientState,
+                                onPlayPause = {
+                                    viewModel.onEvent(WorkoutEvent.PlayPauseMedia)
+                                }, onNext = {
+                                    viewModel.onEvent(WorkoutEvent.NextMedia)
+                                }, onPrevious = {
+                                    viewModel.onEvent(WorkoutEvent.PreviousMedia)
+                                }, raiseVolume = {
+                                    viewModel.onEvent(WorkoutEvent.RaiseVolume)
+                                }, lowerVolume = {
+                                    viewModel.onEvent(WorkoutEvent.LowerVolume)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -241,62 +245,5 @@ fun Workout(
         LoadingWorkoutScreen(
             onBack
         )
-    }
-}
-
-
-
-@OptIn(ExperimentalPermissionsApi::class)
-@Composable
-fun RequestAlarmPermission(
-    listState: ScalingLazyListState,
-    viewModel: WorkoutViewModel
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val hasExactAlarm by viewModel.hasExactAlarm.collectAsState(null)
-
-    if (hasExactAlarm == true) {
-        LaunchedEffect(Unit) {
-            Log.d("RequestAlarmPermission", "Permission granted")
-            // Reset the status of having shown permission rationale.
-            @SuppressLint("InlinedApi")
-            viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                ShownRationaleStatus.UNKNOWN,
-                permission = Manifest.permission.SCHEDULE_EXACT_ALARM
-            )
-        }
-    }
-    // check on build version is not really necessary
-    if (hasExactAlarm == false && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val hasPreviouslyShown by viewModel.permissionStateDataStore
-            .hasPreviouslyShownRationale(Manifest.permission.SCHEDULE_EXACT_ALARM)
-            .collectAsStateWithLifecycle(initialValue = ShownRationaleStatus.UNKNOWN)
-
-        if (hasPreviouslyShown == ShownRationaleStatus.HAS_SHOWN) {
-            // Rationale has been shown previously, but the user has decided not to grant permission
-            // Offer the user the option to go to permission settings.
-            // TODO: do something?
-        } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_NOT_SHOWN) {
-            // First launch of permissions, show the permission request without any rationale.
-            PermissionRequiredScreen(
-                listState,
-                titleResId = R.string.permission_exact_alarm_title,
-                descResId = R.string.permission_request_alarm,
-                onPermissionClick = {
-                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                    val uri = Uri.fromParts("package", context.packageName, null)
-                    intent.setData(uri)
-                    context.startActivity(intent)
-                },
-                buttonLabelResId = R.string.show_settings,
-                onNotNowClick = { scope.launch {
-                    viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                        ShownRationaleStatus.HAS_SHOWN,
-                        permission = Manifest.permission.SCHEDULE_EXACT_ALARM
-                    )
-                } }
-            )
-        }
     }
 }

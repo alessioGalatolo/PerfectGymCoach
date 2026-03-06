@@ -370,6 +370,8 @@ class WorkoutViewModel
                             "Error completing workout with error: ${e.message}"
                         )
                     }
+                    repository.service.firstOrNull()?.stopWorkout()
+                    repository.cancelAlarm()
                 }
             }
             is WorkoutEvent.StartRest -> {

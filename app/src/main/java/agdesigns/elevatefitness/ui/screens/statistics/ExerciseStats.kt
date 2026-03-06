@@ -20,9 +20,11 @@ import agdesigns.elevatefitness.utils.getStickyHeader
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
+import agdesigns.elevatefitness.ui.screens.workout.components.HistoricRecord
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.Alignment
@@ -302,7 +304,13 @@ fun ExerciseStats(
                                     .fillMaxWidth()
                             )
                         }
-                        ExerciseRecordsList(state.imperialSystem, state.exerciseRecords)
+                        items(state.exerciseRecords) { record ->
+                            HistoricRecord(
+                                record,
+                                state.imperialSystem,
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
                     } else {
                         item {
                             Text(

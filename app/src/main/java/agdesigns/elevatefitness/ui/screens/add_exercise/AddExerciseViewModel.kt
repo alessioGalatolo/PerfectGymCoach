@@ -277,7 +277,6 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
         // NOTE: we could retrieve exercise and then one of the other 3 without using combine
         // but this way we only need to keep track of one job
         if (programExerciseId != 0L) {
-            Log.d("AddExerciseViewModel", "retrieved data: programExerciseId = $programExerciseId")
             // changing an existing exercise
             combine(
                 repository.getExercise(exerciseId),
@@ -306,7 +305,6 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 repository.getExercise(exerciseId),
                 repository.getProgramMapExercises(programId),
             ) { exercise, programMapExercises ->
-                Log.d("AddExerciseViewModel", "retrieved data: $exercise $programMapExercises")
                 // adding to workout and program is only possible if program is empty
                 // thus, the number of exercises in program and workout are the same
                 val exerciseNumber = programMapExercises.values.first().size
@@ -326,7 +324,6 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 repository.getExercise(exerciseId),
                 repository.getWorkoutExercises(workoutId)
             ) { exercise, workoutExercises ->
-                Log.d("AddExerciseViewModel", "retrieved data: $exercise $workoutExercises")
                 _state.update {
                     it.copy(
                         exercise = exercise,

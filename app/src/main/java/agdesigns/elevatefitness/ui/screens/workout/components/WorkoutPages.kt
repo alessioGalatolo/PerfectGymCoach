@@ -55,6 +55,8 @@ import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.text.style.TextDecoration
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
@@ -85,7 +87,6 @@ fun SharedTransitionScope.ExercisePages(
     restCounterProgress: Float?,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
-    updateExerciseProbability: (Int) -> Unit,
     updateTare: (Float) -> Unit,
     updateBottomBar: (Int?, Float?) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit,
@@ -209,7 +210,6 @@ fun SharedTransitionScope.ExercisePages(
                         settingsMenu = {},
                         addSet = {},
                         updateRowValues = { _, _, _ -> },
-                        updateExerciseProbability = {},
                         updateTare = {},
                         updateBottomBar = { _, _ -> },
                         toggleOtherEquipment = {},
@@ -321,7 +321,6 @@ fun SharedTransitionScope.ExercisePages(
                             deleteSet = { setCount ->
                                 deleteSet(page, setCount)
                             },
-                            updateExerciseProbability = updateExerciseProbability,
                             updateTare = updateTare,
                             updateBottomBar = updateBottomBar,
                             toggleOtherEquipment = toggleOtherEquipment,
@@ -353,7 +352,6 @@ fun ExercisePage(
     settingsMenu: @Composable (() -> Unit),
     addSet: () -> Unit,
     updateRowValues: (Int, Float, Int) -> Unit,
-    updateExerciseProbability: (Int) -> Unit,
     updateTare: (Float) -> Unit,
     updateBottomBar: (Int?, Float?) -> Unit,
     toggleOtherEquipment: () -> Unit,
@@ -408,7 +406,8 @@ fun ExercisePage(
                 Text(
                     stringResource(R.string.part_of_superset) + supersetWith,
                     fontStyle = FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.weight(1f)
                 )
             }
 
@@ -582,87 +581,36 @@ fun ExercisePage(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-        }
-        var recordsToShow by remember { mutableIntStateOf(2) }
-        records.subList(0, min(records.size, recordsToShow)).forEach { record ->  // should maybe become lazy
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
-                    val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
-                    Text(
-                        record.date.format(formatter),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontStyle = FontStyle.Italic // TODO: add how many days ago
-                    )
-                    if (record.equipment == Equipment.BARBELL) {
-                        Text(
-                            stringResource(
-                                R.string.barbell_used,
-                                stringResource(barbellResFromWeight(record.tare)),
-                                weightAndUnit(record.tare, imperialSystem, true)
-                            )
-                        )
-                    } else if (record.equipment == Equipment.BODY_WEIGHT) {
-                        // FIXME: bug where bodyweight = 0? <- this may have been fixed with the new state update
-                        Text(
-                            stringResource(
-                                R.string.bodyweight_at_the_time,
-                                weightAndUnit(record.tare, imperialSystem)
-                            )
-                        )
-                    }
-                    record.reps.forEachIndexed { index, rep ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(CardDefaults.shape) // rounded bounds when clicking
-                                .combinedClickable(onLongClick = {
+            var recordsToShow by remember { mutableIntStateOf(2) }
 
-                                }, onClick = {
-                                    updateBottomBar(
-                                        rep,
-                                        maybeKgToLb(
-                                            record.weights[index],
-                                            imperialSystem
-                                        )
-                                    )
-                                })
-                        ) {
-                            FilledIconToggleButton(checked = false, // FIXME: can use different component?
-                                onCheckedChange = { }) {
-                                Text((index + 1).toString())
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                stringResource(
-                                    R.string.reps_weight,
-                                    rep,
-                                    maybeKgToLb(
-                                        record.weights[index],
-                                        imperialSystem
-                                    ),
-                                    if (imperialSystem)
-                                        stringResource(R.string.lb)
-                                    else
-                                        stringResource(R.string.kg)
-                                )
+            // TODO: should maybe become lazy
+            records.subList(0, min(records.size, recordsToShow)).forEach { record ->
+                HistoricRecord(
+                    record,
+                    imperialSystem,
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.card_space_between)),
+                    onRecordRowClick = { reps, weight ->
+                        updateBottomBar(
+                            reps,
+                            maybeKgToLb(
+                                weight,
+                                imperialSystem
                             )
-                        }
+                        )
                     }
+                )
+            }
+            // FIXME: works initially, but at some point tapping it doesn't work
+            //  and no more records are shown. This happens if records are odd
+            if (recordsToShow < records.size) {
+                TextButton(
+                    onClick = { recordsToShow += 2 },
+                    modifier = Modifier.align(CenterHorizontally)
+                ) {
+                    Text(stringResource(R.string.show_older_records))
                 }
+                Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
             }
-            Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
-        }
-        // FIXME: works initially, but at some point tapping it doesn't work
-        //  and no more records are shown. This happens if records are odd
-        if (recordsToShow < records.size) {
-            TextButton(
-                onClick = { recordsToShow += 2 },
-                modifier = Modifier.align(CenterHorizontally)
-            ) {
-                Text(stringResource(R.string.show_older_records))
-            }
-            Spacer(Modifier.height(dimensionResource(R.dimen.card_space_between)))
         }
         if (fabHeight > 0.dp) {
             // add some padding to the fabHeight
@@ -670,6 +618,76 @@ fun ExercisePage(
         }
         // This is the padding for an eventual bottom bar
         Spacer(Modifier.height(bottomPadding))
+    }
+}
+
+@Composable
+fun HistoricRecord(
+    record: ExerciseRecordAndEquipment,
+    imperialSystem: Boolean,
+    modifier: Modifier = Modifier,
+    onRecordRowClick: (Int, Float) -> Unit = { _, _ -> }
+) {
+    Card(modifier.fillMaxWidth()) {
+        Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
+            val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
+            Text(
+                record.date.format(formatter),
+                style = MaterialTheme.typography.titleMedium,
+                fontStyle = FontStyle.Italic // TODO: add how many days ago
+            )
+            if (record.equipment == Equipment.BARBELL) {
+                Text(
+                    stringResource(
+                        R.string.barbell_used,
+                        stringResource(barbellResFromWeight(record.tare)),
+                        weightAndUnit(record.tare, imperialSystem, true)
+                    )
+                )
+            } else if (record.equipment == Equipment.BODY_WEIGHT) {
+                Text(
+                    stringResource(
+                        R.string.bodyweight_at_the_time,
+                        weightAndUnit(record.tare, imperialSystem)
+                    )
+                )
+            }
+            record.reps.forEachIndexed { index, rep ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(CardDefaults.shape) // rounded bounds when clicking
+                        .clickable {
+                            onRecordRowClick(
+                                rep,
+                                record.weights[index]
+                            )
+                        }
+                ) {
+                    FilledIconToggleButton(
+                        checked = false, // FIXME: can use different component?
+                        onCheckedChange = { }) {
+                        Text((index + 1).toString())
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(
+                            R.string.reps_weight,
+                            rep,
+                            maybeKgToLb(
+                                record.weights[index],
+                                imperialSystem
+                            ),
+                            if (imperialSystem)
+                                stringResource(R.string.lb)
+                            else
+                                stringResource(R.string.kg)
+                        )
+                    )
+                }
+            }
+        }
     }
 }
 

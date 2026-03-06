@@ -40,40 +40,10 @@ import agdesigns.elevatefitness.shared.barbellResFromWeight
 // Shows a nice list of records
 fun LazyListScope.ExerciseRecordsList(
     useImperialSystem: Boolean,
-    exerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     exerciseRecordsWithImage: List<ExerciseRecordAndInfo> = emptyList(),
     onRecordClick: (Long) -> Unit = {},
 ) {
-    if (exerciseRecordsWithImage.isEmpty() && exerciseRecords.isEmpty())
-        Log.e("ExerciseRecordsList", "Cannot create exercise record list because all lists passed are empty")
-    else if (exerciseRecordsWithImage.isNotEmpty() && exerciseRecords.isNotEmpty())
-        Log.w("ExerciseRecordsList", "ExerciseRecordsList received non empty lists of both exerciseRecords and exerciseRecordsWithImage. Only the latter will be used.")
-    var exerciseRecordsToUse = exerciseRecordsWithImage
-    if (exerciseRecordsToUse.isEmpty()){
-        exerciseRecordsToUse = exerciseRecords.map {
-            ExerciseRecordAndInfo(
-                recordId = it.recordId,
-                extExerciseId = it.extExerciseId,
-                extWorkoutId = it.extWorkoutId,
-                exerciseInWorkout = it.exerciseInWorkout,
-                date = it.date,
-                reps = it.reps,
-                weights = it.weights,
-                variation = it.variation,
-                variationResKey = it.variationResKey,
-                rest = it.rest,
-                tare = it.tare,
-                equipment = it.equipment,
-                name = "",
-                nameResKey = "",
-                image = ID_NULL,
-                imageResKey = ""
-            )
-        }
-    }
-    // FIXME: maybe add date in card
-    exerciseRecordsToUse = exerciseRecordsToUse.sortedByDescending { it.date }
-    items (items = exerciseRecordsToUse, key = { it.recordId }) { exercise ->
+    items (items = exerciseRecordsWithImage, key = { it.recordId }) { exercise ->
         Card (onClick = {
             onRecordClick(exercise.recordId)
         }, modifier = Modifier

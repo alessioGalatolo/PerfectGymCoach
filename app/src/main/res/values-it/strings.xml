@@ -291,7 +291,7 @@
     <string name="tease_media_access_prompt">Vuoi i tuoi brani in riproduzione qui?</string>
     <string name="tease_media_access_learn_more">Tocca per saperne di più o scorri per ignorare</string>
     <string name="no_music_playing">Nessuna musica in riproduzione</string>
-    <string name="no_music_playing_info">Riproduci un po\' di musica per vederla qui</string>
+    <string name="no_music_playing_info">Riproduci della musica per vederla qui</string>
     <string name="end_of_workout">Fine allenamento</string>
     <string name="finish">Fine</string>
     <string name="exercise_description_not_available">Descrizione non disponibile</string>

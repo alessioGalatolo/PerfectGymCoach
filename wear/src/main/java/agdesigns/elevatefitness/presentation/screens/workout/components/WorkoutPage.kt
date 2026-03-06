@@ -61,6 +61,7 @@ fun WorkoutPage(
     exercisesState: ExercisesState,
     workoutState: WorkoutState,
     listState: ScalingLazyListState,
+    ambientState: AmbientState,
     changeWeight: (Int) -> Unit,
     fineGrainedChangeWeight: (Int) -> Unit,
     changeReps: (Int) -> Unit,
@@ -82,87 +83,85 @@ fun WorkoutPage(
     val currentImage = remember(workoutState.currentExerciseIndex, exercisesState.images) {
         exercisesState.images.getOrNull(workoutState.currentExerciseIndex)
     }
-    AmbientAware { ambientState ->
-        if (currentImage != null && ambientState.isInteractive) {
-            VignetteImage(
-                currentImage.asImageBitmap(),
-                alpha = 0.15f,
-            )
-        }
-        if ((workoutState.ongoingRestProgression ?: 0f) > 0f || workoutState.settingSetValues) {
-            CompleteSetAndRestScreen(
-                restProgression = workoutState.ongoingRestProgression ?: 1f,
-                currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
-                nextSetExerciseName =
-                    if (currentExercise?.let { setsDone < it.restCount } ?: false) {
-                        val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
-                            workoutState.currentExerciseIndex
+    if (currentImage != null && ambientState.isInteractive) {
+        VignetteImage(
+            currentImage.asImageBitmap(),
+            alpha = 0.15f,
+        )
+    }
+    if ((workoutState.ongoingRestProgression ?: 0f) > 0f || workoutState.settingSetValues) {
+        CompleteSetAndRestScreen(
+            restProgression = workoutState.ongoingRestProgression ?: 1f,
+            currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
+            nextSetExerciseName =
+                if (currentExercise?.let { setsDone < it.restCount } ?: false) {
+                    val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
+                        workoutState.currentExerciseIndex
+                    )
+                    val setsDone = exercisesState.exercisesSetsDone.getOrNull(
+                        workoutState.currentExerciseIndex
+                    ) ?: 0
+                    (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${
+                        repsWeight?.getWeight(
+                            setsDone
                         )
-                        val setsDone = exercisesState.exercisesSetsDone.getOrNull(
-                            workoutState.currentExerciseIndex
-                        ) ?: 0
-                        (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${
-                            repsWeight?.getWeight(
-                                setsDone
-                            )
-                        }${
-                            if (exercisesState.imperialSystem)
-                                stringResource(R.string.lb)
-                            else
-                                stringResource(R.string.kg)
-                        })"
-                    } else {
-                        exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
-                            ?: ""
-                    },
-                // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
-                workoutState = workoutState,
-                exercisesState = exercisesState,
-                ambientState = ambientState,
-                changeReps = changeReps,
-                changeWeight = changeWeight,
-                fineGrainedChangeWeight = fineGrainedChangeWeight,
-                changeTare = changeTare,
-                skipRest = resetRest,
-                completeSet = completeSet,
-                onDismissHint = onDismissHint
-            )
-        } else {
-            val exerciseName = remember(
-                workoutState.currentExerciseIndex,
-                exercisesState.exercises,
-                exercisesState.exercisesSetsDone
-            ) {
-                (currentExercise?.name
-                    ?: "") + " (${setsDone + 1}/${currentExercise?.restCount ?: 0})"
+                    }${
+                        if (exercisesState.imperialSystem)
+                            stringResource(R.string.lb)
+                        else
+                            stringResource(R.string.kg)
+                    })"
+                } else {
+                    exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
+                        ?: ""
+                },
+            // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
+            workoutState = workoutState,
+            exercisesState = exercisesState,
+            ambientState = ambientState,
+            changeReps = changeReps,
+            changeWeight = changeWeight,
+            fineGrainedChangeWeight = fineGrainedChangeWeight,
+            changeTare = changeTare,
+            skipRest = resetRest,
+            completeSet = completeSet,
+            onDismissHint = onDismissHint
+        )
+    } else {
+        val exerciseName = remember(
+            workoutState.currentExerciseIndex,
+            exercisesState.exercises,
+            exercisesState.exercisesSetsDone
+        ) {
+            (currentExercise?.name
+                ?: "") + " (${setsDone + 1}/${currentExercise?.restCount ?: 0})"
+        }
+
+        ExercisePage(
+            exerciseTitle = exerciseName,
+            exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
+                    if (exercisesState.imperialSystem)
+                        stringResource(agdesigns.elevatefitness.shared.R.string.lb)
+                    else
+                        stringResource(agdesigns.elevatefitness.shared.R.string.kg),
+            isSuperset = currentExercise?.supersetExercise != 0L,
+            bottomText = currentExercise?.note ?: "",
+            startRest = startRest,
+            hasPrevious = workoutState.currentExerciseIndex > 0,
+            hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
+            ambientState = ambientState,
+            onNext = {
+                if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
+                    onNextExercise()
+                }
+            },
+            onPrevious = {
+                if (workoutState.currentExerciseIndex > 0) {
+                    onPreviousExercise()
+                }
             }
 
-            ExercisePage(
-                exerciseTitle = exerciseName,
-                exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
-                        if (exercisesState.imperialSystem)
-                            stringResource(agdesigns.elevatefitness.shared.R.string.lb)
-                        else
-                            stringResource(agdesigns.elevatefitness.shared.R.string.kg),
-                isSuperset = currentExercise?.supersetExercise != 0L,
-                bottomText = currentExercise?.note ?: "",
-                startRest = startRest,
-                hasPrevious = workoutState.currentExerciseIndex > 0,
-                hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
-                ambientState = ambientState,
-                onNext = {
-                    if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
-                        onNextExercise()
-                    }
-                },
-                onPrevious = {
-                    if (workoutState.currentExerciseIndex > 0) {
-                        onPreviousExercise()
-                    }
-                }
-
-            )
-        }
+        )
     }
 }
 

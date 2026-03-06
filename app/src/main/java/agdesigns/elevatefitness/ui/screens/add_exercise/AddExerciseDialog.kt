@@ -75,7 +75,7 @@ fun SharedTransitionScope.AddExerciseDialog(
     navigator: DestinationsNavigator,
     previewExercise: Exercise,
     programId: Long = 0L, // programId != 0L means we are adding an exercise to a program (and maybe a current workout)
-    workoutId: Long = 0L, // workoutId != 0L we're adding to a ongoing workout (and maybe a program)
+    workoutId: Long = 0L, // workoutId != 0L we're adding to an ongoing workout (and maybe a program)
     programExerciseId: Long = 0L,  // != 0L if we are changing an existing exercise
     programName: String = "",
     returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program

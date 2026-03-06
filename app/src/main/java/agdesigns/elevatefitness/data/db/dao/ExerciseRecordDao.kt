@@ -38,6 +38,11 @@ interface ExerciseRecordDao {
     suspend fun deleteByWorkout(workoutId: Long)
 
     @Query(
+        "DELETE FROM exerciserecord WHERE exerciserecord.recordId LIKE :recordId"
+    )
+    suspend fun delete(recordId: Long)
+
+    @Query(
         "SELECT * FROM exerciserecord " +
         "WHERE extExerciseId LIKE :exerciseId")
     fun getRecords(exerciseId: Long): Flow<List<ExerciseRecord>>

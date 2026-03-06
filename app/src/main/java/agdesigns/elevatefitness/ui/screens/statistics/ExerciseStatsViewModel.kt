@@ -109,7 +109,10 @@ class ExerciseStatsViewModel @Inject constructor(
             _state.update {
                 it.copy(
                     exercise = exercise,
-                    exerciseRecords = exerciseRecords,
+                    // only keep records with recorded reps/weights
+                    exerciseRecords = exerciseRecords
+                        .filter { it.reps.isNotEmpty() }
+                        .sortedByDescending { it.date },
                 )
             }
             computeStats()
@@ -171,7 +174,7 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val maxWeights = exerciseRecords.map { it.weights.max() + it.tare }
+            val maxWeights = exerciseRecords.map { (it.weights.maxOrNull() ?: 0f) + it.tare }
             viewModelScope.launch {
                 if (maxWeights.isEmpty())
                     return@launch
@@ -184,7 +187,7 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val maxReps = exerciseRecords.map { it.reps.max() }
+            val maxReps = exerciseRecords.map { it.reps.maxOrNull() ?: 0}
             viewModelScope.launch {
                 if (maxReps.isEmpty())
                     return@launch
