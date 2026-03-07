@@ -19,6 +19,7 @@ import javax.inject.Inject
 
 data class PlansState(
     val workoutPlanMapPrograms: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = emptyList(),
+    val mainPlanMapPrograms: Pair<WorkoutPlan, List<WorkoutProgram>>? = null,
     val archivedPlans: List<Pair<WorkoutPlan, List<WorkoutProgram>>> = emptyList(),
     val openAddPlanDialogue: Boolean = false,
     val currentPlanId: Long? = null,
@@ -58,17 +59,15 @@ class PlansViewModel @Inject constructor(
         var plans = workoutPlanMapPrograms
         val archivedPlans = workoutPlanMapPrograms.filter { (plan, _) -> plan.archived }
         plans = plans.filter { (plan, _) -> !plan.archived }
+        val currentPlan = plans.find { (plan, _) -> plan.planId == currentPlanId }
+        plans = currentPlan?.let { plans.minus(currentPlan) } ?: plans
         // most recently created plans go first
         plans = plans.sortedByDescending { plan ->
             plan.first.planId
         }
-        if(currentPlanId != null){
-            plans = plans.sortedByDescending {plan ->
-                if (plan.first.planId == currentPlanId) 1 else 0
-            }
-        }
         _state.update { it.copy(
             workoutPlanMapPrograms = plans,
+            mainPlanMapPrograms = currentPlan,
             archivedPlans = archivedPlans,
             currentPlanId = currentPlanId
         ) }

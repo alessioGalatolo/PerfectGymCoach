@@ -28,6 +28,7 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
+import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -59,6 +60,9 @@ fun SharedTransitionScope.ExercisesByMuscle(
         rememberTopAppBarState()
     )
 
+    val muscleCardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surface
+    )
     val snackbarHostState = remember { SnackbarHostState() }
     val showSnackbar = rememberSaveable { mutableStateOf(successfulAddExercise) }
     val snackbarText = stringResource(R.string.snackbar_exercise_added)
@@ -117,9 +121,6 @@ fun SharedTransitionScope.ExercisesByMuscle(
                 contentPadding = innerPadding + PaddingValues(
                     bottom = dimensionResource(R.dimen.screen_edge_padding)
                 ),
-                verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.grouped_cards_between_cards)
-                )
             ) {
                 item {
                     // search bar
@@ -168,55 +169,42 @@ fun SharedTransitionScope.ExercisesByMuscle(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                itemsIndexed(
-                    items = Exercise.Muscle.entries.toTypedArray(),
-                    key = { _, it -> it.ordinal }
-                ) { index, muscle ->
-                    val shape = when (index) {
-                        0 -> MaterialTheme.shapes.large.copy(
-                            bottomEnd = MaterialTheme.shapes.extraSmall.bottomEnd,
-                            bottomStart = MaterialTheme.shapes.extraSmall.bottomStart
-                        )
-                        Exercise.Muscle.entries.size - 1 -> MaterialTheme.shapes.extraLarge.copy(
-                            topEnd = MaterialTheme.shapes.extraSmall.topEnd,
-                            topStart = MaterialTheme.shapes.extraSmall.topStart
-                        )
-                        else -> MaterialTheme.shapes.extraSmall
-                    }
-                    Card(
-                        shape = shape,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        onClick = {
-                            navigator.navigate(
-                                ViewExercisesDestination(
-                                    programId = programId,
-                                    workoutId = workoutId,
-                                    insertAtPosition = insertAtPosition,
-                                    muscleOrdinal = muscle.ordinal,
-                                    programName = programName,
-                                    returnAfterAdding = returnAfterAdding
+                lazyGroupedCard(
+                    colors = muscleCardColors,
+                    innerCardPadding = 0.dp,
+                ) {
+                    Exercise.Muscle.entries.forEach { muscle ->
+                        subCard(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            onClick = {
+                                navigator.navigate(
+                                    ViewExercisesDestination(
+                                        programId = programId,
+                                        workoutId = workoutId,
+                                        insertAtPosition = insertAtPosition,
+                                        muscleOrdinal = muscle.ordinal,
+                                        programName = programName,
+                                        returnAfterAdding = returnAfterAdding
+                                    )
                                 )
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row (Modifier.padding(dimensionResource(R.dimen.card_inner_padding))){
-                            Image(
-                                painter = painterResource(muscle.imageRes),
-                                contentDescription = stringResource(R.string.image_highlighting_the_muscle),
-                                modifier = Modifier
-                                    // Set image size to 40 dp
-                                    .size(80.dp)
-                                    // Clip image to be shaped as a circle
-                                    .clip(CircleShape)
-                            )
+                            }
+                        ) {
+                            Row (Modifier.padding(dimensionResource(R.dimen.card_inner_padding))){
+                                Image(
+                                    painter = painterResource(muscle.imageRes),
+                                    contentDescription = stringResource(R.string.image_highlighting_the_muscle),
+                                    modifier = Modifier
+                                        // Set image size to 40 dp
+                                        .size(80.dp)
+                                        // Clip image to be shaped as a circle
+                                        .clip(CircleShape)
+                                )
 
-                            Column(modifier = Modifier.align(Alignment.CenterVertically)) {
-                                Text(text = stringResource(muscle.muscleNameResource), fontWeight = FontWeight.Bold)
+                                Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+                                    Text(text = stringResource(muscle.muscleNameResource), fontWeight = FontWeight.Bold)
 //                                Spacer(modifier = Modifier.height(4.dp))
 //                                Text(text = "Some exercise names...") // TODO
+                                }
                             }
                         }
                     }

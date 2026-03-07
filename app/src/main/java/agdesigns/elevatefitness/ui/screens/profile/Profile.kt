@@ -200,14 +200,17 @@ fun Profile(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
                 )
-                GroupedCard(items = listOf(
-                    {
+                GroupedCard(colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                ) {
+                    subCard {
                         Text(
                             stringResource(R.string.backup_restore_info),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                    }, {
+                    }
+                    subCard {
                         Row(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -275,7 +278,7 @@ fun Profile(
                             }
                         }
                     }
-                ), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                }
             }
 
             // Equipment Increments Section
@@ -289,64 +292,62 @@ fun Profile(
                 GroupedCard(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    ),
-                    items = listOf(
-                        {
-                            IncrementRow(
-                                label = stringResource(R.string.barbell_increment),
-                                value = state.incrementBarbell,
-                                unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.bodyweight_increment),
-                                value = state.incrementBodyweight,
-                                unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.cable_increment),
-                                value = state.incrementCable,
-                                unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.dumbbell_increment),
-                                value = state.incrementDumbbell,
-                                unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.machine_increment),
-                                value = state.incrementMachine,
-                                unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }
                     )
-                )
+                ) {
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.barbell_increment),
+                            value = state.incrementBarbell,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.bodyweight_increment),
+                            value = state.incrementBodyweight,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.cable_increment),
+                            value = state.incrementCable,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.dumbbell_increment),
+                            value = state.incrementDumbbell,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.machine_increment),
+                            value = state.incrementMachine,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                }
             }
             item {
                 val uriHandler = LocalUriHandler.current
-                val urls = listOf(
-                    "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
-                    "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
-                    "https://github.com/alessioGalatolo/PerfectGymCoach"
-                )
                 Text(
                     stringResource(R.string.feedback_title),
                     style = MaterialTheme.typography.titleMedium,
@@ -356,26 +357,36 @@ fun Profile(
                 GroupedCard(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    ),
-                    items = listOf(
-                        { ExternalLink(
+                    )
+                ) {
+                    subCard(onClick = {
+                        uriHandler.openUri("https://github.com/alessioGalatolo/PerfectGymCoach/issues")
+                    }) {
+                        ExternalLink(
                             title = stringResource(R.string.bug_report_title),
                             description = stringResource(R.string.bug_report_info),
                             leadingIcon = Icons.Default.BugReport
-                        ) },
-                        { ExternalLink(
+                        )
+                    }
+                    subCard(onClick = {
+                        uriHandler.openUri("https://github.com/alessioGalatolo/PerfectGymCoach/discussions")
+                    }) {
+                        ExternalLink(
                             title = stringResource(R.string.feature_requests_title),
                             description = stringResource(R.string.feature_request_info),
                             leadingIcon = Icons.Default.Feedback
-                        ) },
-                        { ExternalLink(
+                        )
+                    }
+                    subCard(onClick = {
+                        uriHandler.openUri("https://github.com/alessioGalatolo/PerfectGymCoach")
+                    }) {
+                        ExternalLink(
                             title = stringResource(R.string.source_code_title),
                             description = stringResource(R.string.source_code_info),
                             leadingIcon = Icons.Default.Code
-                        ) }
-                    ),
-                    onClicks = urls.map { { uriHandler.openUri(it) } }
-                )
+                        )
+                    }
+                }
             }
             item {
                 ProfileSection(title = stringResource(R.string.acknowledgements_title)) {
@@ -919,7 +930,8 @@ fun PreferencesContent(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
-            items = listOf({
+        ) {
+            subCard {
                 // Imperial System Switch
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -936,7 +948,8 @@ fun PreferencesContent(
                         onCheckedChange = { viewModel.onEvent(ProfileEvent.SwitchImperialSystem(it)) }
                     )
                 }
-            }, {
+            }
+            subCard {
                 // Dark Theme Dropdown
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -992,7 +1005,8 @@ fun PreferencesContent(
                         }
                     }
                 }
-            }, {
+            }
+            subCard {
                 // select language
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1012,7 +1026,8 @@ fun PreferencesContent(
                             expanded = expanded,
                             onExpandedChange = { expanded = it }) {
                             OutlinedTextField(
-                                value = locales[profileState.language] ?: stringResource(R.string.system_default),
+                                value = locales[profileState.language]
+                                    ?: stringResource(R.string.system_default),
                                 onValueChange = { },
                                 readOnly = true,
                                 trailingIcon = {
@@ -1029,39 +1044,40 @@ fun PreferencesContent(
                             ExposedDropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }) {
-                                    locales.forEach { locale ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    locale.value,
-                                                    style = MaterialTheme.typography.bodyLarge
-                                                )
-                                            },
-                                            onClick = {
-                                                expanded = false
-                                                if (locale.key != "und") {
-                                                    viewModel.onEvent(
-                                                        ProfileEvent.ChangeLanguage(
-                                                            locale.key
-                                                        )
+                                locales.forEach { locale ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                locale.value,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                        },
+                                        onClick = {
+                                            expanded = false
+                                            if (locale.key != "und") {
+                                                viewModel.onEvent(
+                                                    ProfileEvent.ChangeLanguage(
+                                                        locale.key
                                                     )
-                                                } else {
-                                                    viewModel.onEvent(ProfileEvent.ChangeLanguage(null))
-                                                }
-                                            },
-                                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                                        )
-                                    }
+                                                )
+                                            } else {
+                                                viewModel.onEvent(ProfileEvent.ChangeLanguage(null))
+                                            }
+                                        },
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                    )
                                 }
                             }
-                        } else {
-                            Text(
-                                stringResource(R.string.inapp_language_selector_not_supported),
-                                style = MaterialTheme.typography.bodySmall
-                            )
                         }
+                    } else {
+                        Text(
+                            stringResource(R.string.inapp_language_selector_not_supported),
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
-            }, {
+                }
+            }
+            subCard {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -1075,10 +1091,17 @@ fun PreferencesContent(
                     Spacer(Modifier.width(8.dp))
                     Switch(
                         checked = profileState.lockHorizontalScroll,
-                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleLockHorizontalScroll(it)) }
+                        onCheckedChange = {
+                            viewModel.onEvent(
+                                ProfileEvent.ToggleLockHorizontalScroll(
+                                    it
+                                )
+                            )
+                        }
                     )
                 }
-            }, {
+            }
+            subCard {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -1095,8 +1118,8 @@ fun PreferencesContent(
                         onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(it)) }
                     )
                 }
-            })
-        )
+            }
+        }
     }
 }
 

@@ -48,6 +48,7 @@ fun LazyListScope.ExerciseRecordsList(
             onRecordClick(exercise.recordId)
         }, modifier = Modifier
             .fillMaxWidth()
+            .padding(bottom = 8.dp)
             .padding(horizontal = 16.dp)){
             if (exercise.image != ID_NULL) {
                 AsyncImage(

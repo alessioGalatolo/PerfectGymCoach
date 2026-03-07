@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
-import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
 import agdesigns.elevatefitness.ui.screens.statistics.ExerciseStatsEvent.ChangeOneRepMaxFormula
 import agdesigns.elevatefitness.utils.getStickyHeader
 import agdesigns.elevatefitness.ui.common.MeanLineKey

@@ -834,4 +834,5 @@
     <string name="workout_delete_completed_set">Delete this set</string>
     <string name="complete_set_generic_error">Couldn\'t complete the set due to an unknown error.</string>
     <string name="exercises_completed">Exercises completed:</string>
+    <string name="reorder_icon">Drag handle to reorder</string>
 </resources>

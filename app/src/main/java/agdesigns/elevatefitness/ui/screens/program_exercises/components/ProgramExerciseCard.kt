@@ -120,7 +120,7 @@ fun SharedTransitionScope.ProgramExerciseCard(
                         horizontal = dimensionResource(R.dimen.card_outside_padding),
                         vertical = dimensionResource(R.dimen.card_space_between) / 2
                     )
-                    .longPressDraggableHandle (
+                    .longPressDraggableHandle(
                         onDragStarted = {
                             dragStarted.value = true
                             haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
@@ -188,22 +188,26 @@ fun SharedTransitionScope.ProgramExerciseCard(
                             contentScale = ContentScale.Crop
                         )
                         IconButton(
-                            modifier = Modifier.align(Alignment.TopStart).draggableHandle(
-                                onDragStarted = {
-                                    dragStarted.value = true
-                                    haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                                },
-                                onDragStopped = {
-                                    dragStarted.value = false
-                                    haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                },
-                                interactionSource = interactionSource,
-                            ),
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .draggableHandle(
+                                    onDragStarted = {
+                                        dragStarted.value = true
+                                        haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                    },
+                                    onDragStopped = {
+                                        dragStarted.value = false
+                                        haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                    },
+                                    interactionSource = interactionSource,
+                                ),
                             onClick = {},
+
                         ) {
                             Icon(
                                 Icons.Rounded.DragHandle,
-                                contentDescription = "Reorder"
+                                contentDescription = stringResource(R.string.reorder_icon),
+                                tint = if (brightImage.value) Color.Black else Color.White
                             )
                         }
                         Box(

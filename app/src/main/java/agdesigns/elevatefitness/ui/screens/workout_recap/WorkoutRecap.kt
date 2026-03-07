@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -32,12 +31,11 @@ import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
-import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
+import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.ui.common.lineProviderWithHighlight
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.LinkAnnotation
@@ -47,29 +45,22 @@ import androidx.compose.ui.text.withLink
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
-import com.patrykandpatrick.vico.compose.cartesian.layer.point
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
-import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.component.shapeComponent
 import com.patrykandpatrick.vico.compose.common.fill
 import com.patrykandpatrick.vico.compose.common.insets
 import com.patrykandpatrick.vico.compose.common.rememberHorizontalLegend
-import com.patrykandpatrick.vico.compose.common.rememberVerticalLegend
-import com.patrykandpatrick.vico.compose.common.shape.toVicoShape
 import com.patrykandpatrick.vico.compose.common.vicoTheme
 import com.patrykandpatrick.vico.core.cartesian.Scroll
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.LegendItem
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
-import com.patrykandpatrick.vico.core.common.shape.Shape
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -91,6 +82,9 @@ fun WorkoutRecap(
     viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
     val volumeDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     val calorieDialogIsOpen = rememberSaveable { mutableStateOf(false) }
+    val highlightsCardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surface
+    )
     InfoDialog(dialogueIsOpen = volumeDialogIsOpen.value,
         toggleDialogue = { volumeDialogIsOpen.value = !volumeDialogIsOpen.value })
     {
@@ -168,7 +162,6 @@ fun WorkoutRecap(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceContainer),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
             ){
                 item {
                     Text(
@@ -179,14 +172,17 @@ fun WorkoutRecap(
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp)
+                            .padding(16.dp)
                             .padding(horizontal = 16.dp)
                     )
                 }
                 item{
                     val pagerState = rememberPagerState(pageCount = { 3 })
                     if (records.size > 1){
-                        HorizontalPager(state = pagerState) { page ->
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) { page ->
                             ElevatedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                                 val formatter = DateTimeFormatter.ofPattern("d MMM")
                                 val legendItemLabelComponent = rememberTextComponent(
@@ -294,152 +290,159 @@ fun WorkoutRecap(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
-                                .padding(top = 8.dp)
+                                .padding(vertical = 8.dp)
                         )
                     }
-                    item {
-                        GroupedCard(
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            items = listOf({
+                    lazyGroupedCard(
+                        colors = highlightsCardColors,
+                    ) {
+                        subCard(modifier = Modifier.padding(horizontal = 8.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
                                 Row(
-                                    Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
+                                    Card(
+                                        shape = MaterialTheme.shapes.extraExtraLarge,
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                        ),
                                     ) {
-                                        Card(
-                                            shape = MaterialTheme.shapes.extraExtraLarge,
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                                            ),
-                                        ) {
-                                            Icon(
-                                                Icons.Outlined.LocalFireDepartment,
-                                                stringResource(R.string.calories_burned),
-                                                tint = MaterialTheme.colorScheme.tertiary,
-                                                modifier = Modifier.size(50.dp).padding(8.dp)
-                                            )
-                                        }
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            stringResource(
-                                                R.string.calorie_consumption_i_kcal,
-                                                recapState.workoutRecord!!.calories.toInt()
-                                            )
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                    }
-                                    IconButton(
-                                        onClick = { calorieDialogIsOpen.value = true },
-                                        modifier = Modifier.weight(0.1f)
-                                    ) {
-                                        Icon(Icons.AutoMirrored.Filled.HelpOutline,
-                                            stringResource(R.string.help_icon_info)
+                                        Icon(
+                                            Icons.Outlined.LocalFireDepartment,
+                                            stringResource(R.string.calories_burned),
+                                            tint = MaterialTheme.colorScheme.tertiary,
+                                            modifier = Modifier.size(50.dp).padding(8.dp)
                                         )
                                     }
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        stringResource(
+                                            R.string.calorie_consumption_i_kcal,
+                                            recapState.workoutRecord!!.calories.toInt()
+                                        )
+                                    )
+                                    Spacer(Modifier.width(8.dp))
                                 }
-                            }, {
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                IconButton(
+                                    onClick = { calorieDialogIsOpen.value = true },
+                                    modifier = Modifier.weight(0.1f)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.HelpOutline,
+                                        stringResource(R.string.help_icon_info)
+                                    )
+                                }
+                            }
+                        }
+                        subCard(modifier = Modifier.padding(horizontal = 8.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Card(
+                                        shape = MaterialTheme.shapes.extraExtraLarge,
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                        ),
                                     ) {
-                                        Card(
-                                            shape = MaterialTheme.shapes.extraExtraLarge,
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                                            ),
-                                        ) {
-                                            Icon(
-                                                painterResource(R.drawable.weight_icon),
-                                                stringResource(R.string.volume_lifted),
-                                                tint = MaterialTheme.colorScheme.tertiary,
-                                                modifier = Modifier.size(50.dp).padding(8.dp)
-                                            )
-                                        }
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            stringResource(R.string.total_volume) +
-                                                    ": %.2f ".format(maybeKgToLb(
+                                        Icon(
+                                            painterResource(R.drawable.weight_icon),
+                                            stringResource(R.string.volume_lifted),
+                                            tint = MaterialTheme.colorScheme.tertiary,
+                                            modifier = Modifier.size(50.dp).padding(8.dp)
+                                        )
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        stringResource(R.string.total_volume) +
+                                                ": %.2f ".format(
+                                                    maybeKgToLb(
                                                         recapState.workoutRecord!!.volume.toFloat(),
                                                         recapState.imperialSystem
-                                                    )) + if (recapState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                    }
-                                    IconButton(
-                                        onClick = { volumeDialogIsOpen.value = true },
-                                        modifier = Modifier.weight(0.1f)
-                                    ) {
-                                        Icon(Icons.AutoMirrored.Filled.HelpOutline, stringResource(R.string.help_icon_info))
-                                    }
-                                }
-                            }, {
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Start
-                                ) {
-                                    Card(
-                                        shape = MaterialTheme.shapes.extraExtraLarge,
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                                        ),
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.Schedule,
-                                            stringResource(R.string.workout_time),
-                                            tint = MaterialTheme.colorScheme.tertiary,
-                                            modifier = Modifier.size(50.dp).padding(8.dp)
-                                        )
-                                    }
+                                                    )
+                                                ) + if (recapState.imperialSystem) stringResource(
+                                            R.string.lb
+                                        ) else stringResource(R.string.kg)
+                                    )
                                     Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        stringResource(R.string.total_time) +
-                                                DateUtils.formatElapsedTime(
-                                                    recapState.workoutRecord!!.durationSeconds
-                                                )
+                                }
+                                IconButton(
+                                    onClick = { volumeDialogIsOpen.value = true },
+                                    modifier = Modifier.weight(0.1f)
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.HelpOutline,
+                                        stringResource(R.string.help_icon_info)
                                     )
                                 }
-                            }, {
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Start
+                            }
+                        }
+                        subCard(modifier = Modifier.padding(horizontal = 8.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Card(
+                                    shape = MaterialTheme.shapes.extraExtraLarge,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                    ),
                                 ) {
-                                    Card(
-                                        shape = MaterialTheme.shapes.extraExtraLarge,
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                                        ),
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.PendingActions,
-                                            stringResource(R.string.workout_active_time),
-                                            tint = MaterialTheme.colorScheme.tertiary,
-                                            modifier = Modifier.size(50.dp).padding(8.dp)
-                                        )
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        stringResource(R.string.workout_active_time) + ": " +
-                                                DateUtils.formatElapsedTime(
-                                                    recapState.workoutRecord!!.activeTimeSeconds
-                                                )
+                                    Icon(
+                                        Icons.Outlined.Schedule,
+                                        stringResource(R.string.workout_time),
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(50.dp).padding(8.dp)
                                     )
                                 }
-                            })
-                        )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    stringResource(R.string.total_time) +
+                                            DateUtils.formatElapsedTime(
+                                                recapState.workoutRecord!!.durationSeconds
+                                            )
+                                )
+                            }
+                        }
+                        subCard(modifier = Modifier.padding(horizontal = 8.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Card(
+                                    shape = MaterialTheme.shapes.extraExtraLarge,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                    ),
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.PendingActions,
+                                        stringResource(R.string.workout_active_time),
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(50.dp).padding(8.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    stringResource(R.string.workout_active_time) + ": " +
+                                            DateUtils.formatElapsedTime(
+                                                recapState.workoutRecord!!.activeTimeSeconds
+                                            )
+                                )
+                            }
+                        }
                     }
                 }
                 if (recapState.exerciseRecords.isNotEmpty()) {
@@ -450,7 +453,7 @@ fun WorkoutRecap(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
-                                .padding(top = 8.dp)
+                                .padding(top = 16.dp, bottom = 8.dp)
                         )
                     }
                     ExerciseRecordsList(

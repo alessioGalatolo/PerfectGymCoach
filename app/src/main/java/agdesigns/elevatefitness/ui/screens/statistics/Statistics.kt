@@ -11,6 +11,7 @@ import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
+import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.getStickyHeader
 import agdesigns.elevatefitness.utils.plus
@@ -94,6 +95,12 @@ fun Statistics(
     }.toMap()
     val id2StickyHeader = stickyHeaders2Id.entries.associate { (k, v) -> v to k }
     var lastVisibleKey by remember { mutableIntStateOf(Int.MAX_VALUE) }
+    val topExercisesCardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    )
+    val recentPRsCardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    )
     // Monitor visibility changes
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo }
@@ -358,25 +365,24 @@ fun Statistics(
                                 )
                             }
                             item {
+                                // NB: we don't use the lazy list version to avoid the groupedBy padding
                                 GroupedCard(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                    ),
-                                    onClicks = state.topExercises.map { exercise ->
-                                        {
-                                            navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
-                                        }
-                                    },
-                                    items = state.topExercises.map { exercise ->
-                                        {
+                                    colors = topExercisesCardColors,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                ) {
+                                    state.topExercises.forEach { exercise ->
+                                        subCard(
+                                            onClick = {
+                                                navigator.navigate(ExerciseStatsDestination(exercise.exerciseId))
+                                            }
+                                        ) {
                                             ExerciseStatItem(
                                                 exercise = exercise,
                                                 useImperial = state.useImperialSystem
                                             )
                                         }
                                     }
-                                )
+                                }
                             }
                         }
 
@@ -396,25 +402,24 @@ fun Statistics(
                                 )
                             }
                             item {
+                                // NB: we don't use the lazy list version to avoid the groupedBy padding
                                 GroupedCard(
                                     modifier = Modifier.padding(horizontal = 16.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                                    ),
-                                    items = state.recentPRs.map { pr ->
-                                        {
+                                    colors = recentPRsCardColors
+                                ) {
+                                    state.recentPRs.forEach { pr ->
+                                        subCard(
+                                            onClick = {
+                                                navigator.navigate(ExerciseStatsDestination(pr.exerciseId))
+                                            }
+                                        ) {
                                             PersonalRecordItem(
                                                 pr = pr,
                                                 useImperial = state.useImperialSystem
                                             )
                                         }
-                                    },
-                                    onClicks = state.recentPRs.map {
-                                        {
-                                            navigator.navigate(ExerciseStatsDestination(it.exerciseId))
-                                        }
                                     }
-                                )
+                                }
                             }
                         }
 

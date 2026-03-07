@@ -831,4 +831,5 @@
     <string name="workout_delete_completed_set">Cancella questa serie</string>
     <string name="complete_set_generic_error">Non è stato possibile completare la serie per via di un errore sconosciuto</string>
     <string name="exercises_completed">Esercizi completati:</string>
+    <string name="reorder_icon">Maniglia per riordinare</string>
 </resources>
