@@ -65,15 +65,21 @@ import kotlin.system.exitProcess
 @Composable
 fun Workout(
     onBack: () -> Unit,
+    navigateToSelectValues: () -> Unit,
+    terminate: () -> Unit,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
     val listState = rememberScalingLazyListState()
+    val exercisesState by viewModel.exercisesState.collectAsState()
+    val state by viewModel.state.collectAsState()
+    val mediaState by viewModel.mediaState.collectAsState()
 
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.onEvent(WorkoutEvent.StopActivity)
-            // exit otherwise home will keep trying to get to workout
-            exitProcess(0)
+            if (!state.settingSetValues) {
+                viewModel.onEvent(WorkoutEvent.StopActivity)
+                terminate()
+            }
         }
     }
     var nonRetriableErrorDialogShown by rememberSaveable { mutableStateOf(false) }
@@ -127,9 +133,6 @@ fun Workout(
     }
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val exercisesState by viewModel.exercisesState.collectAsState()
-    val state by viewModel.state.collectAsState()
-    val mediaState by viewModel.mediaState.collectAsState()
     LaunchedEffect(exercisesState.activeWorkout) {
         if (!exercisesState.activeWorkout) {
             onBack()
@@ -189,26 +192,11 @@ fun Workout(
                                 exercisesState = exercisesState,
                                 listState = listState,
                                 ambientState = ambientState,
-                                changeWeight = {
-                                    viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
-                                },
-                                fineGrainedChangeWeight = {
-                                    viewModel.onEvent(WorkoutEvent.FineGrainedChangeWeight(it))
-                                },
-                                changeReps = {
-                                    viewModel.onEvent(WorkoutEvent.ChangeReps(it))
-                                },
-                                changeTare = {
-                                    viewModel.onEvent(WorkoutEvent.ChangeTare(it))
-                                },
                                 resetRest = {
                                     viewModel.onEvent(WorkoutEvent.ResetRest)
                                 },
                                 startRest = {
                                     viewModel.onEvent(WorkoutEvent.StartRest)
-                                },
-                                completeSet = {
-                                    viewModel.onEvent(WorkoutEvent.CompleteSet)
                                 },
                                 onNextExercise = {
                                     viewModel.onEvent(WorkoutEvent.NextExercise)
@@ -218,7 +206,8 @@ fun Workout(
                                 },
                                 onDismissHint = {
                                     viewModel.onEvent(WorkoutEvent.DismissHint)
-                                }
+                                },
+                                navigateToSelectValues = navigateToSelectValues
                             )
 
                             2 -> MediaPlayingPage(

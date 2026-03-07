@@ -11,10 +11,12 @@ import com.google.protobuf.Empty
 import io.grpc.StatusException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Singleton
 
@@ -44,11 +46,18 @@ class PhoneWorkoutRepository(
     var ongoingWorkout: Boolean = false
 
     // Called by the gRPC service
-    suspend fun handleSetCompleted(setCompleted: Workout.SetCompleted) {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun handleSetCompleted(setCompleted: Workout.SetCompleted): Boolean {
         // Send to channel - will buffer if no one is collecting
         _setCompletions.send(setCompleted)
-
-        // Optional: persist immediately as backup
+        // only return once it has been consumed
+        for (i in 0..10) {
+            delay(200)
+            if (setCompletions.isEmpty) {
+                return true
+            }
+        }
+        return false
     }
 
     fun handleCompleteWorkout(intensity: Float) {

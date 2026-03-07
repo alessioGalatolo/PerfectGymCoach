@@ -2,7 +2,6 @@ package agdesigns.elevatefitness.presentation.screens.workout.components
 
 import agdesigns.elevatefitness.shared.R
 import agdesigns.elevatefitness.presentation.screens.common.MorphPolygonShape
-import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
 import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
@@ -46,12 +45,10 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.controls.MediaButton
 import com.google.android.horologist.media.ui.components.controls.MediaButtonDefaults
-import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 import com.google.android.horologist.media.ui.util.isLargeScreen
 
@@ -62,16 +59,12 @@ fun WorkoutPage(
     workoutState: WorkoutState,
     listState: ScalingLazyListState,
     ambientState: AmbientState,
-    changeWeight: (Int) -> Unit,
-    fineGrainedChangeWeight: (Int) -> Unit,
-    changeReps: (Int) -> Unit,
-    changeTare: (Int) -> Unit,
     startRest: () -> Unit,
     resetRest: () -> Unit,
-    completeSet: () -> Unit,
     onNextExercise: () -> Unit,
     onPreviousExercise: () -> Unit,
-    onDismissHint: () -> Unit
+    onDismissHint: () -> Unit,
+    navigateToSelectValues: () -> Unit
 ) {
     val currentExercise = remember(workoutState.currentExerciseIndex, exercisesState.exercises) {
         exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex)
@@ -89,8 +82,8 @@ fun WorkoutPage(
             alpha = 0.15f,
         )
     }
-    if ((workoutState.ongoingRestProgression ?: 0f) > 0f || workoutState.settingSetValues) {
-        CompleteSetAndRestScreen(
+    if ((workoutState.ongoingRestProgression ?: 0f) > 0f && !workoutState.settingSetValues) {
+        RestScreen(
             restProgression = workoutState.ongoingRestProgression ?: 1f,
             currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
             nextSetExerciseName =
@@ -115,19 +108,12 @@ fun WorkoutPage(
                     exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
                         ?: ""
                 },
-            // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
-            workoutState = workoutState,
-            exercisesState = exercisesState,
             ambientState = ambientState,
-            changeReps = changeReps,
-            changeWeight = changeWeight,
-            fineGrainedChangeWeight = fineGrainedChangeWeight,
-            changeTare = changeTare,
+            hints = workoutState.inRestHints,
             skipRest = resetRest,
-            completeSet = completeSet,
             onDismissHint = onDismissHint
         )
-    } else {
+    } else if (!workoutState.settingSetValues) {
         val exerciseName = remember(
             workoutState.currentExerciseIndex,
             exercisesState.exercises,
@@ -159,7 +145,8 @@ fun WorkoutPage(
                 if (workoutState.currentExerciseIndex > 0) {
                     onPreviousExercise()
                 }
-            }
+            },
+            navigateToSelectValues = navigateToSelectValues
 
         )
     }
@@ -177,7 +164,8 @@ fun ExercisePage(
     ambientState: AmbientState,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
-    startRest: () -> Unit
+    startRest: () -> Unit,
+    navigateToSelectValues: () -> Unit
 ) {
     PlayerScreen(
         mediaDisplay = {
@@ -269,7 +257,10 @@ fun ExercisePage(
                                 .clickable(
                                     interactionSource = interactionSource,
                                     indication = null,
-                                    onClick = startRest
+                                    onClick = {
+                                        startRest()
+                                        navigateToSelectValues()
+                                    }
                                 )
                                 .background(background),
                             contentAlignment = Alignment.Center,

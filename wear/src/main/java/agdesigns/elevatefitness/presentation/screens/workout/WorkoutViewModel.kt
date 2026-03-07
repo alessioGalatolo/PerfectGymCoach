@@ -113,6 +113,7 @@ sealed class WorkoutEvent {
     data object LowerVolume: WorkoutEvent()
 
     data object DismissHint: WorkoutEvent()
+    data object CancelSetValues: WorkoutEvent()
 }
 
 // effects that should be propagated to the UI
@@ -130,8 +131,6 @@ class WorkoutViewModel
     private val workoutService: WorkoutServiceGrpcKt.WorkoutServiceCoroutineStub,
     private val mediaService: MediaServiceGrpcKt.MediaServiceCoroutineStub
 ): ViewModel() {
-    val permissionStateDataStore = repository.permissionStateDataStore
-    val hasExactAlarm = repository.hasExactAlarm
 
     val exercisesState = combine(
         registry.protoFlow<Workout.WorkoutStaticData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
@@ -244,6 +243,16 @@ class WorkoutViewModel
             is WorkoutEvent.ChangeReps -> {
                 _state.update { it.copy(currentReps = state.value.currentReps + event.change) }
             }
+            is WorkoutEvent.CancelSetValues -> {
+                _state.update {
+                    it.copy(
+                        settingSetValues = false,
+                        restTimestamp = null,
+                        currentExerciseRest = null,
+                    )
+                }
+                repository.cancelAlarm()
+            }
             is WorkoutEvent.ChangeWeight -> {
                 val currentExercise = exercisesState.value.exercises.getOrNull(
                     state.value.currentExerciseIndex
@@ -265,81 +274,87 @@ class WorkoutViewModel
                 _state.update { it.copy(currentWeight = state.value.currentWeight + deincrement) }
             }
             is WorkoutEvent.CompleteSet -> {
-                viewModelScope.launch {
-                    val currentExercise = exercisesState.value.exercises.getOrNull(
-                        state.value.currentExerciseIndex
+                val currentExercise = exercisesState.value.exercises.getOrNull(
+                    state.value.currentExerciseIndex
+                )
+                if (currentExercise != null) {
+                    val shouldAdvancePage =
+                        (exercisesState.value.exercisesSetsDone.getOrNull(
+                            state.value.currentExerciseIndex
+                        )?.plus(1) ?: 0) == currentExercise.restCount
+                    // if part of superset with exercise before, go back
+                    // if part of superset with exercise after, go forward
+                    val prevExercise = exercisesState.value.exercises.getOrNull(
+                        state.value.currentExerciseIndex - 1
                     )
-                    if (currentExercise != null) {
-                        val shouldAdvancePage =
-                            (exercisesState.value.exercisesSetsDone.getOrNull(
-                                state.value.currentExerciseIndex
-                            )?.plus(1) ?: 0) == currentExercise.restCount
-                        // if part of superset with exercise before, go back
-                        // if part of superset with exercise after, go forward
-                        val prevExercise = exercisesState.value.exercises.getOrNull(
+                    val nextExercise = exercisesState.value.exercises.getOrNull(
+                        state.value.currentExerciseIndex + 1
+                    )
+                    val nextSupersetIndex = if (currentExercise.supersetExercise != 0L && currentExercise.supersetExercise == nextExercise?.programExerciseId)
+                        state.value.currentExerciseIndex + 1
+                    else if (currentExercise.supersetExercise != 0L && currentExercise.supersetExercise == prevExercise?.programExerciseId) {
+                        if (shouldAdvancePage)
+                            state.value.currentExerciseIndex + 1
+                        else
                             state.value.currentExerciseIndex - 1
-                        )
-                        val nextExercise = exercisesState.value.exercises.getOrNull(
-                            state.value.currentExerciseIndex + 1
-                        )
-                        val nextSupersetIndex = if (nextExercise != null && currentExercise.supersetExercise == nextExercise.programExerciseId)
-                            state.value.currentExerciseIndex + 1
-                        else if (prevExercise != null && currentExercise.supersetExercise == prevExercise.programExerciseId) {
-                            if (shouldAdvancePage)
-                                state.value.currentExerciseIndex + 1
-                            else
-                                state.value.currentExerciseIndex - 1
-                        } else null
-                        if (nextSupersetIndex == null) {
-                            if (shouldAdvancePage && exercisesState.value.exercises.size > state.value.currentExerciseIndex + 1) {
-                                _state.update {
-                                    it.copy(
-                                        currentExerciseIndex = it.currentExerciseIndex + 1
-                                    )
-                                }
-                            }
-                        } else {
+                    } else null
+                    if (nextSupersetIndex == null) {
+                        if (shouldAdvancePage && exercisesState.value.exercises.size > state.value.currentExerciseIndex + 1) {
                             _state.update {
                                 it.copy(
-                                    currentExerciseIndex = nextSupersetIndex
+                                    currentExerciseIndex = it.currentExerciseIndex + 1
                                 )
                             }
                         }
-                        val equipment = Equipment.fromResKey(currentExercise.equipment)
-                        val tare = if (equipment == Equipment.BARBELL)
-                            BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
-                        else 0f
-                        val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
+                    } else {
+                        _state.update {
+                            it.copy(
+                                currentExerciseIndex = nextSupersetIndex
+                            )
+                        }
+                    }
+                    val equipment = Equipment.fromResKey(currentExercise.equipment)
+                    val tare = if (equipment == Equipment.BARBELL)
+                        BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
+                    else 0f
+                    val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
+                    val queuedSetCompleted = Workout.SetCompleted.newBuilder()
+                        .setWorkoutId(exercisesState.value.workoutId)
+                        .setExerciseId(currentExercise.workoutExerciseId)
+                        .setReps(state.value.currentReps)
+                        .setWeight(state.value.currentWeight)
+                        .setTare(tare)
+                        .setRest(state.value.currentExerciseRest ?: 0L)
+                        .setRestTimestamp(protoTimestamp)
+                        .build()
+                    setCompletedQueue.add(queuedSetCompleted)
+                    viewModelScope.launch {
                         try {
-                            val queuedSetCompleted = Workout.SetCompleted.newBuilder()
-                                .setWorkoutId(exercisesState.value.workoutId)
-                                .setExerciseId(currentExercise.workoutExerciseId)
-                                .setReps(state.value.currentReps)
-                                .setWeight(state.value.currentWeight)
-                                .setTare(tare)
-                                .setRest(state.value.currentExerciseRest ?: 0L)
-                                .setRestTimestamp(protoTimestamp)
-                                .build()
-                            setCompletedQueue.add(queuedSetCompleted)
                             val result = workoutService.setCompleted(
                                 queuedSetCompleted
                             )
                             if (!result.success) {
                                 // Note, this should never happen because
-                                Log.e("WorkoutViewModel", "Error completing set with message: ${result.message}")
+                                Log.e(
+                                    "WorkoutViewModel",
+                                    "Error completing set with message: ${result.message}"
+                                )
                                 _effects.trySend(WorkoutEffect.RetriableError)
                                 return@launch
                             }
                             setCompletedQueue.remove(queuedSetCompleted)
                         } catch (e: StatusException) {
-                            Log.e("WorkoutViewModel", "Error completing set with error: ${e.message}")
+                            Log.e(
+                                "WorkoutViewModel",
+                                "Error completing set with error: ${e.message}"
+                            )
                             _effects.trySend(WorkoutEffect.RetriableError)
                         }
-                    }
-                    _state.update {
-                        it.copy(
-                            settingSetValues = false
-                        )
+                        _state.update {
+                            it.copy(
+                                settingSetValues = false
+                            )
+                        }
                     }
                 }
             }
@@ -397,9 +412,7 @@ class WorkoutViewModel
                     val nextExercise = exercisesState.value.exercises.getOrNull(
                         state.currentExerciseIndex + 1
                     )
-                    Log.d("WorkoutViewModel", "Next exercise: $nextExercise")
                     if (nextExercise != null && currentExercise.supersetExercise == nextExercise.programExerciseId) {
-                        Log.d("WorkoutViewModel", "Next exercise is superset")
                         // if superset with exercise after, we should move to next page and not start rest
                         // vibrate now to hint user to start next exercise
                         repository.scheduleVibrationAlarm(0L)
@@ -508,6 +521,11 @@ class WorkoutViewModel
                         }
                         setCompletedQueue.remove(set)
                     }
+                    _state.update {
+                        it.copy(
+                            settingSetValues = false
+                        )
+                    }
                 }
             }
             is WorkoutEvent.DismissHint -> {
@@ -521,7 +539,6 @@ class WorkoutViewModel
                 }
             }
         }
-
     }
 
     // current time
