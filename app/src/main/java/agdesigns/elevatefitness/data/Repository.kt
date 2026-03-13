@@ -28,6 +28,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
+import agdesigns.elevatefitness.data.db.entity.getDuplicatePlanName
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
@@ -99,6 +100,36 @@ class Repository @Inject constructor(
 
     suspend fun renamePlan(workoutPlanRename: WorkoutPlanRename) =
         db.workoutPlanDao.updateName(workoutPlanRename)
+
+    suspend fun duplicatePlan(planId: Long) {
+        // this is a deep copy: copy plan, programs in plan and program exercise in program
+        val plan = getPlan(planId).first() ?: return
+        val newPlanId = addPlan(
+            plan.copy(
+                planId = 0L,
+                creationDate = ZonedDateTime.now(),
+                name = getDuplicatePlanName(plan.name)
+            )
+        )
+        val programs = getPrograms(planId).first()
+        for (program in programs) {
+            val newProgramId = addProgram(
+                program.copy(
+                    programId = 0L,
+                    extPlanId = newPlanId
+                )
+            )
+            val programExercises = getProgramExercises(program.programId).first()
+            for (programExercise in programExercises) {
+                addProgramExercise(
+                    programExercise.copy(
+                        programExerciseId = 0L,
+                        extProgramId = newProgramId
+                    )
+                )
+            }
+        }
+    }
 
     /*
      * WORKOUT PROGRAM
@@ -218,6 +249,11 @@ class Repository @Inject constructor(
     suspend fun addWorkoutExercises(workoutExercises: List<WorkoutExercise>) =
         db.workoutExerciseDao.insert(workoutExercises)
 
+    fun getWorkoutExercise(workoutExerciseId: Long) =
+        db.workoutExerciseDao.getWorkoutExercise(workoutExerciseId).map {
+            resolveResources(it)
+        }
+
     fun getWorkoutExercises(workoutId: Long) =
         db.workoutExerciseDao.getWorkoutExercises(workoutId).map {
             it.map { exercise -> resolveResources(exercise) }
@@ -255,6 +291,40 @@ class Repository @Inject constructor(
             variation = variation,
             description = description
         )
+    }
+
+    suspend fun shiftWorkoutExercisesToRight(workoutId: Long, fromPosition: Int) {
+        return shiftWorkoutExercises(workoutId, fromPosition, 1)
+    }
+
+    suspend fun shiftWorkoutExercisesToLeft(workoutId: Long, fromPosition: Int) {
+        return shiftWorkoutExercises(workoutId, fromPosition, -1)
+    }
+
+    private suspend fun shiftWorkoutExercises(workoutId: Long, fromPosition: Int, offset: Int) {
+
+        // we need to shift all the exercises after the insert position
+        val exs = getWorkoutExercises(workoutId).first()
+        val exsToShift = buildList {
+            // the "orderInProgram" of the last ex added to the list
+            var lastInsertedIndex = fromPosition
+            // we should assume that some orderInProgram may be missing
+            for (ex in exs.sortedBy { it.orderInProgram }) {
+                if (ex.orderInProgram > lastInsertedIndex + 1)
+                    break
+                if (ex.orderInProgram >= lastInsertedIndex) {
+                    add(ex)
+                    lastInsertedIndex = ex.orderInProgram
+                }
+            }
+        }
+        for (ex in exsToShift.reversed())
+            updateWorkoutExerciseNumber(
+                WorkoutExerciseReorder(
+                    ex.workoutExerciseId,
+                    ex.orderInProgram + offset
+                )
+            )
     }
 
     /*

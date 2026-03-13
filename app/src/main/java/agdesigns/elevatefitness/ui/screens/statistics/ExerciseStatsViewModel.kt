@@ -272,6 +272,7 @@ class ExerciseStatsViewModel @Inject constructor(
                         recordId = id++,
                         extExerciseId = (1..5).random().toLong(), // simulate different exercises
                         extWorkoutId = (1..20).random().toLong(),
+                        extWorkoutExerciseId = (1L..3L).random(),
                         exerciseInWorkout = (1..3).random(),
                         date = currentDate,
                         reps = reps,

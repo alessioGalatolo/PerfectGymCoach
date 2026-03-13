@@ -119,6 +119,12 @@ fun SharedTransitionScope.Workout(
     val currentExerciseState by viewModel.currentExerciseState.collectAsState()
     val mediaState by mediaVM.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        // This should execute every time this screen is navigated to
+        // including and especially coming back from adding exercise
+        viewModel.onEvent(WorkoutEvent.ResetWaitingForExerciseAdd)
+    }
+
     // Init VM
     LaunchedEffect(programId, resumeWorkout, quickStart) {
         viewModel.onEvent(
@@ -655,6 +661,9 @@ fun SharedTransitionScope.Workout(
                 },
                 updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
                 toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
+                addExercise = { exerciseInWorkout, originalSize ->
+                    viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
+                },
                 changeExercise = { exerciseInWorkout, originalSize ->
                     scope.launch {
                         viewModel.onEvent(
@@ -681,6 +690,11 @@ fun SharedTransitionScope.Workout(
                 refreshPromotedNotificationAccess = {
                     viewModel.onEvent(
                         WorkoutEvent.RefreshHasPromptedNotificationsAccess
+                    )
+                },
+                onAcceptSuggestion = {
+                    viewModel.onEvent(
+                        WorkoutEvent.AcceptSuggestedModification(it)
                     )
                 }
             )

@@ -69,5 +69,14 @@
     <string name="superset">Superset</string>
     <string name="permission_request_alarm">Questa app usa questo permesso per vibrare alla fine del riposo tra una serie e l\'altra. Negare questo permesso causerà vibrazioni a tempi inesatti.</string>
     <string name="permission_exact_alarm_title"><![CDATA[Concedere permesso \'Sveglie & Promemoria\'?]]></string>
+    <string name="phone_app_version_incompatible">Versione dell\'app cellulare incompatibile</string>
+    <string name="phone_app_version_incompatible_desc">Per favore, aggiorna l\'app del cellulare</string>
+    <string name="modification_desc_do_it_again">. Vuoi farlo di nuovo?</string>
+    <string name="modification_title_replace">Sostituisci esercizio?</string>
+    <string name="modification_title_add">Aggiungi esercizio?</string>
+    <string name="modification_title_skip">Saltare esercizio?</string>
+    <string name="modification_desc_replace">L\'ultima volta hai sostituito "%1$s" con: </string>
+    <string name="modification_desc_add">L\'ultima volta, dopo aver completato l\'ultimo esercizio, hai aggiunto: </string>
+    <string name="modification_desc_skip">L\'ultima volta hai saltato "%1$s"</string>
 
 </resources>

@@ -36,6 +36,8 @@ sealed class PlansEvent{
 
     data class SetCurrentPlan(val planId: Long): PlansEvent()
 
+    data class DuplicatePlan(val planId: Long): PlansEvent()
+
     data class ArchivePlan(val planId: Long): PlansEvent()
 
     data class UnarchivePlan(val planId: Long): PlansEvent()
@@ -126,6 +128,11 @@ class PlansViewModel @Inject constructor(
             is PlansEvent.RenameProgram -> {
                 viewModelScope.launch {
                     repository.renamePlan(event.workoutProgramRename)
+                }
+            }
+            is PlansEvent.DuplicatePlan -> {
+                viewModelScope.launch {
+                    repository.duplicatePlan(event.planId)
                 }
             }
         }

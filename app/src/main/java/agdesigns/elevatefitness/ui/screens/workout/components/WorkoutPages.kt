@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
@@ -54,6 +55,7 @@ import agdesigns.elevatefitness.shared.barbellResFromWeight
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
+import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -92,12 +94,14 @@ fun SharedTransitionScope.ExercisePages(
     updateValues: (Int, Float, Int, Int) -> Unit,
     deleteSet: (Int, Int) -> Unit,
     toggleOtherEquipment: () -> Unit,
+    addExercise: (Int, Int) -> Unit,
     changeExercise: (Int, Int) -> Unit,
     removeExercise: (Int) -> Unit,
     mediaControlsDismissed: Boolean,
     resetMediaControlVisibility: () -> Unit,
     dontRequestOngoingWorkoutNotification: () -> Unit,
-    refreshPromotedNotificationAccess: () -> Unit
+    refreshPromotedNotificationAccess: () -> Unit,
+    onAcceptSuggestion: (Int) -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -187,6 +191,7 @@ fun SharedTransitionScope.ExercisePages(
                 if (previewExercise != null) {
                     // placeholder for preview
                     ExercisePage(
+                        isLoading = true,
                         exerciseNote = "",
                         supersetWith = null,
                         exerciseRest = previewExercise.rest.getOrNull(0) ?: 0,
@@ -207,14 +212,24 @@ fun SharedTransitionScope.ExercisePages(
                         restCounterProgress = null,
                         fabHeight = fabHeight,
                         bottomPadding = bottomPadding,
-                        settingsMenu = {},
+                        modificationSuggestion = null,
+                        settingsMenu = {
+                            ExerciseSettingsMenu(
+                                {},
+                                {}, {},
+                                {},
+                                false,
+                                {}
+                            )
+                        },
                         addSet = {},
                         updateRowValues = { _, _, _ -> },
                         updateTare = {},
                         updateBottomBar = { _, _ -> },
                         toggleOtherEquipment = {},
                         toggleInfoDialog = {},
-                        deleteSet = {}
+                        deleteSet = {},
+                        onAcceptSuggestion = {}
                     )
                 }
             }
@@ -242,6 +257,8 @@ fun SharedTransitionScope.ExercisePages(
                         )
                     } else {
                         ExercisePage(
+                            isLoading = currentExerciseState.isLoading,
+                            modificationSuggestion = pagesContent.modificationsSuggestions[page],
                             exerciseNote = pagesContent.exercises[page].note,
                             supersetWith = when (pagesContent.exercises[page].supersetExercise) {
                                 null -> null
@@ -283,6 +300,7 @@ fun SharedTransitionScope.ExercisePages(
                                         removeExercise(page)
                                     },
                                     addExercise = {
+                                        addExercise(page, pagesContent.exercises.size)
                                         navigator.navigate(
                                             ExercisesByMuscleDestination(
                                                 programName = currentWorkoutString,
@@ -291,12 +309,6 @@ fun SharedTransitionScope.ExercisePages(
                                                 insertAtPosition = page+1
                                             )
                                         )
-                                        // FIXME: if unsuccessful add (e.g., user goes back) do not scroll
-                                        scope.launch {
-                                            horizontalPagerState.animateScrollToPage(
-                                                page + 1
-                                            )
-                                        }
                                     },
                                     viewStatistics = {
                                         navigator.navigate(
@@ -325,6 +337,7 @@ fun SharedTransitionScope.ExercisePages(
                             updateBottomBar = updateBottomBar,
                             toggleOtherEquipment = toggleOtherEquipment,
                             toggleInfoDialog = { infoDialogOpen = true },
+                            onAcceptSuggestion = { onAcceptSuggestion(page) }
                         )
                     }
                 }
@@ -335,6 +348,7 @@ fun SharedTransitionScope.ExercisePages(
 
 @Composable
 fun ExercisePage(
+    isLoading: Boolean,
     exerciseNote: String,
     supersetWith: String?,
     exerciseRest: Int,
@@ -349,6 +363,7 @@ fun ExercisePage(
     restCounterProgress: Float?,
     fabHeight: Dp,
     bottomPadding: Dp,
+    modificationSuggestion: ModificationSuggestion?,
     settingsMenu: @Composable (() -> Unit),
     addSet: () -> Unit,
     updateRowValues: (Int, Float, Int) -> Unit,
@@ -356,7 +371,8 @@ fun ExercisePage(
     updateBottomBar: (Int?, Float?) -> Unit,
     toggleOtherEquipment: () -> Unit,
     toggleInfoDialog: () -> Unit,
-    deleteSet: (Int) -> Unit
+    deleteSet: (Int) -> Unit,
+    onAcceptSuggestion: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     Column (Modifier.padding(horizontal = 16.dp)){
@@ -376,7 +392,8 @@ fun ExercisePage(
                 Modifier.align(CenterHorizontally)
             )
             LaunchedEffect(restTimeSecs) {
-                // TODO: replace with alarm and vibrator
+                // TODO: replace with alarm and vibrator;
+                //  Maybe not? requires permission and this seems to work somewhat reliably
                 // do not vibrate on 0L as this will be called multiple times with 0L
                 if (restTimeSecs == 2L || restTimeSecs == 3L) {
                     haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
@@ -389,6 +406,13 @@ fun ExercisePage(
                 }
             }
         }
+        SuggestModificationCard(
+            isLoading = isLoading,
+            hasDoneSomeSets = setsDone > 0,
+            modificationSuggestion = modificationSuggestion,
+            onAcceptSuggestion = onAcceptSuggestion,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -410,14 +434,7 @@ fun ExercisePage(
                     modifier = Modifier.weight(1f)
                 )
             }
-
-            AnimatedVisibility(
-                visible = workoutStarted,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                settingsMenu()
-            }
+            settingsMenu()
         }
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(
@@ -618,6 +635,99 @@ fun ExercisePage(
         }
         // This is the padding for an eventual bottom bar
         Spacer(Modifier.height(bottomPadding))
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SuggestModificationCard(
+    isLoading: Boolean,
+    hasDoneSomeSets: Boolean,
+    modificationSuggestion: ModificationSuggestion?,
+    onAcceptSuggestion: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var notToday by rememberSaveable { mutableStateOf(false) }
+    AnimatedVisibility(
+        modificationSuggestion != null &&
+                !notToday &&
+                !isLoading &&
+                (!hasDoneSomeSets || modificationSuggestion.type == WorkoutRecord.ModificationType.EXERCISE_ADDED) ,
+        enter = slideInVertically(
+            animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+        ) + fadeIn(
+            animationSpec = MaterialTheme.motionScheme.slowEffectsSpec()
+        ),
+        exit = slideOutVertically(
+            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+        ) + fadeOut(
+            animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+        )
+    ) {
+        Card(
+            modifier = modifier,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = when (modificationSuggestion?.type) {
+                        WorkoutRecord.ModificationType.EXERCISE_ADDED -> stringResource(R.string.modification_suggestion_add_exercise)
+                        WorkoutRecord.ModificationType.EXERCISE_SKIPPED -> stringResource(R.string.modification_suggestion_skip_exercise)
+                        WorkoutRecord.ModificationType.EXERCISE_REPLACED -> stringResource(R.string.modification_suggestion_replace_exercise)
+                        null -> ""
+                    },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .weight(1f),
+                    style = MaterialTheme.typography.titleLarge
+                )
+                IconButton(
+                    { notToday = true },
+                    modifier = Modifier.padding(8.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close_icon)
+                    )
+                }
+            }
+            Text(
+                text = when (modificationSuggestion?.type) {
+                    WorkoutRecord.ModificationType.EXERCISE_ADDED -> stringResource(
+                        R.string.modification_suggestion_desc_add,
+                        modificationSuggestion.newWorkoutExercise?.name ?: ""
+                    )
+
+                    WorkoutRecord.ModificationType.EXERCISE_SKIPPED -> stringResource(R.string.modification_suggestion_desc_skip)
+                    WorkoutRecord.ModificationType.EXERCISE_REPLACED -> stringResource(
+                        R.string.modification_suggestion_desc_replace,
+                        modificationSuggestion.newWorkoutExercise?.name ?: ""
+                    )
+                    null -> ""
+                },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = { notToday = true }) {
+                    Text(text = stringResource(R.string.modification_suggestion_not_this_time))
+                }
+                Button(onClick = onAcceptSuggestion) {
+                    Text(text = stringResource(R.string.modification_suggestion_do_it))
+                }
+            }
+        }
     }
 }
 

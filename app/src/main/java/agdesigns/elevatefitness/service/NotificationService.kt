@@ -132,7 +132,7 @@ class NotificationService @Inject constructor(
             .setProgressSegments(
                 state.setsPerExercise.mapIndexed { index, it ->
                     val color = if (index <= state.currentExercise) {
-                        if (state.setsDonePerExercise[index] == it)
+                        if (state.setsDonePerExercise.getOrNull(index) == it)
                             segmentFinishedColor
                         else
                             segmentUnfinishedColor
@@ -144,7 +144,7 @@ class NotificationService @Inject constructor(
             )
 
         var progress = 0
-        for (i in 0..state.currentExercise-1) {
+        for (i in 0 until state.currentExercise) {
             progress += state.setsPerExercise.getOrNull(i) ?: 0
         }
         progress += state.setsDonePerExercise.getOrNull(state.currentExercise) ?: 0

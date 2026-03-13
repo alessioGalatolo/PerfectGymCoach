@@ -98,10 +98,44 @@ fun getPlanDisplayName(name: String): String {
         val goalFormatted = goal.lowercase().replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
         }
-        goalFormatted + " - " + date.format(formatter)
+        val baseName = goalFormatted + " - " + date.format(formatter)
+        if (parts.size > 3) {
+            stringResource(
+                R.string.copy_of_plan_name,
+                parts[3].replace("copy", "").length,
+                baseName
+            )
+        } else {
+            baseName
+        }
+    } else if (name.contains("/****/copy")) {
+        val parts = name.split("/****/")
+        val baseName = parts[0]
+        val copies = parts[1].replace("copy", "").length
+        stringResource(
+            R.string.copy_of_plan_name,
+            copies,
+            baseName
+        )
     } else {
         name
     }
+}
+
+fun getDuplicatePlanName(name: String): String {
+    // we want internally store whether a plan is a copy. It will be rendered by getPlanDisplayName
+    // we also keep track of copies of copies: /****/copy||||| where "|" represents one copy
+    // if generated plan, do not add copy, just update the millis time
+    if (name.startsWith(GENERATED_PLAN_PREFIX)) {
+        val noPrefix = name.removePrefix(GENERATED_PLAN_PREFIX)
+        val parts = noPrefix.split("/****/").toMutableList()
+        val currentTimeMillis = ZonedDateTime.now().toInstant().toEpochMilli()
+        parts[2] = currentTimeMillis.toString()
+        return GENERATED_PLAN_PREFIX + parts.joinToString("/****/")
+    }
+    if (name.contains("/****/copy"))
+        return name.replace("/****/copy", "/****/copy|")
+    return "$name/****/copy|"
 }
 
 

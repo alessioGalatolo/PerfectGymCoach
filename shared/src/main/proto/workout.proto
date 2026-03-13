@@ -17,6 +17,19 @@ message WorkoutStaticData {
   bool imperial_system = 8;
   bool active_workout = 9;
   float previous_intensity = 10;
+  repeated ProtoSuggestedModification suggested_modifications = 11;
+}
+
+message ProtoSuggestedModification {
+  bool hasSuggestion = 1;
+  ProtoModificationType type = 2;
+  string targetExerciseName = 3; // empty if no target
+}
+
+enum ProtoModificationType {
+    EXERCISE_ADDED = 0;
+    EXERCISE_SKIPPED = 1;
+    EXERCISE_REPLACED = 2;
 }
 
 message WorkoutDynamicData {
@@ -74,11 +87,16 @@ message CompleteWorkout {
   float intensity = 1;
 }
 
+message AcceptedModification {
+  int32 exercise_index = 1;
+}
+
 // gRPC service for events
 service WorkoutService {
   rpc workoutActive(google.protobuf.Empty) returns (WorkoutActiveResponse);
   rpc setCompleted(SetCompleted) returns (SetCompletedResponse);
   rpc completeWorkout(CompleteWorkout) returns (google.protobuf.Empty);
+  rpc acceptModification(AcceptedModification) returns (google.protobuf.Empty);
 }
 
 message ExerciseToScrollTo {

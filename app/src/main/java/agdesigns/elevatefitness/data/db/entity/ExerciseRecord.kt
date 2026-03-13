@@ -23,17 +23,26 @@ import java.time.ZonedDateTime
             entity = Exercise::class,
             parentColumns = ["exerciseId"],
             childColumns = ["extExerciseId"]
-        )
+        ),
+        // Commented as it requires creating a new table in migration
+//        ForeignKey(
+//            entity = WorkoutExercise::class,
+//            parentColumns = ["workoutExerciseId"],
+//            childColumns = ["extWorkoutExerciseId"]
+//        )
     ], indices = [
         Index("extWorkoutId"),
-        Index("extExerciseId")
+        Index("extExerciseId"),
+        Index("extWorkoutExerciseId")
     ]
 )
 data class ExerciseRecord(
     @PrimaryKey(autoGenerate = true) val recordId: Long = 0L,
     val extExerciseId: Long,
     val extWorkoutId: Long,
-    val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
+    @ColumnInfo(defaultValue = "0")
+    val extWorkoutExerciseId: Long,
+    val exerciseInWorkout: Int,
     val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
@@ -54,7 +63,8 @@ data class ExerciseRecordAndEquipment(
     @PrimaryKey(autoGenerate = true) val recordId: Long = 0L,
     val extExerciseId: Long,
     val extWorkoutId: Long,
-    val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
+    val extWorkoutExerciseId: Long,
+    val exerciseInWorkout: Int,
     val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
@@ -75,7 +85,8 @@ data class ExerciseRecordAndInfo(
     val recordId: Long = 0L,
     val extExerciseId: Long,
     val extWorkoutId: Long,
-    val exerciseInWorkout: Int, // in case there are multiple extExerciseId in the workout
+    val extWorkoutExerciseId: Long,
+    val exerciseInWorkout: Int,
     val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,

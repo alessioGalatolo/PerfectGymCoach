@@ -67,6 +67,15 @@
     <string name="superset">Superset</string>
     <string name="permission_request_alarm">This app uses alarm permission to vibrate when rest time finishes. Not granting this permission will cause vibration at inexact times</string>
     <string name="permission_exact_alarm_title"><![CDATA[Grant \'Alarm & Reminders\' permission?]]></string>
+    <string name="phone_app_version_incompatible">Phone app version incompatible</string>
+    <string name="phone_app_version_incompatible_desc">Please update the phone app</string>
+    <string name="modification_desc_do_it_again">. Do you want to do it again?</string>
+    <string name="modification_title_replace">Replace exercise?</string>
+    <string name="modification_title_add">Add exercise?</string>
+    <string name="modification_title_skip">Skip exercise?</string>
+    <string name="modification_desc_replace">Last time you replaced "%1$s" with: </string>
+    <string name="modification_desc_add">Last time, after completing the last exercise, you added : </string>
+    <string name="modification_desc_skip">Last time you skipped "%1$s"</string>
 
     <!--
     This string is used for square devices and overridden by hello_world in

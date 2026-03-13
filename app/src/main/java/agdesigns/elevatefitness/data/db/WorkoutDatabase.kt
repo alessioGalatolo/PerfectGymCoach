@@ -45,7 +45,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -85,7 +85,7 @@ abstract class WorkoutDatabase: RoomDatabase() {
                         // Check if migration is needed every time database opens
                         checkAndPerformDataMigration(context)
                     }
-                }).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                }).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }
@@ -116,7 +116,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         db.execSQL("ALTER TABLE exercise ADD COLUMN imageResKey TEXT NOT NULL DEFAULT 'finish_workout'")
         db.execSQL("ALTER TABLE exercise ADD COLUMN descriptionResKey TEXT NOT NULL DEFAULT 'description_not_available'")
         db.execSQL("ALTER TABLE exercise ADD COLUMN variationsResKeys TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE exercise ADD COLUMN userDefined INTEGER NOT NULL DEFAULT 0")  // FIXME: what happens to userDefined exercises
+        db.execSQL("ALTER TABLE exercise ADD COLUMN userDefined INTEGER NOT NULL DEFAULT 0")
         db.execSQL("ALTER TABLE exercise ADD COLUMN needsMigration INTEGER NOT NULL DEFAULT 1")
         db.execSQL("ALTER TABLE programexercise ADD COLUMN variationResKey TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE exerciserecord ADD COLUMN variationResKey TEXT NOT NULL DEFAULT ''")
@@ -131,7 +131,21 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
 val MIGRATION_2_3 = object : Migration(2, 3) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE workoutrecord ADD COLUMN intensityPercent REAL NOT NULL DEFAULT 50.0")
-        // TODO: migrate existing values or maybe not? (old intensity is not used anywhere)
+    }
+}
+
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE WorkoutRecord ADD COLUMN workoutModifications TEXT NOT NULL DEFAULT ''"
+        )
+        db.execSQL(
+            "ALTER TABLE ExerciseRecord ADD COLUMN extWorkoutExerciseId INTEGER NOT NULL DEFAULT 0"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_ExerciseRecord_extWorkoutExerciseId`" +
+                    "ON `ExerciseRecord` (`extWorkoutExerciseId`);"
+        )
     }
 }
 

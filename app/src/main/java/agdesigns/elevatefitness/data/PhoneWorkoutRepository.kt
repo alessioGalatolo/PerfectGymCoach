@@ -42,6 +42,11 @@ class PhoneWorkoutRepository(
     )
     val workoutCompletions: ReceiveChannel<Float> = _workoutCompletions
 
+    private val _acceptedModifications = Channel<Int>(
+        capacity = Channel.UNLIMITED
+    )
+    val acceptedModifications: ReceiveChannel<Int> = _acceptedModifications
+
 
     var ongoingWorkout: Boolean = false
 
@@ -62,6 +67,10 @@ class PhoneWorkoutRepository(
 
     fun handleCompleteWorkout(intensity: Float) {
         _workoutCompletions.trySend(intensity)
+    }
+
+    fun handleAcceptModification(modificationIndex: Int) {
+        _acceptedModifications.trySend(modificationIndex)
     }
 
     fun startOngoingWorkout() {

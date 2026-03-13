@@ -82,7 +82,7 @@ class RecapViewModel @Inject constructor(
                                 val sortedDistinctExercises = exerciseRecords
                                     .distinct()
                                     .filter { it.reps.isNotEmpty() }  // only keep records with actual data inside
-                                    .sortedBy { it.exerciseInWorkout }
+                                    .sortedBy { it.date }
                                 val index2date = sortedRecords.mapIndexed { index, workoutRecord ->
                                     index to (workoutRecord.startDate ?: (state.value.exerciseRecords.firstOrNull()?.date ?: ZonedDateTime.now()))
                                 }.toMap()

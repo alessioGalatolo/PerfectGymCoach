@@ -110,28 +110,10 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         // need to add exercise to workout
 
                         if (state.value.insertAtPosition != null) {
-                            // we need to shift all the exercises after the insert position
-                            val exs = repository.getWorkoutExercises(state.value.workoutId).first()
-                            val exsToShift = buildList {
-                                // the "orderInProgram" of the last ex added to the list
-                                var lastInsertedIndex = state.value.insertAtPosition!!
-                                // we should assume that some orderInProgram may be missing
-                                for (ex in exs.sortedBy { it.orderInProgram }) {
-                                    if (ex.orderInProgram > lastInsertedIndex+1)
-                                        break
-                                    if (ex.orderInProgram >= lastInsertedIndex) {
-                                        add(ex)
-                                        lastInsertedIndex = ex.orderInProgram
-                                    }
-                                }
-                            }
-                            for (ex in exsToShift.reversed())
-                                repository.updateWorkoutExerciseNumber(
-                                    WorkoutExerciseReorder(
-                                        ex.workoutExerciseId,
-                                        ex.orderInProgram + 1
-                                    )
-                                )
+                            repository.shiftWorkoutExercisesToRight(
+                                state.value.workoutId,
+                                state.value.insertAtPosition!!
+                            )
                         }
                         val orderInProgram = state.value.insertAtPosition ?: state.value.exerciseNumber
                         repository.addWorkoutExercise(

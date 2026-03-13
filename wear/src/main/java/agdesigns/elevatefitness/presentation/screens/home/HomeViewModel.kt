@@ -3,7 +3,9 @@ package agdesigns.elevatefitness.presentation.screens.home
 import agdesigns.elevatefitness.shared.grpc.MediaServiceGrpcKt
 import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.data.WearRepository
+import agdesigns.elevatefitness.shared.compareTo
 import agdesigns.elevatefitness.shared.grpc.Info
+import agdesigns.elevatefitness.shared.grpc.Info.VersionInfo
 import agdesigns.elevatefitness.shared.grpc.PhoneInfoServiceGrpcKt
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -26,11 +28,13 @@ import javax.inject.Inject
 
 data class HomeState(
     val workoutRunningFromPhone: Boolean = false,
-    val phoneVersionInfo: Info.VersionInfo? = null
+    val phoneVersionInfo: VersionInfo? = null,
+    val incompatibleVersion: Boolean = false
 )
 
 sealed class HomeEvent {
     data object ForceSync: HomeEvent()
+    data object RetryVersionCheck: HomeEvent()
 }
 
 
@@ -50,16 +54,7 @@ class HomeViewModel @Inject constructor(
     val permissionStateDataStore = repository.permissionStateDataStore
 
     init {
-        viewModelScope.launch {
-            try {
-                val versionInfo = phoneInfoService.versionInfo(Empty.newBuilder().build())
-                _state.update {
-                    it.copy(phoneVersionInfo = versionInfo)
-                }
-            } catch (e: StatusException) {
-                Log.e("HomeViewModel", "Error getting version info with error: ${e.message}")
-            }
-        }
+        checkPhoneAppVersion()
     }
 
     fun onEvent(event: HomeEvent){
@@ -68,8 +63,32 @@ class HomeViewModel @Inject constructor(
             is HomeEvent.ForceSync -> {
 
             }
-
+            is HomeEvent.RetryVersionCheck -> {
+                checkPhoneAppVersion()
+            }
         }
 
+    }
+
+    fun checkPhoneAppVersion() {
+        viewModelScope.launch {
+            try {
+                val versionInfo = phoneInfoService.versionInfo(Empty.newBuilder().build())
+                _state.update {
+                    it.copy(
+                        phoneVersionInfo = versionInfo,
+                        // whether this watch version is too updated for phone
+                        incompatibleVersion = versionInfo.versionName <
+                                Info.VersionName.newBuilder()
+                                    .setMajor(0)
+                                    .setMinor(0)
+                                    .setPatch(8)
+                                    .build()
+                    )
+                }
+            } catch (e: StatusException) {
+                Log.e("HomeViewModel", "Error getting version info with error: ${e.message}")
+            }
+        }
     }
 }

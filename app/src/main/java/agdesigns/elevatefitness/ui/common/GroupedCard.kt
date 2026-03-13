@@ -89,14 +89,14 @@ fun GroupedCard(
 class LazyGroupedCardScope {
     internal data class SubcardDetails(
         val content: @Composable () -> Unit,
-        val onClick: () -> Unit,
+        val onClick: (() -> Unit)? = null,
         val modifier: Modifier = Modifier
     )
 
     internal val subcards = mutableListOf<SubcardDetails>()
 
     fun subCard(
-        onClick: () -> Unit = {},
+        onClick: (() -> Unit)? = null,
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
     ) {
@@ -141,20 +141,39 @@ fun LazyListScope.lazyGroupedCard(
                 else -> RoundedCornerShape(defaultOtherCorner)
             }
 
-            Card(
-                modifier = subcardDetails.modifier
-                    .fillMaxWidth()
-                    .animateItem(
-                        fadeInSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-                        fadeOutSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-                        placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
-                    ),
-                shape = currentItemShape,
-                colors = colors ?: CardDefaults.cardColors(),
-                onClick = subcardDetails.onClick
-            ) {
-                Column(Modifier.padding(innerCardPadding)) {
-                    subcardDetails.content()
+            // if no onClick, we can use the normal card that allows clickable in modifier
+            if (subcardDetails.onClick != null) {
+                Card(
+                    modifier = subcardDetails.modifier
+                        .fillMaxWidth()
+                        .animateItem(
+                            fadeInSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                            fadeOutSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                            placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                        ),
+                    shape = currentItemShape,
+                    colors = colors ?: CardDefaults.cardColors(),
+                    onClick = subcardDetails.onClick
+                ) {
+                    Column(Modifier.padding(innerCardPadding)) {
+                        subcardDetails.content()
+                    }
+                }
+            } else {
+                Card(
+                    modifier = subcardDetails.modifier
+                        .fillMaxWidth()
+                        .animateItem(
+                            fadeInSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                            fadeOutSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                            placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                        ),
+                    shape = currentItemShape,
+                    colors = colors ?: CardDefaults.cardColors(),
+                ) {
+                    Column(Modifier.padding(innerCardPadding)) {
+                        subcardDetails.content()
+                    }
                 }
             }
 

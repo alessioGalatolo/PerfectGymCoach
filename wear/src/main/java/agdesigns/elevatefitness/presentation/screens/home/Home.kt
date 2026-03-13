@@ -14,9 +14,11 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.PhonelinkErase
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,9 +41,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.ScreenScaffold
@@ -163,70 +168,110 @@ fun Home(
                         }
                     }
                 } else {
-                    LaunchedEffect(activeWorkout) {
-                        if (activeWorkout) {
-                            openWorkoutScreen()
-                        }
-                    }
-                    LaunchedEffect(Unit) {
-                        // PermissionRequiredScreen shares the same state, if we begin with that screen and scroll
-                        // then we should scroll back before showing the actual screen
-                        listState.scrollToItem(0)
-                    }
-                    ScalingLazyColumn(
-                        state = listState,
-                        contentPadding = SCALING_LIST_PADDING_VALUES,
-                        // param below will avoid having the last element scroll all the way to the center
-                        // but will create problems with google's review process
-    //                autoCentering = null
-                    ) {
-                        if (!homeState.workoutRunningFromPhone) {
-                            item {
+                    if (homeState.incompatibleVersion) {
+                        AlertDialog(
+                            visible = homeState.incompatibleVersion,
+                            icon = {
+                                Icon(
+                                    Icons.Default.PhonelinkErase,
+                                    stringResource(R.string.phone_app_version_incompatible),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(
+                                        ButtonDefaults.LargeIconSize
+                                    )
+                                )
+                            },
+                            title = {
                                 Text(
-                                    text = stringResource(R.string.no_workout_detected),
+                                    stringResource(R.string.phone_app_version_incompatible),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
                                     textAlign = TextAlign.Center
                                 )
-                            }
-                            item {
-                                Spacer(Modifier.height(16.dp))
-                            }
-                            item {
-                                Button(
-                                    colors = if (ambientState.isInteractive)
-                                        ButtonDefaults.buttonColors()
-                                    else
-                                        ButtonDefaults.outlinedButtonColors(),
-                                    border = if (ambientState.isAmbient)
-                                        ButtonDefaults.outlinedButtonBorder(true)
-                                    else null,
-                                    onClick = {
-                                        remoteActivityHelper.startRemoteActivity(openAppIntent)
-                                        showConfirmation = true
-                                    }
-                                ) {
-                                    Icon(
-                                        if (ambientState.isInteractive)
-                                            Icons.Default.PhoneAndroid
-                                        else
-                                            Icons.Outlined.PhoneAndroid,
-                                        stringResource(R.string.phone_icon)
-                                    )
-                                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                                    Text(stringResource(R.string.open_phone_app))
+                            },
+                            text = {
+                                Text(stringResource(R.string.phone_app_version_incompatible_desc))
+                            },
+                            edgeButton = {
+                                EdgeButton(onClick = {
+                                    viewModel.onEvent(HomeEvent.RetryVersionCheck)
+                                }) {
+                                    Text(stringResource(R.string.retriable_error_retry))
                                 }
+                            },
+                            onDismissRequest = {}
+                        )
+                    } else {
+                        LaunchedEffect(activeWorkout) {
+                            if (activeWorkout) {
+                                openWorkoutScreen()
                             }
-                            if (homeState.phoneVersionInfo == null) {
-                                // if we have info about the phone app version, it must be installed
-                                // if we don't it may be either outdated or not installed
+                        }
+                        LaunchedEffect(Unit) {
+                            // PermissionRequiredScreen shares the same state, if we begin with that screen and scroll
+                            // then we should scroll back before showing the actual screen
+                            listState.scrollToItem(0)
+                        }
+                        ScalingLazyColumn(
+                            state = listState,
+                            contentPadding = SCALING_LIST_PADDING_VALUES,
+                            // param below will avoid having the last element scroll all the way to the center
+                            // but will create problems with google's review process
+                            //                autoCentering = null
+                        ) {
+                            if (!homeState.workoutRunningFromPhone) {
                                 item {
-                                    TextButton(
-                                        modifier = Modifier.fillMaxWidth(),
+                                    Text(
+                                        text = stringResource(R.string.no_workout_detected),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                item {
+                                    Spacer(Modifier.height(16.dp))
+                                }
+                                item {
+                                    Button(
+                                        colors = if (ambientState.isInteractive)
+                                            ButtonDefaults.buttonColors()
+                                        else
+                                            ButtonDefaults.outlinedButtonColors(),
+                                        border = if (ambientState.isAmbient)
+                                            ButtonDefaults.outlinedButtonBorder(true)
+                                        else null,
                                         onClick = {
-                                            remoteActivityHelper.startRemoteActivity(getAppIntent)
+                                            remoteActivityHelper.startRemoteActivity(openAppIntent)
                                             showConfirmation = true
                                         }
                                     ) {
-                                        Text(stringResource(R.string.get_phone_app), maxLines = 1)
+                                        Icon(
+                                            if (ambientState.isInteractive)
+                                                Icons.Default.PhoneAndroid
+                                            else
+                                                Icons.Outlined.PhoneAndroid,
+                                            stringResource(R.string.phone_icon)
+                                        )
+                                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                        Text(stringResource(R.string.open_phone_app))
+                                    }
+                                }
+                                if (homeState.phoneVersionInfo == null) {
+                                    // if we have info about the phone app version, it must be installed
+                                    // if we don't it may be either outdated or not installed
+                                    item {
+                                        TextButton(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            onClick = {
+                                                remoteActivityHelper.startRemoteActivity(
+                                                    getAppIntent
+                                                )
+                                                showConfirmation = true
+                                            }
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.get_phone_app),
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
                                 }
                             }

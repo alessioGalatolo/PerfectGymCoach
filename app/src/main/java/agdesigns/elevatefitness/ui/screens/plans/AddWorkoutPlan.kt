@@ -202,9 +202,11 @@ fun AddWorkoutPlan(
                             stringResource(R.string.current_plan),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(
-                                vertical = dimensionResource(R.dimen.header_to_content_padding)
-                            ).padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                            modifier = Modifier
+                                .padding(
+                                    vertical = dimensionResource(R.dimen.header_to_content_padding)
+                                )
+                                .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
                         )
                     }
                     item(key = state.mainPlanMapPrograms!!.first.planId) {
@@ -225,9 +227,11 @@ fun AddWorkoutPlan(
                         }
 
                         PlanCard(
-                            modifier = Modifier.padding(
-                                horizontal = dimensionResource(R.dimen.screen_edge_padding)
-                            ).padding(bottom = 8.dp),
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = dimensionResource(R.dimen.screen_edge_padding)
+                                )
+                                .padding(bottom = 8.dp),
                             secondaryCardPosition = null,
                             navigator = navigator,
                             plan = plan,
@@ -284,6 +288,20 @@ fun AddWorkoutPlan(
                                 )
                             }, { close ->
                                 DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.duplicate_plan_action)) },
+                                    onClick = {
+                                        scope.launch {
+                                            close()
+                                            viewModel.onEvent(PlansEvent.DuplicatePlan(plan.planId))
+                                        }
+                                    },
+                                    enabled = true,
+                                    leadingIcon = {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null)
+                                    }
+                                )
+                            }, { close ->
+                                DropdownMenuItem(
                                     text = { Text(stringResource(R.string.archive_plan_action)) },
                                     onClick = {
                                         scope.launch {
@@ -297,8 +315,7 @@ fun AddWorkoutPlan(
                                         Icon(Icons.Default.Archive, contentDescription = null)
                                     }
                                 )
-                            }
-                            )
+                            })
                         )
                     }
                 }
@@ -313,9 +330,11 @@ fun AddWorkoutPlan(
                             stringResource(R.string.other_plans),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(
-                                vertical = dimensionResource(R.dimen.header_to_content_padding)
-                            ).padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                            modifier = Modifier
+                                .padding(
+                                    vertical = dimensionResource(R.dimen.header_to_content_padding)
+                                )
+                                .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
                         )
                     }
                 }
@@ -400,6 +419,20 @@ fun AddWorkoutPlan(
                             )
                         }, { close ->
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.duplicate_plan_action)) },
+                                onClick = {
+                                    scope.launch {
+                                        close()
+                                        viewModel.onEvent(PlansEvent.DuplicatePlan(plan.first.planId))
+                                    }
+                                },
+                                enabled = true,
+                                leadingIcon = {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null)
+                                }
+                            )
+                        }, { close ->
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.archive_plan_action)) },
                                 onClick = {
                                     scope.launch {
@@ -413,8 +446,7 @@ fun AddWorkoutPlan(
                                     Icon(Icons.Default.Archive, contentDescription = null)
                                 }
                             )
-                        }
-                        )
+                        })
                     )
                 }
                 if (state.archivedPlans.isNotEmpty()) {
@@ -425,9 +457,11 @@ fun AddWorkoutPlan(
                                     stringResource(R.string.other_plans),
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(
-                                        top = dimensionResource(R.dimen.header_to_content_padding)
-                                    ).padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                                    modifier = Modifier
+                                        .padding(
+                                            top = dimensionResource(R.dimen.header_to_content_padding)
+                                        )
+                                        .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
                                 )
                             }
                         } else {
@@ -439,9 +473,11 @@ fun AddWorkoutPlan(
                         }
                         // Archived chat card
                         Card(
-                            modifier = Modifier.padding(
-                                horizontal = dimensionResource(R.dimen.screen_edge_padding)
-                            ).padding(top = 8.dp),
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = dimensionResource(R.dimen.screen_edge_padding)
+                                )
+                                .padding(top = 8.dp),
 //                            colors = CardDefaults.cardColors(
 //                                containerColor = MaterialTheme.colorScheme.surface
 //                            ),

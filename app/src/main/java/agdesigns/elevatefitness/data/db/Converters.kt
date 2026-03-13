@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.data.db
 
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import androidx.room.TypeConverter
 import java.time.Instant
 import java.time.ZoneId
@@ -53,5 +54,20 @@ class Converters {
             emptyList()
         else
             value.split("/****/")
+    }
+
+    @TypeConverter
+    fun workoutModificationsToString(value: List<WorkoutRecord.WorkoutModification>): String {
+        return value.joinToString("/****/") { it.toString() }
+    }
+
+    @TypeConverter
+    fun stringToWorkoutModifications(value: String): List<WorkoutRecord.WorkoutModification> {
+        return if (value.isBlank())
+            emptyList()
+        else
+            value.split("/****/").map {
+                WorkoutRecord.WorkoutModification.fromString(it)
+            }
     }
 }

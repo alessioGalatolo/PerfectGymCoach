@@ -87,7 +87,6 @@ fun Workout(
 
     val curvedTextStyle = ConfirmationDialogDefaults.curvedTextStyle
     val text = stringResource(R.string.non_retriable_error_with_phone)
-    // FIXME: compose bug? where curved text is not entirely shown
     FailureConfirmationDialog(
         visible = nonRetriableErrorDialogShown,
         onDismissRequest = { nonRetriableErrorDialogShown = false },
@@ -127,6 +126,9 @@ fun Workout(
                 }
                 is WorkoutEffect.NonRetriableError -> {
                     nonRetriableErrorDialogShown = true
+                }
+                is WorkoutEffect.NavigateToSelectValues -> {
+                    navigateToSelectValues()
                 }
             }
         }
@@ -192,6 +194,9 @@ fun Workout(
                                 exercisesState = exercisesState,
                                 listState = listState,
                                 ambientState = ambientState,
+                                acceptModification = {
+                                    viewModel.onEvent(WorkoutEvent.AcceptModification(it))
+                                },
                                 resetRest = {
                                     viewModel.onEvent(WorkoutEvent.ResetRest)
                                 },
@@ -207,7 +212,6 @@ fun Workout(
                                 onDismissHint = {
                                     viewModel.onEvent(WorkoutEvent.DismissHint)
                                 },
-                                navigateToSelectValues = navigateToSelectValues
                             )
 
                             2 -> MediaPlayingPage(

@@ -58,6 +58,12 @@ class WearWorkoutDataService: BaseGrpcDataService<WorkoutServiceGrpcKt.WorkoutSe
                 repository.handleCompleteWorkout(request.intensity)
                 return Empty.newBuilder().build()
             }
+
+            override suspend fun acceptModification(request: Workout.AcceptedModification): Empty {
+                repository.handleAcceptModification(request.exerciseIndex)
+                return Empty.newBuilder().build()
+            }
+
         }
     }
 

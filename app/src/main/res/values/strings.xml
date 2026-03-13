@@ -835,4 +835,14 @@
     <string name="complete_set_generic_error">Couldn\'t complete the set due to an unknown error.</string>
     <string name="exercises_completed">Exercises completed:</string>
     <string name="reorder_icon">Drag handle to reorder</string>
+    <string name="duplicate_plan_action">Duplicate plan</string>
+    <string name="copy_of_plan_name">Copy %1$d of %2$s</string>
+    <string name="modification_suggestion_add_exercise">Add exercise?</string>
+    <string name="modification_suggestion_skip_exercise">Skip exercise?</string>
+    <string name="modification_suggestion_replace_exercise">Replace exercise?</string>
+    <string name="modification_suggestion_desc_add">Last time, after this exercise, you added: %1$s</string>
+    <string name="modification_suggestion_desc_skip">Last time you skipped this exercise</string>
+    <string name="modification_suggestion_desc_replace">Last time you replaced this exercise with: %1$s</string>
+    <string name="modification_suggestion_not_this_time">Not this time</string>
+    <string name="modification_suggestion_do_it">Let\'s do it again!</string>
 </resources>

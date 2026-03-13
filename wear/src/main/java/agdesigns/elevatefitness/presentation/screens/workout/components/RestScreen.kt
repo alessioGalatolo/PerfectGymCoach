@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,10 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
-import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
-import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TextButton
@@ -52,9 +49,12 @@ import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarque
 import agdesigns.elevatefitness.presentation.screens.workout.InRestHint
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
+import androidx.wear.compose.material3.Icon
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
@@ -143,7 +143,15 @@ fun Rest(
     // Show dialog only if there's rest time and we have a helpful message
     AlertDialog(
         visible = hint != null && showDialog && currentRestSeconds > 0 && hints.isNotEmpty(),
-        onDismissRequest = { showDialog = false },
+        onDismissRequest = {
+            showDialog = false
+            scope.launch {
+                // wait for the dialog to disappear, then dismiss hint
+                // otherwise a new hint will briefly appear before the dialog disappears
+                delay(1000)
+                onDismissHint()
+            }
+        },
         icon = {
 
         },
@@ -198,7 +206,8 @@ fun Rest(
             TextHeaderWithMarquee(
                 title = nextThingString,
                 subtitle = nextSetExerciseName,
-                ambientState = ambientState
+                ambientState = ambientState,
+                modifier = Modifier.padding(CircularProgressIndicatorDefaults.FullScreenPadding)
             )
         },
         controlButtons = {
