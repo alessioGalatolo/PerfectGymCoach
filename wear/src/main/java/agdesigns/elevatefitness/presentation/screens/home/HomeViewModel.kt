@@ -86,8 +86,8 @@ class HomeViewModel @Inject constructor(
                                     .build()
                     )
                 }
-            } catch (e: StatusException) {
-                Log.e("HomeViewModel", "Error getting version info with error: ${e.message}")
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error getting version info: ${e.message}")
             }
         }
     }

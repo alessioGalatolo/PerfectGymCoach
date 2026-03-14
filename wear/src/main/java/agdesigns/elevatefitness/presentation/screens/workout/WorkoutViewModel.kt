@@ -92,6 +92,7 @@ data class WorkoutState(
     val settingSetValues: Boolean = false,
     // hints to show to the user when they are in rest e.g., move to X exercise, change weight, etc.
     val inRestHints: List<InRestHint> = emptyList(),
+    val showHintDialog: Boolean = false,
     val nextSetExerciseName: String = ""
 )
 
@@ -224,17 +225,25 @@ class WorkoutViewModel
                     it.toInstant().toEpochMilli() - ZonedDateTime.now().toInstant().toEpochMilli()
                 }?.div(1000L)
                 val restForVibration = (restFromNow ?: event.rest) - 2
-                repository.scheduleVibrationAlarm(restForVibration * 1000L)
+                repository.scheduleRestAlarm(restForVibration * 1000L)
             }
         }
         viewModelScope.launch {
             observeChangesForInRestHints()
         }
+        viewModelScope.launch {
+            repository.hintAlarmFiredFlow.collect {
+                if (_state.value.inRestHints.isNotEmpty()) {
+                    _state.update { it.copy(showHintDialog = true) }
+                }
+            }
+        }
         startTimer()
     }
 
     override fun onCleared() {
-        repository.cancelAlarm()
+        repository.cancelRestAlarm()
+        repository.cancelHintAlarm()
         repository.stopWorkout()
         super.onCleared()
     }
@@ -242,7 +251,8 @@ class WorkoutViewModel
     fun onEvent(event: WorkoutEvent){
         when (event) {
             is WorkoutEvent.ResetRest -> {
-                repository.cancelAlarm()
+                repository.cancelRestAlarm()
+                repository.cancelHintAlarm()
                 viewModelScope.launch {
                     _state.update { it.copy(restTimestamp = ZonedDateTime.now()) }
                 }
@@ -258,7 +268,8 @@ class WorkoutViewModel
                         currentExerciseRest = null,
                     )
                 }
-                repository.cancelAlarm()
+                repository.cancelRestAlarm()
+                repository.cancelHintAlarm()
             }
             is WorkoutEvent.ChangeWeight -> {
                 val currentExercise = exercisesState.value.exercises.getOrNull(
@@ -393,7 +404,8 @@ class WorkoutViewModel
                         )
                     }
                     repository.service.firstOrNull()?.stopWorkout()
-                    repository.cancelAlarm()
+                    repository.cancelRestAlarm()
+                    repository.cancelHintAlarm()
                 }
             }
             is WorkoutEvent.StartRest -> {
@@ -422,14 +434,14 @@ class WorkoutViewModel
                     if (nextExercise != null && currentExercise.supersetExercise == nextExercise.programExerciseId) {
                         // if superset with exercise after, we should move to next page and not start rest
                         // vibrate now to hint user to start next exercise
-                        repository.scheduleVibrationAlarm(0L)
+                        repository.scheduleRestAlarm(0L)
                         state.copy(
                             restTimestamp = null,
                             settingSetValues = true,
                             currentExerciseRest = null,
                         )
                     } else {
-                        repository.scheduleVibrationAlarm((rest.toLong() - 2L) * 1000L)
+                        repository.scheduleRestAlarm((rest.toLong() - 2L) * 1000L)
                         state.copy(
                             restTimestamp = ZonedDateTime
                                 .now()
@@ -537,13 +549,19 @@ class WorkoutViewModel
                 }
             }
             is WorkoutEvent.DismissHint -> {
-                _state.update {
-                    // pop first element
-                    val newHints = it.inRestHints.toMutableList()
-                    newHints.removeFirstOrNull()
-                    it.copy(
-                        inRestHints = newHints
-                    )
+                // Immediately hide the dialog, then pop the hint after dismiss animation
+                _state.update { it.copy(showHintDialog = false) }
+                viewModelScope.launch {
+                    delay(1000)
+                    _state.update {
+                        val newHints = it.inRestHints.toMutableList()
+                        newHints.removeFirstOrNull()
+                        it.copy(inRestHints = newHints)
+                    }
+                    val remainingRest = state.value.ongoingRestSecs ?: 0L
+                    if (_state.value.inRestHints.isNotEmpty() && remainingRest > 10L) {
+                        repository.scheduleHintAlarm()
+                    }
                 }
             }
             is WorkoutEvent.AcceptModification -> {
@@ -807,11 +825,11 @@ class WorkoutViewModel
                             repsWeight.getReps(setsDone - 1).toIntOrNull()
                         } else null
                         if (currentWeight == null || currentReps == null) return@combine
-                        if (nextWeight != null && currentWeight > 0) {
+                        if (nextWeight != null /*&& currentWeight > 0.0*/) {
                             // weight is changing
                             val weightDiff = nextWeight - currentWeight
                             when {
-                                weightDiff > 0 -> {
+                                weightDiff > 0.0 -> {
                                     when (equipment) {
                                         Equipment.DUMBBELL -> {
                                             add(
@@ -839,16 +857,18 @@ class WorkoutViewModel
                                         }
 
                                         else -> {
-                                            InRestHint(
-                                                titleResId = R.string.rest_hint_increase_weight_title,
-                                                descResId = R.string.rest_hint_increase_weight_generic,
-                                                descVarArgs = listOf(nextWeight, unitString)
+                                            add(
+                                                InRestHint(
+                                                    titleResId = R.string.rest_hint_increase_weight_title,
+                                                    descResId = R.string.rest_hint_increase_weight_generic,
+                                                    descVarArgs = listOf(nextWeight, unitString)
+                                                )
                                             )
                                         }
                                     }
                                 }
 
-                                weightDiff < 0 -> {
+                                weightDiff < 0.0 -> {
                                     when (equipment) {
                                         Equipment.DUMBBELL -> {
                                             add(
@@ -907,8 +927,15 @@ class WorkoutViewModel
                 }
                 _state.update {
                     it.copy(
-                        inRestHints = hintList
+                        inRestHints = hintList,
+                        showHintDialog = false
                     )
+                }
+                val remainingRest = state.value.ongoingRestSecs ?: 0L
+                if (hintList.isNotEmpty() && remainingRest > 10L) {
+                    repository.scheduleHintAlarm()
+                } else {
+                    repository.cancelHintAlarm()
                 }
             } catch (e: IndexOutOfBoundsException) {
                 Log.e("WorkoutViewModel", "Index out of bounds when generating in rest hints", e)

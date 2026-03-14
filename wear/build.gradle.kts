@@ -55,7 +55,7 @@ android {
         minSdk = 30
         targetSdk = 36
         versionCode = 19  // cannot match app version
-        versionName = "0.0.7a" // match phone app version + eventual revisions
+        versionName = "0.0.8" // match phone app version + eventual revisions
     }
 
     buildTypes {

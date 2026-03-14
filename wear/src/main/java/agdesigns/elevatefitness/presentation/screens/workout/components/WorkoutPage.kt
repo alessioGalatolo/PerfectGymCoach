@@ -100,6 +100,7 @@ fun WorkoutPage(
             nextSetExerciseName = workoutState.nextSetExerciseName,
             ambientState = ambientState,
             hints = workoutState.inRestHints,
+            showHintDialog = workoutState.showHintDialog,
             skipRest = resetRest,
             onDismissHint = onDismissHint
         )

@@ -21,10 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +49,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
 import androidx.wear.compose.material3.Icon
@@ -59,8 +57,6 @@ import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 import com.google.android.horologist.media.ui.util.isLargeScreen
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
@@ -70,6 +66,7 @@ fun RestScreen(
     nextSetExerciseName: String,
     ambientState: AmbientState,
     hints: List<InRestHint>,
+    showHintDialog: Boolean,
     onDismissHint: () -> Unit,
     skipRest: () -> Unit,
 ) {
@@ -97,6 +94,7 @@ fun RestScreen(
         currentRestSeconds = currentRestSeconds,
         ambientState = ambientState,
         hints = hints,
+        showHintDialog = showHintDialog,
         onDismissHint = onDismissHint,
         skipRest = skipRest
     )
@@ -118,6 +116,7 @@ fun Rest(
     currentRestSeconds: Long,
     ambientState: AmbientState,
     hints: List<InRestHint>,
+    showHintDialog: Boolean,
     onDismissHint: () -> Unit,
     skipRest: () -> Unit,
 ) {
@@ -127,31 +126,13 @@ fun Rest(
         stringResource(R.string.all_done)  // we are likely at the end of workout
     val middleSize = if (LocalConfiguration.current.isLargeScreen) 88.dp else 72.dp
     val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
 
-    // Dialog state and helpful message generation
-    var showDialog by remember { mutableStateOf(false) }
-    LaunchedEffect(hints) {
-        if (hints.isNotEmpty()) {
-            delay(5000)
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            showDialog = true
-        }
-    }
     val hint = hints.firstOrNull()
 
     // Show dialog only if there's rest time and we have a helpful message
     AlertDialog(
-        visible = hint != null && showDialog && currentRestSeconds > 0 && hints.isNotEmpty(),
-        onDismissRequest = {
-            showDialog = false
-            scope.launch {
-                // wait for the dialog to disappear, then dismiss hint
-                // otherwise a new hint will briefly appear before the dialog disappears
-                delay(1000)
-                onDismissHint()
-            }
-        },
+        visible = hint != null && showHintDialog && currentRestSeconds > 0 && hints.isNotEmpty(),
+        onDismissRequest = { onDismissHint() },
         icon = {
 
         },
@@ -169,16 +150,7 @@ fun Rest(
         },
         edgeButton = {
             AlertDialogDefaults.EdgeButton(
-                onClick = {
-                    // Perform confirm action here
-                    showDialog = false
-                    scope.launch {
-                        // wait for the dialog to disappear, then dismiss hint
-                        // otherwise a new hint will briefly appear before the dialog disappears
-                        delay(1000)
-                        onDismissHint()
-                    }
-                }
+                onClick = { onDismissHint() }
             ) {
                 Icon(
                     Icons.Default.Check,
@@ -188,18 +160,6 @@ fun Rest(
 
         }
     )
-
-    // Reset dialog when rest ends
-    LaunchedEffect(currentRestSeconds) {
-        if (currentRestSeconds == 0L) {
-            showDialog = true // Reset for next rest period
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        delay(5000)
-        showDialog = true
-    }
 
     PlayerScreen(
         mediaDisplay = {

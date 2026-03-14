@@ -326,8 +326,11 @@ fun RequestAlarmPermission(
 
         if (hasPreviouslyShown == ShownRationaleStatus.HAS_SHOWN) {
             // Rationale has been shown previously, but the user has decided not to grant permission
-            // Offer the user the option to go to permission settings.
-            // TODO: do something?
+            // Right now, we just allow the user to continue using the app. One could ask for
+            // permission again maybe...
+            LaunchedEffect(hasPreviouslyShown) {
+                setHasCheckPermission()
+            }
         } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_NOT_SHOWN) {
             // First launch of permissions, show the permission request without any rationale.
             PermissionRequiredScreen(
@@ -346,6 +349,7 @@ fun RequestAlarmPermission(
                         ShownRationaleStatus.HAS_SHOWN,
                         permission = Manifest.permission.SCHEDULE_EXACT_ALARM
                     )
+                    setHasCheckPermission()
                 } }
             )
         }
