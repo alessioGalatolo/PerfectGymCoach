@@ -50,15 +50,12 @@ data class WorkoutExercise (
     val extWorkoutId: Long,
     val extProgramExerciseId: Long? = null,
     val extExerciseId: Long,
-    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
     @ColumnInfo(defaultValue = "")
     val nameResKey: String, // key of the string resource
-    @Deprecated("Use imageResKey instead")
     val image: Int,
     @ColumnInfo(defaultValue = "")
     val imageResKey: String,
-    @Deprecated("Use descriptionResKey instead")
     val description: String,
     @ColumnInfo(defaultValue = "")
     val descriptionResKey: String,
@@ -67,7 +64,6 @@ data class WorkoutExercise (
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String,
-    @Deprecated("Use variationResKey instead")
     val variation: String,
     @ColumnInfo(defaultValue = "")
     val variationResKey: String,

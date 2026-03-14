@@ -45,7 +45,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -85,7 +85,7 @@ abstract class WorkoutDatabase: RoomDatabase() {
                         // Check if migration is needed every time database opens
                         checkAndPerformDataMigration(context)
                     }
-                }).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                }).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { instance = it }
             }
@@ -94,17 +94,10 @@ abstract class WorkoutDatabase: RoomDatabase() {
         private fun checkAndPerformDataMigration(context: Context) {
             CoroutineScope(Dispatchers.IO).launch {
                 val database = getInstance(context, this@launch)
-                val dao = database.exerciseDao
 
-                // Check if any exercises need data migration
-                val pendingMigrationCount = dao.getMigrationPendingCount()
-                if (pendingMigrationCount > 0) {
-                    Log.d("ExerciseDatabase", "Found $pendingMigrationCount exercises needing migration")
-
-                    // Perform data migration with context access
-                    val migrator = ExerciseDataMigrator(context)
-                    migrator.migrateExerciseData(database)
-                }
+                // Perform data migration with context access
+                val migrator = ExerciseDataMigrator(context)
+                migrator.migrateExerciseData(database)
             }
         }
     }
@@ -149,30 +142,48 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE Exercise ADD COLUMN isDurationBased INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
+
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")
-
-    // map exercise name to exercise
-    val resolvedExercises: Map<String, Exercise> = INITIAL_EXERCISE_DATA.associateBy {
-        context.getLocalizedString(it.nameResource, Locale.ENGLISH)
-    }
-    val variations: Map<String, String> = INITIAL_EXERCISE_DATA.flatMap { exercise ->
-        exercise.variationsResKeys
-    }.associateBy {
-        context.getLocalizedString(getVariation(it), Locale.ENGLISH)
-    }
-
 
     suspend fun migrateExerciseData(db: WorkoutDatabase) {
         val dbVersion = context.dataStore.data.map {
             it[dbVersionKey] ?: 1
         }.first()
         // migration already done
-        if (dbVersion > 1) {
-            Log.d("ExerciseDataMigrator", "Already migrated")
-            return
+        if (dbVersion < 2) {
+            Log.d(
+                "ExerciseDataMigrator",
+                "Found db version $dbVersion, proceeding with migration to v2"
+            )
+            migrateExercises1To2(db)
         }
-        Log.d("ExerciseDataMigrator", "Found db version $dbVersion, proceeding with migration")
+        if (dbVersion < 5) {
+            Log.d(
+                "ExerciseDataMigrator",
+                "Found db version $dbVersion, proceeding with migration to v5"
+            )
+            migrateExercises2To5(db)
+        }
+    }
+
+    private suspend fun migrateExercises1To2(db: WorkoutDatabase) {
+        // map exercise name to exercise
+        val resolvedExercises: Map<String, Exercise> = INITIAL_EXERCISE_DATA.associateBy {
+            context.getLocalizedString(it.nameResource, Locale.ENGLISH)
+        }
+        val variations: Map<String, String> = INITIAL_EXERCISE_DATA.flatMap { exercise ->
+            exercise.variationsResKeys
+        }.associateBy {
+            context.getLocalizedString(getVariation(it), Locale.ENGLISH)
+        }
         // Start by migrating core exercises
         val existingExercises = db.exerciseDao.getExercisesForMigration()
         for (exercise in existingExercises) {
@@ -243,11 +254,30 @@ class ExerciseDataMigrator(private val context: Context) {
         context.dataStore.edit {
             it[dbVersionKey] = 2
         }
+    }
 
+    private suspend fun migrateExercises2To5(db: WorkoutDatabase) {
+        val dao = db.exerciseDao
 
-        // update db version
+        // Get current exercises keyed by nameResKey
+        val existing = dao.getAllExercises()
+            .first()
+            .associateBy { it.nameResKey }
+
+        INITIAL_EXERCISE_DATA.forEach { new ->
+            val old = existing[new.nameResKey]
+            if (old != null) {
+                // Preserve the existing DB id so the row is updated, not duplicated.
+                // Copy all fields from the new definition except keep the old primary key.
+                dao.updateExercise(new.copy(exerciseId = old.exerciseId))
+            } else {
+                // Brand-new exercise — insert with whatever id the new data carries
+                // (0 / auto-generate, or an explicit value if you assign them).
+                dao.insert(new)
+            }
+        }
         context.dataStore.edit {
-            it[dbVersionKey] = 2
+            it[dbVersionKey] = 5
         }
     }
 }

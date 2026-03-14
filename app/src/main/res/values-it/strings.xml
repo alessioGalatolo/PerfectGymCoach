@@ -195,7 +195,7 @@
     <string name="source_code_title">Codice sorgente</string>
     <string name="source_code_info">L\'intera app è open source. Sentiti libero di contribuire o semplicemente dare un\'occhiata.</string>
     <string name="acknowledgements_title">Ringraziamenti</string>
-    <string name="acknowledgements">Non possiedo nessuna delle immagini usate in questa app. Sono prive di copyright e sono state raccolte principalmente da pexels e unsplash. Molte grazie a tutti gli artisti che hanno reso disponibili le loro immagini gratuitamente: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb.</string>
+    <string name="acknowledgements">Non possiedo nessuna delle immagini usate in questa app. Sono prive di copyright e sono state raccolte principalmente da pexels e unsplash. Molte grazie a tutti gli artisti che hanno reso disponibili le loro immagini gratuitamente: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb, Viridiana Rivera, Pavel Danilyuk, kaboompics.com, Jayro Cerqueira da Silva, Amar Preciado, @marcuschanmedia | IG, Mikhail Nilov, Cleiton Silva, Gustavo Gimenez, RDNE Stock project, André Henrique, Sarazh Izmailov, Jessy Mesme, Airam Dato-on, Ahmet Kurt, Johnny Garcia, Carbell Sarfo, Sava Savov, Doğu Tuncer, Bayram Er, Tnarg, Alex O\'Neal, Zeal Creative Studios.</string>
     <string name="salute_user">Ciao, %1$s</string>
     <string name="name">Nome</string>
     <string name="age">Età</string>
@@ -471,7 +471,6 @@
     <string name="exercise_side_crunch_name">Crunch laterale</string>
     <string name="exercise_side_crunch_desc">Sdraiati su un fianco con le gambe sovrapposte e le ginocchia leggermente piegate. Metti una mano dietro la testa. Porta il busto verso i fianchi. Ripeti dall\'altro lato.</string>
 
-    <!--    FIXME: should say Dragon flag -->
     <string name="exercise_dragon_flag_name">Dragon flag</string>
     <string name="exercise_dragon_flag_desc">Sdraiati su una panca e fissa la parte superiore del corpo con cinghie o afferrando la panca sopra la testa. Estendi le gambe dritte, poi sollevale verso il soffitto mantenendole tese, quindi abbassale senza toccare la panca.</string>
 
@@ -509,7 +508,6 @@
     <string name="exercise_dumbbell_concentration_curl_name">Curl in concentrazione con manubrio</string>
     <string name="exercise_dumbbell_concentration_curl_description">Siediti su una panca con le gambe divaricate. Tieni un manubrio con una mano e appoggia il gomito sulla coscia, appena dentro il ginocchio. Porta il manubrio verso il petto mantenendo fermo il braccio. Abbassa lentamente il peso.</string>
 
-    <!--    FIXME: "Scott" -->
     <string name="exercise_dumbbell_scott_curl_name">Curl Scott con manubri</string>
     <string name="exercise_dumbbell_scott_curl_description">Siediti su una panca preacher con le ascelle appoggiate sulla parte superiore del cuscinetto, tenendo un manubrio in ciascuna mano. Porta i manubri verso l\'alto mantenendo la parte posteriore delle braccia contro il cuscinetto. Abbassa lentamente i pesi nella posizione iniziale.</string>
 
@@ -580,10 +578,16 @@
 
     <!-- Cables -->
     <string name="exercise_cable_leg_curl_name">Leg curl ai cavi</string>
-    <string name="exercise_cable_leg_curl_description">Collega una cavigliera a una puleggia bassa. Fronte alla macchina, aggancia la cavigliera alla caviglia e fletti la gamba portando il piede verso i glutei, poi torna lentamente all\'inizio.</string>
+    <string name="exercise_cable_leg_curl_description">Collega una cavigliera a una puleggia bassa. Fronteggiando la macchina, aggancia la cavigliera alla caviglia e fletti la gamba portando il piede verso i glutei, poi torna lentamente all\'inizio.</string>
 
     <string name="exercise_cable_pull_through_name">Pull-through ai cavi</string>
     <string name="exercise_cable_pull_through_description">Stai di spalle a una puleggia bassa con corda tra le gambe. Flettiti sui fianchi tirando la corda, contrai i glutei in alto, poi torna alla posizione iniziale.</string>
+
+    <string name="exercise_cable_glute_kickback_name">Glute kickback ai cavi</string>
+    <string name="exercise_cable_glute_kickback_description">Collega una cavigliera a una puleggia bassa. Fronteggiando la macchina, aggancia la cavigliera alla caviglia e muovi la gamba verso l\'alto fino a quando non è parallela al terreno, poi torna lentamente all\'inizio.</string>
+
+    <string name="exercise_cable_hip_abduction_name">Hip abduction ai cavi</string>
+    <string name="exercise_cable_hip_abduction_description">Collega una cavigliera a una puleggia bassa. Con la macchina al tuo lato, alza la gamba lateralmente verso l\'lato, poi torna lentamente all\'inizio.</string>
 
     <!-- Bodyweight -->
     <string name="exercise_bodyweight_squat_name">Squat a corpo libero</string>
@@ -675,6 +679,16 @@
 
     <string name="exercise_handstand_pushups_name">Handstand push up</string>
     <string name="exercise_handstand_pushups_desc">Mettiti in posizione verticale sulle mani contro un muro per supporto. Abbassa il corpo piegando i gomiti finché la testa non è quasi a terra, poi spingi di nuovo verso l\'alto.</string>
+
+    <string name="exercise_planche_name">Planche</string>
+    <string name="exercise_planche_desc">Inclinati in avanti con le braccia tese protraendo e deprimendo le scapole, spostando il centro di gravità sulle mani fino a staccare i piedi da terra (tuck planche). Finalmente, distendi le gambe aperte (straddle planche) oppure chiuse (planche completa).</string>
+
+    <string name="exercise_front_lever_name">Front lever</string>
+    <string name="exercise_front_lever_desc">Appenditi a una sbarra e, con le braccia tese, tira il corpo fino a posizione orizzontale spingendo i dorsali verso il basso mantenendo un hollow body. Il corpo deve essere rivolto verso l\'alto e parallelo al suolo, con le braccia perpendicolari ad esso.</string>
+
+    <string name="exercise_back_lever_name">Back lever</string>
+    <string name="exercise_back_lever_desc">Da una posizione appesa invertita, abbassati lentamente all\'indietro passando per il German hang fino a portare il corpo orizzontale e rivolto verso il basso. Mantenere le braccia tese, contrarre i glutei e mantenere la tensione di tutto il corpo per tenere la posizione.</string>
+
 
     <string name="exercise_machine_shoulder_press_name">Shoulder press machine</string>
     <string name="exercise_machine_shoulder_press_desc">Siediti in una macchina per shoulder press con la schiena contro lo schienale. Afferra le maniglie e spingile sopra la testa fino a distendere le braccia, poi torna all\'inizio.</string>

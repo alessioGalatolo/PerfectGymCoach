@@ -46,7 +46,6 @@ data class ExerciseRecord(
     val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
-    @Deprecated("Use variationResKey instead")
     val variation: String,
     @ColumnInfo(defaultValue = "")
     val variationResKey: String,
@@ -69,7 +68,6 @@ data class ExerciseRecordAndEquipment(
     val reps: List<Int>,
     val weights: List<Float>,
     val tare: Float = 0f,
-    @Deprecated("Use variationResKey instead")
     val variation: String,
     val variationResKey: String,
     val rest: List<Int>,
@@ -90,15 +88,12 @@ data class ExerciseRecordAndInfo(
     val date: ZonedDateTime, // redundant but simplifies
     val reps: List<Int>,
     val weights: List<Float>,
-    @Deprecated("Use variationResKey instead")
     val variation: String,
     val variationResKey: String,
     val rest: List<Int>,
     val tare: Float = 0f, // e.g. barbell weight or bodyweight
-    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
     val nameResKey: String, // key of the string resource
-    @Deprecated("Use imageResKey instead")
     val image: Int,
     val imageResKey: String,
     val userDefined: Boolean = false,

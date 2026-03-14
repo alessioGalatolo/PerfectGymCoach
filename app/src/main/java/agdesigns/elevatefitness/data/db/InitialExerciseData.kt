@@ -132,7 +132,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.CHEST,
         secondaryMuscles = listOf(Exercise.Muscle.BACK),
-        imageResKey = "generic_dumbbell",
+        imageResKey = "dumbbell_pullover",
         descriptionResKey = "exercise_pullover_description",
     ),
 
@@ -164,7 +164,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
         secondaryMuscles = emptyList(),
-        imageResKey = "generic_barbell",
+        imageResKey = "barbell_shrug",
         descriptionResKey = "exercise_barbell_shrug_description",
     ),
     Exercise(
@@ -182,7 +182,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
         secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
-        imageResKey = "generic_barbell",
+        imageResKey = "barbell_tbar",
         descriptionResKey = "exercise_barbell_tbar_row_description",
     ),
     Exercise(
@@ -212,7 +212,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.CABLES,
         primaryMuscle = Exercise.Muscle.BACK,
         secondaryMuscles = emptyList(),
-        imageResKey = "generic_cable",
+        imageResKey = "cable_pullover",
         descriptionResKey = "exercise_cable_pullover_description",
     ),
     Exercise(
@@ -297,7 +297,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_machine_row_description",
-        imageResKey = "cable_row"
+        imageResKey = "row_machine"
     ),
     Exercise(
         name = "",
@@ -329,7 +329,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.BACK,
         secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
         descriptionResKey = "exercise_vertical_traction_description",
-        imageResKey = "lat_pulldown"
+        imageResKey = "vertical_traction"
     ),
 
     // Dumbbell back
@@ -350,7 +350,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.BACK,
         secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
         descriptionResKey = "exercise_dumbbell_deadlift_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_deadlift"
     ),
     Exercise(
         name = "",
@@ -368,7 +368,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.BACK,
         secondaryMuscles = listOf(Exercise.Muscle.SHOULDERS),
         descriptionResKey = "exercise_upright_dumbbell_row_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_upright_row"
     ),
 
     /*
@@ -426,7 +426,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_plank_desc",
-        imageResKey = "plank"
+        imageResKey = "plank",
+        isDurationBased = true
     ),
     Exercise(
         name = "",
@@ -471,7 +472,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.ABS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_dragon_flag_desc",
-        difficulty = Exercise.ExerciseDifficulty.ADVANCED
+        difficulty = Exercise.ExerciseDifficulty.ADVANCED,
+        imageResKey = "dragon_flag"
     ),
     Exercise(
         name = "",
@@ -491,7 +493,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.ABS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_ab_machine_desc",
-        imageResKey = "generic_machine"
+        imageResKey = "ab_machine"
     ),
 
     // Dumbbell abs
@@ -548,7 +550,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.MACHINE,
         primaryMuscle = Exercise.Muscle.BICEPS,
         secondaryMuscles = emptyList(),
-        imageResKey = "generic_machine",
+        imageResKey = "biceps_machine",
         descriptionResKey = "exercise_machine_biceps_curl_description",
         variationsResKeys = listOf(
             "exercise_variation_scott",
@@ -603,7 +605,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_barbell_triceps_extensions_description",
-        imageResKey = "generic_barbell"
+        imageResKey = "barbell_skull_crusher"
     ),
     Exercise(
         name = "",
@@ -612,7 +614,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = listOf(Exercise.Muscle.CHEST, Exercise.Muscle.SHOULDERS),
         descriptionResKey = "exercise_close_grip_bench_press_description",
-        imageResKey = "generic_barbell"
+        imageResKey = "barbell_bench_close_grip"
     ),
     Exercise(
         name = "",
@@ -621,7 +623,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_french_press_description",
-        imageResKey = "generic_barbell"
+        imageResKey = "barbell_skull_crusher"
     ),
     Exercise(
         name = "",
@@ -630,7 +632,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_skull_crusher_description",
-        imageResKey = "generic_barbell"
+        imageResKey = "barbell_skull_crusher"
     ),
 
     // Cables
@@ -641,7 +643,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_cable_skull_crusher_description",
-        imageResKey = "generic_cable"
+        imageResKey = "cable_overhead_triceps"
     ),
     Exercise(
         name = "",
@@ -660,7 +662,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_overhead_cable_triceps_extension_description",
-        imageResKey = "generic_cable"
+        imageResKey = "cable_overhead_triceps"
     ),
 
     // Bodyweight
@@ -722,7 +724,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_dumbbell_triceps_extensions_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_triceps_extension"
     ),
     Exercise(
         name = "",
@@ -731,7 +733,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = listOf(Exercise.Muscle.CHEST, Exercise.Muscle.SHOULDERS),
         descriptionResKey = "exercise_close_grip_dumbbell_bench_press_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_triceps_close_grip"
     ),
     Exercise(
         name = "",
@@ -740,7 +742,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.TRICEPS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_dumbbell_skull_crusher_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_skull_crusher"
     ),
 
     /*
@@ -753,7 +755,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = listOf(Exercise.Muscle.HAMSTRINGS, Exercise.Muscle.ABS),
-        imageResKey = "generic_barbell",
+        imageResKey = "barbell_hip_thrust",
         descriptionResKey = "exercise_barbell_hip_thrust_description",
     ),
     Exercise(
@@ -820,7 +822,27 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = listOf(Exercise.Muscle.HAMSTRINGS, Exercise.Muscle.BACK),
         descriptionResKey = "exercise_cable_pull_through_description",
-        imageResKey = "cable_row"
+        imageResKey = "generic_cable"
+    ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_cable_glute_kickback_name",
+        equipment = Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.GLUTES,
+        secondaryMuscles = listOf(Exercise.Muscle.HAMSTRINGS),
+        difficulty = Exercise.ExerciseDifficulty.BEGINNER,
+        descriptionResKey = "exercise_cable_glute_kickback_description",
+        imageResKey = "glutes_cable"
+    ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_cable_hip_abduction_name",
+        equipment = Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.GLUTES,
+        secondaryMuscles = emptyList(),
+        difficulty = Exercise.ExerciseDifficulty.BEGINNER,
+        descriptionResKey = "exercise_cable_hip_abduction_description",
+        imageResKey = "cable_hip_abduction"
     ),
 
     // Bodyweight
@@ -845,7 +867,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_bodyweight_step_ups_description",
-        imageResKey = "step_ups"
+        imageResKey = "step_ups_better"
     ),
     Exercise(
         name = "",
@@ -876,7 +898,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_machine_leg_extension_description",
-        imageResKey = "leg_machine"
+        imageResKey = "leg_extension"
     ),
     Exercise(
         name = "",
@@ -885,7 +907,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.QUADRICEPS,
         secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.HAMSTRINGS),
         descriptionResKey = "exercise_machine_hack_squat_description",
-        imageResKey = "generic_machine"
+        imageResKey = "hack_squat_machine"
     ),
     Exercise(
         name = "",
@@ -904,7 +926,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_abduction_machine_description",
-        imageResKey = "generic_machine"
+        imageResKey = "abduction_machine"
     ),
     Exercise(
         name = "",
@@ -913,7 +935,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_adduction_machine_description",
-        imageResKey = "generic_machine"
+        imageResKey = "abduction_machine"
     ),
     Exercise(
         name = "",
@@ -923,7 +945,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = listOf(Exercise.Muscle.HAMSTRINGS),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_machine_glute_kickback_description",
-        imageResKey = "generic_machine"
+        imageResKey = "glutes_machine"
     ),
 
     // Dumbbell
@@ -934,7 +956,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.QUADRICEPS,
         secondaryMuscles = listOf(Exercise.Muscle.GLUTES),
         descriptionResKey = "exercise_bulgarian_split_squat_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_split_squat"
     ),
     Exercise(
         name = "",
@@ -953,7 +975,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.HAMSTRINGS),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_goblet_squat_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "goblet_squat"
     ),
     Exercise(
         name = "",
@@ -962,7 +984,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.GLUTES,
         secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS),
         descriptionResKey = "exercise_dumbbell_step_ups_description",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "step_ups_better"
     ),
     Exercise(
         name = "",
@@ -970,7 +992,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.DUMBBELL,
         primaryMuscle = Exercise.Muscle.HAMSTRINGS,
         secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.BACK),
-        imageResKey = "generic_dumbbell",
+        imageResKey = "dumbbell_deadlift",
         descriptionResKey = "exercise_dumbbell_romanian_deadlift_description",
     ),
 
@@ -987,7 +1009,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.CALVES,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_barbell_calf_raises_desc",
-        imageResKey = "calf"
+        imageResKey = "calves_raises"
     ),
     // Cables
     // Bodyweight
@@ -999,7 +1021,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_calf_raises_desc",
-        imageResKey = "calf"
+        imageResKey = "calves_raises"
     ),
     Exercise(
         name = "",
@@ -1018,7 +1040,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.CALVES,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_machine_calf_raises_desc",
-        imageResKey = "calf"
+        imageResKey = "calves_machine"
     ),
     // Dumbbell
     Exercise(
@@ -1028,7 +1050,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.CALVES,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_dumbbell_calf_raises_desc",
-        imageResKey = "calf"
+        imageResKey = "calves_raises"
     ),
 
     /*
@@ -1078,7 +1100,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.SHOULDERS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_cable_side_raise_desc",
-        imageResKey = "generic_cable"
+        imageResKey = "cable_side_raise"
     ),
     Exercise(
         name = "",
@@ -1087,7 +1109,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.SHOULDERS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_cable_rear_delt_fly_desc",
-        imageResKey = "generic_cable"
+        imageResKey = "cable_delt_fly"
     ),
     Exercise(
         name = "",
@@ -1096,7 +1118,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.SHOULDERS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_cable_face_pull_desc",
-        imageResKey = "generic_cable"
+        imageResKey = "cable_face_pull"
     ),
     Exercise(
         name = "",
@@ -1105,7 +1127,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.SHOULDERS,
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS),
         descriptionResKey = "exercise_cable_shoulder_press_desc",
-        imageResKey = "generic_cable"
+        imageResKey = "cable_shoulder_press"
     ),
     // Bodyweight
     Exercise(
@@ -1118,6 +1140,39 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_handstand_pushups_desc",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED
     ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_planche_name",
+        equipment = Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.ABS, Exercise.Muscle.TRICEPS, Exercise.Muscle.CHEST),
+        imageResKey = "planche",
+        descriptionResKey = "exercise_planche_desc",
+        difficulty = Exercise.ExerciseDifficulty.ADVANCED,
+        isDurationBased = true
+    ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_front_lever_name",
+        equipment = Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.ABS, Exercise.Muscle.BICEPS, Exercise.Muscle.BACK),
+        imageResKey = "front_lever",
+        descriptionResKey = "exercise_front_lever_desc",
+        difficulty = Exercise.ExerciseDifficulty.ADVANCED,
+        isDurationBased = true
+    ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_back_lever_name",
+        equipment = Equipment.BODY_WEIGHT,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.ABS, Exercise.Muscle.BICEPS, Exercise.Muscle.BACK),
+        imageResKey = "back_lever",
+        descriptionResKey = "exercise_back_lever_desc",
+        difficulty = Exercise.ExerciseDifficulty.ADVANCED,
+        isDurationBased = true
+    ),
     // Machine
     Exercise(
         name = "",
@@ -1127,7 +1182,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_machine_shoulder_press_desc",
-        imageResKey = "generic_machine"
+        imageResKey = "machine_shoulder_press"
     ),
     // Dumbbell
     Exercise(
@@ -1138,7 +1193,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_front_raise_desc",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_front_raise"
     ),
     Exercise(
         name = "",
@@ -1148,7 +1203,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_side_raise_desc",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_side_raise"
     ),
     Exercise(
         name = "",
@@ -1170,6 +1225,6 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.SHOULDERS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_dumbbell_rear_delt_row_desc",
-        imageResKey = "generic_dumbbell"
+        imageResKey = "dumbbell_row_standing"
     ),
 )

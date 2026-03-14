@@ -48,7 +48,6 @@ data class ProgramExercise (
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String = "",
-    @Deprecated("Ensure variationResKey was resolved before using it")
     val variation: String = "",
     @ColumnInfo(defaultValue = "")
     val variationResKey: String = "",
@@ -76,20 +75,16 @@ data class ProgramExerciseAndInfo (
     val extProgramId: Long,
     val extExerciseId: Long,
     val orderInProgram: Int,
-    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
     val nameResKey: String, // key of the string resource
-    @Deprecated("Use descriptionResKey instead")
     val description: String,
     val descriptionResKey: String,
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String,
-    @Deprecated("Use variationResKey instead")
     val variation: String,
     val variationResKey: String,
     val supersetExercise: Long? = null,
-    @Deprecated("Use imageResKey instead")
     val image: Int,
     val imageResKey: String,
     val equipment: Equipment,
