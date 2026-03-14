@@ -367,7 +367,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
                                 )
                                 ExposedDropdownMenu(
                                     expanded = expanded.value,

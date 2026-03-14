@@ -111,7 +111,7 @@ fun Context.exactAlarmPermissionFlow(): Flow<Boolean> = callbackFlow {
 @Singleton
 class WearRepository @Inject constructor(
     val permissionStateDataStore: PermissionStateDataStore,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     val hasExactAlarm = context.exactAlarmPermissionFlow()
     val hintAlarmFiredFlow: SharedFlow<Unit> = _hintAlarmFiredFlow

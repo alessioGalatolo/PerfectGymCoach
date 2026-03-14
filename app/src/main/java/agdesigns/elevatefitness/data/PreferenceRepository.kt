@@ -34,7 +34,7 @@ import javax.inject.Singleton
 @Singleton
 class PreferenceRepository @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     /*
      * DATA STORE (SETTINGS)

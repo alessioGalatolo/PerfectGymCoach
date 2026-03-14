@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class PermissionStateDataStore @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
         "permission_state_data_store",

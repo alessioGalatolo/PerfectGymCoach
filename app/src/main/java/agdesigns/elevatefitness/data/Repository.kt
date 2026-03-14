@@ -67,7 +67,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 @Singleton
 class Repository @Inject constructor(
     private val db: WorkoutDatabase,
-    @ApplicationContext  private val context: Context
+    @param:ApplicationContext  private val context: Context
 ) {
     fun openWearWorkout() {
         // maybe open wear os app

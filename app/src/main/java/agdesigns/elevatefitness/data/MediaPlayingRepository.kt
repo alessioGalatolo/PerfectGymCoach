@@ -63,7 +63,7 @@ data class SessionSummary(
 
 @OptIn(ExperimentalHorologistApi::class)
 class MediaPlayingRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val registry: WearDataLayerRegistry
 ) {
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

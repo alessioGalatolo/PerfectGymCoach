@@ -557,7 +557,7 @@ private fun chooseExercisesWeighted(
     repeat(count) {
         val candidates = mutable.filter { it.exerciseId !in avoid }
         val pickFrom = candidates.ifEmpty { mutable }
-        val picked = pickFrom.weightedRandom(pickFrom.map { it.probability.toDouble() })
+        val picked = pickFrom.weightedRandom(pickFrom.map { it.probability })
         chosen += picked
         mutable.remove(picked)
         if (mutable.isEmpty()) return@repeat

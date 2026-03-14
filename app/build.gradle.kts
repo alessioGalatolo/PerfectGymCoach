@@ -2,10 +2,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.plugin)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
@@ -14,7 +12,7 @@ plugins {
 }
 
 room {
-    schemaDirectory("$projectDir/schemas")
+    schemaDirectory(layout.projectDirectory.dir("schemas"))
 }
 
 protobuf {
@@ -101,12 +99,6 @@ android {
     packaging {
         resources {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
-        }
-    }
-
-    applicationVariants.configureEach {
-        kotlin.sourceSets.named(name) {
-            kotlin.srcDir("build/generated/ksp/$name/kotlin")
         }
     }
 }

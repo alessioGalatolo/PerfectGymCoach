@@ -26,7 +26,7 @@ val Context.recentSearchesDataStore by dataStore(
 )
 
 class SearchesRepository(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val maxItems: Int = 8
 ) {
     private val dataStore: DataStore<RecentSearches> = context.recentSearchesDataStore
