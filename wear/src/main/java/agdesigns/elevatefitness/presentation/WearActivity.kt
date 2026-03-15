@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import agdesigns.elevatefitness.presentation.theme.PerfectGymCoachTheme
+import android.util.Log
 import androidx.compose.runtime.remember
 import androidx.navigation.NavDeepLink
 import androidx.wear.compose.material3.AppScaffold
@@ -58,6 +59,7 @@ class WearActivity : ComponentActivity() {
                                     navController.navigate("select-values")
                                 },
                                 terminate = {
+                                    Log.d("WearActivity", "Terminating")
                                     this@WearActivity.finish()
                                 }
                             )

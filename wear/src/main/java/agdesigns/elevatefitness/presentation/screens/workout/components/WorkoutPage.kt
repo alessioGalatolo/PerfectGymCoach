@@ -93,7 +93,7 @@ fun WorkoutPage(
             alpha = 0.15f,
         )
     }
-    if ((workoutState.ongoingRestProgression ?: 0f) > 0f && !workoutState.settingSetValues) {
+    if ((workoutState.ongoingRestProgression ?: 0f) > 0f && workoutState.successfullySetValues) {
         RestScreen(
             restProgression = workoutState.ongoingRestProgression ?: 1f,
             currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
@@ -104,7 +104,7 @@ fun WorkoutPage(
             skipRest = resetRest,
             onDismissHint = onDismissHint
         )
-    } else if (!workoutState.settingSetValues) {
+    } else {
         ExercisePage(
             exerciseName = workoutState.currentExercise?.name ?: "",
             setsDone = setsDone,

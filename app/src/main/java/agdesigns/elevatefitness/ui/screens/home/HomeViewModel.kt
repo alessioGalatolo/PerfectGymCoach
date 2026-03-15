@@ -7,6 +7,10 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
+import agdesigns.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.shared.urgentProtoDataStore
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.data.WearDataLayerRegistry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,11 +42,15 @@ sealed class HomeEvent{
     data object DismissPlanChangeReminder: HomeEvent()
 }
 
+@OptIn(ExperimentalHorologistApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: Repository,
-    private val preferences: PreferenceRepository
+    private val preferences: PreferenceRepository,
+    private val registry: WearDataLayerRegistry
 ): ViewModel() {
+    private val wearWorkoutStatic = registry.urgentProtoDataStore<Workout.WorkoutStaticData>(viewModelScope)
+
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
@@ -54,6 +62,15 @@ class HomeViewModel @Inject constructor(
 
 
     init {
+        viewModelScope.launch {
+            // if we are in home, there is no workout. Make sure it is sent to wear
+            // (this could happen if phone app is abruptly terminated)
+            wearWorkoutStatic.urgentUpdateData {
+                Workout.WorkoutStaticData.newBuilder()
+                    .setActiveWorkout(false)
+                    .build()
+            }
+        }
         viewModelScope.launch {
             preferences.getCurrentPlan().collect { currentPlanId ->
                 _state.update { it.copy(currentPlan = currentPlanId) }

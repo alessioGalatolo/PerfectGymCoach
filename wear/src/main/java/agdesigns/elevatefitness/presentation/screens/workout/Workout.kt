@@ -59,7 +59,6 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.horologist.compose.ambient.AmbientAware
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.system.exitProcess
 
 
 @Composable
@@ -137,7 +136,7 @@ fun Workout(
     val scope = rememberCoroutineScope()
     LaunchedEffect(exercisesState.activeWorkout) {
         if (!exercisesState.activeWorkout) {
-            onBack()
+            terminate()
         }
     }
     if (exercisesState.exercises.isNotEmpty()) {

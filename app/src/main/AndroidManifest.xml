@@ -47,11 +47,19 @@
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <!--
+                For each of these, we only set the specific path of the service
+                This cannot be set explicitly and is controlled by horologist
+                The path will be "/grpc/${type.simpleName}
+
+                We do this to avoid unnecessary NPE caused by all services receiving all messages
+                 -->
                 <data
                     android:host="*"
-                    android:pathPrefix="/grpc/"
+                    android:path="/grpc/WorkoutServiceCoroutineStub"
                     android:scheme="wear"
                     />
+
             </intent-filter>
         </service>
         <service
@@ -60,11 +68,11 @@
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
-                <data
-                    android:host="*"
-                    android:pathPrefix="/grpc/"
+                <data android:host="*"
+                    android:path="/grpc/PhoneInfoServiceCoroutineStub"
                     android:scheme="wear"
                     />
+
             </intent-filter>
         </service>
         <service
@@ -75,7 +83,7 @@
                 <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
                 <data
                     android:host="*"
-                    android:pathPrefix="/grpc/"
+                    android:path="/grpc/MediaServiceCoroutineStub"
                     android:scheme="wear"
                     />
             </intent-filter>

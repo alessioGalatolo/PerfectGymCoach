@@ -90,6 +90,8 @@ data class WorkoutState(
     val tareIndex: Int = 0,
     // true when user completed a set from watch but has not yet set reps and weight values
     val settingSetValues: Boolean = false,
+    // true when user navigated to SelectValuesScreen and completed (instead of going back)
+    val successfullySetValues: Boolean = false,
     // hints to show to the user when they are in rest e.g., move to X exercise, change weight, etc.
     val inRestHints: List<InRestHint> = emptyList(),
     val showHintDialog: Boolean = false,
@@ -138,6 +140,7 @@ class WorkoutViewModel
     private val workoutService: WorkoutServiceGrpcKt.WorkoutServiceCoroutineStub,
     private val mediaService: MediaServiceGrpcKt.MediaServiceCoroutineStub
 ): ViewModel() {
+    private var retryJob: Job? = null
 
     val exercisesState = combine(
         registry.protoFlow<Workout.WorkoutStaticData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
@@ -218,7 +221,8 @@ class WorkoutViewModel
                 _state.update {
                     it.copy(
                         currentExerciseRest = event.rest,
-                        restTimestamp = event.restTimestamp.toZonedDateTime()
+                        restTimestamp = event.restTimestamp.toZonedDateTime(),
+                        successfullySetValues = true
                     )
                 }
                 val restFromNow = event.restTimestamp.toZonedDateTime()?.let {
@@ -242,6 +246,7 @@ class WorkoutViewModel
     }
 
     override fun onCleared() {
+        Log.d("WorkoutViewModel", "onCleared")
         repository.cancelRestAlarm()
         repository.cancelHintAlarm()
         repository.stopWorkout()
@@ -264,6 +269,7 @@ class WorkoutViewModel
                 _state.update {
                     it.copy(
                         settingSetValues = false,
+                        successfullySetValues = false,
                         restTimestamp = null,
                         currentExerciseRest = null,
                     )
@@ -348,7 +354,8 @@ class WorkoutViewModel
                     setCompletedQueue.add(queuedSetCompleted)
                     _state.update {
                         it.copy(
-                            settingSetValues = false
+                            settingSetValues = false,
+                            successfullySetValues = true
                         )
                     }
                     viewModelScope.launch {
@@ -439,6 +446,7 @@ class WorkoutViewModel
                             restTimestamp = null,
                             settingSetValues = true,
                             currentExerciseRest = null,
+                            successfullySetValues = false
                         )
                     } else {
                         repository.scheduleRestAlarm((rest.toLong() - 2L) * 1000L)
@@ -449,6 +457,7 @@ class WorkoutViewModel
                                     rest.toLong()
                                 ),
                             settingSetValues = true,
+                            successfullySetValues = false,
                             currentExerciseRest = rest.toLong(),
                         )
                     }
@@ -523,7 +532,10 @@ class WorkoutViewModel
                 }
             }
             is WorkoutEvent.RetrySendSetCompleted -> {
-                viewModelScope.launch {
+                if (retryJob?.isActive == true)
+                    return
+                retryJob = viewModelScope.launch {
+                    val failedSets = mutableListOf<Workout.SetCompleted>()
                     for (set in setCompletedQueue) {
                         try {
                             val result = workoutService.setCompleted(set)
@@ -532,14 +544,20 @@ class WorkoutViewModel
                                     "WorkoutViewModel",
                                     "Error completing set with message: ${result.message}"
                                 )
+                                failedSets.add(set)
                             }
                         } catch (e: StatusException) {
                             Log.e(
                                 "WorkoutViewModel",
                                 "Error completing set with error: ${e.message}"
                             )
+                            failedSets.add(set)
                         }
                         setCompletedQueue.remove(set)
+                    }
+                    if (failedSets.isNotEmpty()) {
+                        setCompletedQueue.addAll(failedSets)
+                        _effects.trySend(WorkoutEffect.RetriableError)
                     }
                     _state.update {
                         it.copy(
