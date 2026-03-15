@@ -357,7 +357,8 @@ suspend fun generatePlan(
                             reps = repsList,
                             rest = restList,
                             variation = "",
-                            variationResKey = ""
+                            variationResKey = "",
+                            overriddenDurationBased = ex.isDurationBased
                         )
                     )
                     // add rest time plus 2 seconds per rep
@@ -397,7 +398,8 @@ suspend fun generatePlan(
                         reps = repsList,
                         rest = restList,
                         variation = "",
-                        variationResKey = ""
+                        variationResKey = "",
+                        overriddenDurationBased = ex.isDurationBased
                     )
                     sanityCheckTotalTime += restList.sum() + 2.0 * repsList.sum()
 

@@ -66,6 +66,7 @@
     <string name="barbell_used">"Barbell used: %1$s %2$s"</string>
     <string name="bodyweight_at_the_time">"Bodyweight at the time: %1$s"</string>
     <string name="reps_weight">Reps: %1$s Weight: %2$s %3$s</string>
+    <string name="duration_weight">Hold: %1$ss Weight: %2$s %3$s</string>
 
     <!-- # Other -->
     <string name="magic_generation">Magic generation</string>
@@ -857,4 +858,9 @@
     <string name="modification_suggestion_desc_replace">Last time you replaced this exercise with: %1$s</string>
     <string name="modification_suggestion_not_this_time">Not this time</string>
     <string name="modification_suggestion_do_it">Let\'s do it again!</string>
+    <string name="exercise_type_hold">Isometric</string>
+    <string name="exercise_type_reps">Traditional</string>
+    <string name="exercise_type">Exercise type: </string>
+<!--    What to tell the user i.e., reps vs hold -->
+    <string name="exercise_hold">Hold</string>
 </resources>

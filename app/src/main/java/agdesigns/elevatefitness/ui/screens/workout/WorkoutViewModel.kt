@@ -664,7 +664,8 @@ class WorkoutViewModel @Inject constructor(
                                 reps = it.reps.toList(),
                                 rest = it.rest,
                                 supersetExercise = it.supersetExercise,
-                                userDefined = it.userDefined
+                                userDefined = it.userDefined,
+                                overriddenDurationBased = it.overriddenDurationBased
                             )
                         }
                         // add workout exercises to db
@@ -884,7 +885,8 @@ class WorkoutViewModel @Inject constructor(
                             variation = record.variation,
                             variationResKey = record.variationResKey,
                             rest = record.rest,
-                            tare = record.tare
+                            tare = record.tare,
+                            overriddenDurationBased = record.overriddenDurationBased
                         )
                     )
                 }
@@ -923,7 +925,8 @@ class WorkoutViewModel @Inject constructor(
                                 variation = record.variation,
                                 variationResKey = record.variationResKey,
                                 rest = record.rest,
-                                tare = record.tare
+                                tare = record.tare,
+                                overriddenDurationBased = record.overriddenDurationBased
                             )
                         )
                     }
@@ -1469,7 +1472,8 @@ class WorkoutViewModel @Inject constructor(
                         variation = exercise.variation,
                         variationResKey = exercise.variationResKey,
                         rest = listOf(exerciseRest.toInt()),
-                        tare = oldTare
+                        tare = oldTare,
+                        overriddenDurationBased = exercise.overriddenDurationBased
                     )
                 )
             } else {
@@ -1489,7 +1493,8 @@ class WorkoutViewModel @Inject constructor(
                         variation = record.variation,
                         variationResKey = record.variationResKey,
                         record.rest.plus(exerciseRest.toInt()),
-                        tare = oldTare  // allow user to change the initial tare, in case they selected wrong one
+                        tare = oldTare,  // allow user to change the initial tare, in case they selected wrong one
+                        overriddenDurationBased = record.overriddenDurationBased
                     )
                 )
             }

@@ -109,7 +109,12 @@ fun WorkoutPage(
             exerciseName = workoutState.currentExercise?.name ?: "",
             setsDone = setsDone,
             totalSets = workoutState.currentExercise?.restCount ?: 0,
-            exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
+            exerciseSubtitle = "${workoutState.currentReps}" +
+                    if (workoutState.currentExercise?.isDurationBased == true) {
+                        "s "
+                    } else { " " }
+                +
+                    "x ${workoutState.currentWeight}" +
                     if (exercisesState.imperialSystem)
                         stringResource(sharedR.string.lb)
                     else

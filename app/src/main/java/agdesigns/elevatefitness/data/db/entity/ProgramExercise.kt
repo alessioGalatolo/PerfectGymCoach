@@ -8,7 +8,6 @@ import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
-import androidx.room.Relation
 import agdesigns.elevatefitness.shared.Equipment
 import kotlinx.parcelize.Parcelize
 
@@ -51,7 +50,9 @@ data class ProgramExercise (
     val variation: String = "",
     @ColumnInfo(defaultValue = "")
     val variationResKey: String = "",
-    val supersetExercise: Long? = null
+    val supersetExercise: Long? = null,
+    @ColumnInfo(defaultValue = "0")
+    val overriddenDurationBased: Boolean
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
@@ -88,7 +89,8 @@ data class ProgramExerciseAndInfo (
     val image: Int,
     val imageResKey: String,
     val equipment: Equipment,
-    val userDefined: Boolean
+    val userDefined: Boolean,
+    val overriddenDurationBased: Boolean
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)

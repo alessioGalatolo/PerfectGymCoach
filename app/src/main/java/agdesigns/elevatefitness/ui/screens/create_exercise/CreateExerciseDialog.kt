@@ -178,6 +178,25 @@ fun CreateExerciseDialog(
                     )
                 }
             }
+            // Exercise type (isDurationBased)
+            item {
+                Card(
+                    shape = MaterialTheme.shapes.large.copy(
+                        topStart = CornerSize(4.dp),
+                        topEnd = CornerSize(4.dp),
+                        bottomStart = CornerSize(4.dp),
+                        bottomEnd = CornerSize(4.dp)
+                    ),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                )  {
+                    ExerciseTypeSection(
+                        isDurationBased = exerciseState.isDurationBased,
+                        changeIsDurationBased = { isDurationBased ->
+                            viewModel.onEvent(CreateExerciseEvent.UpdateDurationBased(isDurationBased))
+                        }
+                    )
+                }
+            }
 
             // Difficulty Section
             item {
@@ -286,6 +305,60 @@ private fun EquipmentSection(
                     equipment = equipment,
                     isSelected = equipment == selectedEquipment,
                     onClick = { onEquipmentSelected(equipment) }
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ExerciseTypeSection(
+    isDurationBased: Boolean,
+    changeIsDurationBased: (Boolean) -> Unit
+) {
+    Column {
+        SectionHeader(
+            title = stringResource(R.string.exercise_type),
+        )
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            Modifier
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+        ) {
+            ToggleButton(
+                checked = isDurationBased,
+                onCheckedChange = {
+                    changeIsDurationBased(true)
+                },
+                modifier = if (isDurationBased)
+                    Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio)
+                else Modifier.weight(1f),
+                shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
+            ) {
+                Text(
+                    stringResource(R.string.exercise_type_hold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            ToggleButton(
+                checked = !isDurationBased,
+                onCheckedChange = {
+                    changeIsDurationBased(false)
+                },
+                modifier = if (!isDurationBased)
+                    Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio)
+                else Modifier.weight(1f),
+                shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
+            ) {
+                Text(
+                    stringResource(R.string.reps),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

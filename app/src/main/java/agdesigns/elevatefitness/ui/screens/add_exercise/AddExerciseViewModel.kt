@@ -6,7 +6,6 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
-import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -15,7 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,7 +33,9 @@ data class AddExerciseState(
     val restArray: List<UInt> = List(5) { 90U },
     val advancedSets: Boolean = false,
     val isLoading: Boolean = true,
-    val insertAtPosition: Int? = null
+    val insertAtPosition: Int? = null,
+    // this gets set to exercise.isDurationBased but can be overridden by user
+    val overriddenDurationBased: Boolean = false
 )
 
 sealed class AddExerciseEvent{
@@ -67,6 +67,7 @@ sealed class AddExerciseEvent{
     data class UpdateRest(val newRest: UInt): AddExerciseEvent()
 
     data class UpdateRestAtIndex(val newRest: UInt, val index: Int): AddExerciseEvent()
+    data class ChangeDurationBased(val isDurationBased: Boolean): AddExerciseEvent()
 }
 
 @HiltViewModel
@@ -75,7 +76,6 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
     val state: StateFlow<AddExerciseState> = _state.asStateFlow()
 
     private var getDataJob: Job? = null
-
 
     fun onEvent(event: AddExerciseEvent): Boolean {
         when (event) {
@@ -136,7 +136,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                     state.value.variationResKey
                                 else
                                     "",
-                                userDefined = state.value.exercise!!.userDefined
+                                userDefined = state.value.exercise!!.userDefined,
+                                overriddenDurationBased = state.value.overriddenDurationBased
                             )
                         )
                     }
@@ -155,7 +156,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 variationResKey = if(state.value.variationResKey != "no_variation")
                                     state.value.variationResKey
                                 else
-                                    ""
+                                    "",
+                                overriddenDurationBased = state.value.overriddenDurationBased
                             )
                         )
                     }
@@ -251,6 +253,9 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         repository.resetAllExerciseProbability()
                 }
             }
+            is AddExerciseEvent.ChangeDurationBased -> {
+                _state.update { it.copy(overriddenDurationBased = event.isDurationBased) }
+            }
         }
         return true
     }
@@ -277,7 +282,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         repsArray = programExercise.reps.map { it.toUInt() },
                         restArray = programExercise.rest.map { it.toUInt() },
                         advancedSets = (programExercise.reps.distinct().size + programExercise.rest.distinct().size) > 2,
-                        isLoading = false
+                        isLoading = false,
+                        overriddenDurationBased = programExercise.overriddenDurationBased
                     )
                 }
             }.collect()
@@ -296,7 +302,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         exerciseNumber = exerciseNumber,
                         programId = programId,
                         workoutId = workoutId,
-                        isLoading = false
+                        isLoading = false,
+                        overriddenDurationBased = exercise.isDurationBased
                     )
                 }
             }.collect()
@@ -311,7 +318,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         exercise = exercise,
                         exerciseNumber = workoutExercises.size,
                         workoutId = workoutId,
-                        isLoading = false
+                        isLoading = false,
+                        overriddenDurationBased = exercise.isDurationBased
                     )
                 }
             }.collect()

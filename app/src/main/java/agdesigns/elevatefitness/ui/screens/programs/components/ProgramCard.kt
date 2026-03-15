@@ -7,7 +7,6 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,7 +39,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -184,7 +182,11 @@ fun LazyItemScope.ProgramCard(
                                     append(it.reps.size.toString())
                                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                                         append(" • ")
-                                        append(stringResource(R.string.reps))
+                                        if (it.overriddenDurationBased) {
+                                            append(stringResource(R.string.exercise_hold))
+                                            append(" (s)")
+                                        } else
+                                            append(stringResource(R.string.reps))
                                         append(": ")
                                     }
                                     append(it.reps.joinToString(", "))

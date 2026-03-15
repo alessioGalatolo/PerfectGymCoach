@@ -26,7 +26,6 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
@@ -146,7 +145,11 @@ fun WorkoutCard(
                     append(it.reps.size.toString())
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                         append(" • ")
-                        append(stringResource(R.string.reps))
+                        if (it.overriddenDurationBased) {
+                            append(stringResource(R.string.exercise_hold))
+                            append(" (s)")
+                        } else
+                            append(stringResource(R.string.reps))
                         append(": ")
                     }
                     append(it.reps.joinToString(", "))

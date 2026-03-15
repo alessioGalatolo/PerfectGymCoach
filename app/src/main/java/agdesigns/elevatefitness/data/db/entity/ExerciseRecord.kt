@@ -50,7 +50,9 @@ data class ExerciseRecord(
     @ColumnInfo(defaultValue = "")
     val variationResKey: String,
     val rest: List<Int>,
-    val tare: Float = 0f // e.g. barbell weight or bodyweight
+    val tare: Float = 0f, // e.g. barbell weight or bodyweight
+    @ColumnInfo(defaultValue = "0")
+    val overriddenDurationBased: Boolean,
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
@@ -71,7 +73,8 @@ data class ExerciseRecordAndEquipment(
     val variation: String,
     val variationResKey: String,
     val rest: List<Int>,
-    val equipment: Equipment
+    val equipment: Equipment,
+    val overriddenDurationBased: Boolean
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
@@ -97,7 +100,8 @@ data class ExerciseRecordAndInfo(
     val image: Int,
     val imageResKey: String,
     val userDefined: Boolean = false,
-    val equipment: Equipment
+    val equipment: Equipment,
+    val overriddenDurationBased: Boolean
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)

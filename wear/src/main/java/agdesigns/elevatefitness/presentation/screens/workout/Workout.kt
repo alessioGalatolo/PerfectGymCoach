@@ -183,7 +183,7 @@ fun Workout(
                                         openOnPhone = true
                                         delay(OpenOnPhoneDialogDefaults.DurationMillis)
                                         delay(500L)
-                                        exitProcess(0) // FIXME
+                                        terminate()
                                     }
                                 }
                             )

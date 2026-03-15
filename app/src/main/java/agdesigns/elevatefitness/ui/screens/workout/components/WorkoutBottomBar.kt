@@ -21,6 +21,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import agdesigns.elevatefitness.shared.Equipment
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -169,7 +170,7 @@ fun RowScope.TextFieldWithButtons(
             value = text(),
             onValueChange = onNewText,
             singleLine = true,
-            label = { Text(prompt) },
+            label = { Text(prompt, overflow = TextOverflow.Ellipsis, maxLines = 1) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             isError = !textIsValid(text()),
             modifier = Modifier

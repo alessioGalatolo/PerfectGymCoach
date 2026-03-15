@@ -78,5 +78,6 @@
     <string name="modification_desc_replace">L\'ultima volta hai sostituito "%1$s" con: </string>
     <string name="modification_desc_add">L\'ultima volta, dopo aver completato l\'ultimo esercizio, hai aggiunto: </string>
     <string name="modification_desc_skip">L\'ultima volta hai saltato "%1$s"</string>
+    <string name="hold">Durata</string>
 
 </resources>

@@ -3,15 +3,12 @@ package agdesigns.elevatefitness.ui.screens.program_exercises.components
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
-import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
-import agdesigns.elevatefitness.ui.screens.program_exercises.ProgramExercisesEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,7 +73,6 @@ import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialog
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
-import sh.calvin.reorderable.ReorderableListState
 
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -316,7 +312,11 @@ fun SharedTransitionScope.ProgramExerciseCard(
                         append(programExercise.reps.size.toString())
                         withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                             append(" • ")
-                            append(stringResource(R.string.reps))
+                            if (programExercise.overriddenDurationBased) {
+                                append(stringResource(R.string.exercise_hold))
+                                append(" (s)")
+                            } else
+                                append(stringResource(R.string.reps))
                             append(": ")
                         }
                         append(programExercise.reps.joinToString(", "))

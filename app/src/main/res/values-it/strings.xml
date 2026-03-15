@@ -67,6 +67,7 @@
     <string name="barbell_used">"Bilanciere usato: %1$s %2$s"</string>
     <string name="bodyweight_at_the_time">"Peso corporeo al momento: %1$s"</string>
     <string name="reps_weight">Ripetizioni: %1$s Peso: %2$s %3$s</string>
+    <string name="duration_weight">Mantieni: %1$ss Peso: %2$s %3$s</string>
 
     <!-- # Other -->
     <string name="magic_generation">Generazione magica</string>
@@ -856,4 +857,8 @@
     <string name="modification_suggestion_desc_replace">L\'ultima volta hai sostituito questo esercizio con: %1$s</string>
     <string name="modification_suggestion_not_this_time">Non questa volta</string>
     <string name="modification_suggestion_do_it">Facciamolo di nuovo!</string>
+    <string name="exercise_type_hold">Isometrico</string>
+    <string name="exercise_type_reps">Tradizionale</string>
+    <string name="exercise_type">Tipo di esercizio: </string>
+    <string name="exercise_hold">Mantieni</string>
 </resources>

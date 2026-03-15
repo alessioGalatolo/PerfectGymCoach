@@ -45,7 +45,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -85,7 +85,7 @@ abstract class WorkoutDatabase: RoomDatabase() {
                         // Check if migration is needed every time database opens
                         checkAndPerformDataMigration(context)
                     }
-                }).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                }).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { instance = it }
             }
@@ -146,6 +146,20 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
             "ALTER TABLE Exercise ADD COLUMN isDurationBased INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
+
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE WorkoutExercise ADD COLUMN overriddenDurationBased INTEGER NOT NULL DEFAULT 0"
+        )
+        db.execSQL(
+            "ALTER TABLE ProgramExercise ADD COLUMN overriddenDurationBased INTEGER NOT NULL DEFAULT 0"
+        )
+        db.execSQL(
+            "ALTER TABLE ExerciseRecord ADD COLUMN overriddenDurationBased INTEGER NOT NULL DEFAULT 0"
         )
     }
 }

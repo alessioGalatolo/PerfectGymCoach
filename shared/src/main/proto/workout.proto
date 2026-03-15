@@ -48,6 +48,7 @@ message Exercise {
   string note = 8;
   string variation = 9;
   int64 superset_exercise = 10;
+  bool is_duration_based = 11;
 }
 
 message SuggestedRepsWeight {

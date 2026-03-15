@@ -281,7 +281,8 @@ class ExerciseStatsViewModel @Inject constructor(
                         variation = "variation_$id",
                         variationResKey = "variation_key_$id",
                         rest = rest,
-                        equipment = Equipment.BARBELL
+                        equipment = Equipment.BARBELL,
+                        overriddenDurationBased = false
                     )
                 )
 

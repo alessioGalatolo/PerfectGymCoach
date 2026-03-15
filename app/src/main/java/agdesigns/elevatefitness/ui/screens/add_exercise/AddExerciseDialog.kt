@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -19,14 +18,12 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
 import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.ui.common.ResetExerciseProbabilityDialog
@@ -39,7 +36,6 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
@@ -53,7 +49,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import coil3.compose.AsyncImage
 import com.ramcosta.composedestinations.annotation.Destination
@@ -61,7 +56,6 @@ import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDest
 import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.math.max
 
@@ -367,7 +361,10 @@ fun SharedTransitionScope.AddExerciseDialog(
                                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
+                                        .menuAnchor(
+                                            ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                            true
+                                        )
                                 )
                                 ExposedDropdownMenu(
                                     expanded = expanded.value,
@@ -390,6 +387,54 @@ fun SharedTransitionScope.AddExerciseDialog(
                                             )
                                         }
                                 }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Row(
+                        verticalAlignment = CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem()
+                            .padding(horizontal = 16.dp)
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(stringResource(R.string.exercise_type))
+                        Spacer(Modifier.width(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                        ) {
+                            TonalToggleButton(
+                                checked = state.overriddenDurationBased,
+                                onCheckedChange = {
+                                    viewModel.onEvent(
+                                        AddExerciseEvent.ChangeDurationBased(true)
+                                    )
+                                },
+                                shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+                                modifier = if (state.overriddenDurationBased)
+                                    Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio)
+                                else Modifier.weight(1f),
+                            ) {
+                                Text(stringResource(R.string.exercise_type_hold))
+                            }
+                            TonalToggleButton(
+                                checked = !state.overriddenDurationBased,
+                                onCheckedChange = {
+                                    viewModel.onEvent(
+                                        AddExerciseEvent.ChangeDurationBased(false)
+                                    )
+                                },
+                                shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+                                modifier = if (!state.overriddenDurationBased)
+                                    Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio)
+                                else Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    stringResource(R.string.reps)
+                                )
                             }
                         }
                     }
@@ -525,7 +570,12 @@ fun SharedTransitionScope.AddExerciseDialog(
                                         keyboardType = KeyboardType.Number,
                                         imeAction = ImeAction.Done
                                     ),
-                                    label = { Text(stringResource(R.string.reps)) },
+                                    label = { Text(
+                                        if (state.overriddenDurationBased)
+                                            stringResource(R.string.exercise_hold)
+                                        else
+                                            stringResource(R.string.reps)
+                                    ) },
                                     isError = !repsTextIsValid,
                                     supportingText = if (!repsTextIsValid) {
                                         { Text(stringResource(R.string.please_enter_a_valid_number)) }
@@ -626,7 +676,10 @@ fun SharedTransitionScope.AddExerciseDialog(
                                 Spacer(Modifier.width(8.dp))
                                 // FIXME: should register when textfield gets focus
                                 TextFieldWithButtons(
-                                    prompt = stringResource(R.string.reps),
+                                    prompt = if (state.overriddenDurationBased)
+                                        stringResource(R.string.exercise_hold)
+                                    else
+                                        stringResource(R.string.reps),
                                     text = { repsTextFieldState.text.toString() },
                                     onNewText = {
                                         repsTextFieldState.setTextAndPlaceCursorAtEnd(it)

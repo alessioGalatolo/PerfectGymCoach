@@ -98,6 +98,10 @@ fun SelectValuesScreen(
     val currentImage = remember(state.currentExerciseIndex, exercisesState.images) {
         exercisesState.images.getOrNull(state.currentExerciseIndex)
     }
+    val isDurationBased = remember(state.currentExerciseIndex, exercisesState.exercises) {
+        exercisesState.exercises.getOrNull(state.currentExerciseIndex)?.isDurationBased ?: false
+    }
+
     val animatedRestProgression = animateFloatAsState(
         targetValue = state.ongoingRestProgression ?: 0f,
         animationSpec = if ((state.ongoingRestProgression ?: 0f) > previousRestProgression) {
@@ -162,7 +166,10 @@ fun SelectValuesScreen(
             ) { animatedPage ->
                 when (animatedPage) {
                     0 -> SelectSingleValue(
-                        title = stringResource(R.string.reps),
+                        title = if (isDurationBased)
+                            stringResource(R.string.hold)
+                        else
+                            stringResource(R.string.reps),
                         subtitle = "",
                         value = state.currentReps.toString(),
                         subValue = "",
@@ -358,7 +365,8 @@ fun SelectSingleValue(
                 middleButton = {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
                             .rotaryScrollable(
                                 accumulatedBehavior { value ->
                                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)

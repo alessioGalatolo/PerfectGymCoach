@@ -69,7 +69,9 @@ data class WorkoutExercise (
     val variationResKey: String,
     val supersetExercise: Long? = null,
     @ColumnInfo(defaultValue = "0")
-    val userDefined: Boolean = false
+    val userDefined: Boolean = false,
+    @ColumnInfo(defaultValue = "0")
+    val overriddenDurationBased: Boolean
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)
@@ -92,6 +94,7 @@ data class WorkoutExercise (
             .setNote(this.note)
             .setVariation(this.variation)
             .setSupersetExercise(this.supersetExercise ?: 0L)
+            .setIsDurationBased(this.overriddenDurationBased)
             .build()
     }
 }

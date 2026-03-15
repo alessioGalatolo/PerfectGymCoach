@@ -197,6 +197,7 @@ fun SharedTransitionScope.ExercisePages(
                         exerciseRest = previewExercise.rest.getOrNull(0) ?: 0,
                         equipment = Equipment.EVERYTHING,
                         tare = null,
+                        isDurationBased = previewExercise.overriddenDurationBased,
                         repsWeightRows = previewExercise.reps.map {
                             SetDisplayRow(
                                 reps = it.toString(),
@@ -274,6 +275,7 @@ fun SharedTransitionScope.ExercisePages(
                             ],
                             equipment = pagesContent.exercises[page].equipment,
                             tare = workoutState.tares.getOrNull(page),
+                            isDurationBased = pagesContent.exercises[page].overriddenDurationBased,
                             repsWeightRows = pagesContent.exerciseRepsWeightRows[page],
                             setsDone = pagesContent.exerciseSetsDone[page],
                             records = pagesContent.exerciseRecords[page],
@@ -354,6 +356,7 @@ fun ExercisePage(
     exerciseRest: Int,
     equipment: Equipment,
     tare: Float?,
+    isDurationBased: Boolean,
     repsWeightRows: List<SetDisplayRow>,
     setsDone: Int,
     records: List<ExerciseRecordAndEquipment>,
@@ -521,7 +524,11 @@ fun ExercisePage(
                         // Reps section
                         Text(
                             // FIXME: overflow in other languages
-                            text = stringResource(R.string.reps) + ": ",
+                            text = if (isDurationBased) {
+                                stringResource(R.string.exercise_hold) + ": "
+                            } else {
+                                stringResource(R.string.reps) + ": "
+                            },
                             color = textColor
                         )
                         Text(
@@ -537,13 +544,19 @@ fun ExercisePage(
                                 tint = textColor
                             )
                             Text(
-                                text = "$projectedRep ",
+                                text = projectedRep,
+                                color = textColor
+                            )
+                        }
+                        if (isDurationBased) {
+                            Text(
+                                "s ",
                                 color = textColor
                             )
                         } else {
                             Text(
-                                text = " ",
-                                color = textColor,
+                                " ",
+                                color = textColor
                             )
                         }
 
@@ -783,7 +796,10 @@ fun HistoricRecord(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         stringResource(
-                            R.string.reps_weight,
+                            if (record.overriddenDurationBased)
+                                R.string.duration_weight
+                            else
+                                R.string.reps_weight,
                             rep,
                             maybeKgToLb(
                                 record.weights[index],

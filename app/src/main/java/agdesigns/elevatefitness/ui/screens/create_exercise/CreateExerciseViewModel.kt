@@ -19,7 +19,8 @@ data class ExerciseState(
     val equipment: Equipment = Equipment.BARBELL,
     val primaryMuscle: Exercise.Muscle = Exercise.Muscle.ABS,
     val secondaryMuscles: List<Boolean> = List(Exercise.Muscle.entries.size-1) { false },
-    val difficulty: Exercise.ExerciseDifficulty = Exercise.ExerciseDifficulty.INTERMEDIATE
+    val difficulty: Exercise.ExerciseDifficulty = Exercise.ExerciseDifficulty.INTERMEDIATE,
+    val isDurationBased: Boolean = false
 )
 
 sealed class CreateExerciseEvent{
@@ -38,6 +39,8 @@ sealed class CreateExerciseEvent{
     data class ToggleSecondaryMuscle(val index: Int): CreateExerciseEvent()
 
     data object TryCreateExercise: CreateExerciseEvent()
+
+    data class UpdateDurationBased(val isDurationBased: Boolean): CreateExerciseEvent()
 }
 
 @HiltViewModel
@@ -80,7 +83,8 @@ class CreateExerciseViewModel @Inject constructor(private val repository: Reposi
                                 primaryMuscle = state.value.primaryMuscle,
                                 secondaryMuscles = secondaryMuscles,
                                 difficulty = state.value.difficulty,
-                                userDefined = true
+                                userDefined = true,
+                                isDurationBased = state.value.isDurationBased
                             )
                         )
                     }
@@ -108,6 +112,9 @@ class CreateExerciseViewModel @Inject constructor(private val repository: Reposi
             }
             is CreateExerciseEvent.UpdateDifficulty -> {
                 _state.update { it.copy(difficulty = event.newDifficulty) }
+            }
+            is CreateExerciseEvent.UpdateDurationBased -> {
+                _state.update { it.copy(isDurationBased = event.isDurationBased) }
             }
         }
         return true

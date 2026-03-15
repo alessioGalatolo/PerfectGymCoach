@@ -76,6 +76,7 @@
     <string name="modification_desc_replace">Last time you replaced "%1$s" with: </string>
     <string name="modification_desc_add">Last time, after completing the last exercise, you added : </string>
     <string name="modification_desc_skip">Last time you skipped "%1$s"</string>
+    <string name="hold">Hold</string>
 
     <!--
     This string is used for square devices and overridden by hello_world in

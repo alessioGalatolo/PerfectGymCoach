@@ -99,7 +99,10 @@ fun LazyListScope.ExerciseRecordsList(
                         Spacer(Modifier.width(8.dp))
                         Text(
                             stringResource(
-                                R.string.reps_weight,
+                                if (exercise.overriddenDurationBased)
+                                    R.string.duration_weight
+                                else
+                                    R.string.reps_weight,
                                 rep,
                                 maybeKgToLb(exercise.weights[index], useImperialSystem),
                                 if (useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
