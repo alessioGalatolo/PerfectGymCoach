@@ -539,7 +539,6 @@ class Repository @Inject constructor(
         Log.d("ResCheck", "resId=$resId name=${context.resources.debugName(resId)}")
         BitmapFactory.decodeResource(context.resources, resId, options)
 
-        // FIXME: is this enough res?
         options.inSampleSize = calculateInSampleSize(options, reqWidth = 200, reqHeight = 200)
         options.inJustDecodeBounds = false
 

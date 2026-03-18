@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.data.db.entity.Exercise.Muscle
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord.WorkoutIntensity
 import agdesigns.elevatefitness.ui.common.BestColumnKey
@@ -16,6 +17,8 @@ import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import android.util.Log
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.maybeKgToLb
+import agdesigns.elevatefitness.ui.common.WorkoutFrequencyLabelsKey
+import agdesigns.elevatefitness.ui.common.chartColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -29,6 +32,14 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import kotlin.collections.filter
+import kotlin.collections.indexOfLast
+import kotlin.collections.indices
+import kotlin.collections.map
+import kotlin.collections.mapIndexed
+import kotlin.collections.maxOfOrNull
+import kotlin.collections.sum
+import kotlin.collections.toList
 
 // StatisticsState.kt
 data class StatisticsState(
@@ -41,6 +52,7 @@ data class StatisticsState(
     val avgCalories: Double = 0.0,
     val currentStreak: Int = 0,
     val longestStreak: Int = 0,
+    val volumeChartData: Map<Muscle, List<Pair<String, Float>>> = emptyMap(),
     val volumeChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val frequencyChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val muscleGroupDistribution: List<Pair<Int, Float>> = emptyList(),
@@ -48,6 +60,7 @@ data class StatisticsState(
     val recentPRs: List<PersonalRecord> = emptyList(),
     val equipmentUsage: List<Pair<Int, DonutData>> = emptyList(),
     val selectedTimeFrame: TimeFrame = TimeFrame.MONTH,
+    val volumeMuscleFilter: Muscle = Muscle.EVERYTHING,
     val allExerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     val allWorkouts: List<WorkoutRecord> = emptyList(),
     val progressTextRes: Int = R.string.stats_loading_generic,
@@ -87,6 +100,7 @@ enum class TimeFrame(val displayResKey: String) {
 
 sealed class StatisticsEvent {
     data class OnTimeFrameChanged(val timeFrame: TimeFrame) : StatisticsEvent()
+    data class OnVolumeMuscleFilterChanged(val muscle: Muscle) : StatisticsEvent()
 }
 
 @HiltViewModel
@@ -112,6 +126,12 @@ class StatisticsViewModel @Inject constructor(
                     )
                 }
                 computeStatistics()
+            }
+            is StatisticsEvent.OnVolumeMuscleFilterChanged -> {
+                _state.update {
+                    it.copy(volumeMuscleFilter = event.muscle)
+                }
+                updateVolumeChart(event.muscle, state.value.volumeChartData)
             }
         }
     }
@@ -180,12 +200,12 @@ class StatisticsViewModel @Inject constructor(
                     it.equipment
                 ).toDouble()
             }, state.value.useImperialSystem)
-            val avgDuration = if (nonEmptyWorkouts.isNotEmpty()) {
-                nonEmptyWorkouts.map { it.durationSeconds }.average().toLong()
+            val avgDuration = if (workoutsDateFiltered.isNotEmpty()) {
+                workoutsDateFiltered.map { it.durationSeconds }.average().toLong()
             } else 0L
-            val totalCalories = nonEmptyWorkouts.sumOf { it.calories.toDouble() }
-            val avgCalories = if (nonEmptyWorkouts.isNotEmpty()) {
-                nonEmptyWorkouts.sumOf { it.calories.toDouble() } / nonEmptyWorkouts.size
+            val totalCalories = workoutsDateFiltered.sumOf { it.calories.toDouble() }
+            val avgCalories = if (workoutsDateFiltered.isNotEmpty()) {
+                workoutsDateFiltered.sumOf { it.calories.toDouble() } / workoutsDateFiltered.size
             } else 0.0
 
             // Calculate streaks
@@ -194,31 +214,22 @@ class StatisticsViewModel @Inject constructor(
 
             // Generate chart data
             _state.update { it.copy(progressTextRes = R.string.stats_loading_summing) }
-            val volumeProgression = generateVolumeProgressionData(
-                recordsDateFiltered,
-                timeFrame,
-                state.value.useImperialSystem
-            )
-            val volumeIndex2Date = volumeProgression.mapIndexed { index, pair -> index to pair.first }.toMap()
-            val maxVolume = volumeProgression.maxOfOrNull { it.second }
-            val maxIndex = volumeProgression.indexOfLast { it.second == maxVolume }
-            viewModelScope.launch {
-                if (volumeProgression.isEmpty())
-                    return@launch
-                state.value.volumeChartProducer.runTransaction {
-                    columnSeries {
-                        series(
-                            volumeProgression.indices.toList(),
-                            volumeProgression.map { it.second }
-                        )
-                    }
-                    extras {
-                        val nonZeroVolumeEntries = volumeProgression.filter { it.second > 0 }.size
-                        it[MeanLineKey] = volumeProgression.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
-                        it[BestColumnKey] = maxIndex
+            val volumeProgressions = Muscle.entries.associateWith { muscle ->
+                val recordsForVolume = if (muscle == Muscle.EVERYTHING) {
+                    recordsDateFiltered
+                } else {
+                    recordsDateFiltered.filter {
+                        repository.getExercise(it.extExerciseId)
+                            .first().primaryMuscle == muscle
                     }
                 }
+                generateVolumeProgressionData(
+                    recordsForVolume,
+                    timeFrame,
+                    state.value.useImperialSystem
+                )
             }
+            updateVolumeChart(state.value.volumeMuscleFilter, volumeProgressions)
             _state.update { it.copy(progressTextRes = R.string.stats_loading_counting) }
             val monthlyWorkouts = generateMonthlyWorkoutData(nonEmptyWorkouts)
             viewModelScope.launch {
@@ -227,9 +238,13 @@ class StatisticsViewModel @Inject constructor(
                 state.value.frequencyChartProducer.runTransaction {
                     columnSeries {
                         series(
-                            monthlyWorkouts.map { it.first },
+                            monthlyWorkouts.indices.toList(),
                             monthlyWorkouts.map { it.second }
                         )
+
+                    }
+                    extras {
+                        it[WorkoutFrequencyLabelsKey] = monthlyWorkouts.map { it.first }
                     }
                 }
             }
@@ -253,15 +268,50 @@ class StatisticsViewModel @Inject constructor(
                     avgCalories = avgCalories,
                     currentStreak = currentStreak,
                     longestStreak = longestStreak,
-                    volumeIndex2Date = volumeIndex2Date,
                     muscleGroupDistribution = muscleDistribution,
                     topExercises = topExercises,
                     recentPRs = recentPRs,
                     equipmentUsage = equipmentUsage,
-                    progressTextRes = R.string.stats_loading_done
+                    progressTextRes = R.string.stats_loading_done,
+                    volumeChartData = volumeProgressions
                 )
             }
             Log.d("StatisticsViewModel", "Statistics computed successfully")
+        }
+    }
+
+    private fun updateVolumeChart(muscle: Muscle, volumeProgressions: Map<Muscle, List<Pair<String, Float>>>) {
+        val volumeProgression = volumeProgressions[muscle]
+        if (volumeProgression != null) {
+            val volumeIndex2Date =
+                volumeProgression.mapIndexed { index, pair -> index to pair.first }.toMap()
+            val maxVolume = volumeProgression.maxOfOrNull { it.second }
+            val maxIndex = volumeProgression.indexOfLast { it.second == maxVolume }
+            viewModelScope.launch {
+                if (volumeProgression.isEmpty())
+                    return@launch
+                state.value.volumeChartProducer.runTransaction {
+                    columnSeries {
+                        series(
+                            volumeProgression.indices.toList(),
+                            volumeProgression.map { it.second }
+                        )
+                    }
+                    extras {
+                        val nonZeroVolumeEntries =
+                            volumeProgression.filter { it.second > 0 }.size
+                        it[MeanLineKey] =
+                            volumeProgression.map { it.second / nonZeroVolumeEntries }.sum()
+                                .toDouble()
+                        it[BestColumnKey] = maxIndex
+                    }
+                }
+                _state.update {
+                    it.copy(
+                        volumeIndex2Date = volumeIndex2Date
+                    )
+                }
+            }
         }
     }
 
@@ -299,17 +349,18 @@ class StatisticsViewModel @Inject constructor(
 
     private fun generateMonthlyWorkoutData(
         workouts: List<WorkoutRecord>
-    ): List<Pair<Long, Float>> {
+    ): List<Pair<String, Int>> {
         val formatter = DateTimeFormatter.ofPattern("MMM yyyy")
 
-        var monthlyData = workouts.sortedBy { it.startDate }.groupBy { it.startDate!!.format(formatter) }.toList()
+        var monthlyData = workouts.groupBy { it.startDate!!.format(formatter) }.toList()
+            .sortedBy {
+                it.second.firstOrNull()?.startDate?.toInstant()?.toEpochMilli() ?: 0L
+            }
+            .map {
+                it.first to it.second.size
+            }
 
-        return monthlyData.map { pair ->
-            Pair(
-                pair.second[0].startDate!!.toInstant().toEpochMilli(),
-                pair.second.size.toFloat()
-            )
-        }
+        return monthlyData
     }
 
     private suspend fun generateTopExercises(records: List<ExerciseRecordAndEquipment>, useImperialSystem: Boolean): List<ExerciseStats> {
@@ -366,7 +417,8 @@ class StatisticsViewModel @Inject constructor(
             Pair(
                 equipment.equipmentNameResource,
                 DonutData(
-                    value = count.toFloat()
+                    value = count.toFloat(),
+                    color = chartColors[index % chartColors.size]
                 )
             )
         }

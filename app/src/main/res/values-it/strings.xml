@@ -227,6 +227,10 @@
     <string name="es_header5_average_reps_done">Ripetizioni medie fatte</string>
     <string name="es_header6_one_rep_max">Massimale a una ripetizione</string>
     <string name="es_header7_history">Cronologia</string>
+    <string name="es_sessions">Sessioni</string>
+    <string name="es_personal_best">Record personale</string>
+    <string name="es_total_volume">Volume totale</string>
+    <string name="es_best_1rm">Massimale</string>
     <string name="selected_value_i">Valore selezionato: %1$s</string>
     <string name="too_few_records_for_stats">Continua così! Una volta che avrai più di un record, vedrai qui le statistiche principali</string>
     <!-- Statistics -->
@@ -247,7 +251,7 @@
     <!-- ## A streak in number of days   -->
     <string name="streak_in_days">%1$sg</string>
     <string name="best_streak">Miglior serie</string>
-    <string name="sets_total">%1$s serie • %2$s %3$s totali</string>
+    <string name="sets_total">%1$s occorrenze • %2$s %3$s totali</string>
     <!-- View exercises -->
     <string name="search_exercise">Cerca esercizio…</string>
     <string name="search_icon">Cerca</string>

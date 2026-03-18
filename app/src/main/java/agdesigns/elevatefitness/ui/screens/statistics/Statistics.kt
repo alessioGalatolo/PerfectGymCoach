@@ -6,19 +6,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
+import agdesigns.elevatefitness.ui.common.WorkoutFrequencyLabelsKey
+import agdesigns.elevatefitness.ui.common.chartColors
 import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.getStickyHeader
 import agdesigns.elevatefitness.utils.plus
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -34,6 +40,7 @@ import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -57,6 +64,7 @@ import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartType
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutSliceType
 import com.jaikeerthick.composable_graphs.composables.pie.PieChart
 import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
+import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
 import com.ramcosta.composedestinations.annotation.Destination
@@ -216,7 +224,6 @@ fun Statistics(
                         item {
                             var selectedValue by remember { mutableStateOf("") }
                             ElevatedCard(
-//                            verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             ) {
                                 if (selectedValue.isNotEmpty()) {
@@ -226,7 +233,25 @@ fun Statistics(
                                         modifier = Modifier.padding(16.dp)
                                     )
                                 }
-                                // TODO: add volume by muscle group
+                                Row(
+                                    modifier = Modifier
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(horizontal = 8.dp)
+                                        .padding(top = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Exercise.Muscle.entries.forEach { muscle ->
+                                        FilterChip(
+                                            selected = state.volumeMuscleFilter == muscle,
+                                            onClick = {
+                                                viewModel.onEvent(
+                                                    StatisticsEvent.OnVolumeMuscleFilterChanged(muscle)
+                                                )
+                                            },
+                                            label = { Text(stringResource(muscle.muscleNameResource)) }
+                                        )
+                                    }
+                                }
                                 PillChart(
                                     modelProducer = state.volumeChartProducer,
                                     markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
@@ -280,14 +305,12 @@ fun Statistics(
                                     state.frequencyChartProducer,
                                     baseShape = MaterialTheme.shapes.small,
                                     baseColor = MaterialTheme.colorScheme.tertiary,
-                                    xValueFormatter = CartesianValueFormatter { _, value, _ ->
-                                        Instant
-                                            .ofEpochMilli(value.toLong())
-                                            .atZone(ZoneId.systemDefault()).format(
-                                                DateTimeFormatter.ofPattern("MMM yyyy")
-                                            )
+                                    xValueFormatter = CartesianValueFormatter { context, value, _ ->
+                                        context.model.extraStore[WorkoutFrequencyLabelsKey]
+                                            .getOrNull(value.toInt()) ?: ""
                                     },
                                     scrollable = true,
+                                    itemPlacer = remember { VerticalAxis.ItemPlacer.step(step = { 1.0 }) },
                                     modifier = Modifier.padding(8.dp)
                                 )
                             }
@@ -312,13 +335,18 @@ fun Statistics(
                                 ElevatedCard(
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 ) {
-                                    val pieData = state.muscleGroupDistribution.map { pair ->
+                                    val pieData = state.muscleGroupDistribution.mapIndexed { index, pair ->
                                         PieData(
                                             label = stringResource(pair.first),
-                                            value = pair.second
+                                            value = pair.second,
+                                            color = chartColors[index % chartColors.size]
                                         )
                                     }
-                                    Row(Modifier.padding(16.dp)) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
                                         PieChart(
                                             modifier = Modifier
                                                 .height(150.dp)

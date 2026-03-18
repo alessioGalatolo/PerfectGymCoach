@@ -22,6 +22,7 @@ import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.ui.screens.workout.components.HistoricRecord
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
 import agdesigns.elevatefitness.utils.plus
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,8 +38,8 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.launch
 import java.text.DecimalFormat
-import java.time.format.DateTimeFormatter
 
 @Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
@@ -52,25 +53,26 @@ fun ExerciseStats(
 ) {
     val state by viewModel.state.collectAsState()
 
-    viewModel.onEvent(
-        ExerciseStatsEvent.StartRetrievingData(
-            exerciseId
+    LaunchedEffect(exerciseId) {
+        viewModel.onEvent(
+            ExerciseStatsEvent.StartRetrievingData(
+                exerciseId
+            )
         )
-    )
+    }
 
     var title by remember { mutableStateOf("") }
     val unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(
         R.string.kg
     )
-    LaunchedEffect(state.exercise) {
-        if (state.exercise != null) {
-            title = state.exercise!!.name
-        }
-    }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(title = { Text(title) },
+            TopAppBar(
+                title = { Text(title) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -89,10 +91,14 @@ fun ExerciseStats(
                         )
                     }
                 },
+                modifier = Modifier.clickable {
+                    scope.launch {
+                        listState.animateScrollToItem(0)
+                    }
+                }
             )
         }, content = { innerPadding ->
             if (state.exercise != null) {
-                val listState = rememberLazyListState()
 
                 // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
                 val headers = listOf(
@@ -141,17 +147,63 @@ fun ExerciseStats(
                             stringResource(R.string.exercise_image),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 16.dp)
+                                .padding(bottom = 4.dp)
                                 .clip(AbsoluteRoundedCornerShape(0.dp, 0.dp, 12.dp, 12.dp))
                         )
                     }
+                    item {
+                        Text(
+                            state.exercise!!.name,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.headlineLargeEmphasized,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                        )
+                    }
                     if (state.exerciseRecords.isNotEmpty()) {
+                        // Summary stats row
+                        item {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    ExerciseStatCard(
+                                        label = stringResource(R.string.es_sessions),
+                                        value = state.totalSessions.toString(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    ExerciseStatCard(
+                                        label = stringResource(R.string.es_personal_best),
+                                        value = "%.1f %s".format(state.personalBestWeight, unit),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    ExerciseStatCard(
+                                        label = stringResource(R.string.es_total_volume),
+                                        value = "%.0f %s".format(state.totalVolume, unit),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    ExerciseStatCard(
+                                        label = stringResource(R.string.es_best_1rm),
+                                        value = "%.1f %s".format(state.bestOneRepMax, unit),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+
+                        // X-axis formatter for volume charts (one point per month)
                         val defaultValueFormatter = CartesianValueFormatter { _, value, _ ->
                             val index =
                                 value.toInt().coerceIn(0, state.indices2dates.keys.max())
-                            state.indices2dates[index]?.format(
-                                DateTimeFormatter.ofPattern("MMM dd")
-                            ) ?: value.toString() // fallback to value, empty string creates problems
+                            state.indices2dates[index] ?: value.toString()
+                        }
+                        // X-axis formatter for per-session charts (one point per workout session)
+                        val sessionValueFormatter = CartesianValueFormatter { _, value, _ ->
+                            val index =
+                                value.toInt().coerceIn(0, state.perSessionIndex2Date.keys.maxOrNull() ?: 0)
+                            state.perSessionIndex2Date[index] ?: value.toString()
                         }
                         if (state.indices2dates.isNotEmpty()) {
                             // Volume progression
@@ -173,13 +225,11 @@ fun ExerciseStats(
                                 headers[2],
                                 stickyHeaders2Id[headers[2]]!!,
                                 state.volumeProgressionMonthProducer,
-                                xValueFormatter = CartesianValueFormatter { _, value, _ ->
+                                xValueFormatter = { _, value, _ ->
                                     val index =
                                         value.toInt()
                                             .coerceIn(0, state.volumeMonthIndex2Date.keys.maxOrNull())
-                                    state.volumeMonthIndex2Date[index]?.format(
-                                        DateTimeFormatter.ofPattern("MMM dd")
-                                    ) ?: value.toString() // fallback to value, empty string creates problems
+                                    state.volumeMonthIndex2Date[index] ?: value.toString()
                                 },
                                 markerDecimalFormat = DecimalFormat(
                                     "#.## $unit"
@@ -187,13 +237,13 @@ fun ExerciseStats(
                                 scrollable = false
                             )
                         }
-                        if (state.indices2dates.isNotEmpty()) {
+                        if (state.perSessionIndex2Date.isNotEmpty()) {
                             // max weights lifted
                             PlotPillChart(
                                 headers[3],
                                 stickyHeaders2Id[headers[3]]!!,
                                 state.maxWeightsProducer,
-                                xValueFormatter = defaultValueFormatter,
+                                xValueFormatter = sessionValueFormatter,
                                 markerDecimalFormat = DecimalFormat(
                                     "#.## $unit"
                                 ),
@@ -205,7 +255,7 @@ fun ExerciseStats(
                                 headers[4],
                                 stickyHeaders2Id[headers[4]]!!,
                                 state.avgWeightProducer,
-                                xValueFormatter = defaultValueFormatter,
+                                xValueFormatter = sessionValueFormatter,
                                 markerDecimalFormat = DecimalFormat(
                                     "#.## $unit"
                                 ),
@@ -216,7 +266,7 @@ fun ExerciseStats(
                                 headers[5],
                                 stickyHeaders2Id[headers[5]]!!,
                                 state.maxRepsProducer,
-                                xValueFormatter = defaultValueFormatter,
+                                xValueFormatter = sessionValueFormatter,
                                 markerDecimalFormat = DecimalFormat(
                                     "#.##"
                                 ),
@@ -227,7 +277,7 @@ fun ExerciseStats(
                                 headers[6],
                                 stickyHeaders2Id[headers[6]]!!,
                                 state.avgRepsProducer,
-                                xValueFormatter = defaultValueFormatter,
+                                xValueFormatter = sessionValueFormatter,
                                 markerDecimalFormat = DecimalFormat(
                                     "#.##"
                                 ),
@@ -239,7 +289,7 @@ fun ExerciseStats(
                                 headers[7],
                                 stickyHeaders2Id[headers[7]]!!,
                                 state.oneRepMaxsProducer,
-                                xValueFormatter = defaultValueFormatter,
+                                xValueFormatter = sessionValueFormatter,
                                 markerDecimalFormat = DecimalFormat(
                                     "#.## $unit"
                                 ),
@@ -250,7 +300,9 @@ fun ExerciseStats(
 
                                 ExposedDropdownMenuBox(
                                     expanded = expanded,
-                                    onExpandedChange = { expanded = it }) {
+                                    onExpandedChange = { expanded = it },
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                ) {
                                     OutlinedTextField(
                                         value = state.oneRepMaxFormula.displayName,
                                         onValueChange = { },
@@ -323,6 +375,38 @@ fun ExerciseStats(
             }
         }
     )
+}
+
+@Composable
+private fun ExerciseStatCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.height(72.dp),
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+        }
+    }
 }
 
 fun LazyListScope.PlotPillChart(

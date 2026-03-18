@@ -226,6 +226,10 @@
     <string name="es_header5_average_reps_done">Average Reps Done</string>
     <string name="es_header6_one_rep_max">One Rep Max</string>
     <string name="es_header7_history">History</string>
+    <string name="es_sessions">Sessions</string>
+    <string name="es_personal_best">Personal Best</string>
+    <string name="es_total_volume">Total Volume</string>
+    <string name="es_best_1rm">Best 1RM</string>
     <string name="selected_value_i">Selected value: %1$s</string>
     <string name="too_few_records_for_stats">Keep going! Once you have more than one record, you will see key statistics here</string>
     <!-- Statistics -->
@@ -246,7 +250,7 @@
     <!-- ## A streak in number of days   -->
     <string name="streak_in_days">%1$sd</string>
     <string name="best_streak">Best Streak</string>
-    <string name="sets_total">%1$s sets • %2$s %3$s total</string>
+    <string name="sets_total">%1$s occurrences • %2$s %3$s total</string>
     <!-- View exercises -->
     <string name="search_exercise">Search exercise…</string>
     <string name="search_icon">Search</string>

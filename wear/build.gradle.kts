@@ -53,8 +53,8 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 30
         targetSdk = 36
-        versionCode = 21  // cannot match app version
-        versionName = "0.0.8" // match phone app version + eventual revisions
+        versionCode = 23  // cannot match app version
+        versionName = "0.0.8a" // match phone app version + eventual revisions
     }
 
     buildTypes {

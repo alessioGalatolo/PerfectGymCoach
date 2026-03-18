@@ -9,9 +9,11 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.ui.common.BestColumnKey
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
+import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.estimate1RM
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.maybeKgToLb
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class ExerciseStatsState(
@@ -41,6 +44,13 @@ data class ExerciseStatsState(
     val oneRepMaxsProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val indices2dates: Map<Int, String> = emptyMap(),
     val volumeMonthIndex2Date: Map<Int, String> = emptyMap(),
+    // Per-session date mapping for non-volume charts (one entry per workout session, ascending)
+    val perSessionIndex2Date: Map<Int, String> = emptyMap(),
+    // Summary stats
+    val totalSessions: Int = 0,
+    val personalBestWeight: Float = 0f,
+    val totalVolume: Float = 0f,
+    val bestOneRepMax: Float = 0f,
 )
 
 sealed class ExerciseStatsEvent{
@@ -120,13 +130,39 @@ class ExerciseStatsViewModel @Inject constructor(
     }
 
     private fun computeStats() {
-        // computeStats
         if (state.value.exerciseRecords.isNotEmpty()) {
             val exerciseRecords = state.value.exerciseRecords
+            val imperialSystem = state.value.imperialSystem
+
+            // Per-session charts need ascending order (oldest → newest left to right)
+            val sortedRecords = exerciseRecords.sortedBy { it.date }
+
+            // Summary stats
+            val totalSessions = sortedRecords.size
+            val personalBestWeight = sortedRecords.maxOfOrNull {
+                maybeKgToLb((it.weights.maxOrNull() ?: 0f) + it.tare, imperialSystem)
+            } ?: 0f
+            val totalVolume = sortedRecords.sumOf { record ->
+                maybeKgToLb(
+                    computeVolume(record.weights, record.reps, record.tare, record.equipment),
+                    imperialSystem
+                ).toDouble()
+            }.toFloat()
+            val bestOneRepMax = sortedRecords.maxOfOrNull {
+                maybeKgToLb(estimate1RM(it, state.value.oneRepMaxFormula), imperialSystem)
+            } ?: 0f
+
+            // Date label for each session (ascending, one entry per workout session)
+            val sessionDateFmt = DateTimeFormatter.ofPattern("d MMM")
+            val perSessionIndex2Date = sortedRecords.mapIndexed { index, record ->
+                index to record.date.format(sessionDateFmt)
+            }.toMap()
+
+            // Volume progression (groups by month)
             val volumeProgressionAll = generateVolumeProgressionData(
                 exerciseRecords,
                 TimeFrame.ALL_TIME,
-                state.value.imperialSystem
+                imperialSystem
             )
             val volumeAllIndex2Date = volumeProgressionAll.mapIndexed { index, pair -> index to pair.first }.toMap()
             val maxVolumeAll = volumeProgressionAll.maxOfOrNull { it.second } ?: 0f
@@ -152,7 +188,7 @@ class ExerciseStatsViewModel @Inject constructor(
             val volumeProgressionMonth = generateVolumeProgressionData(
                 exerciseRecords.filter { it.date.isAfter(startDate) },
                 TimeFrame.MONTH,
-                state.value.imperialSystem
+                imperialSystem
             )
             val volumeMonthIndex2Date = volumeProgressionMonth.mapIndexed { index, pair -> index to pair.first }.toMap()
             val maxVolumeMonth = volumeProgressionMonth.maxOfOrNull { it.second } ?: 0f
@@ -174,7 +210,10 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val maxWeights = exerciseRecords.map { (it.weights.maxOrNull() ?: 0f) + it.tare }
+
+            // Per-session charts — use sortedRecords (ascending) for correct chronological order,
+            // and apply imperial conversion to weight-based values
+            val maxWeights = sortedRecords.map { maybeKgToLb((it.weights.maxOrNull() ?: 0f) + it.tare, imperialSystem) }
             viewModelScope.launch {
                 if (maxWeights.isEmpty())
                     return@launch
@@ -187,7 +226,7 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val maxReps = exerciseRecords.map { it.reps.maxOrNull() ?: 0}
+            val maxReps = sortedRecords.map { it.reps.maxOrNull() ?: 0 }
             viewModelScope.launch {
                 if (maxReps.isEmpty())
                     return@launch
@@ -200,7 +239,7 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val avgWeight = exerciseRecords.map { it.weights.average().toFloat() + it.tare }
+            val avgWeight = sortedRecords.map { maybeKgToLb(it.weights.average().toFloat() + it.tare, imperialSystem) }
             viewModelScope.launch {
                 if (avgWeight.isEmpty())
                     return@launch
@@ -213,7 +252,7 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val avgReps = exerciseRecords.map { it.reps.average().toFloat() }
+            val avgReps = sortedRecords.map { it.reps.average().toFloat() }
             viewModelScope.launch {
                 if (avgReps.isEmpty())
                     return@launch
@@ -226,7 +265,7 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val oneRepMaxs = exerciseRecords.map { estimate1RM(it, state.value.oneRepMaxFormula) }
+            val oneRepMaxs = sortedRecords.map { maybeKgToLb(estimate1RM(it, state.value.oneRepMaxFormula), imperialSystem) }
             viewModelScope.launch {
                 if (oneRepMaxs.isEmpty())
                     return@launch
@@ -243,6 +282,11 @@ class ExerciseStatsViewModel @Inject constructor(
                 it.copy(
                     indices2dates = volumeAllIndex2Date,
                     volumeMonthIndex2Date = volumeMonthIndex2Date,
+                    perSessionIndex2Date = perSessionIndex2Date,
+                    totalSessions = totalSessions,
+                    personalBestWeight = personalBestWeight,
+                    totalVolume = totalVolume,
+                    bestOneRepMax = bestOneRepMax,
                 )
             }
         }

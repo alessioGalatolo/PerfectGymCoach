@@ -643,10 +643,18 @@ class WorkoutViewModel
             exercisesState.map { it.suggestedRepsWeight }.distinctUntilChanged(),
             exercisesState.map { it.exercisesSetsDone }.distinctUntilChanged(),
             exercisesState.map { it.suggestedTare }.distinctUntilChanged(),
-            exercisesState.map { it.exercises }.distinctUntilChanged()
-        ) { index, suggestedRepsWeight, allSetsDone, tares, exercises ->
-            // NOTE: if user is selecting values and this gets called, it will override user's values
-            // TODO: fix
+            exercisesState.map { it.exercises }.distinctUntilChanged(),
+            exercisesState.map { it.imperialSystem }.distinctUntilChanged(),
+            state.map { it.settingSetValues }.distinctUntilChanged()
+        ) { values ->
+            val index = values[0] as Int
+            val suggestedRepsWeight = values[1] as List<Workout.SuggestedRepsWeight>
+            val allSetsDone = values[2] as List<Int>
+            val tares = values[3] as List<Float>
+            val exercises = values[4] as List<Workout.Exercise>
+            val imperialSystem = values[5] as Boolean
+            val settingSetValues = values[6] as Boolean
+            if (settingSetValues) return@combine
             _state.update {
                 val currentExercise = exercises.getOrNull(index) ?: exercises.lastOrNull()
                 val repsWeight = suggestedRepsWeight.getOrNull(index)
@@ -674,8 +682,7 @@ class WorkoutViewModel
                 val nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount } ?: false) {
                     (currentExercise.name ?: "") + if (suggestedReps != null && suggestedWeight != null)
                         " (${suggestedReps}x${suggestedWeight}${
-                        // FIXME: should have imperialSystem in combine
-                        if (exercisesState.value.imperialSystem)
+                        if (imperialSystem)
                             repository.stringResToString(sharedR.string.lb)
                         else
                             repository.stringResToString(sharedR.string.kg)

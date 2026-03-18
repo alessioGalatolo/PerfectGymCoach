@@ -61,6 +61,21 @@ val BestColumnKey = ExtraStore.Key<Int>()
 val CurrentColumnKey = ExtraStore.Key<Int>()
 // same as above but for lines and is a list
 val highlightSeriesKey = ExtraStore.Key<List<Int>>()
+// key to get labels for the indices of workout frequency
+val WorkoutFrequencyLabelsKey = ExtraStore.Key<List<String>>()
+
+val chartColors = listOf(
+    Color(0xFF7F77DD),
+    Color(0xFF1D9E75),
+    Color(0xFFD85A30),
+    Color(0xFFD4537E),
+    Color(0xFF378ADD),
+    Color(0xFFEF9F27),
+    Color(0xFF639922),
+    Color(0xFFE24B4A),
+    Color(0xFF888780),
+    Color(0xFF185FA5),
+)
 
 /**
  * Draws an horizontal line for e.g., the mean value
@@ -304,6 +319,7 @@ fun PillChart(
     markerValueFormatter: DefaultCartesianMarker.ValueFormatter = DefaultCartesianMarker.ValueFormatter.default(),
     decorations: List<HorizontalLine> = emptyList(),
     scrollable: Boolean = false,
+    itemPlacer: VerticalAxis.ItemPlacer = remember { VerticalAxis.ItemPlacer.step() },
     modifier: Modifier = Modifier,
 ) {
     val labelBackground = rememberShapeComponent(
@@ -333,7 +349,8 @@ fun PillChart(
             startAxis = VerticalAxis.rememberStart(
                 line = rememberLineComponent(Fill.Transparent),
                 tick = rememberLineComponent(Fill.Transparent),
-                valueFormatter = yValueFormatter
+                valueFormatter = yValueFormatter,
+                itemPlacer = itemPlacer
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 tick = rememberLineComponent(Fill.Transparent),
