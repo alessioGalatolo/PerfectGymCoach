@@ -27,6 +27,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
+import agdesigns.elevatefitness.data.db.entity.WorkoutRecordHealthId
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import agdesigns.elevatefitness.data.db.entity.getDuplicatePlanName
 import android.content.Intent
@@ -154,10 +155,42 @@ class Repository @Inject constructor(
 
     fun getPrograms(planId: Long) = db.workoutProgramDao.getPrograms(planId)
 
+    fun getProgram(programId: Long) = db.workoutProgramDao.getProgram(programId)
+
     suspend fun addProgram(program: WorkoutProgram) = db.workoutProgramDao.insert(program)
 
     suspend fun renameProgram(workoutProgramRename: WorkoutProgramRename) =
         db.workoutProgramDao.updateName(workoutProgramRename)
+
+    suspend fun duplicateProgram(programId: Long) {
+        // this could be reused in duplicatePlan...
+        val program = getProgram(programId).first()
+        if (program.extPlanId != null) {
+            val programsToShift = getPrograms(program.extPlanId).first().filter {
+                it.orderInWorkoutPlan > program.orderInWorkoutPlan
+            }
+            val reorders = programsToShift.map {
+                WorkoutProgramReorder(
+                    it.programId, it.orderInWorkoutPlan + 1
+                )
+            }
+            reorderPrograms(reorders)
+        }
+        val newProgramId = addProgram(
+            program.copy(
+                programId = 0L,
+            )
+        )
+        val programExercises = getProgramExercises(program.programId).first()
+        for (programExercise in programExercises) {
+            addProgramExercise(
+                programExercise.copy(
+                    programExerciseId = 0L,
+                    extProgramId = newProgramId
+                )
+            )
+        }
+    }
 
     suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) =
         db.workoutProgramDao.updateOrder(workoutProgramReorder)
@@ -198,6 +231,24 @@ class Repository @Inject constructor(
     suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =
         db.programExerciseDao.updateOrder(programExerciseReorders)
 
+    suspend fun duplicateProgramExercise(programExerciseId: Long) {
+        val exercise = getProgramExercise(programExerciseId).first()
+        val exercisesToShift = getProgramExercises(exercise.extProgramId)
+            .first().filter {
+                it.orderInProgram > exercise.orderInProgram
+            }
+        val reorders = exercisesToShift.map {
+            ProgramExerciseReorder(
+                it.programExerciseId, it.orderInProgram + 1
+            )
+        }
+        reorderProgramExercises(reorders)
+        addProgramExercise(
+            exercise.copy(
+                programExerciseId = 0L,
+            )
+        )
+    }
     suspend fun deleteProgramExercise(programExerciseId: Long) =
         db.programExerciseDao.delete(programExerciseId)
 
@@ -434,6 +485,14 @@ class Repository @Inject constructor(
     suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 
     suspend fun getWorkoutsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) = db.workoutRecordDao.getWorkoutsBetween(startDate, endDate)
+
+    suspend fun updateWorkoutRecordHealthId(workoutId: Long, healthRecordId: String) =
+        db.workoutRecordDao.updateHealthId(
+            WorkoutRecordHealthId(
+                workoutId,
+                healthRecordId
+            )
+        )
 
     /**
      * Calculate how many times a plan has been cycled through.

@@ -497,9 +497,7 @@ class WorkoutViewModel @Inject constructor(
         }
         // listens to relevant changes and sends them to wear
         checkWorkoutDataChangesForWear()
-        viewModelScope.launch {
-            observeSetCompletionsFromWear()
-        }
+        observeSetCompletionsFromWear()
         observeWorkoutCompletionsFromWear()
         observeAcceptedModificationsFromWear()
         /*
@@ -1604,85 +1602,99 @@ class WorkoutViewModel @Inject constructor(
         )
     }
 
-    private suspend fun observeSetCompletionsFromWear() {
-        for (setCompletion in phoneWorkoutRepository.setCompletions) {
-            if (setCompletion.workoutId != workoutState.value.workoutId) {
-                Log.e("WorkoutViewModel", "Received set completion from wear for wrong workout")
-                continue
-            }
-            if (workoutState.value.startDate == null) {
-                // user completed set from watch before starting workout
-                startWorkout()
-                // StartWorkout is async, need to wait for it to finish
-                startWorkoutJob?.join()
-            }
-            if (setCompletion.reps > 0) {
-                val exerciseIndex = pagesContent.value.exercises.indexOfFirst { it.workoutExerciseId == setCompletion.exerciseId }
-                if (exerciseIndex == -1) {
-                    Log.e("WorkoutViewModel", "Tried to complete a set from watch with no current exercise")
-                    _effects.trySend(
-                        WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
-                    )
+    private fun observeSetCompletionsFromWear() {
+        viewModelScope.launch {
+            for (setCompletion in phoneWorkoutRepository.setCompletions) {
+                if (setCompletion.workoutId != workoutState.value.workoutId) {
+                    Log.e("WorkoutViewModel", "Received set completion from wear for wrong workout")
                     continue
                 }
-                val exercise = pagesContent.value.exercises.getOrNull(exerciseIndex)
-                if (exercise == null) {
-                    // Should never happen, but just in case...
-                    Log.e("WorkoutViewModel", "Tried to complete a set from watch with no current exercise set")
-                    _effects.trySend(
-                        WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
-                    )
-                    continue
+                if (workoutState.value.startDate == null) {
+                    // user completed set from watch before starting workout
+                    startWorkout()
+                    // StartWorkout is async, need to wait for it to finish
+                    startWorkoutJob?.join()
                 }
+                if (setCompletion.reps > 0) {
+                    val exerciseIndex =
+                        pagesContent.value.exercises.indexOfFirst { it.workoutExerciseId == setCompletion.exerciseId }
+                    if (exerciseIndex == -1) {
+                        Log.e(
+                            "WorkoutViewModel",
+                            "Tried to complete a set from watch with no current exercise"
+                        )
+                        _effects.trySend(
+                            WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
+                        )
+                        continue
+                    }
+                    val exercise = pagesContent.value.exercises.getOrNull(exerciseIndex)
+                    if (exercise == null) {
+                        // Should never happen, but just in case...
+                        Log.e(
+                            "WorkoutViewModel",
+                            "Tried to complete a set from watch with no current exercise set"
+                        )
+                        _effects.trySend(
+                            WorkoutEffect.ShowMessage(R.string.complete_set_from_watch_fail)
+                        )
+                        continue
+                    }
 
-                val setsDone = pagesContent.value.exerciseSetsDone.getOrNull(exerciseIndex) ?: 0
-                if (setsDone >= exercise.rest.size) {
-                    // user has done all sets and is adding another one from watch
-                    addSetToExercise(exercise)
-                }
+                    val setsDone = pagesContent.value.exerciseSetsDone.getOrNull(exerciseIndex) ?: 0
+                    if (setsDone >= exercise.rest.size) {
+                        // user has done all sets and is adding another one from watch
+                        addSetToExercise(exercise)
+                    }
 
 
-                val nextExercise = pagesContent.value.exercises.getOrNull(
-                    exerciseIndex + 1
-                )
-                val prevExercise = pagesContent.value.exercises.getOrNull(
-                    exerciseIndex - 1
-                )
-                // if sets done == total sets, scroll to next if any
-                val totalSets = exercise.reps.size
-                val shouldAdvanceEx = setsDone == totalSets - 1 && (exerciseIndex+1 < pagesContent.value.exercises.size)
-                // check if superset
-                val exerciseToScrollTo = if (prevExercise != null && exercise.supersetExercise == prevExercise.extProgramExerciseId) {
-                    if (shouldAdvanceEx)
+                    val nextExercise = pagesContent.value.exercises.getOrNull(
                         exerciseIndex + 1
-                    else
+                    )
+                    val prevExercise = pagesContent.value.exercises.getOrNull(
                         exerciseIndex - 1
-                } else if (nextExercise != null && exercise.supersetExercise == nextExercise.extProgramExerciseId) {
-                    exerciseIndex + 1
-                } else if (shouldAdvanceEx) {
-                    exerciseIndex + 1
-                } else
-                    exerciseIndex
-                if (exerciseToScrollTo != _currentPage.value) {
-                    // index of exercise completed from watch is different than exercise currently
-                    // being shown to user, scroll to that index
-                    _effects.trySend(
-                        WorkoutEffect.AdvancePage(exerciseToScrollTo)
+                    )
+                    // if sets done == total sets, scroll to next if any
+                    val totalSets = exercise.reps.size
+                    val shouldAdvanceEx =
+                        setsDone == totalSets - 1 && (exerciseIndex + 1 < pagesContent.value.exercises.size)
+                    // check if superset
+                    val exerciseToScrollTo =
+                        if (prevExercise != null && exercise.supersetExercise == prevExercise.extProgramExerciseId) {
+                            if (shouldAdvanceEx)
+                                exerciseIndex + 1
+                            else
+                                exerciseIndex - 1
+                        } else if (nextExercise != null && exercise.supersetExercise == nextExercise.extProgramExerciseId) {
+                            exerciseIndex + 1
+                        } else if (shouldAdvanceEx) {
+                            exerciseIndex + 1
+                        } else
+                            exerciseIndex
+                    if (exerciseToScrollTo != _currentPage.value) {
+                        // index of exercise completed from watch is different than exercise currently
+                        // being shown to user, scroll to that index
+                        _effects.trySend(
+                            WorkoutEffect.AdvancePage(exerciseToScrollTo)
+                        )
+                    }
+                    completeSet(
+                        exercise = exercise,
+                        exerciseRest = setCompletion.rest,
+                        restTimestamp = setCompletion.restTimestamp.toZonedDateTime(),
+                        reps = setCompletion.reps,
+                        // weight from watch is in lb
+                        weight = setCompletion.weight,
+                        tare = if (setCompletion.tare != 0f)
+                        /*maybeLbToKg(*/ setCompletion.tare/*, pagesContent.value.imperialSystem)*/
+                        else null
+                    )
+                } else {
+                    Log.d(
+                        "WorkoutViewModel",
+                        "Tried to complete a set from watch with no or negative reps"
                     )
                 }
-                completeSet(
-                    exercise = exercise,
-                    exerciseRest = setCompletion.rest,
-                    restTimestamp = setCompletion.restTimestamp.toZonedDateTime(),
-                    reps = setCompletion.reps,
-                    // weight from watch is in lb
-                    weight = setCompletion.weight,
-                    tare = if (setCompletion.tare != 0f)
-                        /*maybeLbToKg(*/setCompletion.tare/*, pagesContent.value.imperialSystem)*/
-                    else null
-                )
-            } else {
-                Log.d("WorkoutViewModel", "Tried to complete a set from watch with no or negative reps")
             }
         }
     }

@@ -119,7 +119,9 @@ fun WorkoutPage(
                         stringResource(sharedR.string.lb)
                     else
                         stringResource(sharedR.string.kg),
-            isSuperset = workoutState.currentExercise?.supersetExercise != 0L,
+            isSuperset = workoutState.currentExercise?.supersetExercise != 0L && exercisesState.exercises.any {
+                it.programExerciseId == workoutState.currentExercise?.supersetExercise
+            },
             bottomText = workoutState.currentExercise?.note ?: "",
             startRest = startRest,
             hasPrevious = workoutState.currentExerciseIndex > 0,

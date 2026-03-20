@@ -45,6 +45,8 @@ sealed class ProgramsEvent{
 
     data class DeleteProgram(val programId: Long): ProgramsEvent()
 
+    data class DuplicateProgram(val programId: Long): ProgramsEvent()
+
 }
 
 @HiltViewModel
@@ -135,6 +137,11 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                             WorkoutProgramReorder(it.programId, it.orderInWorkoutPlan-1)
                         }
                     )
+                }
+            }
+            is ProgramsEvent.DuplicateProgram -> {
+                viewModelScope.launch {
+                    repository.duplicateProgram(event.programId)
                 }
             }
         }

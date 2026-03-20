@@ -87,7 +87,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.ZonedDateTime
 
 @Destination<WorkoutOnlyGraph>(
     start = true,
@@ -675,11 +674,12 @@ fun SharedTransitionScope.Workout(
                     }
                 },
                 removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) },
-                mediaControlsDismissed = mediaControlsDismissed,
+                mediaControlsDismissed = !mediaState.canAskAccess || mediaControlsDismissed,
                 resetMediaControlVisibility = {
                     scope.launch {
                         mediaSwipeState.reset()
                         mediaControlsDismissed = false
+                        mediaVM.resetCanRequestAccess()
                     }
                 },
                 dontRequestOngoingWorkoutNotification = {
@@ -700,7 +700,6 @@ fun SharedTransitionScope.Workout(
             )
         }
     } else if (workoutState.workoutId != 0L){
-        Log.d("Workout", "pagesContent.exercises: ${pagesContent.exercises}, isLoading: ${currentExerciseState.isLoading}, previewExercise: $previewExercise")
         // program is empty, prompt to add an exercise
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
         Scaffold(
@@ -840,28 +839,6 @@ fun SharedTransitionScope.Workout(
                         )
                     }
                 }
-//                Column(
-//                    verticalArrangement = Arrangement.Bottom,
-//                    horizontalAlignment = Alignment.End
-//                ) {
-//                    SmallFloatingActionButton(onClick = {
-//                    },
-//                    modifier = Modifier.padding(bottom = 16.dp),
-//                    containerColor = MaterialTheme.colorScheme.secondary) {
-//                        Icon(Icons.Default.Edit,
-//                            stringResource(R.string.add_an_exercise_to_current_and_future_workouts_of_this_program)
-//                        )
-//                    }
-//                    MediumFloatingActionButton(onClick = {
-//
-//                    }) {
-//                        Icon(
-//                            Icons.Default.Add,
-//                            stringResource(R.string.add_an_exercise_to_current_workout),
-//                            modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize)
-//                        )
-//                    }
-//                }
             })
         { innerPadding ->
             EmptyScreenInfo(

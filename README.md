@@ -42,9 +42,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 ## Screenshots
 | Material 3 Expressive | Wear OS |
 |---|---|
-| ![Expressive Update](https://github.com/user-attachments/assets/030e1427-02f9-483d-b9a1-d1e42da0b265) | ![Wear OS Demo](https://github.com/user-attachments/assets/4bb5351a-80aa-4dff-9f36-56663540078f)
- |
-
+| ![Expressive Update](https://github.com/user-attachments/assets/030e1427-02f9-483d-b9a1-d1e42da0b265) | ![Wear OS Demo](https://github.com/user-attachments/assets/4bb5351a-80aa-4dff-9f36-56663540078f)  |
 ## Tech Stack
 
 - **Language:** Kotlin
@@ -54,6 +52,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 - **Design System:** Material 3 with Expressive elements
 - **Wearable:** Wear OS integration
 - **Graphs:** [Vico](https://github.com/patrykandpatrick/vico) and [Composable-Graphs](https://github.com/jaikeerthick/Composable-Graphs)
+- **Health Connect:** Integrate and sync with Health Connect
 
 ## Getting Started
 

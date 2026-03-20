@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.outlined.Delete
@@ -83,7 +84,8 @@ fun LazyItemScope.ProgramCard(
     cardElevation: Dp = 1.dp,
     modifier: Modifier,
     onDelete: (() -> Unit)? = null,
-    onRename: (() -> Unit)? = null
+    onRename: (() -> Unit)? = null,
+    onDuplicate: (() -> Unit)? = null
 ){
     val haptic = LocalHapticFeedback.current
     var expanded by remember { mutableStateOf(false) }
@@ -312,6 +314,21 @@ fun LazyItemScope.ProgramCard(
                                                         Icon(
                                                             Icons.Outlined.DriveFileRenameOutline,
                                                             contentDescription = stringResource(R.string.rename_icon_program)
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                            if (onDuplicate != null) {
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.duplicate)) },
+                                                    onClick = {
+                                                        onDuplicate()
+                                                        expanded = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            Icons.Default.ContentCopy,
+                                                            contentDescription = null // TODO
                                                         )
                                                     }
                                                 )

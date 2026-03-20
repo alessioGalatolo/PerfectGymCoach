@@ -29,8 +29,10 @@ import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
 import agdesigns.elevatefitness.utils.plus
 import android.os.Build
+import agdesigns.elevatefitness.data.HealthConnectRepository
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.background
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
@@ -48,11 +50,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.ramcosta.composedestinations.annotation.Destination
@@ -193,6 +197,75 @@ fun Profile(
                     viewModel = viewModel
                 )
             }
+
+            // Health Connect Section
+            if (state.isHealthConnectAvailable) {
+                item {
+                    val healthConnectPermissionsLauncher = rememberLauncherForActivityResult(
+                        PermissionController.createRequestPermissionResultContract()
+                    ) {
+                        viewModel.onEvent(ProfileEvent.RefreshHealthConnectStatus)
+                    }
+                    Text(
+                        stringResource(R.string.integrations_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
+                    )
+                    GroupedCard(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
+                        subCard {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painterResource(R.drawable.ic_health_connect_logo),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp).padding(end = 8.dp),
+                                    tint = Color.Unspecified
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.health_connect_title),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        if (state.hasHealthConnectPermissions)
+                                            stringResource(R.string.health_connect_connected)
+                                        else if (state.hasSomeHealthConnectPermissions)
+                                            stringResource(R.string.health_connect_problems)
+                                        else
+                                            stringResource(R.string.health_connect_info),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (state.hasHealthConnectPermissions) {
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    TextButton(onClick = {
+                                        healthConnectPermissionsLauncher.launch(
+                                            HealthConnectRepository.REQUIRED_PERMISSIONS
+                                        )
+                                    }) {
+                                        Text(stringResource(R.string.health_connect_connect))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 Text(
                     text = stringResource(R.string.backup_and_restore),

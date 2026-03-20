@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.ui.screens.workout.components.TextFieldWithButtons
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -378,20 +379,21 @@ fun ChangeRepsWeightDialog(
             title = { Text(stringResource(R.string.change_reps_weight_title)) },
             text = {
                 Column(Modifier.fillMaxWidth()) {
-                    // TODO: it would be nice to have plus/minus buttons here
-                    OutlinedTextField(
-                        value = reps,
-                        onValueChange = {reps = it},
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        label = { Text(stringResource(R.string.new_reps_value)) }
+                    TextFieldWithButtons(
+                        prompt = stringResource(R.string.new_reps_value),
+                        text = { reps },
+                        onNewText = { reps = it },
+                        onIncrement = { reps = ((reps.toUIntOrNull() ?: 0U) + 1U).toString() },
+                        onDecrement = { reps = ((reps.toUIntOrNull() ?: 0U) - 1U).toString() },
+                        textIsValid = { reps -> reps.toUIntOrNull() != null }
                     )
-                    OutlinedTextField(
-                        value = weight,
-                        onValueChange = {weight = it},
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        label = { Text(stringResource(R.string.new_weight_value)) }
+                    TextFieldWithButtons(
+                        prompt = stringResource(R.string.new_weight_value),
+                        text = { weight },
+                        onNewText = { weight = it },
+                        onIncrement = { weight = ((weight.toFloatOrNull() ?: 0f) + 0.5f).toString() },
+                        onDecrement = { weight = ((weight.toFloatOrNull() ?: 0f) - 0.5f).toString() },
+                        textIsValid = { weight -> weight.toFloatOrNull() != null }
                     )
                     Card (
                         onClick = {

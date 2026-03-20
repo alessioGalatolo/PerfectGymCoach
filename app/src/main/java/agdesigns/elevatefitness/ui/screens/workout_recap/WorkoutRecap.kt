@@ -61,6 +61,10 @@ import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.common.LegendItem
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import agdesigns.elevatefitness.data.HealthConnectRepository
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.ui.graphics.Color
+import androidx.health.connect.client.PermissionController
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -445,6 +449,91 @@ fun WorkoutRecap(
                         }
                     }
                 }
+                // Health Connect export card
+                if (recapState.isHealthConnectAvailable && recapState.workoutRecord != null) {
+                    item {
+                        val healthConnectPermissionsLauncher = rememberLauncherForActivityResult(
+                            PermissionController.createRequestPermissionResultContract()
+                        ) {
+                            viewModel.onEvent(RecapEvent.RefreshHealthConnectPermissions)
+                        }
+                        Card(
+                            modifier = Modifier
+                                .padding(horizontal = dimensionResource(R.dimen.card_outside_padding))
+                                .padding(top = 16.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Icon(
+                                    painterResource(R.drawable.ic_health_connect_logo),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp).padding(end = 8.dp),
+                                    tint = Color.Unspecified
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.health_connect_title),
+                                        style = MaterialTheme.typography.titleSmall
+                                    )
+                                    Text(
+                                        when (recapState.healthConnectExportStatus) {
+                                            HealthConnectExportStatus.EXPORTED ->
+                                                stringResource(R.string.health_connect_exported)
+                                            HealthConnectExportStatus.ERROR ->
+                                                stringResource(R.string.health_connect_export_error)
+                                            else -> stringResource(R.string.health_connect_export_prompt)
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                when (recapState.healthConnectExportStatus) {
+                                    HealthConnectExportStatus.EXPORTING -> {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                    }
+                                    HealthConnectExportStatus.EXPORTED -> {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    HealthConnectExportStatus.ERROR -> {
+                                        TextButton(onClick = {
+                                            viewModel.onEvent(RecapEvent.ExportToHealthConnect)
+                                        }) {
+                                            Text(stringResource(R.string.health_connect_retry))
+                                        }
+                                    }
+                                    HealthConnectExportStatus.NOT_EXPORTED -> {
+                                        if (recapState.hasHealthConnectPermissions) {
+                                            TextButton(onClick = {
+                                                viewModel.onEvent(RecapEvent.ExportToHealthConnect)
+                                            }) {
+                                                Text(stringResource(R.string.health_connect_export))
+                                            }
+                                        } else {
+                                            TextButton(onClick = {
+                                                healthConnectPermissionsLauncher.launch(
+                                                    HealthConnectRepository.REQUIRED_PERMISSIONS
+                                                )
+                                            }) {
+                                                Text(stringResource(R.string.health_connect_connect_and_export))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if (recapState.exerciseRecords.isNotEmpty()) {
                     item {
                         Text(
@@ -471,7 +560,7 @@ fun WorkoutRecap(
                     )
                 }
                 item {
-                    Spacer(modifier = Modifier.height(0.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }

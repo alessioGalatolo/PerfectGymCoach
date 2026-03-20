@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.ui.screens.profile
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.BackupRepository
+import agdesigns.elevatefitness.data.HealthConnectRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -35,6 +36,9 @@ data class ProfileState(
     val backupOutcomeResId: Int? = null,
     val lockHorizontalScroll: Boolean = false,
     val autoOpenWear: Boolean = false,
+    val isHealthConnectAvailable: Boolean = false,
+    val hasHealthConnectPermissions: Boolean = false,
+    val hasSomeHealthConnectPermissions: Boolean = false
 )
 
 sealed class ProfileEvent{
@@ -77,17 +81,28 @@ sealed class ProfileEvent{
     data class ImportPreferences(val fileUri: Uri): ProfileEvent()
 
     data object ResetOutcomeMessage: ProfileEvent()
+    data object RefreshHealthConnectStatus : ProfileEvent()
 }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
-    private val preferences: PreferenceRepository
+    private val preferences: PreferenceRepository,
+    private val healthConnectRepository: HealthConnectRepository
 ): ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isHealthConnectAvailable = healthConnectRepository.isAvailable,
+                    hasHealthConnectPermissions = healthConnectRepository.hasAllPermissions(),
+                    hasSomeHealthConnectPermissions = healthConnectRepository.hasSomePermissions()
+                )
+            }
+        }
         viewModelScope.launch {
             combine(
                 preferences.getUserWeight(),
@@ -127,6 +142,9 @@ class ProfileViewModel @Inject constructor(
                 }
             }.collect()
         }
+        viewModelScope.launch {
+            checkHealthConnectWeight()
+        }
     }
 
     fun onEvent(event: ProfileEvent){
@@ -144,6 +162,8 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.UpdateWeight -> {
                 viewModelScope.launch {
                     preferences.setUserWeight(event.newWeight)
+                    preferences.setWeightRecordDate(ZonedDateTime.now())
+                    healthConnectRepository.writeWeight(event.newWeight.toDouble())
                 }
             }
             is ProfileEvent.UpdateHeight -> {
@@ -307,7 +327,33 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.ResetOutcomeMessage -> {
                 _state.update { it.copy(backupOutcomeResId = null) }
             }
+            is ProfileEvent.RefreshHealthConnectStatus -> {
+                viewModelScope.launch {
+                    val hasPermissions = healthConnectRepository.hasAllPermissions()
+                    _state.update {
+                        it.copy(
+                            hasHealthConnectPermissions = hasPermissions,
+                            hasSomeHealthConnectPermissions = healthConnectRepository.hasSomePermissions()
+                        )
+                    }
+                    if (hasPermissions) {
+                        // check/update weight
+                        checkHealthConnectWeight()
+                    }
+                }
+            }
         }
     }
 
+    private suspend fun checkHealthConnectWeight() {
+        // check if user has recorded a new weight on health connect
+        val weight = healthConnectRepository.getWeight()
+        // if is newer than what we have, override
+        val ourDate = preferences.getWeightRecordDate().first()
+        if (weight != null && weight.time.isAfter(ourDate.toInstant())) {
+            Log.d("ProfileViewModel", "checkHealthConnectWeight: new weight")
+            preferences.setUserWeight(weight.weight.inKilograms.toFloat())
+            preferences.setWeightRecordDate(ZonedDateTime.ofInstant(weight.time, weight.zoneOffset))
+        }
+    }
 }

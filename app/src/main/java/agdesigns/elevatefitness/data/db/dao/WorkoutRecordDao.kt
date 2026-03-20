@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.data.db.dao
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordAndName
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
+import agdesigns.elevatefitness.data.db.entity.WorkoutRecordHealthId
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import androidx.room.Dao
 import androidx.room.Insert
@@ -58,4 +59,7 @@ interface WorkoutRecordDao {
 
     @Update(entity = WorkoutRecord::class)
     suspend fun updateFinish(workoutRecordFinish: WorkoutRecordFinish)
+
+    @Update(entity = WorkoutRecord::class)
+    suspend fun updateHealthId(workoutRecordHealthId: WorkoutRecordHealthId)
 }

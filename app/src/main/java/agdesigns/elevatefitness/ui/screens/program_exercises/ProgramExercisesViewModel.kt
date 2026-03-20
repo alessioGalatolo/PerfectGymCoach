@@ -33,6 +33,8 @@ sealed class ProgramExercisesEvent{
 
     data class DeleteExercise(val programExerciseId: Long): ProgramExercisesEvent()
 
+    data class DuplicateExercise(val programExerciseId: Long): ProgramExercisesEvent()
+
 }
 
 @HiltViewModel
@@ -166,6 +168,11 @@ class ProgramExercisesViewModel @Inject constructor(
                     repository.updateExerciseSuperset(
                         exercisesToUpdate
                     )
+                }
+            }
+            is ProgramExercisesEvent.DuplicateExercise -> {
+                viewModelScope.launch {
+                    repository.duplicateProgramExercise(event.programExerciseId)
                 }
             }
         }

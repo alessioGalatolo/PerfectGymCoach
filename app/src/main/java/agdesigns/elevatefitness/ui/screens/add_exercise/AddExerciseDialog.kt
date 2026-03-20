@@ -70,7 +70,7 @@ fun SharedTransitionScope.AddExerciseDialog(
     previewExercise: Exercise,
     programId: Long = 0L, // programId != 0L means we are adding an exercise to a program (and maybe a current workout)
     workoutId: Long = 0L, // workoutId != 0L we're adding to an ongoing workout (and maybe a program)
-    programExerciseId: Long = 0L,  // != 0L if we are changing an existing exercise
+    programExerciseId: Long? = null,  // != 0L if we are changing an existing exercise
     programName: String = "",
     returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
     continueAdding: Boolean = true,  // if true, expects user to continue adding exercise,
@@ -166,7 +166,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                 SharedElementKey(
                     "AddExerciseDialog",
                     SharedElementType.Bounds,
-                    idLong = exercise.exerciseId
+                    idLong = programExerciseId ?: exercise.exerciseId
                 )
             ),
             animatedVisibilityScope,

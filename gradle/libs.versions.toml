@@ -33,6 +33,7 @@ horologist = "0.8.3-alpha"
 # other
 palette = "1.0.0"
 android_shapes = "1.1.0"
+health_connect = "1.1.0"
 # external libraries
 graphs = "1.2.5"
 vico = "2.4.1"  # plots
@@ -135,6 +136,7 @@ android-shapes = { group = "androidx.graphics", name = "graphics-shapes", versio
 kotlin-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlin_coroutines_play_services"}
 
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+health-connect = { group = "androidx.health.connect", name = "connect-client", version.ref = "health_connect" }
 # plots
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 # For Material 3 theming in Jetpack Compose.

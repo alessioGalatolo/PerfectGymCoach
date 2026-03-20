@@ -47,7 +47,7 @@ sealed class AddExerciseEvent{
         val programId: Long = 0L,
         val workoutId: Long = 0L,
         val insertAtPosition: Int? = null,
-        val programExerciseId: Long = 0L
+        val programExerciseId: Long? = null
     ): AddExerciseEvent()
 
     data object ToggleAdvancedSets: AddExerciseEvent()
@@ -260,10 +260,10 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
         return true
     }
 
-    private suspend fun retrieveData(exerciseId: Long, programId: Long, workoutId: Long, programExerciseId: Long) {
+    private suspend fun retrieveData(exerciseId: Long, programId: Long, workoutId: Long, programExerciseId: Long?) {
         // NOTE: we could retrieve exercise and then one of the other 3 without using combine
         // but this way we only need to keep track of one job
-        if (programExerciseId != 0L) {
+        if (programExerciseId != null) {
             // changing an existing exercise
             combine(
                 repository.getExercise(exerciseId),

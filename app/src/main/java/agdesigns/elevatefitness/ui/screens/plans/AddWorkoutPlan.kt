@@ -288,7 +288,7 @@ fun AddWorkoutPlan(
                                 )
                             }, { close ->
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.duplicate_plan_action)) },
+                                    text = { Text(stringResource(R.string.duplicate)) },
                                     onClick = {
                                         scope.launch {
                                             close()
@@ -419,7 +419,7 @@ fun AddWorkoutPlan(
                             )
                         }, { close ->
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.duplicate_plan_action)) },
+                                text = { Text(stringResource(R.string.duplicate)) },
                                 onClick = {
                                     scope.launch {
                                         close()

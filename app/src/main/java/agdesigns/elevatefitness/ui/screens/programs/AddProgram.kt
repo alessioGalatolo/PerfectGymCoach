@@ -237,6 +237,9 @@ fun AddProgram(
                                 }, onDelete = {
                                     viewModel.onEvent(ProgramsEvent.DeleteProgram(programEntry.programId))
                                 },
+                                onDuplicate = {
+                                    viewModel.onEvent(ProgramsEvent.DuplicateProgram(programEntry.programId))
+                                },
                                 modifier = Modifier.padding(end = 16.dp)
                             )
                         }

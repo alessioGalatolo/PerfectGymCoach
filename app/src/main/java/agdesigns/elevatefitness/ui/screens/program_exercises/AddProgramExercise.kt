@@ -291,6 +291,13 @@ fun SharedTransitionScope.AddProgramExercise(
                                     )
                                 )
                             },
+                            duplicateExercise = {
+                                viewModel.onEvent(
+                                    ProgramExercisesEvent.DuplicateExercise(
+                                        programExercise.programExerciseId
+                                    )
+                                )
+                            }
                         )
                     }
                     item{

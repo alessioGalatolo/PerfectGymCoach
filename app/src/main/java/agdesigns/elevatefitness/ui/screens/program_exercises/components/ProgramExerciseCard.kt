@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
@@ -91,6 +92,7 @@ fun SharedTransitionScope.ProgramExerciseCard(
     moveUp: () -> Unit,
     moveDown: () -> Unit,
     deleteExercise: () -> Unit,
+    duplicateExercise: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -132,7 +134,7 @@ fun SharedTransitionScope.ProgramExerciseCard(
                             SharedElementKey(
                                 "AddExerciseDialog",
                                 SharedElementType.Bounds,
-                                idLong = exercise?.exerciseId ?: 0L
+                                idLong = programExercise.programExerciseId
                             )
                         ),
                         animatedVisibilityScope
@@ -172,7 +174,7 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                         SharedElementKey(
                                             "AddExerciseDialog",
                                             SharedElementType.Image,
-                                            idLong = exercise?.exerciseId ?: 0L
+                                            idLong = programExercise.programExerciseId
                                         )
                                     ),
                                     animatedVisibilityScope,
@@ -234,7 +236,8 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                             Icons.Outlined.ArrowUpward,
                                             contentDescription = stringResource(R.string.move_up)
                                         )
-                                    })
+                                    }
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.move_down)) },
                                     onClick = {
@@ -247,7 +250,8 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                             Icons.Outlined.ArrowDownward,
                                             contentDescription = stringResource(R.string.move_down)
                                         )
-                                    })
+                                    }
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.edit)) },
                                     onClick = {
@@ -266,7 +270,21 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                             Icons.Outlined.Edit,
                                             contentDescription = stringResource(R.string.edit)
                                         )
-                                    })
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.duplicate)) },
+                                    onClick = {
+                                        duplicateExercise()
+                                        menuExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = null // FIXME
+                                        )
+                                    }
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.remove)) },
                                     onClick = {
@@ -278,7 +296,8 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                             Icons.Outlined.Delete,
                                             contentDescription = stringResource(R.string.delete)
                                         )
-                                    })
+                                    }
+                                )
                             }
                         }
                     }
@@ -294,7 +313,7 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                 SharedElementKey(
                                     "AddExerciseDialog",
                                     SharedElementType.Title,
-                                    idLong = exercise?.exerciseId ?: 0L
+                                    idLong = programExercise.programExerciseId
                                 )
                             ),
                             animatedVisibilityScope,

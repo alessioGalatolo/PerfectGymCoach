@@ -59,6 +59,28 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.userWeight] = newWeight
     }
 
+    fun getWeightRecordDate(): Flow<ZonedDateTime> = dataStore.data.map{
+        it[PrefKeys.userWeightRecord]?.let {
+            ZonedDateTime.ofInstant(
+                Instant.ofEpochSecond(it),
+                ZoneId.systemDefault()
+            )
+        } ?: ZonedDateTime.of(
+            2000,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            ZoneId.systemDefault()
+        )
+    }
+
+    suspend fun setWeightRecordDate(newDate: ZonedDateTime) = dataStore.edit {
+        it[PrefKeys.userWeightRecord] = newDate.toEpochSecond()
+    }
+
 
     fun getUserHeight(): Flow<Float> = dataStore.data.map{
         it[PrefKeys.userHeight] ?: 170f
@@ -249,6 +271,7 @@ internal object PrefKeys {
     val currentPlan = longPreferencesKey("Current plan")
     val currentWorkout = longPreferencesKey("Current workout")
     val userWeight = floatPreferencesKey("User weight")
+    val userWeightRecord = longPreferencesKey("User weight record")
     val userHeight = floatPreferencesKey("User height")
     val userSex = stringPreferencesKey("User sex")
     val theme = stringPreferencesKey("Theme")

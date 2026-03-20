@@ -155,7 +155,7 @@
     <string name="set_as_current_plan">Imposta come piano attuale</string>
     <string name="plan_set_as_current">Piano impostato come attuale</string>
     <string name="other_plans">Altri piani</string>
-    <string name="archive_plan_action">Archivia piano</string>
+    <string name="archive_plan_action">Archivia</string>
     <string name="archived_plans_title">Piani archiviati</string>
     <string name="plan_archived">Piano archiviato</string>
     <string name="undo">Annulla</string>
@@ -169,7 +169,7 @@
     <!-- View archived plans -->
     <string name="you_don_t_have_any_archived_plans">Non hai nessun piano archiviato!</string>
     <string name="plan_restored">Piano ripristinato!</string>
-    <string name="unarchive_plan">Ripristina piano</string>
+    <string name="unarchive_plan">Ripristina</string>
     <!-- Plan generation -->
     <string name="what_is_your_goal_when_training">Qual è il tuo obiettivo?</string>
     <string name="goal_i_image">Immagine %1$s</string>
@@ -851,7 +851,7 @@
     <string name="complete_set_generic_error">Non è stato possibile completare la serie per via di un errore sconosciuto</string>
     <string name="exercises_completed">Esercizi completati:</string>
     <string name="reorder_icon">Maniglia per riordinare</string>
-    <string name="duplicate_plan_action">Duplica piano</string>
+    <string name="duplicate">Duplica</string>
     <string name="copy_of_plan_name">Copia %1$d di %2$s</string>
     <string name="modification_suggestion_add_exercise">Aggiungi esercizio?</string>
     <string name="modification_suggestion_skip_exercise">Salta esercizio?</string>
@@ -865,4 +865,18 @@
     <string name="exercise_type_reps">Tradizionale</string>
     <string name="exercise_type">Tipo di esercizio: </string>
     <string name="exercise_hold">Mantieni</string>
+
+    <!-- Health Connect integration -->
+    <string name="integrations_title">Integrazioni</string>
+    <string name="health_connect_title" translatable="false">Health Connect</string>
+    <string name="health_connect_info">Collegati per esportare automaticamente i tuoi allenamenti</string>
+    <string name="health_connect_connected">Collegato — gli allenamenti saranno esportati automaticamente</string>
+    <string name="health_connect_problems">Problema nella connessione! Ri-controlla i permessi</string>
+    <string name="health_connect_connect">Collega</string>
+    <string name="health_connect_export">Esporta</string>
+    <string name="health_connect_connect_and_export">Collega ed Esporta</string>
+    <string name="health_connect_export_prompt">Salva questo allenamento in Health Connect</string>
+    <string name="health_connect_exported">Esportato in Health Connect</string>
+    <string name="health_connect_export_error">Esportazione fallita. Tocca per riprovare.</string>
+    <string name="health_connect_retry">Riprova</string>
 </resources>

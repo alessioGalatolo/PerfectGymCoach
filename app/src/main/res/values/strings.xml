@@ -154,7 +154,7 @@
     <string name="set_as_current_plan">Use as current plan</string>
     <string name="plan_set_as_current">Plan set as current</string>
     <string name="other_plans">Other plans</string>
-    <string name="archive_plan_action">Archive plan</string>
+    <string name="archive_plan_action">Archive</string>
     <string name="archived_plans_title">Archived plans</string>
     <string name="plan_archived">Plan archived</string>
     <string name="undo">Undo</string>
@@ -168,7 +168,7 @@
     <!-- View archived plans -->
     <string name="you_don_t_have_any_archived_plans">You don\'t have any archived plans!</string>
     <string name="plan_restored">Plan restored!</string>
-    <string name="unarchive_plan">Unarchive plan</string>
+    <string name="unarchive_plan">Unarchive</string>
     <!-- Plan generation -->
     <string name="what_is_your_goal_when_training">What is your goal when training?</string>
     <string name="goal_i_image">%1$s image</string>
@@ -852,7 +852,7 @@
     <string name="complete_set_generic_error">Couldn\'t complete the set due to an unknown error.</string>
     <string name="exercises_completed">Exercises completed:</string>
     <string name="reorder_icon">Drag handle to reorder</string>
-    <string name="duplicate_plan_action">Duplicate plan</string>
+    <string name="duplicate">Duplicate</string>
     <string name="copy_of_plan_name">Copy %1$d of %2$s</string>
     <string name="modification_suggestion_add_exercise">Add exercise?</string>
     <string name="modification_suggestion_skip_exercise">Skip exercise?</string>
@@ -867,4 +867,18 @@
     <string name="exercise_type">Exercise type: </string>
 <!--    What to tell the user i.e., reps vs hold -->
     <string name="exercise_hold">Hold</string>
+
+    <!-- Health Connect integration -->
+    <string name="integrations_title">Integrations</string>
+    <string name="health_connect_title" translatable="false">Health Connect</string>
+    <string name="health_connect_info">Connect to export your workouts automatically</string>
+    <string name="health_connect_connected">Connected — workouts will be automatically exported</string>
+    <string name="health_connect_problems">Problem connecting! Please review the permissions</string>
+    <string name="health_connect_connect">Connect</string>
+    <string name="health_connect_export">Export</string>
+    <string name="health_connect_connect_and_export">Connect &amp; Export</string>
+    <string name="health_connect_export_prompt">Save this workout to Health Connect</string>
+    <string name="health_connect_exported">Exported to Health Connect</string>
+    <string name="health_connect_export_error">Export failed. Tap to retry.</string>
+    <string name="health_connect_retry">Retry</string>
 </resources>
