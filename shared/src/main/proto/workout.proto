@@ -86,6 +86,11 @@ message WorkoutActiveResponse {
 
 message CompleteWorkout {
   float intensity = 1;
+  float calories = 2;
+  int32 max_heart_rate = 3;
+  int32 avg_heart_rate = 4;
+  int32 min_heart_rate = 5;
+  repeated int32 heart_rates = 6;
 }
 
 message AcceptedModification {
@@ -110,7 +115,7 @@ message RestPhone2Watch {
   google.protobuf.Timestamp rest_timestamp = 2;
 }
 
-// used by phone to tell watch to advance exercise
+// used by phone to tell watch stuff
 service WorkoutWearService {
   // TODO: merge scrollToExercise into set rest, scroll to exercise should be a
   //  side effect of a set completed on phone
@@ -118,4 +123,5 @@ service WorkoutWearService {
   rpc setRest(RestPhone2Watch) returns (google.protobuf.Empty);
   // stops workout on watch
   rpc stopWorkout(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc getHealthData(google.protobuf.Empty) returns (CompleteWorkout);
 }

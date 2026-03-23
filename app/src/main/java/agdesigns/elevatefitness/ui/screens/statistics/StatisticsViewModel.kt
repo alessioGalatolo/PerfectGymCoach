@@ -25,8 +25,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.jaikeerthick.composable_graphs.composables.donut.model.DonutData
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -300,10 +300,11 @@ class StatisticsViewModel @Inject constructor(
                     extras {
                         val nonZeroVolumeEntries =
                             volumeProgression.filter { it.second > 0 }.size
+                        it[BestColumnKey] = maxIndex
+                        if (nonZeroVolumeEntries == 0) return@extras
                         it[MeanLineKey] =
                             volumeProgression.map { it.second / nonZeroVolumeEntries }.sum()
                                 .toDouble()
-                        it[BestColumnKey] = maxIndex
                     }
                 }
                 _state.update {

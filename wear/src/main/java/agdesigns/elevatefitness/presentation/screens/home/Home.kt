@@ -56,7 +56,7 @@ import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
-import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.horologist.compose.ambient.AmbientAware
 import kotlinx.coroutines.launch
 
@@ -69,21 +69,8 @@ fun Home(
     val homeState by viewModel.state.collectAsState()
     val activeWorkout by viewModel.activeWorkout.collectAsState(false)
 
-    // notifications permission
-    val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS)
-    } else {
-        // Below T, POST_NOTIFICATIONS does not need to be requested at runtime but must still be
-        // specified in the Manifest. Therefore, permissionState is created such that it is already
-        // in the granted state.
-        object : PermissionState {
-            override val permission = "no_runtime_permission_required"
-            override val status = PermissionStatus.Granted
-            override fun launchPermissionRequest() {}
-        }
-    }
     val context = LocalContext.current
-
+    val scope = rememberCoroutineScope()
 
     val remoteActivityHelper = RemoteActivityHelper(context)
     val getAppIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -109,65 +96,50 @@ fun Home(
                     hasCheckedAlarmPermission = true
                 }
             )
-            OpenOnPhoneDialog(
-                visible = showConfirmation,
-                onDismissRequest = { showConfirmation = false },
-                curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
-            )
-            if (notificationPermissionState.status == PermissionStatus.Granted) {
-                LaunchedEffect(Unit) {
-                    // Reset the status of having shown permission rationale.
-                    viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                        ShownRationaleStatus.UNKNOWN,
-                        permission = notificationPermissionState.permission
-                    )
-                }
-            }
-            var notNow by rememberSaveable { mutableStateOf(false) }
             if (hasCheckedAlarmPermission) {
-                if (notificationPermissionState.status is PermissionStatus.Denied && !notNow) {
-                    val denied = notificationPermissionState.status as PermissionStatus.Denied
-                    val hasPreviouslyShown by viewModel.permissionStateDataStore
-                        .hasPreviouslyShownRationale(notificationPermissionState.permission)
-                        .collectAsStateWithLifecycle(initialValue = ShownRationaleStatus.UNKNOWN)
-
-                    if (denied.shouldShowRationale) {
-                        LaunchedEffect(Unit) {
-                            viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                                ShownRationaleStatus.HAS_SHOWN,
-                                permission = notificationPermissionState.permission
-                            )
-                        }
-                        // ShouldShowRationale returns true if:
-                        // - A request has previously been denied
-                        // - The app permission was set to denied in settings
-                        // At this point, the app stores the state that the rationale has been shown, as if
-                        // subsequently false is returned, this means that the permission cannot be requested
-                        // now, as opposed to the false seen from shouldShowRationale on first ever launch
-                        PermissionRequiredScreen(
-                            listState,
-                            descResId = R.string.notification_permission_explanation,
-                            onPermissionClick = { notificationPermissionState.launchPermissionRequest() },
-                            buttonLabelResId = R.string.show_permission,
-                            onNotNowClick = { notNow = true }
-                        )
-                    } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_SHOWN) {
-                        // Rationale has been shown previously, but the user has decided not to grant permission
-                        // Offer the user the option to go to permission settings.
-                        PermissionRequiredScreen(
-                            listState,
-                            descResId = R.string.notification_permission_explanation,
-                            onPermissionClick = { launchPermissionsSettings(context) },
-                            buttonLabelResId = R.string.show_settings,
-                            onNotNowClick = { notNow = true }
-                        )
-                    } else if (hasPreviouslyShown == ShownRationaleStatus.HAS_NOT_SHOWN) {
-                        // First launch of permissions, show the permission request without any rationale.
-                        LaunchedEffect(Unit) {
-                            notificationPermissionState.launchPermissionRequest()
-                        }
+                var hasAskedForPermissions by rememberSaveable {
+                    mutableStateOf(false)
+                }
+                val canShowRationales by viewModel.canShowRationales.collectAsState(
+                    null
+                )
+                val permissions = rememberMultiplePermissionsState(
+                    viewModel.permissionsNeeded
+                ) {
+                    hasAskedForPermissions = true
+                }
+                LaunchedEffect(Unit) {
+                    if (!permissions.allPermissionsGranted) {
+                        permissions.launchMultiplePermissionRequest()
+                    } else {
+                        hasAskedForPermissions = true
                     }
-                } else {
+                }
+                if (hasAskedForPermissions &&
+                    !permissions.allPermissionsGranted &&
+                    canShowRationales?.isNotEmpty() ?: true
+                ) {
+                    // asked for permissions, some were denied, but we can show rationales
+                    PermissionRequiredScreen(
+                        listState,
+                        titleResId = R.string.permissions_explanation_title,
+                        descResId = R.string.permissions_explanation,
+                        onPermissionClick = {
+                            permissions.launchMultiplePermissionRequest()
+                        },
+                        buttonLabelResId = R.string.show_permission,
+                        onNotNowClick = {
+                            for (permission in canShowRationales?.keys ?: emptyList()) {
+                                scope.launch {
+                                    viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
+                                        ShownRationaleStatus.HAS_SHOWN,
+                                        permission = permission
+                                    )
+                                }
+                            }
+                        }
+                    )
+                } else if (hasAskedForPermissions) {
                     if (homeState.incompatibleVersion) {
                         AlertDialog(
                             visible = homeState.incompatibleVersion,
@@ -202,6 +174,16 @@ fun Home(
                             onDismissRequest = {}
                         )
                     } else {
+                        OpenOnPhoneDialog(
+                            visible = showConfirmation,
+                            onDismissRequest = { showConfirmation = false },
+                            curvedText = {
+                                openOnPhoneDialogCurvedText(
+                                    text = text,
+                                    style = style
+                                )
+                            }
+                        )
                         LaunchedEffect(activeWorkout) {
                             if (activeWorkout) {
                                 openWorkoutScreen()
@@ -239,7 +221,9 @@ fun Home(
                                             ButtonDefaults.outlinedButtonBorder(true)
                                         else null,
                                         onClick = {
-                                            remoteActivityHelper.startRemoteActivity(openAppIntent)
+                                            remoteActivityHelper.startRemoteActivity(
+                                                openAppIntent
+                                            )
                                             showConfirmation = true
                                         }
                                     ) {

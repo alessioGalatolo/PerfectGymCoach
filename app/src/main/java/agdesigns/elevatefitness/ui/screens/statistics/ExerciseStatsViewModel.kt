@@ -14,8 +14,8 @@ import agdesigns.elevatefitness.utils.estimate1RM
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.maybeKgToLb
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -179,8 +179,9 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                     extras {
                         val nonZeroVolumeEntries = volumeProgressionAll.filter { it.second > 0 }.size
-                        it[MeanLineKey] = volumeProgressionAll.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
                         it[BestColumnKey] = maxVolumeAllIndex
+                        if (nonZeroVolumeEntries == 0) return@extras
+                        it[MeanLineKey] = volumeProgressionAll.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
                     }
                 }
             }
@@ -205,8 +206,9 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                     extras {
                         val nonZeroVolumeEntries = volumeProgressionMonth.filter { it.second > 0 }.size
-                        it[MeanLineKey] = volumeProgressionMonth.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
                         it[BestColumnKey] = maxVolumeMonthIndex
+                        if (nonZeroVolumeEntries == 0) return@extras
+                        it[MeanLineKey] = volumeProgressionMonth.map { it.second / nonZeroVolumeEntries }.sum().toDouble()
                     }
                 }
             }

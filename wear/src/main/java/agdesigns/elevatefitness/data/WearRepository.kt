@@ -113,6 +113,9 @@ class WearRepository @Inject constructor(
     val permissionStateDataStore: PermissionStateDataStore,
     @param:ApplicationContext private val context: Context
 ) {
+    // WorkoutViewModel needs to register this (very suboptimal)
+    var getHealthData: () -> Workout.CompleteWorkout? = { null }
+
     val hasExactAlarm = context.exactAlarmPermissionFlow()
     val hintAlarmFiredFlow: SharedFlow<Unit> = _hintAlarmFiredFlow
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager

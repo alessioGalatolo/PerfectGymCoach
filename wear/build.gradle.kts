@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.lifecycle.service)
     implementation(libs.datastore.preferences)
     implementation(libs.accompanist.permissions)
+    implementation(libs.health.services)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.hilt.android)

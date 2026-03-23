@@ -24,6 +24,7 @@ wearable_play_services = "19.0.0"
 wear_remote_interactions = "1.2.0"
 wear_ongoing = "1.1.0"  # ongoing activity
 kotlin_coroutines_play_services = "1.10.2"
+health = "1.1.0-rc01"
 # compose wear os
 wear_compose = "1.6.0-rc01"
 wear_compose_material3 = "1.6.0-rc01"
@@ -36,7 +37,7 @@ android_shapes = "1.1.0"
 health_connect = "1.1.0"
 # external libraries
 graphs = "1.2.5"
-vico = "2.4.1"  # plots
+vico = "3.0.3"  # plots
 # tests
 espresso = "3.7.0"
 junit = "4.13.2"
@@ -53,7 +54,7 @@ android_library = "9.0.1"
 kotlin_android = "2.3.10"
 kotlin_serialization = "2.3.10"
 compose_plugin = "2.3.10"
-ksp = "2.3.2"  # 2.2.20-2.0.3 has a bug and does not work!!
+ksp = "2.3.2"
 hilt_plugin = "2.59.2"
 protobuf_plugin = "0.9.6"
 
@@ -135,6 +136,7 @@ ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitV
 android-shapes = { group = "androidx.graphics", name = "graphics-shapes", version.ref = "android_shapes" }
 kotlin-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlin_coroutines_play_services"}
 
+health-services = { group = "androidx.health", name = "health-services-client", version.ref = "health" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 health-connect = { group = "androidx.health.connect", name = "connect-client", version.ref = "health_connect" }
 # plots

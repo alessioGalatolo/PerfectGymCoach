@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.shared.R as sharedR
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.WearRepository
 import agdesigns.elevatefitness.presentation.screens.common.MediaPlayingState
+import agdesigns.elevatefitness.service.WorkoutService
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -21,6 +22,7 @@ import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
+import android.os.Build
 import androidx.annotation.StringRes
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoFlow
@@ -41,7 +43,10 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -49,6 +54,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.ZonedDateTime
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -95,7 +101,14 @@ data class WorkoutState(
     // hints to show to the user when they are in rest e.g., move to X exercise, change weight, etc.
     val inRestHints: List<InRestHint> = emptyList(),
     val showHintDialog: Boolean = false,
-    val nextSetExerciseName: String = ""
+    val nextSetExerciseName: String = "",
+    val totalCalories: Double? = null,
+    val currentHeartRate: Int? = null,
+    val maxHeartRate: Int? = null,
+    val averageHeartRate: Int? = null,
+    val minHeartRate: Int? = null,
+    val heartRateBySecond: Map<Long, Int> = emptyMap(),
+    val workoutTime: String? = null
 )
 
 sealed class WorkoutEvent {
@@ -131,7 +144,7 @@ sealed class WorkoutEffect {
     data object NavigateToSelectValues: WorkoutEffect()
 }
 
-@OptIn(ExperimentalHorologistApi::class)
+@OptIn(ExperimentalHorologistApi::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class WorkoutViewModel
 @Inject constructor(
@@ -141,7 +154,6 @@ class WorkoutViewModel
     private val mediaService: MediaServiceGrpcKt.MediaServiceCoroutineStub
 ): ViewModel() {
     private var retryJob: Job? = null
-
     val exercisesState = combine(
         registry.protoFlow<Workout.WorkoutStaticData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
         registry.protoFlow<Workout.WorkoutDynamicData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
@@ -241,6 +253,48 @@ class WorkoutViewModel
                     _state.update { it.copy(showHintDialog = true) }
                 }
             }
+        }
+        viewModelScope.launch {
+            repository.service
+                .flatMapLatest { it?.exerciseMetricsFlow() ?: flowOf(WorkoutService.ExerciseMetrics()) }
+                .collect {
+                    Duration.ofMillis(0L).toMillis()
+                    _state.update { state ->
+                        val secondsToHR = state.heartRateBySecond.toMutableMap()
+                        it.heartRates.forEach {
+                            val timeInSeconds = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                it.first.toSeconds()
+                            } else {
+                                it.first.toMillis() / 1000L
+                            }
+                            secondsToHR[timeInSeconds] = it.second.toInt()
+                        }
+                        state.copy(
+                            totalCalories = it.totalCalories ?: state.totalCalories,
+                            currentHeartRate = it.heartRates
+                                .getOrNull(it.heartRates.size-1)?.second?.toInt()
+                                ?: state.currentHeartRate,
+                            maxHeartRate = it.maxHeartRate?.toInt() ?: state.maxHeartRate,
+                            averageHeartRate = it.averageHeartRate?.toInt() ?: state.averageHeartRate,
+                            minHeartRate = it.minHeartRate?.toInt() ?: state.minHeartRate,
+                            heartRateBySecond = secondsToHR.toMap()
+                        )
+                    }
+                }
+        }
+        repository.getHealthData = {
+            Workout.CompleteWorkout.newBuilder()
+                .setIntensity(0f)
+                .setAvgHeartRate(state.value.averageHeartRate ?: 0)
+                .setMaxHeartRate(state.value.maxHeartRate ?: 0)
+                .setMinHeartRate(state.value.minHeartRate ?: 0)
+                .setCalories(state.value.totalCalories?.toFloat() ?: 0f)
+                .addAllHeartRates(
+                    state.value.heartRateBySecond.toList().sortedBy {
+                        it.first
+                    }.interpolateMissingValues().map { it.second }
+                )
+                .build()
         }
         startTimer()
     }
@@ -402,6 +456,15 @@ class WorkoutViewModel
                         workoutService.completeWorkout(
                             Workout.CompleteWorkout.newBuilder()
                                 .setIntensity(event.workoutIntensity * 100f) // phone expects values 0-100
+                                .setAvgHeartRate(state.value.averageHeartRate ?: 0)
+                                .setMaxHeartRate(state.value.maxHeartRate ?: 0)
+                                .setMinHeartRate(state.value.minHeartRate ?: 0)
+                                .setCalories(state.value.totalCalories?.toFloat() ?: 0f)
+                                .addAllHeartRates(
+                                    state.value.heartRateBySecond.toList().sortedBy {
+                                        it.first
+                                    }.interpolateMissingValues().map { it.second }
+                                )
                                 .build()
                         )
                     } catch (e: StatusException) {
@@ -602,6 +665,31 @@ class WorkoutViewModel
         }
     }
 
+    private fun List<Pair<Long, Int>>.interpolateMissingValues(): List<Pair<Long, Int>> {
+        // Here, Long is a timestamp, Int is a heart rate value
+        // We want to interpolate for missing values
+        return buildList {
+            if (this@interpolateMissingValues.isEmpty()) return@buildList
+            var lastValue: Int = this@interpolateMissingValues.first().second
+            var lastTime: Long = this@interpolateMissingValues.first().first
+            for ((time, value) in this@interpolateMissingValues) {
+                if (time > lastTime+1L) {
+                    val timeDiff = time - lastTime
+                    val valueDiff = value - lastValue
+                    val increment = valueDiff.toFloat() / timeDiff.toFloat()
+                    for (i in 1 until timeDiff) {
+                        add(
+                            lastTime + i to (lastValue + (increment * i)).toInt()
+                        )
+                    }
+                }
+                lastTime = time
+                lastValue = value
+                add(time to value)
+            }
+        }
+    }
+
     // current time
     private fun startTimer(){
         timerJob?.cancel(CancellationException("Duplicate call"))
@@ -629,10 +717,19 @@ class WorkoutViewModel
                 ) {
                     ongoingRestMillis.toFloat() / it.currentExerciseRest!!.times(1000L).toFloat()
                 } else null
+                val workoutTime = exercisesState.value.startDate?.let {
+                    val seconds = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        Duration.between(it, currentTime).toSeconds()
+                    } else {
+                        Duration.between(it, currentTime).toMillis() / 1000L
+                    }
+                    "%02d:%02d".format(seconds / 60, seconds % 60)
+                }
                 it.copy(
                     currentTime = currentTime,
                     ongoingRestSecs = ongoingRestSecs,
-                    ongoingRestProgression = ongoingRestProgression
+                    ongoingRestProgression = ongoingRestProgression,
+                    workoutTime = workoutTime
                 )
             }
         }.launchIn(viewModelScope)

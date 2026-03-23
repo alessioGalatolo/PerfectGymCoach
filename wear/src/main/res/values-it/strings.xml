@@ -5,7 +5,8 @@
     <string name="active_workout">Allenamento attivo</string>
     <string name="stop_workout_notification_text">Interrompi allenamento</string>
     <string name="launch_activity">Apri app</string>
-    <string name="notification_permission_explanation">Questa app ha bisogno del permesso per mostrare attività in corso (allenamento in corso)</string>
+    <string name="permissions_explanation_title">Per favore, autorizza i permessi</string>
+    <string name="permissions_explanation">Questa app usa i permessi richiesti per darti la migliore esperienza possibile durante il tuo allenamento. Not garantire questi permessi non permetterà che l\'app funzioni correttamente.</string>
     <string name="show_permission">Mostra richesta permesso</string>
     <string name="show_settings">Mostra impostazioni</string>
     <string name="go_back">Torna indietro</string>
@@ -62,7 +63,7 @@
     <string name="rest_hint_start_weight_generic">Carica %1$s%2$s</string>
     <string name="rest_hint_start_reps_title">Ripetizioni</string>
     <string name="rest_hint_start_reps">Inizia con %1$s ripetizioni</string>
-    <string name="end_workout">Fine allenamento</string>
+    <string name="end_workout">Fine allenamento?</string>
     <string name="how_intense_was_this_workout">Quanto intenso era l\'allenamento?</string>
     <string name="raise_audio_volume">Aumenta il volume dell\'audio</string>
     <string name="lower_audio_volume">Diminuisci il volume dell\'audio</string>
@@ -79,5 +80,6 @@
     <string name="modification_desc_add">L\'ultima volta, dopo aver completato l\'ultimo esercizio, hai aggiunto: </string>
     <string name="modification_desc_skip">L\'ultima volta hai saltato "%1$s"</string>
     <string name="hold">Durata</string>
+    <string name="close">Chiudi</string>
 
 </resources>

@@ -35,6 +35,7 @@ import agdesigns.elevatefitness.shared.toZonedDateTime
 import agdesigns.elevatefitness.shared.urgentProtoDataStore
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.WearDataLayerRegistry
+import com.google.protobuf.Empty
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -45,6 +46,7 @@ import java.time.ZonedDateTime
 import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
+import kotlin.collections.toList
 import kotlin.math.max
 import kotlin.math.min
 
@@ -797,7 +799,25 @@ class WorkoutViewModel @Inject constructor(
             }
             is WorkoutEvent.FinishWorkout -> {
                 viewModelScope.launch {
-                    finishWorkout(intensity = event.workoutIntensity)
+                    val healthData = try {
+                        phoneToWatchService.getHealthData(Empty.newBuilder().build())
+                    } catch (e: Exception) {
+                        Log.e("WorkoutViewModel", "Failed to get health data from watch", e)
+                        Workout.CompleteWorkout.newBuilder()
+                            .setCalories(0f)
+                            .setAvgHeartRate(0)
+                            .setMaxHeartRate(0)
+                            .setMinHeartRate(0)
+                            .build()
+                    }
+                    finishWorkout(
+                        intensity = event.workoutIntensity,
+                        calories = if (healthData.calories != 0f) healthData.calories else null,
+                        maxHeartRate = if (healthData.maxHeartRate != 0) healthData.maxHeartRate else null,
+                        minHeartRate = if (healthData.minHeartRate != 0) healthData.minHeartRate else null,
+                        avgHeartRate = if (healthData.avgHeartRate != 0) healthData.avgHeartRate else null,
+                        heartRates = if (healthData.heartRatesCount > 0) healthData.heartRatesList.toList() else null
+                    )
                 }
             }
             is WorkoutEvent.CancelWorkout -> {
@@ -1701,14 +1721,21 @@ class WorkoutViewModel @Inject constructor(
 
     private fun observeWorkoutCompletionsFromWear() {
         viewModelScope.launch {
-            for (workoutIntensity in phoneWorkoutRepository.workoutCompletions) {
+            for (workout in phoneWorkoutRepository.workoutCompletions) {
                 if (workoutState.value.startDate == null) {
                     // user completed workout from watch before starting workout, weird but anyway
                     startWorkout()
                     // StartWorkout is async, need to wait for it to finish
                     startWorkoutJob?.join()
                 }
-                finishWorkout(workoutIntensity)
+                finishWorkout(
+                    intensity = workout.intensity,
+                    calories = if (workout.calories != 0f) workout.calories else null,
+                    maxHeartRate = if (workout.maxHeartRate != 0) workout.maxHeartRate else null,
+                    minHeartRate = if (workout.minHeartRate != 0) workout.minHeartRate else null,
+                    avgHeartRate = if (workout.avgHeartRate != 0) workout.avgHeartRate else null,
+                    heartRates = if (workout.heartRatesCount > 0) workout.heartRatesList.toList() else null
+                )
             }
         }
     }
@@ -1722,7 +1749,14 @@ class WorkoutViewModel @Inject constructor(
         }
     }
 
-    private suspend fun finishWorkout(intensity: Float) {
+    private suspend fun finishWorkout(
+        intensity: Float,
+        calories: Float? = null,
+        maxHeartRate: Int? = null,
+        minHeartRate: Int? = null,
+        avgHeartRate: Int? = null,
+        heartRates: List<Int>? = emptyList()
+    ) {
         val exercises = repository.getWorkoutExerciseRecordsAndInfo(workoutState.value.workoutId).first().distinct()
         // add all exercises with no records to modifications as skipped
         val skippedExs = pagesContent.value.exercises.filter { original ->
@@ -1759,10 +1793,14 @@ class WorkoutViewModel @Inject constructor(
                     ).toDouble() },
                 activeTimeSeconds = max(0L, workoutTimeSeconds -
                         exercises.sumOf { it.rest.sum() }),
-                calories = intensityMet *
+                calories = calories ?: (intensityMet *
                         preferences.getUserWeight().first() *
-                        workoutTimeSeconds / 3600,
-                workoutModifications = workoutModifications
+                        workoutTimeSeconds / 3600),
+                workoutModifications = workoutModifications,
+                heartRates = heartRates,
+                maxHeartRate = maxHeartRate,
+                minHeartRate = minHeartRate,
+                avgHeartRate = avgHeartRate
             )
         )
         val planPrograms = repository.getPlanMapPrograms().first().entries.find {

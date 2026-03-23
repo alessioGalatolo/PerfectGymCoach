@@ -45,7 +45,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -91,7 +91,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_3_4,
                     MIGRATION_4_5,
                     MIGRATION_5_6,
-                    MIGRATION_6_7
+                    MIGRATION_6_7,
+                    MIGRATION_7_8
                 )
                     .build()
                     .also { instance = it }
@@ -178,6 +179,24 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         )
     }
 }
+
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE WorkoutRecord ADD COLUMN maxHeartRate INTEGER"
+        )
+        db.execSQL(
+            "ALTER TABLE WorkoutRecord ADD COLUMN avgHeartRate INTEGER"
+        )
+        db.execSQL(
+            "ALTER TABLE WorkoutRecord ADD COLUMN minHeartRate INTEGER"
+        )
+        db.execSQL(
+            "ALTER TABLE WorkoutRecord ADD COLUMN heartRates TEXT"
+        )
+    }
+}
+
 
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")

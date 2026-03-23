@@ -64,9 +64,9 @@ import com.jaikeerthick.composable_graphs.composables.donut.style.DonutChartType
 import com.jaikeerthick.composable_graphs.composables.donut.style.DonutSliceType
 import com.jaikeerthick.composable_graphs.composables.pie.PieChart
 import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -255,13 +255,11 @@ fun Statistics(
                                 PillChart(
                                     modelProducer = state.volumeChartProducer,
                                     markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
-                                        DecimalFormat(
-                                            "#.## ${
-                                                if (state.useImperialSystem) stringResource(
-                                                    R.string.lb
-                                                ) else stringResource(R.string.kg)
-                                            }"
-                                        )
+                                        decimalCount = 2,
+                                        suffix = if (state.useImperialSystem)
+                                            stringResource(R.string.lb)
+                                        else
+                                            stringResource(R.string.kg)
                                     ),
                                     xValueFormatter = CartesianValueFormatter { _, value, _ ->
                                         val index = value.toInt()

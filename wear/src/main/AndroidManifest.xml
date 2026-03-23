@@ -9,17 +9,27 @@
     <!-- Required for foreground services on P+. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
-    <!--
-      Required for the datasync foreground service type from Android 14 onwards, see:
-      https://developer.android.com/about/versions/14/changes/fgs-types-required
-    -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <!-- There is no service health until sdk 34, and we cannot use it if don't get health runtime permission   -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
 
     <!-- POST_NOTIFICATIONS is required for posting the Ongoing Activity -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- To vibrate on set end   -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+
+    <!-- To record exercises   -->
+    <uses-permission android:name="android.permission.BODY_SENSORS"
+        android:maxSdkVersion="35" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND"
+        android:maxSdkVersion="35" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
+
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
 
     <application
         android:allowBackup="true"
@@ -71,7 +81,7 @@
             android:name=".service.WorkoutService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="health|dataSync" />
 
         <service
             android:name=".service.WearDataLayerListenerService"

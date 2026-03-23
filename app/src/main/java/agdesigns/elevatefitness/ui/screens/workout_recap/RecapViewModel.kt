@@ -9,9 +9,9 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +40,10 @@ data class RecapState(
     val volumeChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val caloriesChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val timeChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val hasHRData: Boolean = false,
+    val maxHR: Double = 0.0,
+    val minHR: Double = 0.0,
+    val hrChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val imperialSystem: Boolean = false,
     val index2date: Map<Int, ZonedDateTime> = emptyMap(),
     val isHealthConnectAvailable: Boolean = false,
@@ -113,6 +117,8 @@ class RecapViewModel @Inject constructor(
                                     repository.getWorkoutExerciseRecordsAndInfo(event.workoutId),
                                     repository.getWorkoutRecord(event.workoutId)
                                 ) { olderRecords, exerciseRecords, workoutRecord ->
+                                    // TODO: maybe limit max number of records?
+                                    // TODO: also maybe get stats from similar workouts
                                     val sortedRecords = olderRecords
                                         .filter { it.durationSeconds > 0 }
                                         .sortedBy { it.startDate }
@@ -174,6 +180,30 @@ class RecapViewModel @Inject constructor(
                                             it[highlightSeriesKey] = listOf(2, 3)
                                         }
                                     }
+                                    var maxHR = 0.0
+                                    var minHR = 0.0
+                                    var hasHRData = false
+                                    if (workoutRecord.heartRates != null) {
+                                        val hrMax = workoutRecord.heartRates.max()
+                                        val hrMin = workoutRecord.heartRates.min()
+                                        hasHRData = true
+                                        maxHR = (hrMax + (10 - hrMax % 10)).toDouble()
+                                        minHR = (hrMin - (hrMin % 10)).toDouble()
+                                        state.value.hrChartProducer.runTransaction {
+                                            lineSeries {
+                                                // heartRates can be a lot. Use max 100, samples equally spaced
+                                                val finalSize = minOf(workoutRecord.heartRates.size, 50000)
+                                                val samplingStep = maxOf(1, (workoutRecord.heartRates.size.toFloat() / finalSize.toFloat()).toInt())
+                                                val newList = workoutRecord.heartRates.slice(
+                                                    0 until workoutRecord.heartRates.size step samplingStep
+                                                )
+                                                series(
+                                                    newList.indices.toList(),
+                                                    newList
+                                                )
+                                            }
+                                        }
+                                    }
                                     // Fetch program name for Health Connect export
                                     val programName = runCatching {
                                         repository.getProgram(workoutRecord.extProgramId)
@@ -185,7 +215,10 @@ class RecapViewModel @Inject constructor(
                                             exerciseRecords = sortedDistinctExercises,
                                             workoutRecord = workoutRecord,
                                             programName = programName,
-                                            index2date = index2date
+                                            index2date = index2date,
+                                            hasHRData = hasHRData,
+                                            maxHR = maxHR,
+                                            minHR = minHR
                                         )
                                     }
 

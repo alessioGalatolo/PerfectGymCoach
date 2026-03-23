@@ -22,10 +22,14 @@ class Converters {
         if (value == 0L) null else Instant.ofEpochMilli(value).atZone(zoneId)
 
     @TypeConverter
-    fun listIntToString(value: List<Int>): String = if (value.isEmpty()) "" else value.joinToString(",")
+    fun listIntToString(value: List<Int>?): String? = value?.let {
+        if (value.isEmpty()) "" else value.joinToString(",")
+    }
 
     @TypeConverter
-    fun stringToListInt(value: String): List<Int> = if (value.isEmpty()) emptyList() else value.split(",").map { it.toInt() }
+    fun stringToListInt(value: String?): List<Int>? = value?.let {
+        if (value.isEmpty()) emptyList() else value.split(",").map { it.toInt() }
+    }
 
     @TypeConverter
     fun listFloatToString(value: List<Float>): String = if (value.isEmpty()) "" else value.joinToString(",")

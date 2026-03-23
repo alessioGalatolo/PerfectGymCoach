@@ -34,7 +34,11 @@ data class WorkoutRecord(
     // used to suggest workout modifications, e.g., "last time you added this exercise"
     val workoutModifications: List<WorkoutModification> = emptyList(),
     // id of record after it has been inserted into health connect
-    val healthRecordId: String? = null
+    val healthRecordId: String? = null,
+    val maxHeartRate: Int? = null,
+    val avgHeartRate: Int? = null,
+    val minHeartRate: Int? = null,
+    val heartRates: List<Int>? = null
 ) : Parcelable {
     enum class WorkoutIntensity(val descriptionResKey: String, val metValue: Float) {
         HIGH_INTENSITY("intensities_high", 6f),
@@ -115,7 +119,11 @@ data class WorkoutRecordFinish(
     val volume: Double,
     val activeTimeSeconds: Long,
     val calories: Float,
-    val workoutModifications: List<WorkoutRecord.WorkoutModification>
+    val workoutModifications: List<WorkoutRecord.WorkoutModification>,
+    val maxHeartRate: Int? = null,
+    val avgHeartRate: Int? = null,
+    val minHeartRate: Int? = null,
+    val heartRates: List<Int>? = null
 ): Parcelable
 
 @Parcelize

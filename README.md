@@ -52,7 +52,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 - **Design System:** Material 3 with Expressive elements
 - **Wearable:** Wear OS integration
 - **Graphs:** [Vico](https://github.com/patrykandpatrick/vico) and [Composable-Graphs](https://github.com/jaikeerthick/Composable-Graphs)
-- **Health Connect:** Integrate and sync with Health Connect
+- **Health Connect:** Export workouts as well as track calories and Heart Rate from watch
 
 ## Getting Started
 

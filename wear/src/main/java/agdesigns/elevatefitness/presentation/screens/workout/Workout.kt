@@ -72,12 +72,17 @@ fun Workout(
     val exercisesState by viewModel.exercisesState.collectAsState()
     val state by viewModel.state.collectAsState()
     val mediaState by viewModel.mediaState.collectAsState()
+    val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
         onDispose {
             if (!state.settingSetValues) {
-                viewModel.onEvent(WorkoutEvent.StopActivity)
-                terminate()
+                scope.launch {
+                    viewModel.onEvent(WorkoutEvent.StopActivity)
+                    delay(500L)
+                    terminate()
+                }
             }
         }
     }
@@ -132,8 +137,6 @@ fun Workout(
             }
         }
     }
-    val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
     LaunchedEffect(exercisesState.activeWorkout) {
         if (!exercisesState.activeWorkout) {
             terminate()
@@ -175,12 +178,23 @@ fun Workout(
                         when (page) {
                             0 -> EndWorkoutPage(
                                 contentPadding,
-                                exercisesState.lastIntensity,
+                                ambientState = ambientState,
+                                lastIntensity = exercisesState.lastIntensity,
+                                workoutTime = state.workoutTime,
+                                heartRate = state.currentHeartRate,
+                                calories = state.totalCalories,
                                 endWorkout = { intensity ->
                                     scope.launch {
                                         viewModel.onEvent(WorkoutEvent.EndWorkout(workoutIntensity = intensity))
                                         openOnPhone = true
                                         delay(OpenOnPhoneDialogDefaults.DurationMillis)
+                                        delay(500L)
+                                        terminate()
+                                    }
+                                },
+                                terminate = {
+                                    scope.launch {
+                                        viewModel.onEvent(WorkoutEvent.StopActivity)
                                         delay(500L)
                                         terminate()
                                     }

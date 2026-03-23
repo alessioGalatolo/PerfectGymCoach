@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -324,7 +325,7 @@ fun ExercisePage(
     )
     // we only suggest modification is the user has not done any sets yet
     if (modification != null && setsDone == 0) {
-        var dialogVisible by remember { mutableStateOf(false) }
+        var dialogVisible by rememberSaveable(modification) { mutableStateOf(false) }
         val haptics = LocalHapticFeedback.current
         LaunchedEffect(modification) {
             if (modification != null) {

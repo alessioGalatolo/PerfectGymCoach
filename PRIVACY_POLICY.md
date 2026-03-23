@@ -23,6 +23,9 @@ A foreground service is used to keep your workout session running reliably while
 The Wear OS companion app uses the same notification and background permissions as above. In addition, it requests:
 - **Vibration** – to alert you with a haptic buzz when your rest period ends.
 - **Exact Alarms** – to schedule the rest timer with precise timing, so the vibration and notification trigger at the right moment.
+- **Heart Rate/Body Sensors** – to track your heart rate during the workout and report it as metric.
+- **Exercise Activity** – to track more accurately the calories you burn during the workout.
+- **Background Health Activity** – to keep monitoring your heart rate even when you briefly switch to another app.
 
 **Health Connect**
 The companion phone app integrates with Health Connect to read and write your health data. The following permissions are requested:

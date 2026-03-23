@@ -37,10 +37,10 @@ class PhoneWorkoutRepository(
     )
     val setCompletions: ReceiveChannel<Workout.SetCompleted> = _setCompletions
 
-    private val _workoutCompletions = Channel<Float>(
+    private val _workoutCompletions = Channel<Workout.CompleteWorkout>(
         capacity = Channel.UNLIMITED
     )
-    val workoutCompletions: ReceiveChannel<Float> = _workoutCompletions
+    val workoutCompletions: ReceiveChannel<Workout.CompleteWorkout> = _workoutCompletions
 
     private val _acceptedModifications = Channel<Int>(
         capacity = Channel.UNLIMITED
@@ -65,8 +65,8 @@ class PhoneWorkoutRepository(
         return false
     }
 
-    fun handleCompleteWorkout(intensity: Float) {
-        _workoutCompletions.trySend(intensity)
+    fun handleCompleteWorkout(completion: Workout.CompleteWorkout) {
+        _workoutCompletions.trySend(completion)
     }
 
     fun handleAcceptModification(modificationIndex: Int) {

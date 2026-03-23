@@ -33,9 +33,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import coil3.compose.AsyncImage
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -212,8 +212,9 @@ fun ExerciseStats(
                                 stickyHeaders2Id[headers[1]]!!,
                                 state.volumeProgressionAllProducer,
                                 xValueFormatter = defaultValueFormatter,
-                                markerDecimalFormat = DecimalFormat(
-                                    "#.## $unit"
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    decimalCount = 2,
+                                    suffix = unit
                                 ),
                                 scrollable = true,
                                 meanAvailable = true,
@@ -231,8 +232,9 @@ fun ExerciseStats(
                                             .coerceIn(0, state.volumeMonthIndex2Date.keys.maxOrNull())
                                     state.volumeMonthIndex2Date[index] ?: value.toString()
                                 },
-                                markerDecimalFormat = DecimalFormat(
-                                    "#.## $unit"
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    decimalCount = 2,
+                                    suffix = unit
                                 ),
                                 scrollable = false
                             )
@@ -244,8 +246,9 @@ fun ExerciseStats(
                                 stickyHeaders2Id[headers[3]]!!,
                                 state.maxWeightsProducer,
                                 xValueFormatter = sessionValueFormatter,
-                                markerDecimalFormat = DecimalFormat(
-                                    "#.## $unit"
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    decimalCount = 2,
+                                    suffix = unit
                                 ),
                                 scrollable = true
                             )
@@ -256,8 +259,9 @@ fun ExerciseStats(
                                 stickyHeaders2Id[headers[4]]!!,
                                 state.avgWeightProducer,
                                 xValueFormatter = sessionValueFormatter,
-                                markerDecimalFormat = DecimalFormat(
-                                    "#.## $unit"
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    decimalCount = 2,
+                                    suffix = unit
                                 ),
                                 scrollable = true
                             )
@@ -267,8 +271,8 @@ fun ExerciseStats(
                                 stickyHeaders2Id[headers[5]]!!,
                                 state.maxRepsProducer,
                                 xValueFormatter = sessionValueFormatter,
-                                markerDecimalFormat = DecimalFormat(
-                                    "#.##"
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    decimalCount = 2,
                                 ),
                                 scrollable = true
                             )
@@ -278,8 +282,8 @@ fun ExerciseStats(
                                 stickyHeaders2Id[headers[6]]!!,
                                 state.avgRepsProducer,
                                 xValueFormatter = sessionValueFormatter,
-                                markerDecimalFormat = DecimalFormat(
-                                    "#.##"
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    decimalCount = 2,
                                 ),
                                 scrollable = true
                             )
@@ -290,8 +294,9 @@ fun ExerciseStats(
                                 stickyHeaders2Id[headers[7]]!!,
                                 state.oneRepMaxsProducer,
                                 xValueFormatter = sessionValueFormatter,
-                                markerDecimalFormat = DecimalFormat(
-                                    "#.## $unit"
+                                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
+                                    decimalCount = 2,
+                                    suffix = unit
                                 ),
                                 scrollable = true
                             )
@@ -414,7 +419,7 @@ fun LazyListScope.PlotPillChart(
     stickyKey: Int,
     modelProducer: CartesianChartModelProducer,
     xValueFormatter: CartesianValueFormatter,
-    markerDecimalFormat: DecimalFormat,
+    markerValueFormatter: DefaultCartesianMarker.ValueFormatter,
     scrollable: Boolean,
     meanAvailable: Boolean = false,
 ) {
@@ -443,9 +448,7 @@ fun LazyListScope.PlotPillChart(
         ) {
             PillChart(
                 modelProducer,
-                markerValueFormatter = DefaultCartesianMarker.ValueFormatter.default(
-                    markerDecimalFormat
-                ),
+                markerValueFormatter = markerValueFormatter,
                 xValueFormatter = xValueFormatter,
                 decorations = decorations,
                 modifier = Modifier.padding(8.dp),

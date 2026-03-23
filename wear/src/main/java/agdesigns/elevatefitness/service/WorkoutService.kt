@@ -3,6 +3,8 @@ package agdesigns.elevatefitness.service
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.WearActivity
 import agdesigns.elevatefitness.data.WearRepository
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Binder
 import android.app.Notification
 import android.app.NotificationChannel
@@ -10,23 +12,55 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import androidx.core.app.NotificationCompat
 import android.content.Intent
+import android.os.Build
 import androidx.wear.ongoing.Status
 import androidx.wear.ongoing.OngoingActivity
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-import android.content.res.Configuration
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+import android.health.connect.HealthPermissions
 import android.os.IBinder
 import android.util.Log
+import androidx.concurrent.futures.await
+import androidx.health.services.client.ExerciseClient
+import androidx.health.services.client.ExerciseUpdateCallback
+import androidx.health.services.client.HealthServices
+import androidx.health.services.client.HealthServicesClient
+import androidx.health.services.client.clearUpdateCallback
+import androidx.health.services.client.data.Availability
+import androidx.health.services.client.data.DataType
+import androidx.health.services.client.data.DeltaDataType
+import androidx.health.services.client.data.ExerciseConfig
+import androidx.health.services.client.data.ExerciseLapSummary
+import androidx.health.services.client.data.ExerciseTrackedStatus.Companion.NO_EXERCISE_IN_PROGRESS
+import androidx.health.services.client.data.ExerciseTrackedStatus.Companion.OTHER_APP_IN_PROGRESS
+import androidx.health.services.client.data.ExerciseTrackedStatus.Companion.OWNED_EXERCISE_IN_PROGRESS
+import androidx.health.services.client.data.ExerciseType
+import androidx.health.services.client.data.ExerciseUpdate
+import androidx.health.services.client.data.WarmUpConfig
+import androidx.health.services.client.endExercise
+import androidx.health.services.client.getCapabilities
+import androidx.health.services.client.prepareExercise
+import androidx.health.services.client.startExercise
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.time.Duration
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 @AndroidEntryPoint
 class WorkoutService: LifecycleService() {
     @Inject lateinit var repository: WearRepository
     private lateinit var notificationManager: NotificationManager
+
+    private lateinit var healthClient: HealthServicesClient
+    private lateinit var exerciseClient: ExerciseClient
 
     /*
      * Checks whether the bound activity has really gone away (in which case a foreground service
@@ -34,15 +68,94 @@ class WorkoutService: LifecycleService() {
      */
     private var configurationChange = false
 
-    private var serviceRunningInForeground = false
+    private val serviceRunningInForeground: Boolean
+        get() = this.foregroundServiceType != 0
+
+    private var isStarted = false
+    private var isBound = false
 
     private val localBinder = LocalBinder()
 
     private var workoutActive: Boolean = false
 
+    private fun canCollectHeartBeat(): Boolean {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            HealthPermissions.READ_HEART_RATE
+        } else {
+            Manifest.permission.BODY_SENSORS
+        }
+        return checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun canCollectCalories(): Boolean {
+        return checkSelfPermission(
+            Manifest.permission.ACTIVITY_RECOGNITION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    data class ExerciseMetrics(
+        val totalCalories: Double? = null,
+        val heartRates: List<Pair<Duration, Double>> = emptyList(),
+        val maxHeartRate: Double? = null,
+        val averageHeartRate: Double? = null,
+        val minHeartRate: Double? = null
+    )
+
+    fun exerciseMetricsFlow() = callbackFlow {
+        val callback = object : ExerciseUpdateCallback {
+            override fun onRegistered() {}
+
+            override fun onRegistrationFailed(throwable: Throwable) {
+                Log.e(TAG, "Exercise registration failed", throwable)
+            }
+
+            override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
+
+                val latestMetrics = update.latestMetrics
+
+                val heartRate = latestMetrics.getData(DataType.HEART_RATE_BPM).map {
+                    it.timeDurationFromBoot to it.value
+                }
+
+                val caloriesTotal = latestMetrics.getData(DataType.CALORIES_TOTAL)?.total
+
+                val heartBeatStats = latestMetrics.getData(DataType.HEART_RATE_BPM_STATS)
+
+                trySendBlocking(
+                    ExerciseMetrics(
+                        totalCalories = caloriesTotal,
+                        heartRates = heartRate,
+                        maxHeartRate = heartBeatStats?.max,
+                        averageHeartRate = heartBeatStats?.average,
+                        minHeartRate = heartBeatStats?.min
+                    )
+                )
+            }
+
+            override fun onLapSummaryReceived(lapSummary: ExerciseLapSummary) {}
+
+            override fun onAvailabilityChanged(
+                dataType: DataType<*, *>,
+                availability: Availability
+            ) {
+                Log.d(TAG, "Availability changed: $dataType -> $availability")
+            }
+        }
+        exerciseClient.setUpdateCallback(callback)
+
+        awaitClose {
+            Log.d(TAG, "Unregistering for data")
+            runBlocking {
+                exerciseClient.clearUpdateCallback(callback)
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate()")
+        healthClient = HealthServices.getClient(applicationContext)
+        exerciseClient = healthClient.exerciseClient
 
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
@@ -51,117 +164,167 @@ class WorkoutService: LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         Log.d(TAG, "onStartCommand()")
 
-        val cancelWorkoutFromNotification =
-            intent?.getBooleanExtra(EXTRA_CANCEL_WORKOUT_FROM_NOTIFICATION, false)
-                ?: false
+        if (!isStarted) {
+            isStarted = true
 
-        if (cancelWorkoutFromNotification) {
-            stopWorkoutWithServiceShutdownOption(stopService = true)
+            if (!isBound) {
+                // We may have been restarted by the system. Manage our lifetime accordingly.
+                stopSelfIfNotRunning()
+            }
         }
-        // Tells the system not to recreate the service after it's been killed.
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
-    override fun onBind(intent: Intent): IBinder {
-        super.onBind(intent)
-        Log.d(TAG, "onBind()")
-
-        // MainActivity (client) comes into foreground and binds to service, so the service can
-        // move itself back to a background services.
-        notForegroundService()
-        return localBinder
-    }
-
-    override fun onRebind(intent: Intent) {
-        super.onRebind(intent)
-        Log.d(TAG, "onRebind()")
-
-        // MainActivity (client) comes into foreground and binds to service, so the service can
-        // move itself back to a background services.
-        notForegroundService()
-    }
-
-    override fun onUnbind(intent: Intent): Boolean {
-        Log.d(TAG, "onUnbind()")
-
-        // MainActivity (client) leaves foreground, so service needs to become a foreground service
-        // to maintain the 'while-in-use' label (usually needed for location services).
-        // NOTE: If this method is called due to a configuration change in MainActivity,
-        // we do nothing.
-        if (!configurationChange && workoutActive) {
-            Log.d(TAG, "Start foreground service")
-            val notification =
-                generateNotification(getString(R.string.workout_notification_started_text))
-            // startForeground takes care of notificationManager.notify(...).
-            startForeground(NOTIFICATION_ID, notification, FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-            serviceRunningInForeground = true
-        }
-
-        // Ensures onRebind() is called if MainActivity (client) rebinds.
-        return true
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        configurationChange = true
-    }
-
-    private fun notForegroundService() {
-        stopForeground(STOP_FOREGROUND_DETACH) // Changed to DETACH to keep notification
-        serviceRunningInForeground = false
-        configurationChange = false
-    }
-
-    /**
-     * Updates the notification when workout state changes
-     */
-    private fun updateNotification() {
-        if (workoutActive) {
-            val notification = generateNotification(getString(R.string.workout_notification_started_text))
-            notificationManager.notify(NOTIFICATION_ID, notification)
-        } else {
-            // Remove notification when workout is stopped
-            notificationManager.cancel(NOTIFICATION_ID)
-        }
-    }
-
-    fun startWorkout() {
-        Log.d(TAG, "startWorkout()")
-
-        workoutActive = true
-        updateNotification()
-
-        // Binding to this service doesn't actually trigger onStartCommand(). That is needed to
-        // ensure this Service can be promoted to a foreground service, i.e., the service needs to
-        // be officially started (which we do here).
-        startService(Intent(applicationContext, WorkoutService::class.java))
-
-    }
-
-    fun stopWorkout() {
-        Log.d(TAG, "stopWorkout()")
-        workoutActive = false
-        stopWorkoutWithServiceShutdownOption(true)
-    }
-
-    /**
-     * Stops workout with extra ability to shut down the Service.
-     *
-     * This is needed if the user cancels the workout from a notification. Because the
-     *  workout status is set via coroutines to our DataStore, we need to wait until that is
-     * complete before shutting down the service. Otherwise, the data won't be saved.
-     */
-    private fun stopWorkoutWithServiceShutdownOption(stopService: Boolean) {
-        Log.d(TAG, "stopWorkout()")
-
+    private fun stopSelfIfNotRunning() {
         lifecycleScope.launch {
-            workoutActive = false
-            updateNotification()  // Cancel the ongoing activity notification
-            if (stopService) {
+            // We may have been restarted by the system. Check for an ongoing exercise.
+            if (!workoutActive) {
+                exerciseClient.endExercise()
+                // We have nothing to do, so we can stop.
                 stopSelf()
             }
         }
     }
+
+
+    override fun onBind(intent: Intent): IBinder {
+        super.onBind(intent)
+
+        handleBind()
+
+        return localBinder
+    }
+
+    override fun onRebind(intent: Intent?) {
+        super.onRebind(intent)
+
+        handleBind()
+    }
+
+    private fun handleBind() {
+        if (!isBound) {
+            isBound = true
+            // Start ourself. This will begin collecting exercise state if we aren't already.
+            startService(Intent(this, this::class.java))
+        }
+    }
+
+    override fun onUnbind(intent: Intent): Boolean {
+        Log.d(TAG, "onUnbind()")
+        isBound = false
+        lifecycleScope.launch {
+            // Client can unbind because it went through a configuration change, in which case it
+            // will be recreated and bind again shortly. Wait a few seconds, and if still not bound,
+            // manage our lifetime accordingly.
+            delay(UNBIND_DELAY)
+            if (!isBound) {
+                stopSelfIfNotRunning()
+            }
+        }
+        // Allow clients to re-bind. We will be informed of this in onRebind().
+        return true
+    }
+
+    fun startWorkout() {
+        Log.d(TAG, "startWorkout()")
+        workoutActive = true
+        if (!serviceRunningInForeground) {
+            Log.d(TAG, "Posting ongoing activity notification")
+
+            val notification = generateNotification(getString(R.string.workout_notification_started_text))
+            val canCollectCalories = canCollectCalories()
+            val canCollectHeartBeat = canCollectHeartBeat()
+            lifecycleScope.launch {
+                // let's check the best supported exercise
+                var bestSupportedExercise: ExerciseType? = null
+                val supportedExercises = exerciseClient.getCapabilities().supportedExerciseTypes
+                val types2try = listOf(
+                    ExerciseType.WORKOUT,
+                    ExerciseType.STRENGTH_TRAINING,
+                    ExerciseType.WEIGHTLIFTING
+                )
+                for (type in types2try) {
+                    if (type in supportedExercises) {
+                        bestSupportedExercise = type
+                    }
+                }
+                if (bestSupportedExercise == null) {
+                    Log.e(TAG, "No supported exercise type")
+                    return@launch
+                }
+                if (!canCollectCalories && !canCollectHeartBeat) {
+                    Log.d(TAG, "No supported data types were granted permission")
+                    return@launch
+                }
+                val exerciseInfo = exerciseClient.getCurrentExerciseInfoAsync().await()
+                when (exerciseInfo.exerciseTrackedStatus) {
+                    OTHER_APP_IN_PROGRESS -> Log.d(TAG, "OTHER_APP_IN_PROGRESS")
+                    OWNED_EXERCISE_IN_PROGRESS -> Log.d(TAG, "OWNED_EXERCISE_IN_PROGRESS")
+                    NO_EXERCISE_IN_PROGRESS -> Log.d(TAG, "NO_EXERCISE_IN_PROGRESS")
+                }
+                var deltaDataTypes: Set<DataType<*, *>>  = buildSet {
+                    if (canCollectCalories) {
+                        add(DataType.CALORIES)
+                    }
+                    if (canCollectHeartBeat) {
+                        add(DataType.HEART_RATE_BPM)
+                    }
+                }
+                val capabilities = exerciseClient
+                    .getCapabilities()
+                    .getExerciseTypeCapabilities(
+                        bestSupportedExercise
+                    )
+                deltaDataTypes = deltaDataTypes.intersect(capabilities.supportedDataTypes)
+                val warmupConfig = WarmUpConfig(
+                    bestSupportedExercise,
+                    // this is unchecked but both CALORIES and HEART_RATE_BPM are DeltaDataType
+                    deltaDataTypes as Set<DeltaDataType<*, *>>
+                )
+                exerciseClient.prepareExercise(warmupConfig)
+
+                // Now, we can add non-DeltaDataTypes
+                val allDataTypes = buildSet {
+                    if (canCollectCalories) {
+                        add(DataType.CALORIES)
+                        add(DataType.CALORIES_TOTAL)
+                    }
+                    if (canCollectHeartBeat) {
+                        add(DataType.HEART_RATE_BPM)
+                        add(DataType.HEART_RATE_BPM_STATS)
+                    }
+                }.intersect(capabilities.supportedDataTypes)
+                val exerciseConfig = ExerciseConfig(
+                    exerciseType = bestSupportedExercise,
+                    dataTypes = allDataTypes,
+                    isAutoPauseAndResumeEnabled = false,
+                    isGpsEnabled = false,
+                )
+                exerciseClient.startExercise(exerciseConfig)
+            }
+
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                if (
+                    (canCollectHeartBeat || canCollectCalories) &&
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                )
+                    FOREGROUND_SERVICE_TYPE_HEALTH
+                else
+                    FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        }
+    }
+
+    fun stopWorkout() {
+        Log.d(TAG, "stopWorkout()")
+        if (serviceRunningInForeground) {
+            Log.d(TAG, "Removing ongoing activity notification")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        }
+    }
+
 
     /*
      * Generates a BIG_TEXT_STYLE Notification that a workout is active.
@@ -289,14 +452,14 @@ class WorkoutService: LifecycleService() {
     companion object {
         private const val TAG = "WorkoutService"
 
-        private const val THREE_SECONDS_MILLISECONDS = 3000L
-
         private const val PACKAGE_NAME = "agdesigns.elevatefitness"
 
         private const val EXTRA_CANCEL_WORKOUT_FROM_NOTIFICATION =
             "$PACKAGE_NAME.extra.CANCEL_SUBSCRIPTION_FROM_NOTIFICATION"
 
         private const val NOTIFICATION_ID = 12345678
+
+        private val UNBIND_DELAY = 3.seconds
 
         private const val NOTIFICATION_CHANNEL_ID = "workout_channel_01"
     }

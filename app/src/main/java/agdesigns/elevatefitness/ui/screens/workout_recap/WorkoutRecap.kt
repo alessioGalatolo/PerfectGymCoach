@@ -42,33 +42,42 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withLink
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
-import com.patrykandpatrick.vico.compose.common.component.shapeComponent
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.insets
 import com.patrykandpatrick.vico.compose.common.rememberHorizontalLegend
 import com.patrykandpatrick.vico.compose.common.vicoTheme
-import com.patrykandpatrick.vico.core.cartesian.Scroll
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.common.LegendItem
-import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import com.patrykandpatrick.vico.compose.cartesian.Scroll
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.common.LegendItem
 import agdesigns.elevatefitness.data.HealthConnectRepository
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.TextStyle
 import androidx.health.connect.client.PermissionController
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis.ItemPlacer
+import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalBox
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
+import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 
@@ -82,8 +91,11 @@ fun WorkoutRecap(
     workoutId: Long,
     viewModel: RecapViewModel = hiltViewModel()
 ) {
-    val recapState by viewModel.state.collectAsState()
-    viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
+    val state by viewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(workoutId) {
+        viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
+    }
     val volumeDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     val calorieDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     val highlightsCardColors = CardDefaults.cardColors(
@@ -118,17 +130,24 @@ fun WorkoutRecap(
         Text(stringResource(R.string.calories_info))
     }
     if (
-        recapState.workoutId != 0L &&
-        recapState.workoutRecord != null
+        state.workoutId != 0L &&
+        state.workoutRecord != null
     ){
-        val records = recapState.olderRecords
+        val listState = rememberLazyListState()
+        val records = state.olderRecords
+        val titles = listOf(
+            "${stringResource(R.string.volume)} (${if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)})",
+            "${stringResource(R.string.calories)} (kcal)",
+            "${stringResource(R.string.workout_time)} (s)",
+
+        )
         val legend = listOf (
             listOf(
-                "${stringResource(R.string.volume)} (${if (recapState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)})",
+                "", // This was transferred to title
                 stringResource(R.string.this_workout)
             ),
             listOf(
-                "${stringResource(R.string.calories)} (kcal)",
+                "", // This was transferred to title
                 stringResource(R.string.this_workout)
             ),
             listOf(
@@ -158,10 +177,17 @@ fun WorkoutRecap(
                         shapes = IconButtonDefaults.shapes()
                 ) {
                     Icon(Icons.Default.Close, stringResource(R.string.close_icon))
+                }},
+                modifier = Modifier.clickable {
+                    // scroll to top when click on top app bar
+                    scope.launch {
+                        listState.animateScrollToItem(0)
+                    }
                 }
-            })
+            )
         }) { innerPadding ->
             LazyColumn(
+                state = listState,
                 contentPadding = innerPadding,
                 modifier = Modifier
                     .fillMaxSize()
@@ -180,17 +206,120 @@ fun WorkoutRecap(
                             .padding(horizontal = 16.dp)
                     )
                 }
+                if (state.hasHRData) {
+                    item {
+                        ElevatedCard(Modifier.padding(dimensionResource(R.dimen.card_outside_padding))) {
+                            val cartesianLayer = rememberLineCartesianLayer(
+                                lineProvider = LineCartesianLayer.LineProvider.series(
+                                    LineCartesianLayer.rememberLine(
+                                        // Solid red line
+                                        fill = LineCartesianLayer.LineFill.single(
+                                            Fill(
+                                                vicoTheme.lineCartesianLayerColors[0]//HrLineColor
+                                            )
+                                        ),
+                                        stroke = LineCartesianLayer.LineStroke.Continuous(
+                                            thickness = 2.dp,
+                                        ),
+                                    )
+                                ),
+                                rangeProvider = object : CartesianLayerRangeProvider {
+                                    override fun getMinY(
+                                        minY: Double,
+                                        maxY: Double,
+                                        extraStore: ExtraStore
+                                    ) = state.minHR
+
+                                    override fun getMaxY(
+                                        minY: Double,
+                                        maxY: Double,
+                                        extraStore: ExtraStore
+                                    ) = state.maxHR
+                                }
+                            )
+
+                            val zoneDecorations = remember {
+                                HrZones.filter {
+                                    it.maxBpm > state.minHR &&
+                                            it.minBpm < state.maxHR
+                                }.map { zone ->
+                                    HorizontalBox(
+                                        y = {
+                                            maxOf(zone.minBpm, state.minHR)..minOf(
+                                                zone.maxBpm,
+                                                state.maxHR
+                                            )
+                                        },
+                                        box = ShapeComponent(
+                                            fill = Fill(zone.color.copy(alpha = 0.15f)),
+                                            shape = RectangleShape,
+                                        ),
+                                    )
+                                }
+                            }
+
+                            Text(stringResource(R.string.heart_rate_bpm),
+                                style = MaterialTheme.typography.titleMediumEmphasized,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                            )
+                            CartesianChartHost(
+                                chart = rememberCartesianChart(
+                                    cartesianLayer,
+                                    decorations = zoneDecorations,
+                                    startAxis = VerticalAxis.rememberStart(
+                                        itemPlacer = remember {
+                                            VerticalAxis.ItemPlacer.step(step = { 20.0 })
+                                        }
+                                    ),
+                                    bottomAxis = HorizontalAxis.rememberBottom(
+                                        valueFormatter = CartesianValueFormatter { _, value, _ ->
+                                            secondsToMmSs(value.toInt())
+                                        },
+                                        itemPlacer = remember {
+                                            ItemPlacer.aligned(
+                                                spacing = { 60 },
+                                                offset = { 300 }
+                                            )
+                                        }
+
+                                    ),
+                                ),
+                                modelProducer = state.hrChartProducer,
+                                modifier = Modifier.padding(8.dp),
+                                scrollState = rememberVicoScrollState(
+                                    scrollEnabled = false,
+                                    initialScroll = Scroll.Absolute.End
+                                ),
+                            )
+                        }
+                    }
+                }
+                item {
+                    Text(
+                        stringResource(R.string.progression_over_time),
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Start,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 8.dp)
+                    )
+                }
                 item{
-                    val pagerState = rememberPagerState(pageCount = { 3 })
                     if (records.size > 1){
+                        val pagerState = rememberPagerState(pageCount = { 3 })
                         HorizontalPager(
                             state = pagerState,
-                            modifier = Modifier.padding(top = 8.dp)
                         ) { page ->
                             ElevatedCard(Modifier.padding(horizontal = dimensionResource(R.dimen.card_outside_padding))) {
                                 val formatter = DateTimeFormatter.ofPattern("d MMM")
                                 val legendItemLabelComponent = rememberTextComponent(
-                                    vicoTheme.textColor
+                                    TextStyle(vicoTheme.textColor)
                                 )
                                 val colors = vicoTheme.lineCartesianLayerColors.drop(1)
                                 val primaryColor = vicoTheme.lineCartesianLayerColors[0]
@@ -207,20 +336,35 @@ fun WorkoutRecap(
                                         lineProviderWithHighlight()
                                     )
                                 }
+
+                                val shapePill = MaterialTheme.shapes.extraExtraLarge
+                                Text(titles.getOrNull(page) ?: "",
+                                    style = MaterialTheme.typography.titleMediumEmphasized,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                )
                                 CartesianChartHost(
                                     chart = rememberCartesianChart(
                                         cartesianLayer,
                                         startAxis = VerticalAxis.rememberStart(),
                                         bottomAxis = HorizontalAxis.rememberBottom(
                                             valueFormatter = CartesianValueFormatter { _, value, _ ->
-                                                recapState.index2date[value.toInt()]?.format(formatter)
+                                                state.index2date[value.toInt()]?.format(
+                                                    formatter
+                                                )
                                                     ?: value.toString() // fall back to value, empty string crashes stuff
-                                            }
+                                            },
                                         ),
                                         legend =
                                             rememberHorizontalLegend(
                                                 items = { extraStore ->
-                                                    legend[page].forEachIndexed { index, label ->
+                                                    val currentLegend = legend.getOrNull(page) ?: emptyList()
+
+                                                    currentLegend.forEachIndexed { index, label ->
+                                                        if (label.isBlank()) return@forEachIndexed
                                                         val highlights = extraStore.getOrNull(
                                                             highlightSeriesKey
                                                         ) ?: emptyList()
@@ -230,18 +374,17 @@ fun WorkoutRecap(
                                                             colors[index % colors.size]
                                                         }
                                                         val shape = if (
-                                                            // calories chart has opposite shapes
+                                                        // calories chart has opposite shapes
                                                             (page == 1 && !highlights.contains(index))
                                                             || (page != 1 && highlights.contains(index))
                                                         ) {
-                                                            // FIXME: should use material extraSmall but doesn't work
-                                                            CorneredShape.rounded(2f)
+                                                            RoundedCornerShape(2.0.dp)
                                                         } else
-                                                            CorneredShape.Pill
+                                                            shapePill
                                                         add(
                                                             LegendItem(
-                                                                shapeComponent(
-                                                                    fill = fill(color),
+                                                                ShapeComponent(
+                                                                    fill = Fill(color),
                                                                     shape = shape
                                                                 ),
                                                                 legendItemLabelComponent,
@@ -250,14 +393,14 @@ fun WorkoutRecap(
                                                         )
                                                     }
                                                 },
-                                                padding = insets(top = 16.dp),
+                                                padding = Insets(start = 8.dp, top = 16.dp),
                                             ),
                                     ),
                                     modelProducer = when (page) {
-                                        0 -> recapState.volumeChartProducer
-                                        1 -> recapState.caloriesChartProducer
-                                        2 -> recapState.timeChartProducer
-                                        else -> recapState.volumeChartProducer // should not happen
+                                        0 -> state.volumeChartProducer
+                                        1 -> state.caloriesChartProducer
+                                        2 -> state.timeChartProducer
+                                        else -> state.volumeChartProducer // should not happen
                                     },
                                     modifier = Modifier.padding(8.dp),
                                     scrollState = rememberVicoScrollState(
@@ -284,7 +427,7 @@ fun WorkoutRecap(
                         )
                     }
                 }
-                if (recapState.workoutRecord != null) {
+                if (state.workoutRecord != null) {
                     item {
                         Text(
                             stringResource(R.string.s_header1_highlights),
@@ -320,14 +463,16 @@ fun WorkoutRecap(
                                             Icons.Outlined.LocalFireDepartment,
                                             stringResource(R.string.calories_burned),
                                             tint = MaterialTheme.colorScheme.tertiary,
-                                            modifier = Modifier.size(50.dp).padding(8.dp)
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .padding(8.dp)
                                         )
                                     }
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         stringResource(
                                             R.string.calorie_consumption_i_kcal,
-                                            recapState.workoutRecord!!.calories.toInt()
+                                            state.workoutRecord!!.calories.toInt()
                                         )
                                     )
                                     Spacer(Modifier.width(8.dp))
@@ -363,7 +508,9 @@ fun WorkoutRecap(
                                             painterResource(R.drawable.weight_icon),
                                             stringResource(R.string.volume_lifted),
                                             tint = MaterialTheme.colorScheme.tertiary,
-                                            modifier = Modifier.size(50.dp).padding(8.dp)
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .padding(8.dp)
                                         )
                                     }
                                     Spacer(Modifier.width(8.dp))
@@ -371,10 +518,10 @@ fun WorkoutRecap(
                                         stringResource(R.string.total_volume) +
                                                 ": %.2f ".format(
                                                     maybeKgToLb(
-                                                        recapState.workoutRecord!!.volume.toFloat(),
-                                                        recapState.imperialSystem
+                                                        state.workoutRecord!!.volume.toFloat(),
+                                                        state.imperialSystem
                                                     )
-                                                ) + if (recapState.imperialSystem) stringResource(
+                                                ) + if (state.imperialSystem) stringResource(
                                             R.string.lb
                                         ) else stringResource(R.string.kg)
                                     )
@@ -407,14 +554,16 @@ fun WorkoutRecap(
                                         Icons.Outlined.Schedule,
                                         stringResource(R.string.workout_time),
                                         tint = MaterialTheme.colorScheme.tertiary,
-                                        modifier = Modifier.size(50.dp).padding(8.dp)
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .padding(8.dp)
                                     )
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     stringResource(R.string.total_time) +
                                             DateUtils.formatElapsedTime(
-                                                recapState.workoutRecord!!.durationSeconds
+                                                state.workoutRecord!!.durationSeconds
                                             )
                                 )
                             }
@@ -435,14 +584,16 @@ fun WorkoutRecap(
                                         Icons.Outlined.PendingActions,
                                         stringResource(R.string.workout_active_time),
                                         tint = MaterialTheme.colorScheme.tertiary,
-                                        modifier = Modifier.size(50.dp).padding(8.dp)
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .padding(8.dp)
                                     )
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     stringResource(R.string.workout_active_time) + ": " +
                                             DateUtils.formatElapsedTime(
-                                                recapState.workoutRecord!!.activeTimeSeconds
+                                                state.workoutRecord!!.activeTimeSeconds
                                             )
                                 )
                             }
@@ -450,7 +601,7 @@ fun WorkoutRecap(
                     }
                 }
                 // Health Connect export card
-                if (recapState.isHealthConnectAvailable && recapState.workoutRecord != null) {
+                if (state.isHealthConnectAvailable && state.workoutRecord != null) {
                     item {
                         val healthConnectPermissionsLauncher = rememberLauncherForActivityResult(
                             PermissionController.createRequestPermissionResultContract()
@@ -473,7 +624,9 @@ fun WorkoutRecap(
                                 Icon(
                                     painterResource(R.drawable.ic_health_connect_logo),
                                     contentDescription = null,
-                                    modifier = Modifier.size(64.dp).padding(end = 8.dp),
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .padding(end = 8.dp),
                                     tint = Color.Unspecified
                                 )
                                 Column(modifier = Modifier.weight(1f)) {
@@ -482,7 +635,7 @@ fun WorkoutRecap(
                                         style = MaterialTheme.typography.titleSmall
                                     )
                                     Text(
-                                        when (recapState.healthConnectExportStatus) {
+                                        when (state.healthConnectExportStatus) {
                                             HealthConnectExportStatus.EXPORTED ->
                                                 stringResource(R.string.health_connect_exported)
                                             HealthConnectExportStatus.ERROR ->
@@ -493,7 +646,7 @@ fun WorkoutRecap(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                when (recapState.healthConnectExportStatus) {
+                                when (state.healthConnectExportStatus) {
                                     HealthConnectExportStatus.EXPORTING -> {
                                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                                     }
@@ -512,7 +665,7 @@ fun WorkoutRecap(
                                         }
                                     }
                                     HealthConnectExportStatus.NOT_EXPORTED -> {
-                                        if (recapState.hasHealthConnectPermissions) {
+                                        if (state.hasHealthConnectPermissions) {
                                             TextButton(onClick = {
                                                 viewModel.onEvent(RecapEvent.ExportToHealthConnect)
                                             }) {
@@ -534,7 +687,7 @@ fun WorkoutRecap(
                     }
                 }
 
-                if (recapState.exerciseRecords.isNotEmpty()) {
+                if (state.exerciseRecords.isNotEmpty()) {
                     item {
                         Text(
                             stringResource(R.string.workout_history),
@@ -546,11 +699,11 @@ fun WorkoutRecap(
                         )
                     }
                     ExerciseRecordsList(
-                        recapState.imperialSystem,
-                        exerciseRecordsWithImage = recapState.exerciseRecords,
+                        state.imperialSystem,
+                        exerciseRecordsWithImage = state.exerciseRecords,
                         onRecordClick = { recordId ->
                             val exerciseId =
-                                recapState.exerciseRecords.find { it.recordId == recordId }?.extExerciseId
+                                state.exerciseRecords.find { it.recordId == recordId }?.extExerciseId
                             if (exerciseId != null) {
                                 navigator.navigate(
                                     ExerciseStatsDestination(exerciseId = exerciseId)
@@ -565,4 +718,31 @@ fun WorkoutRecap(
             }
         }
     }
+}
+
+/** BPM boundaries and colors for each HR zone */
+data class HrZone(
+    val labelResId: Int,
+    val minBpm: Double,
+    val maxBpm: Double,
+    val color: Color
+)
+
+private val HrZones = listOf(
+    // TODO: add zone res ids
+    HrZone(0, 0.0,   100.0, Color(0xFF42A5F5)), // light blue
+    HrZone(0, 100.0, 120.0, Color(0xFF66BB6A)), // green
+    HrZone(0, 120.0, 140.0, Color(0xFFFFEE58)), // yellow
+    HrZone(0, 140.0, 160.0, Color(0xFFFFA726)), // orange
+    HrZone(0, 160.0, 220.0, Color(0xFFEF5350)), // red
+)
+
+/**
+ * Formats elapsed seconds as "m:ss" for the X-axis labels.
+ * e.g. 90 → "1:30"
+ */
+private fun secondsToMmSs(seconds: Int): CharSequence {
+    val minutes = seconds / 60
+    val secs = seconds % 60
+    return "%d:%02d".format(minutes, secs)
 }
