@@ -152,13 +152,19 @@ fun WorkoutCard(
                             append(stringResource(R.string.reps))
                         append(": ")
                     }
-                    append(it.reps.joinToString(", "))
+                    if (it.reps.all { rep -> rep == it.reps[0] })
+                        append(it.reps[0].toString())
+                    else
+                        append(it.reps.joinToString(", "))
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                         append(" • ")
                         append(stringResource(R.string.rest))
                         append(": ")
                     }
-                    append(it.rest.joinToString("s, ") + "s")
+                    if (it.rest.all { rest -> rest == it.rest[0] })
+                        append(it.rest[0].toString() + "s")
+                    else
+                        append(it.rest.joinToString("s, ") + "s")
                     if (it.note.isNotBlank()) {
                         withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                             append(" • ")

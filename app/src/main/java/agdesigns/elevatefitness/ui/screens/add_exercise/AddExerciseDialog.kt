@@ -22,11 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.data.db.entity.SetType
 import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
-import agdesigns.elevatefitness.ui.common.InfoDialog
-import agdesigns.elevatefitness.ui.common.ResetExerciseProbabilityDialog
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.home.components.ValueSuggestionRow
@@ -45,8 +44,10 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.ImeAction
@@ -80,7 +81,7 @@ fun SharedTransitionScope.AddExerciseDialog(
     assert(workoutId != 0L || programId != 0L)
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
-
+    val haptics = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -140,19 +141,6 @@ fun SharedTransitionScope.AddExerciseDialog(
         }
     )
 
-    var awesomeDialogOpen by rememberSaveable { mutableStateOf(false) }
-    InfoDialog(
-        dialogueIsOpen = awesomeDialogOpen,
-        toggleDialogue = { awesomeDialogOpen = !awesomeDialogOpen }) {
-        Text(stringResource(R.string.probability_info))
-    }
-    var resetProbabilityDialogOpen by rememberSaveable { mutableStateOf(false) }
-    ResetExerciseProbabilityDialog(
-        dialogIsOpen = resetProbabilityDialogOpen,
-        toggleDialog = { resetProbabilityDialogOpen = !resetProbabilityDialogOpen },
-        resetExercise = { viewModel.onEvent(AddExerciseEvent.ResetProbability(state.exercise!!.exerciseId)) },
-        resetAllExercises = { viewModel.onEvent(AddExerciseEvent.ResetProbability()) }
-    )
 
     val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
     val imageHeight = imageWidth/3*2
@@ -281,32 +269,6 @@ fun SharedTransitionScope.AddExerciseDialog(
                             )
                             .clip(AbsoluteRoundedCornerShape(0.dp, 0.dp, 12.dp, 12.dp))
                     )
-                }
-
-                item {
-                    Row(
-                        verticalAlignment = CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .animateItem()
-                            .padding(horizontal = 16.dp)
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Icon(Icons.Default.AutoAwesome,
-                            stringResource(R.string.magic_generation)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        val currentProbability = exercise.probability
-                        Text(stringResource(R.string.current_probability_2f, currentProbability))
-                        TextButton(onClick = { resetProbabilityDialogOpen = true }) {
-                            Text(stringResource(R.string.reset))
-                        }
-                        IconButton(onClick = { awesomeDialogOpen = true }) {
-                            Icon(Icons.AutoMirrored.Filled.HelpOutline,
-                                stringResource(R.string.more_info)
-                            )
-                        }
-                    }
                 }
                 item {
                     OutlinedTextField(
@@ -619,6 +581,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                     item {
                         Spacer(Modifier.height(16.dp))
                     }
+                    val totalWarmupSets = state.setTypesArray.count { it == SetType.WARMUP }
                     itemsIndexed(items = state.repsArray, { i, _ -> i }) { index, reps ->
                         // reps/rest when advanced sets if off
                         var repsBeingFocussed by remember { mutableStateOf(false) }
@@ -669,9 +632,51 @@ fun SharedTransitionScope.AddExerciseDialog(
 //                                    .padding(bottom = 8.dp)
                         ) {
                             Row(Modifier.weight(1.5f), verticalAlignment = CenterVertically) {
-                                FilledIconToggleButton(checked = false,
-                                    onCheckedChange = { }) {
-                                    Text((index + 1).toString())
+                                Box {
+                                    var expanded by remember { mutableStateOf(false) }
+                                    val currentSetType = state.setTypesArray.getOrElse(index) { SetType.NORMAL }
+                                    // used to see if this set can be a warm-up, we disallow warmups in the middle
+                                    val previousWereWarmups = totalWarmupSets >= index
+                                    FilledTonalIconToggleButton(
+                                        checked = false,
+                                        onCheckedChange = { expanded = !expanded },
+                                    ) {
+                                        if (currentSetType == SetType.NORMAL) {
+                                            Text((index + 1 - totalWarmupSets).toString())
+                                        } else {
+                                            Text(stringResource(currentSetType.displayRes).first().uppercase())
+                                        }
+                                    }
+                                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                        SetType.entries.forEach { type ->
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(type.displayRes)) },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        type.icon,
+                                                        stringResource(type.displayRes)
+                                                    )
+                                                },
+                                                onClick = {
+                                                    val outcome = viewModel.onEvent(
+                                                        AddExerciseEvent.UpdateSetTypeAtIndex(
+                                                            type,
+                                                            index
+                                                        )
+                                                    )
+                                                    expanded = false
+                                                    if (!outcome) {
+                                                        scope.launch {
+                                                            haptics.performHapticFeedback(
+                                                                HapticFeedbackType.Reject
+                                                            )
+                                                        }
+                                                    }
+                                                },
+                                                enabled = type != SetType.WARMUP || previousWereWarmups
+                                            )
+                                        }
+                                    }
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 // FIXME: should register when textfield gets focus

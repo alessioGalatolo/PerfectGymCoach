@@ -220,6 +220,7 @@ suspend fun generatePlan(
 ): Long {
     // TODO: ideally it might also take into consideration profile values e.g. sex, age, weight, etc.
     // TODO: manipulate probabilities -> decrease prob of selected exs. and increase prob of older ones
+    // TODO: add set types
     val now = ZonedDateTime.now()
     val seededRandom = Random(now.toInstant().toEpochMilli())
 

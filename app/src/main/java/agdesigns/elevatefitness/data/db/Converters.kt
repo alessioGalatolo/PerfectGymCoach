@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.data.db
 
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.data.db.entity.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import androidx.room.TypeConverter
 import java.time.Instant
@@ -73,5 +74,13 @@ class Converters {
             value.split("/****/").map {
                 WorkoutRecord.WorkoutModification.fromString(it)
             }
+    }
+
+    @TypeConverter
+    fun listSetTypeToListInt(value: List<SetType>): List<Int> = value.map { it.ordinal }
+
+    @TypeConverter
+    fun listIntToListSetType(value: List<Int>): List<SetType> = value.map {
+        SetType.entries[it]
     }
 }

@@ -338,13 +338,19 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                 append(stringResource(R.string.reps))
                             append(": ")
                         }
-                        append(programExercise.reps.joinToString(", "))
+                        if (programExercise.reps.all { it == programExercise.reps[0] })
+                            append(programExercise.reps[0].toString())
+                        else
+                            append(programExercise.reps.joinToString(", "))
                         withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                             append(" • ")
                             append(stringResource(R.string.rest))
                             append(": ")
                         }
-                        append(programExercise.rest.joinToString("s, ") + "s")
+                        if (programExercise.rest.all { it == programExercise.rest[0] })
+                            append(programExercise.rest[0].toString() + "s")
+                        else
+                            append(programExercise.rest.joinToString("s, ") + "s")
                     })
                     if (programExercise.note.isNotBlank())
                         Text(text = buildAnnotatedString {

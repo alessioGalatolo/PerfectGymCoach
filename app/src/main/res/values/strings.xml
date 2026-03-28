@@ -883,4 +883,11 @@
     <string name="health_connect_retry">Retry</string>
     <string name="heart_rate_bpm">Heart rate (bpm)</string>
     <string name="progression_over_time">Progression over time</string>
+
+<!--    -->
+    <string name="set_types_warmup">Warm-up</string>
+    <string name="set_types_normal">Normal</string>
+    <string name="set_types_drop_set">Drop set</string>
+    <string name="set_types_failure">Failure</string>
+
 </resources>

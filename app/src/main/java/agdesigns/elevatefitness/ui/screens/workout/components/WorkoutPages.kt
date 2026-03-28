@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.data.db.entity.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
@@ -55,6 +56,7 @@ import agdesigns.elevatefitness.shared.barbellResFromWeight
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
+import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
 import androidx.compose.foundation.clickable
@@ -101,7 +103,8 @@ fun SharedTransitionScope.ExercisePages(
     resetMediaControlVisibility: () -> Unit,
     dontRequestOngoingWorkoutNotification: () -> Unit,
     refreshPromotedNotificationAccess: () -> Unit,
-    onAcceptSuggestion: (Int) -> Unit
+    onAcceptSuggestion: (Int) -> Unit,
+    updateSetType: (Int, Int, SetType) -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -230,7 +233,8 @@ fun SharedTransitionScope.ExercisePages(
                         toggleOtherEquipment = {},
                         toggleInfoDialog = {},
                         deleteSet = {},
-                        onAcceptSuggestion = {}
+                        onAcceptSuggestion = {},
+                        updateSetType = { _, _ -> }
                     )
                 }
             }
@@ -339,7 +343,14 @@ fun SharedTransitionScope.ExercisePages(
                             updateBottomBar = updateBottomBar,
                             toggleOtherEquipment = toggleOtherEquipment,
                             toggleInfoDialog = { infoDialogOpen = true },
-                            onAcceptSuggestion = { onAcceptSuggestion(page) }
+                            onAcceptSuggestion = { onAcceptSuggestion(page) },
+                            updateSetType = { setCount, setType ->
+                                updateSetType(
+                                    page,
+                                    setCount,
+                                    setType
+                                )
+                            }
                         )
                     }
                 }
@@ -375,7 +386,8 @@ fun ExercisePage(
     toggleOtherEquipment: () -> Unit,
     toggleInfoDialog: () -> Unit,
     deleteSet: (Int) -> Unit,
-    onAcceptSuggestion: () -> Unit
+    onAcceptSuggestion: () -> Unit,
+    updateSetType: (Int, SetType) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     Column (Modifier.padding(horizontal = 16.dp)){
@@ -395,8 +407,6 @@ fun ExercisePage(
                 Modifier.align(CenterHorizontally)
             )
             LaunchedEffect(restTimeSecs) {
-                // TODO: replace with alarm and vibrator;
-                //  Maybe not? requires permission and this seems to work somewhat reliably
                 // do not vibrate on 0L as this will be called multiple times with 0L
                 if (restTimeSecs == 2L || restTimeSecs == 3L) {
                     haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
@@ -439,11 +449,8 @@ fun ExercisePage(
             }
             settingsMenu()
         }
-        ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(
-                Modifier.padding(dimensionResource(R.dimen.card_inner_padding)),
-                horizontalAlignment = CenterHorizontally
-            ) {
+        GroupedCard(Modifier.fillMaxWidth()) {
+            subCard {
                 Text(stringResource(R.string.rest) +
                         ": ${exerciseRest}s", Modifier.align(Alignment.Start))
 
@@ -472,125 +479,86 @@ fun ExercisePage(
                             .align(CenterHorizontally)
                     )
                 }
-                repsWeightRows.forEachIndexed { setCount, (repsInRow, weightInRow, toBeDone, projectedRep, projectedWeight) ->
-                    var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
-                    ChangeRepsWeightDialog(
-                        dialogIsOpen = dialogIsOpen,
-                        toggleDialog = { dialogIsOpen = !dialogIsOpen },
-                        initialReps = repsInRow,
-                        initialWeight = weightInRow,
-                        updateValues = { reps, weight ->
-                            updateRowValues(
-                                reps,
-                                weight,
-                                setCount
-                            )
-                        },
-                        deleteSet = { deleteSet(setCount) }
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+
+            }
+            val totalWarmupSets = repsWeightRows.count { it.setType == SetType.WARMUP }
+            if (totalWarmupSets > 0) {
+                subCard {
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
                             .fillMaxWidth()
-                            .clip(CardDefaults.shape) // rounded bounds when clicking
-                            .combinedClickable(onLongClick = {
-                                if (!toBeDone) {
-                                    haptic.performHapticFeedback(
-                                        HapticFeedbackType.LongPress
-                                    )
-                                    dialogIsOpen = true
-                                }
-                            }, onClick = {
-                                haptic.performHapticFeedback(
-                                    HapticFeedbackType.TextHandleMove // FIXME: not right haptic
-                                )
-                                updateBottomBar(
-                                    projectedRep?.toIntOrNull() ?: repsInRow.toIntOrNull(),
-                                    projectedWeight?.toFloatOrNull() ?: weightInRow.toFloatOrNull()
-                                )
-                            })
                     ) {
-                        FilledIconToggleButton(
-                            enabled = toBeDone,
-                            checked = setsDone == setCount,
-                            onCheckedChange = {}
-                        ) {
-                            Text((setCount + 1).toString())
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        val textColor = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
-                        val unitString = if (imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
-
-                        // Reps section
                         Text(
-                            // FIXME: overflow in other languages
-                            text = if (isDurationBased) {
-                                stringResource(R.string.exercise_hold) + ": "
-                            } else {
-                                stringResource(R.string.reps) + ": "
-                            },
-                            color = textColor
-                        )
-                        Text(
-                            text = repsInRow,
-                            color = textColor,
-                            textDecoration = if (projectedRep != null && repsInRow != projectedRep) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                        if (projectedRep != null && repsInRow != projectedRep) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = textColor
-                            )
-                            Text(
-                                text = projectedRep,
-                                color = textColor
-                            )
-                        }
-                        if (isDurationBased) {
-                            Text(
-                                "s ",
-                                color = textColor
-                            )
-                        } else {
-                            Text(
-                                " ",
-                                color = textColor
-                            )
-                        }
-
-                        // Weight section
-                        Text(
-                            text = stringResource(R.string.weight) + ": ", // " Weight: "
-                            color = textColor
-                        )
-                        if (projectedWeight == null || weightInRow != "...") {
-                            Text(
-                                text = weightInRow,
-                                color = textColor,
-                                textDecoration = if (projectedWeight != null && weightInRow != projectedWeight) TextDecoration.LineThrough else TextDecoration.None
-                            )
-                        }
-                        if (projectedWeight != null && weightInRow != projectedWeight) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = textColor
-                            )
-                            Text(
-                                text = projectedWeight,
-                                color = textColor
-                            )
-                        }
-
-                        // Unit
-                        Text(
-                            text = " $unitString",
-                            color = textColor
+                            stringResource(SetType.WARMUP.displayRes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
+                    repsWeightRows.filter { it.setType == SetType.WARMUP }.forEachIndexed { setCount, setDisplayRow ->
+                        Spacer(Modifier.width(4.dp))
+                        WorkoutRepsWeightRow(
+                            repsInRow = setDisplayRow.reps,
+                            weightInRow = setDisplayRow.weight,
+                            setsDone = setsDone,
+                            setCount = setCount,
+                            totalWarmupSets = totalWarmupSets,
+                            isDurationBased = isDurationBased,
+                            setType = setDisplayRow.setType,
+                            imperialSystem = imperialSystem,
+                            toBeDone = setDisplayRow.toBeDone,
+                            projectedReps = setDisplayRow.projectedReps,
+                            projectedWeight = setDisplayRow.projectedWeight,
+                            updateRowValues = { reps, weight ->
+                                updateRowValues(reps, weight, setCount)
+                            },
+                            deleteSet = {
+                                deleteSet(setCount)
+                            },
+                            updateBottomBar = updateBottomBar,
+                            updateSetType = { setType ->
+                                updateSetType(
+                                    setCount,
+                                    setType
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+            subCard {
+                repsWeightRows.forEachIndexed { setCount, (repsInRow, weightInRow, toBeDone, setType, projectedRep, projectedWeight) ->
+                    if (setType == SetType.WARMUP) return@forEachIndexed
+
+                    WorkoutRepsWeightRow(
+                        repsInRow = repsInRow,
+                        weightInRow = weightInRow,
+                        setsDone = setsDone,
+                        setCount = setCount,
+                        totalWarmupSets = totalWarmupSets,
+                        isDurationBased = isDurationBased,
+                        setType = setType,
+                        imperialSystem = imperialSystem,
+                        toBeDone = toBeDone,
+                        projectedReps = projectedRep,
+                        projectedWeight = projectedWeight,
+                        updateRowValues = { reps, weight ->
+                            updateRowValues(reps, weight, setCount)
+                        },
+                        deleteSet = {
+                            deleteSet(setCount)
+                        },
+                        updateBottomBar = updateBottomBar,
+                        updateSetType = { setType ->
+                            updateSetType(
+                                setCount,
+                                setType
+                            )
+                        }
+                    )
                 }
                 AnimatedVisibility(
                     visible = workoutStarted,
@@ -598,7 +566,11 @@ fun ExercisePage(
                     exit = slideOutVertically() + fadeOut()
                 ) {
                     TextButton(onClick = addSet) {
-                        Text(stringResource(R.string.add_set))
+                        Text(
+                            stringResource(R.string.add_set),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -1155,5 +1127,184 @@ fun BarbellSelector(
                 }
             }
         }
+    }
+}
+
+
+@Composable
+fun WorkoutRepsWeightRow(
+    repsInRow: String,
+    weightInRow: String,
+    setsDone: Int,
+    setCount: Int,
+    totalWarmupSets: Int,
+    projectedWeight: String?,
+    projectedReps: String?,
+    toBeDone: Boolean,
+    isDurationBased: Boolean,
+    imperialSystem: Boolean,
+    setType: SetType,
+    updateRowValues: (Int, Float) -> Unit,
+    deleteSet: () -> Unit,
+    updateBottomBar: (Int?, Float?) -> Unit,
+    updateSetType: (SetType) -> Unit
+) {
+    var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+    ChangeRepsWeightDialog(
+        dialogIsOpen = dialogIsOpen,
+        toggleDialog = { dialogIsOpen = !dialogIsOpen },
+        initialReps = repsInRow,
+        initialWeight = weightInRow,
+        updateValues = { reps, weight ->
+            updateRowValues(
+                reps,
+                weight
+            )
+        },
+        deleteSet = deleteSet
+    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardDefaults.shape) // rounded bounds when clicking
+            .combinedClickable(onLongClick = {
+                if (!toBeDone) {
+                    haptic.performHapticFeedback(
+                        HapticFeedbackType.LongPress
+                    )
+                    dialogIsOpen = true
+                }
+            }, onClick = {
+                haptic.performHapticFeedback(
+                    HapticFeedbackType.TextHandleMove // FIXME: not right haptic
+                )
+                updateBottomBar(
+                    projectedReps?.toIntOrNull() ?: repsInRow.toIntOrNull(),
+                    projectedWeight?.toFloatOrNull()
+                        ?: weightInRow.toFloatOrNull()
+                )
+            })
+    ) {
+        val tooltipState = rememberTooltipState()
+        var expanded by remember { mutableStateOf(false) }
+        Box {
+            TooltipBox(
+                positionProvider =
+                    TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+                tooltip = { PlainTooltip { Text(stringResource(setType.displayRes)) } },
+                state = tooltipState,
+            ) {
+                FilledIconToggleButton(
+                    enabled = toBeDone,
+                    checked = setsDone == setCount,
+                    onCheckedChange = {
+                        expanded = !expanded
+                    }
+                ) {
+                    if (setType == SetType.NORMAL) {
+                        Text((setCount + 1 - totalWarmupSets).toString())
+                    } else {
+                        Text(stringResource(setType.displayRes).first().uppercase())
+                    }
+                }
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            SetType.entries.forEach { type ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(type.displayRes)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = type.icon,
+                            contentDescription = null
+                        )
+                    },
+                    enabled = type != SetType.WARMUP || totalWarmupSets >= setCount,
+                    onClick = {
+                        updateSetType(type)
+                        expanded = false
+                    },
+                )
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        val textColor =
+            if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
+        val unitString =
+            if (imperialSystem) stringResource(R.string.lb) else stringResource(
+                R.string.kg
+            )
+
+        // Reps section
+        Text(
+            // FIXME: overflow in other languages
+            text = if (isDurationBased) {
+                stringResource(R.string.exercise_hold) + ": "
+            } else {
+                stringResource(R.string.reps) + ": "
+            },
+            color = textColor
+        )
+        Text(
+            text = repsInRow,
+            color = textColor,
+            textDecoration = if (projectedReps != null && repsInRow != projectedReps) TextDecoration.LineThrough else TextDecoration.None
+        )
+        if (projectedReps != null && repsInRow != projectedReps) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = textColor
+            )
+            Text(
+                text = projectedReps,
+                color = textColor
+            )
+        }
+        if (isDurationBased) {
+            Text(
+                "s ",
+                color = textColor
+            )
+        } else {
+            Text(
+                " ",
+                color = textColor
+            )
+        }
+
+        // Weight section
+        Text(
+            text = stringResource(R.string.weight) + ": ", // " Weight: "
+            color = textColor
+        )
+        if (projectedWeight == null || weightInRow != "...") {
+            Text(
+                text = weightInRow,
+                color = textColor,
+                textDecoration = if (projectedWeight != null && weightInRow != projectedWeight) TextDecoration.LineThrough else TextDecoration.None
+            )
+        }
+        if (projectedWeight != null && weightInRow != projectedWeight) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = textColor
+            )
+            Text(
+                text = projectedWeight,
+                color = textColor
+            )
+        }
+
+        // Unit
+        Text(
+            text = " $unitString",
+            color = textColor
+        )
     }
 }

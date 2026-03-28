@@ -7,6 +7,7 @@ import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.data.db.entity.SetType
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
@@ -88,6 +89,7 @@ data class SetDisplayRow(
     val reps: String,
     val weight: String,
     val toBeDone: Boolean,
+    val setType: SetType = SetType.NORMAL,
     // expectations based on current session
     val projectedReps: String? = null,
     val projectedWeight: String? = null
@@ -201,6 +203,8 @@ sealed class WorkoutEvent{
 
     data class UpdateWeight(val newValue: String): WorkoutEvent()
 
+    data class UpdateSetType(val page: Int, val set: Int, val type: SetType): WorkoutEvent()
+
     // same as above but updates the weight based on the equipment's default de/increment value
     data class AutoStepWeight(
         val newValue: String,
@@ -237,6 +241,9 @@ class WorkoutViewModel @Inject constructor(
     private val phoneWorkoutRepository: PhoneWorkoutRepository,
     private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
 ): ViewModel() {
+    // when resuming workout, we want to scroll to latest exercise completed.
+    // set this flag to do it
+    private var resumeAndScrollToLatest = false
     private val workoutModifications: MutableList<WorkoutRecord.WorkoutModification> = mutableListOf()
     private var observeAddingExerciseJob: Job? = null
 
@@ -290,6 +297,18 @@ class WorkoutViewModel @Inject constructor(
             .map {
                 it.filter { it.reps.isNotEmpty() }
             }
+        if (resumeAndScrollToLatest) {
+            val index = recordsAndOngoingForAllExercises.map { it.second }.indexOfLast {
+                it != null && it.reps.isNotEmpty()
+            }
+
+            if (index != -1) {
+                _effects.trySend(
+                    WorkoutEffect.AdvancePage(index)
+                )
+                resumeAndScrollToLatest = false
+            }
+        }
         val exerciseSetsDone = recordsAndOngoingForAllExercises.map {
             it.second?.reps?.size ?: 0
         }
@@ -299,19 +318,32 @@ class WorkoutViewModel @Inject constructor(
                 val allRecords = records.first
                 var lastOne: SetDisplayRow? = null
                 val tare = tares.getOrNull(index) ?: 0f
+                val isPyramid = exercise.reps
+                    .zip(exercise.setTypes ?: List(exercise.reps.size) { SetType.NORMAL})
+                    .filter {
+                        it.second == SetType.NORMAL
+                    }.distinctBy { it.first }.size != 1
+                val exerciseIncrement = when (exercise.equipment) {
+                    Equipment.BARBELL -> _workoutState.value.incrementBarbell
+                    Equipment.DUMBBELL -> _workoutState.value.incrementDumbbell
+                    Equipment.MACHINE -> _workoutState.value.incrementMachine
+                    Equipment.CABLES -> _workoutState.value.incrementCable
+                    else -> _workoutState.value.incrementBodyweight
+                }
                 exercise.reps.mapIndexed { setCount, reps ->
                     val toBeDone =
                         (ongoingRecord?.reps?.size ?: 0) <= setCount  // setsDone <= setCount
+                    val isUpcomingSet = ongoingRecord?.reps?.size == setCount
                     var projectedWeight: String? = null
                     var projectedReps: String? = null
                     val repsInRow: String
                     val weightInRow: String
-                    var tareDiff = 0f
+                    var barbellDiff = 0f
                     if (toBeDone) {
                         // user has not done this set
                         repsInRow = reps.toString()
                         val historicRecord = allRecords.firstOrNull()
-                        tareDiff = if (historicRecord != null && exercise.equipment == Equipment.BARBELL)
+                        barbellDiff = if (historicRecord != null && exercise.equipment == Equipment.BARBELL)
                             tare - historicRecord.tare
                         else
                             0f
@@ -322,31 +354,26 @@ class WorkoutViewModel @Inject constructor(
                                     historicRecord.weights.getOrNull(setCount) ?: historicRecord.weights.last(),
                                     imperialSystem
                                 ).toString()
-                            } /*else if (ongoingRecord != null) {
-                                // user is doing this exercise for the first time, place ongoing values
-                                maybeKgToLb(
-                                    ongoingRecord.weights.last(),
-                                    imperialSystem
-                                ).toString()
-                            }*/ else {
+                            } else {
                                 "..."
                             }
-                        if (ongoingRecord != null) {
-                            // should not project if no records
-                            projectedReps = computeNextRep(
-                                exercise,
-                                allRecords,
-                                (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
-                                setCount
-                            )?.toString()
-                            projectedWeight = computeNextWeight(
-                                allRecords,
-                                (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
-                                setCount,
-                                tareDiff,
-                                imperialSystem
-                            )?.toString()
-                        }
+                        projectedReps = computeNextRep(
+                            exercise,
+                            allRecords,
+                            (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
+                            setCount
+                        )?.toString()
+                        projectedWeight = computeNextWeight(
+                            recordsToDisplay = allRecords,
+                            ongoingLastWeight = (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
+                            setsDone = setCount,
+                            barbellDiff = barbellDiff,
+                            imperialSystem = imperialSystem,
+                            setTypes = exercise.setTypes,
+                            isUpcomingSet = isUpcomingSet,
+                            isPyramid = isPyramid,
+                            increment = exerciseIncrement
+                        )?.toString()
                     } else {
                         // if ongoingRecord is null, it should go in the other branch anyway
                         repsInRow =
@@ -366,10 +393,11 @@ class WorkoutViewModel @Inject constructor(
                         weight = weightInRow,
                         toBeDone = toBeDone,
                         projectedReps = projectedReps,
-                        projectedWeight = projectedWeight
+                        projectedWeight = projectedWeight,
+                        setType = exercise.setTypes?.getOrNull(setCount) ?: SetType.NORMAL
                     )
                     // result of mapping
-                    if (tareDiff == 0f) {
+                    if (barbellDiff == 0f) {
                         lastOne // no changes needed
                     } else {
                         lastOne.copy(
@@ -377,7 +405,7 @@ class WorkoutViewModel @Inject constructor(
                                 .projectedWeight
                                 ?.toFloatOrNull() ?: lastOne.weight.toFloatOrNull())
                                 // split by two as it is barbell
-                                ?.minus(tareDiff / 2)?.toString()
+                                ?.minus(barbellDiff / 2)?.toString()
                         )
                     }
                 }
@@ -665,7 +693,8 @@ class WorkoutViewModel @Inject constructor(
                                 rest = it.rest,
                                 supersetExercise = it.supersetExercise,
                                 userDefined = it.userDefined,
-                                overriddenDurationBased = it.overriddenDurationBased
+                                overriddenDurationBased = it.overriddenDurationBased,
+                                setTypes = it.setTypes
                             )
                         }
                         // add workout exercises to db
@@ -876,6 +905,34 @@ class WorkoutViewModel @Inject constructor(
                 val tares = workoutState.value.tares.toMutableList()
                 tares[_currentPage.value] = event.newValue
                 _workoutState.update { it.copy(tares = tares) }
+            }
+            is WorkoutEvent.UpdateSetType -> {
+                val exercise = pagesContent.value.exercises
+                    .getOrNull(event.page)
+                val exerciseSetTypes = exercise?.setTypes
+                val newTypes = exerciseSetTypes?.toMutableList() ?: mutableListOf()
+                val currentType = newTypes.getOrElse(event.set) { SetType.NORMAL }
+                var setToChange = event.set
+                if (currentType == SetType.WARMUP && event.type != SetType.WARMUP) {
+                    // if trying to remove a warmup set that is followed by warmup sets, change the last one instead
+                    val lastIndex = newTypes.lastIndexOf(SetType.WARMUP)
+                    if (lastIndex != -1) {
+                        setToChange = lastIndex
+                    }
+                }
+                if (newTypes.size <= setToChange) {
+                    newTypes.add(event.type)
+                } else {
+                    newTypes[setToChange] = event.type
+                }
+                if (exercise != null) {
+                    viewModelScope.launch {
+                        repository.updateWorkoutExerciseSetTypes(
+                            workoutExerciseId = exercise.workoutExerciseId,
+                            setTypes = newTypes
+                        )
+                    }
+                }
             }
             is WorkoutEvent.EditSetRecord -> {
                 viewModelScope.launch {
@@ -1223,20 +1280,29 @@ class WorkoutViewModel @Inject constructor(
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
         ongoingLastWeight: Float?,
         setsDone: Int,
-        tareDiff: Float,
-        imperialSystem: Boolean
+        barbellDiff: Float,
+        imperialSystem: Boolean,
+        setTypes: List<SetType>?,
+        isUpcomingSet: Boolean, // true if is the very next set user will do
+        isPyramid: Boolean, // true if pyramid exercise e.g., reps = 2, 4, 6 (or reverse)
+        increment: Float,
     ): Float? {
         /*
          weight is taken in this order:
-         0. If first set, take from last record
+         0. If first set (or first set of a new set type), take from last record
+         0a. If not pyramid and normal set, will average over the weight of old records;
+             and take ceil following default increment
          1. If not first set, check last set weight:
-         1a. If == to the same set from last record, take from last record
+         1a. If equals to the same set from last record, take from last record
          2. Otherwise, check whether the weight also changed between sets in last record (e.g., pyramid)
          2a. If not, keep weight from previous set
          3. Otherwise, take last record increased/decreased by same amount as previous set
          */
-        val recordsToDisplay = recordsToDisplay
-        val setsDone = setsDone
+
+        // do not propagate ongoing weight across set type boundaries (e.g., warmup -> normal)
+        val previousSetType = setTypes?.getOrNull(setsDone - 1) ?: SetType.NORMAL
+        val currentSetType = setTypes?.getOrNull(setsDone) ?: SetType.NORMAL
+        val setTypeBoundary = setsDone > 0 && previousSetType != currentSetType
 
         // this is the record of the last record before current workout
         val lastOldRecord = recordsToDisplay.firstOrNull()
@@ -1245,6 +1311,7 @@ class WorkoutViewModel @Inject constructor(
         var oldRecordWeightCurrentSet: Float? = null
         var oldRecordWeightPreviousSet: Float? = null
         var ongoingRecordWeightPreviousSet: Float? = null
+        var avgOldRecordWeight: Float? = null
         // for the weight, try to copy from last old record
         if (lastOldRecord != null) {
             oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone)?.let {
@@ -1259,27 +1326,38 @@ class WorkoutViewModel @Inject constructor(
                     imperialSystem
                 )
             }
+            // TODO: This logic kind of requires records to also hold setType, but they currently don't
+            if (currentSetType == SetType.NORMAL && !isPyramid) {
+                lastOldRecord.weights.zip(
+                    setTypes ?: List(lastOldRecord.weights.size) { SetType.NORMAL }
+                ).filter { it.second == SetType.NORMAL }.map { it.first }.average().let {
+                    avgOldRecordWeight = it.toFloat()
+                    // now round it to the nearest increment
+                    if (avgOldRecordWeight % increment != 0f) {
+                        avgOldRecordWeight += increment - (avgOldRecordWeight % increment)
+                    }
+                }
+            }
         }
         if (ongoingLastWeight != null) {
             ongoingRecordWeightPreviousSet = ongoingLastWeight
         }
-        if (setsDone == 0) {
-            weightCandidate = oldRecordWeightCurrentSet
-        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet == ongoingRecordWeightPreviousSet) {
-            weightCandidate = oldRecordWeightCurrentSet
-        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet != oldRecordWeightCurrentSet) {
-            var delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
-            // if delta is due to tareDiff, it should not be propagated
-            // FIXME: if user does not follow tarediff suggestion, this does not behave well
-            //  example: historic is: 5 with 20 tare. Change to 25, suggest 2.5.
-            //  If user enters 2.5, then next set suggests 0 (while it should suggest 2.5)
-            //  If user enters 5, then next set suggests 2.5 (while it should give up and say 5)
-            delta = delta?.plus(tareDiff / 2)
-            weightCandidate = oldRecordWeightCurrentSet.plus(delta ?: 0f)
-        } else {
+        if (setsDone == 0 || setTypeBoundary) {
+            weightCandidate = avgOldRecordWeight ?: oldRecordWeightCurrentSet
+        } else if (ongoingRecordWeightPreviousSet != null) {
             weightCandidate = ongoingRecordWeightPreviousSet
+        } else {
+            weightCandidate = avgOldRecordWeight ?: oldRecordWeightCurrentSet
         }
 
+        // I am not particularly convinced by this 'delta' logic. For now, let's comment it out
+//        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet != oldRecordWeightCurrentSet) {
+//            var delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
+//            weightCandidate = oldRecordWeightCurrentSet.plus(delta ?: 0f)
+
+        if (isUpcomingSet) {
+            weightCandidate = weightCandidate?.plus(barbellDiff / 2)
+        }
         return weightCandidate
     }
 
@@ -1289,18 +1367,39 @@ class WorkoutViewModel @Inject constructor(
         ongoingLastRep: Int?,
         setsDone: Int
     ): Int? {
+        val setTypes = currentExercise.setTypes
+
+        // do not propagate ongoing reps across set type boundaries (e.g., warmup -> normal)
+        val previousSetType = setTypes?.getOrNull(setsDone - 1) ?: SetType.NORMAL
+        val currentSetType = setTypes?.getOrNull(setsDone) ?: SetType.NORMAL
+        val setTypeBoundary = setsDone > 0 && previousSetType != currentSetType
+
+        val lastOldRecord = recordsToDisplay.firstOrNull()
+        val oldRecordRepCurrentSet = lastOldRecord?.reps?.getOrNull(setsDone)
+        val oldRecordRepPreviousSet = lastOldRecord?.reps?.getOrNull(setsDone - 1)
+
+        // reps user should do per program
+        val upcomingReps = currentExercise.reps.getOrNull(setsDone)
+
+        if (setsDone == 0 || setTypeBoundary) {
+            // first set (or first set of a new type): prefer what user actually did last time
+            return oldRecordRepCurrentSet ?: upcomingReps
+        }
+
         // reps done last set
         val lastRepsDone = ongoingLastRep
-        // reps user should do
-        val upcomingReps = currentExercise.reps.getOrNull(setsDone)
-        val lastRepsThatShouldHaveBeenDone = currentExercise.reps.getOrNull(setsDone-1)
+        val lastRepsThatShouldHaveBeenDone = currentExercise.reps.getOrNull(setsDone - 1)
+        if (oldRecordRepPreviousSet == lastRepsDone) {
+            // user is on track with history: follow historical reps for current set
+            return oldRecordRepCurrentSet ?: upcomingReps
+        }
         if (lastRepsThatShouldHaveBeenDone == lastRepsDone) {
             // user is following program
             return upcomingReps
         }
         if (lastRepsThatShouldHaveBeenDone == upcomingReps) {
             // user is not following the program and is in a situation like this:
-            // reps to be done -> reps done
+            // (reps to be done -> reps done)
             // set 1: 10 -> 11
             // set 2: 10 -> ??
             // here, we suggest 11
@@ -1412,7 +1511,8 @@ class WorkoutViewModel @Inject constructor(
             if (autoOpenWear) {
                 repository.openWearWorkout()
             }
-            // TODO: scroll to last exercise completed
+            // set flag to scroll to last exercise completed when records are available
+            resumeAndScrollToLatest = true
         } else {
             Log.e(
                 "WorkoutViewModel",

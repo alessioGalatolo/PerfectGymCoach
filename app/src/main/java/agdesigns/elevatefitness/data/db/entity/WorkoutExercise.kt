@@ -71,7 +71,8 @@ data class WorkoutExercise (
     @ColumnInfo(defaultValue = "0")
     val userDefined: Boolean = false,
     @ColumnInfo(defaultValue = "0")
-    val overriddenDurationBased: Boolean
+    val overriddenDurationBased: Boolean,
+    val setTypes: List<SetType>? = null
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)
@@ -110,4 +111,10 @@ data class WorkoutExerciseUpdateSets(
     val workoutExerciseId: Long,
     val reps: List<Int>,
     val rest: List<Int>
+): Parcelable
+
+@Parcelize
+data class WorkoutExerciseUpdateSetTypes(
+    val workoutExerciseId: Long,
+    val setTypes: List<SetType>
 ): Parcelable

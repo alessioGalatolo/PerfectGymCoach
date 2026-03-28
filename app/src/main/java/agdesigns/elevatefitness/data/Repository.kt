@@ -20,6 +20,8 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.RemovePlan
+import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSets
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
@@ -319,6 +321,16 @@ class Repository @Inject constructor(
     suspend fun updateWorkoutExerciseSets(workoutExerciseUpdateSets: WorkoutExerciseUpdateSets) =
         db.workoutExerciseDao.updateSets(workoutExerciseUpdateSets)
 
+    suspend fun updateWorkoutExerciseSetTypes(
+        workoutExerciseId: Long,
+        setTypes: List<SetType>
+    ) = db.workoutExerciseDao.updateSetTypes(
+        WorkoutExerciseUpdateSetTypes(
+            workoutExerciseId,
+            setTypes
+        )
+    )
+
     fun resolveResources(workoutExercise: WorkoutExercise): WorkoutExercise {
         val name = if (workoutExercise.userDefined)
             workoutExercise.name
@@ -594,8 +606,6 @@ class Repository @Inject constructor(
         val options = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
-        fun Resources.debugName(@AnyRes id: Int) = runCatching { getResourceName(id) }.getOrNull()
-        Log.d("ResCheck", "resId=$resId name=${context.resources.debugName(resId)}")
         BitmapFactory.decodeResource(context.resources, resId, options)
 
         options.inSampleSize = calculateInSampleSize(options, reqWidth = 200, reqHeight = 200)

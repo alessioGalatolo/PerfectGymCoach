@@ -696,6 +696,15 @@ fun SharedTransitionScope.Workout(
                     viewModel.onEvent(
                         WorkoutEvent.AcceptSuggestedModification(it)
                     )
+                },
+                updateSetType = { page, set, type ->
+                    viewModel.onEvent(
+                        WorkoutEvent.UpdateSetType(
+                            page,
+                            set,
+                            type
+                        )
+                    )
                 }
             )
         }

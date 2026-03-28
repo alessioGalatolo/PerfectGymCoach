@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.data.db.dao
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSets
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
+import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -39,4 +40,7 @@ interface WorkoutExerciseDao {
 
     @Update(entity = WorkoutExercise::class)
     suspend fun updateSets(workoutExerciseUpdateSets: WorkoutExerciseUpdateSets)
+
+    @Update(entity = WorkoutExercise::class)
+    suspend fun updateSetTypes(updated: WorkoutExerciseUpdateSetTypes)
 }

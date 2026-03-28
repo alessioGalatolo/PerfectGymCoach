@@ -5,6 +5,7 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseWithExercise
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
+import agdesigns.elevatefitness.data.db.entity.UpdateProgramExerciseSetTypes
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -54,6 +55,9 @@ interface ProgramExerciseDao {
 
     @Update(entity = ProgramExercise::class)
     suspend fun updateSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>)
+
+    @Update(entity = ProgramExercise::class)
+    suspend fun updateSetTypes(updateProgramExerciseSetTypes: UpdateProgramExerciseSetTypes)
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insert(plan: ProgramExercise): Long

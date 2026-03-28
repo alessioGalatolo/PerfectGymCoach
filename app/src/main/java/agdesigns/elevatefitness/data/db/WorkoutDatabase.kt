@@ -14,6 +14,9 @@ import agdesigns.elevatefitness.data.db.dao.WorkoutPlanDao
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.dao.WorkoutProgramDao
 import agdesigns.elevatefitness.data.db.dao.WorkoutRecordDao
+import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.data.db.entity.UpdateProgramExerciseSetTypes
+import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.utils.getLocalizedString
@@ -45,7 +48,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -92,7 +95,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
-                    MIGRATION_7_8
+                    MIGRATION_7_8,
+                    MIGRATION_8_9
                 )
                     .build()
                     .also { instance = it }
@@ -197,6 +201,17 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE ProgramExercise ADD COLUMN setTypes TEXT"
+        )
+        db.execSQL(
+            "ALTER TABLE WorkoutExercise ADD COLUMN setTypes TEXT"
+        )
+    }
+}
+
 
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")
@@ -219,6 +234,13 @@ class ExerciseDataMigrator(private val context: Context) {
                 "Found db version $dbVersion, proceeding with migration to v5"
             )
             migrateExercises2To5(db)
+        }
+        if (dbVersion < 9) {
+            Log.d(
+                "ExerciseDataMigrator",
+                "Found db version $dbVersion, proceeding with migration to v9"
+            )
+            migrateExercises5To9(db)
         }
     }
 
@@ -328,4 +350,35 @@ class ExerciseDataMigrator(private val context: Context) {
             it[dbVersionKey] = 5
         }
     }
+
+    private suspend fun migrateExercises5To9(db: WorkoutDatabase) {
+        // here we introduced setTypes, update workoutExercises and programExercises
+        // to have a list of SetType.NORMAL that matches number of sets
+        val workoutExercises = db.workoutExerciseDao.getAll()
+        workoutExercises.filter { it.setTypes == null }.forEach {
+            db.workoutExerciseDao.updateSetTypes(
+                WorkoutExerciseUpdateSetTypes(
+                    it.workoutExerciseId,
+                    List(it.reps.size) { _ ->
+                        SetType.NORMAL
+                    }
+                )
+            )
+        }
+        val programExercises = db.programExerciseDao.getAll()
+        programExercises.filter { it.setTypes == null }.forEach {
+            db.programExerciseDao.updateSetTypes(
+                UpdateProgramExerciseSetTypes(
+                    it.programExerciseId,
+                    List(it.reps.size) { _ ->
+                        SetType.NORMAL
+                    }
+                )
+            )
+        }
+        context.dataStore.edit {
+            it[dbVersionKey] = 9
+        }
+    }
+
 }

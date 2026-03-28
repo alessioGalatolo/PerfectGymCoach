@@ -140,7 +140,11 @@ data class WorkoutRecordAndName(
     val activeTimeSeconds: Long = 0L,
     val calories: Float = 0f,
     val workoutModifications: List<WorkoutRecord.WorkoutModification> = emptyList(),
-    val name: String
+    val name: String,
+    val maxHeartRate: Int? = null,
+    val avgHeartRate: Int? = null,
+    val minHeartRate: Int? = null,
+    val heartRates: List<Int>? = null
 ) : Parcelable
 
 @Parcelize

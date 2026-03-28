@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.Repository
+import agdesigns.elevatefitness.data.db.entity.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +32,7 @@ data class AddExerciseState(
     val variationResKey: String = "no_variation",
     val repsArray: List<UInt> = List(5) { 8U },
     val restArray: List<UInt> = List(5) { 90U },
+    val setTypesArray: List<SetType> = List(5) { SetType.NORMAL },
     val advancedSets: Boolean = false,
     val isLoading: Boolean = true,
     val insertAtPosition: Int? = null,
@@ -39,9 +41,6 @@ data class AddExerciseState(
 )
 
 sealed class AddExerciseEvent{
-    // if exerciseId is null, will reset all the exercises probability
-    data class ResetProbability(val exerciseId: Long? = null): AddExerciseEvent()
-
     data class StartRetrievingData(
         val exerciseId: Long,
         val programId: Long = 0L,
@@ -68,6 +67,7 @@ sealed class AddExerciseEvent{
 
     data class UpdateRestAtIndex(val newRest: UInt, val index: Int): AddExerciseEvent()
     data class ChangeDurationBased(val isDurationBased: Boolean): AddExerciseEvent()
+    data class UpdateSetTypeAtIndex(val setType: SetType, val index: Int): AddExerciseEvent()
 }
 
 @HiltViewModel
@@ -137,7 +137,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 else
                                     "",
                                 userDefined = state.value.exercise!!.userDefined,
-                                overriddenDurationBased = state.value.overriddenDurationBased
+                                overriddenDurationBased = state.value.overriddenDurationBased,
+                                setTypes = if (state.value.advancedSets) state.value.setTypesArray else null
                             )
                         )
                     }
@@ -157,7 +158,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                     state.value.variationResKey
                                 else
                                     "",
-                                overriddenDurationBased = state.value.overriddenDurationBased
+                                overriddenDurationBased = state.value.overriddenDurationBased,
+                                setTypes = if (state.value.advancedSets) state.value.setTypesArray else null
                             )
                         )
                     }
@@ -177,7 +179,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     _state.update {
                         it.copy(
                             restArray = it.restArray.subList(0, event.newSets.toInt()),
-                            repsArray = it.repsArray.subList(0, event.newSets.toInt())
+                            repsArray = it.repsArray.subList(0, event.newSets.toInt()),
+                            setTypesArray = it.setTypesArray.subList(0, event.newSets.toInt())
                         )
                     }
                 } else {
@@ -188,9 +191,13 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         val newRepsArray = oldState.repsArray.plus(
                             List(event.newSets.toInt() - oldState.repsArray.size) { oldState.repsArray.last() }
                         )
+                        val newSetTypesArray = oldState.setTypesArray.plus(
+                            List(event.newSets.toInt() - oldState.setTypesArray.size) { SetType.NORMAL }
+                        )
                         oldState.copy(
                             restArray = newRestArray,
-                            repsArray = newRepsArray
+                            repsArray = newRepsArray,
+                            setTypesArray = newSetTypesArray
                         )
                     }
                 }
@@ -233,25 +240,44 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 _state.update {
                     var newRepsArray = it.repsArray
                     var newRestArray = it.restArray
+                    var newSetTypesArray = it.setTypesArray
                     if (it.advancedSets) {
-                        // was in advanced sets, now not
+                        // was in advanced sets, now not. Normalize all to first value
                         newRepsArray = newRepsArray.map { newRepsArray.first() }
                         newRestArray = newRestArray.map { newRestArray.first() }
+                        newSetTypesArray = newSetTypesArray.map { SetType.NORMAL }
                     }
                     it.copy(
                         advancedSets = !it.advancedSets,
                         repsArray = newRepsArray,
-                        restArray = newRestArray
+                        restArray = newRestArray,
+                        setTypesArray = newSetTypesArray
                     )
                 }
             }
-            is AddExerciseEvent.ResetProbability -> {
-                viewModelScope.launch {
-                    if (event.exerciseId != null)
-                        repository.updateExerciseProbability(event.exerciseId)
-                    else
-                        repository.resetAllExerciseProbability()
+            is AddExerciseEvent.UpdateSetTypeAtIndex -> {
+                // if old type is warmup, we need to make sure that it has no following warmup sets
+                val currentType = state.value.setTypesArray.getOrElse(event.index) { SetType.NORMAL }
+                if (currentType == SetType.WARMUP && event.setType == SetType.WARMUP)
+                    return false
+                var indexToChange = event.index
+                var outcome = true
+                if (currentType == SetType.WARMUP) {
+                    // change latest warmup regardless of event.index
+                    val lastWarmupSet = state.value.setTypesArray.lastIndexOf(SetType.WARMUP)
+                    if (lastWarmupSet != -1 && lastWarmupSet != event.index) {
+                        indexToChange = lastWarmupSet
+                        outcome = false
+                    }
                 }
+                _state.update {
+                    it.copy(
+                        setTypesArray = it.setTypesArray.mapIndexed { index, type ->
+                            if (index == indexToChange) event.setType else type
+                        }
+                    )
+                }
+                return outcome
             }
             is AddExerciseEvent.ChangeDurationBased -> {
                 _state.update { it.copy(overriddenDurationBased = event.isDurationBased) }
@@ -281,7 +307,10 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         variationResKey = programExercise.variationResKey,
                         repsArray = programExercise.reps.map { it.toUInt() },
                         restArray = programExercise.rest.map { it.toUInt() },
-                        advancedSets = (programExercise.reps.distinct().size + programExercise.rest.distinct().size) > 2,
+                        setTypesArray = programExercise.setTypes
+                            ?: List(programExercise.reps.size) { SetType.NORMAL },
+                        advancedSets = (programExercise.reps.distinct().size + programExercise.rest.distinct().size) > 2
+                                || programExercise.setTypes?.any { it != SetType.NORMAL } == true,
                         isLoading = false,
                         overriddenDurationBased = programExercise.overriddenDurationBased
                     )
