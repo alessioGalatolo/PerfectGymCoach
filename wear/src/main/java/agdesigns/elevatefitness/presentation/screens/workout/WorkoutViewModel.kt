@@ -108,7 +108,8 @@ data class WorkoutState(
     val averageHeartRate: Int? = null,
     val minHeartRate: Int? = null,
     val heartRateBySecond: Map<Long, Int> = emptyMap(),
-    val workoutTime: String? = null
+    val workoutTime: String? = null,
+    val modificationIsDismissed: Map<Workout.ProtoSuggestedModification, Boolean> = emptyMap()
 )
 
 sealed class WorkoutEvent {
@@ -135,6 +136,7 @@ sealed class WorkoutEvent {
     data object CancelSetValues: WorkoutEvent()
 
     data class AcceptModification(val index: Int): WorkoutEvent()
+    data class DismissModification(val index: Int): WorkoutEvent()
 }
 
 // effects that should be propagated to the UI
@@ -658,6 +660,21 @@ class WorkoutViewModel
                         Log.e(
                             "WorkoutViewModel",
                             "Error accepting modification with error: ${e.message}"
+                        )
+                    }
+                }
+            }
+            is WorkoutEvent.DismissModification -> {
+                viewModelScope.launch {
+                    val modification =
+                        exercisesState.value.suggestedModifications.getOrNull(event.index)
+                            ?: return@launch
+                    _state.update {
+                        it.copy(
+                            modificationIsDismissed = it.modificationIsDismissed.toMutableMap()
+                                .apply {
+                                    this[modification] = true
+                                }
                         )
                     }
                 }

@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
-import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
@@ -59,6 +59,7 @@ import agdesigns.elevatefitness.shared.weightAndUnit
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.text.style.TextDecoration
@@ -482,6 +483,8 @@ fun ExercisePage(
 
             }
             val totalWarmupSets = repsWeightRows.count { it.setType == SetType.WARMUP }
+            // Awesome sets are sets it is suggesting to add
+            val totalAwesomeSets = repsWeightRows.count { it.setType == SetType.AWESOME }
             if (totalWarmupSets > 0) {
                 subCard {
                     Box(
@@ -532,6 +535,7 @@ fun ExercisePage(
             subCard {
                 repsWeightRows.forEachIndexed { setCount, (repsInRow, weightInRow, toBeDone, setType, projectedRep, projectedWeight) ->
                     if (setType == SetType.WARMUP) return@forEachIndexed
+                    if (setType == SetType.AWESOME) return@forEachIndexed
 
                     WorkoutRepsWeightRow(
                         repsInRow = repsInRow,
@@ -560,17 +564,80 @@ fun ExercisePage(
                         }
                     )
                 }
-                AnimatedVisibility(
-                    visible = workoutStarted,
-                    enter = slideInVertically() + fadeIn(),
-                    exit = slideOutVertically() + fadeOut()
-                ) {
-                    TextButton(onClick = addSet) {
+                if (totalAwesomeSets == 0) {
+                    AnimatedVisibility(
+                        visible = workoutStarted,
+                        enter = slideInVertically() + fadeIn(),
+                        exit = slideOutVertically() + fadeOut()
+                    ) {
+                        TextButton(onClick = addSet) {
+                            Text(
+                                stringResource(R.string.add_set),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+            if (totalAwesomeSets > 0) {
+                subCard {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .fillMaxWidth()
+                    ) {
                         Text(
-                            stringResource(R.string.add_set),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            stringResource(SetType.AWESOME.displayRes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
+                    }
+                    repsWeightRows.filter { it.setType == SetType.AWESOME }.forEachIndexed { index, setDisplayRow ->
+                        val setCount = repsWeightRows.size - totalAwesomeSets + index
+                        Spacer(Modifier.width(4.dp))
+                        WorkoutRepsWeightRow(
+                            repsInRow = setDisplayRow.reps,
+                            weightInRow = setDisplayRow.weight,
+                            setsDone = setsDone,
+                            setCount = setCount,
+                            totalWarmupSets = totalWarmupSets,
+                            isDurationBased = isDurationBased,
+                            setType = setDisplayRow.setType,
+                            imperialSystem = imperialSystem,
+                            toBeDone = setDisplayRow.toBeDone,
+                            projectedReps = setDisplayRow.projectedReps,
+                            projectedWeight = setDisplayRow.projectedWeight,
+                            updateRowValues = { reps, weight ->
+                                updateRowValues(reps, weight, setCount)
+                            },
+                            deleteSet = {
+                                deleteSet(setCount)
+                            },
+                            updateBottomBar = updateBottomBar,
+                            updateSetType = { setType ->
+                                updateSetType(
+                                    setCount,
+                                    setType
+                                )
+                            }
+                        )
+                    }
+                    AnimatedVisibility(
+                        visible = workoutStarted,
+                        enter = slideInVertically() + fadeIn(),
+                        exit = slideOutVertically() + fadeOut()
+                    ) {
+                        TextButton(onClick = addSet) {
+                            Text(
+                                stringResource(R.string.add_set),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
@@ -747,6 +814,7 @@ fun HistoricRecord(
                     )
                 )
             }
+            val warmupSets = record.setTypes?.count { it == SetType.WARMUP } ?: 0
             record.reps.forEachIndexed { index, rep ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -761,9 +829,23 @@ fun HistoricRecord(
                         }
                 ) {
                     FilledIconToggleButton(
-                        checked = false, // FIXME: can use different component?
+                        enabled = false,
+                        checked = false,
                         onCheckedChange = { }) {
-                        Text((index + 1).toString())
+                        if (record.setTypes?.getOrElse(index) { SetType.NORMAL } == SetType.NORMAL) {
+                            Text((index + 1 - warmupSets).toString())
+                        } else if (record.setTypes?.getOrNull(index) == SetType.AWESOME) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                stringResource(SetType.AWESOME.displayRes)
+                            )
+                        } else {
+                            Text(
+                                stringResource(
+                                    (record.setTypes?.getOrNull(index) ?: SetType.NORMAL).displayRes
+                                ).first().uppercase()
+                            )
+                        }
                     }
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -1205,6 +1287,8 @@ fun WorkoutRepsWeightRow(
                 ) {
                     if (setType == SetType.NORMAL) {
                         Text((setCount + 1 - totalWarmupSets).toString())
+                    } else if (setType == SetType.AWESOME) {
+                        Icon(setType.icon, null)
                     } else {
                         Text(stringResource(setType.displayRes).first().uppercase())
                     }
@@ -1212,7 +1296,7 @@ fun WorkoutRepsWeightRow(
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SetType.entries.forEach { type ->
+            SetType.visibleEntries.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(stringResource(type.displayRes)) },
                     leadingIcon = {

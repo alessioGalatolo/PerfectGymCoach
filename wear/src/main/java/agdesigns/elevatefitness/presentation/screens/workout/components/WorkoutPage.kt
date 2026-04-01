@@ -7,6 +7,7 @@ import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarque
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
 import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.grpc.Workout
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -76,6 +77,7 @@ fun WorkoutPage(
     listState: ScalingLazyListState,
     ambientState: AmbientState,
     acceptModification: (Int) -> Unit,
+    dismissModification: (Int) -> Unit,
     startRest: () -> Unit,
     resetRest: () -> Unit,
     onNextExercise: () -> Unit,
@@ -88,6 +90,9 @@ fun WorkoutPage(
     val currentImage = remember(workoutState.currentExerciseIndex, exercisesState.images) {
         exercisesState.images.getOrNull(workoutState.currentExerciseIndex)
     }
+    val currentSetType = workoutState.currentExercise?.setTypesList?.getOrNull(setsDone)?.let {
+        SetType.fromResKey(it)
+    } ?: SetType.NORMAL
     if (currentImage != null && ambientState.isInteractive) {
         VignetteImage(
             currentImage.asImageBitmap(),
@@ -110,7 +115,12 @@ fun WorkoutPage(
             exerciseName = workoutState.currentExercise?.name ?: "",
             setsDone = setsDone,
             totalSets = workoutState.currentExercise?.restCount ?: 0,
-            exerciseSubtitle = "${workoutState.currentReps}" +
+            exerciseSubtitle = if (
+                currentSetType != SetType.NORMAL
+            ) {
+                stringResource(currentSetType.displayRes).first().uppercase() + ": "
+            } else { "" }
+                + "${workoutState.currentReps}" +
                     if (workoutState.currentExercise?.isDurationBased == true) {
                         "s "
                     } else { " " }
@@ -133,11 +143,19 @@ fun WorkoutPage(
             else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
                 exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)
             else null,
+            // this is really ugly, should compute modification in VM instead
+            modificationDismissedMap = workoutState.modificationIsDismissed,
             acceptModification = {
                 if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
                     acceptModification(workoutState.currentExerciseIndex-1)
                 else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
                     acceptModification(workoutState.currentExerciseIndex)
+            },
+            dismissModification = {
+                if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
+                    dismissModification(workoutState.currentExerciseIndex-1)
+                else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
+                    dismissModification(workoutState.currentExerciseIndex)
             },
             onNext = {
                 if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
@@ -168,9 +186,11 @@ fun ExercisePage(
     ambientState: AmbientState,
     modification: Workout.ProtoSuggestedModification?,
     acceptModification: () -> Unit,
+    dismissModification: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     startRest: () -> Unit,
+    modificationDismissedMap: Map<Workout.ProtoSuggestedModification, Boolean>,
 ) {
     PlayerScreen(
         mediaDisplay = {
@@ -328,7 +348,7 @@ fun ExercisePage(
         var dialogVisible by rememberSaveable(modification) { mutableStateOf(false) }
         val haptics = LocalHapticFeedback.current
         LaunchedEffect(modification) {
-            if (modification != null) {
+            if (modificationDismissedMap[modification] != true) {
                 delay(2000)
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                 dialogVisible = true
@@ -365,7 +385,10 @@ fun ExercisePage(
             },
             dismissButton = {
                 AlertDialogDefaults.DismissButton(
-                    onClick = { dialogVisible = false }
+                    onClick = {
+                        dialogVisible = false
+                        dismissModification()
+                    }
                 ) {
                     Icon(
                         Icons.Default.Close,

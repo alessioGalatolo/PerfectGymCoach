@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
@@ -37,10 +37,8 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
@@ -648,7 +646,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                                         }
                                     }
                                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                        SetType.entries.forEach { type ->
+                                        SetType.visibleEntries.forEach { type ->
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(type.displayRes)) },
                                                 leadingIcon = {

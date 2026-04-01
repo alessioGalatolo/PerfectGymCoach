@@ -7,7 +7,7 @@ import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
-import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
@@ -105,6 +105,15 @@ data class ModificationSuggestion(
         .setType(type.toProto())
         .setHasSuggestion(true)
         .setTargetExerciseName(newWorkoutExercise?.name ?: "")
+        .setSourceId(originalModification.sourceWorkoutExerciseId
+            ?: originalModification.sourceProgramExerciseId
+            ?: originalModification.sourceExerciseId
+            ?: 0L
+        )
+        .setTargetId(
+            originalModification.targetWorkoutExerciseId ?:
+            originalModification.targetExerciseId ?: 0L
+        )
         .build()
 }
 
@@ -283,7 +292,7 @@ class WorkoutViewModel @Inject constructor(
          * Should be recomputed if exercises, records, imperialSystem, or workoutId changes
          * Should NOT be recomputed if the only change is current page
          */
-        val exercises = values[0] as List<WorkoutExercise>
+        var exercises = values[0] as List<WorkoutExercise>
         val records = values[1] as Map<Long, List<ExerciseRecordAndEquipment>>
         val imperialSystem = values[2] as Boolean
         val workoutId = values[3] as Long
@@ -311,6 +320,24 @@ class WorkoutViewModel @Inject constructor(
         }
         val exerciseSetsDone = recordsAndOngoingForAllExercises.map {
             it.second?.reps?.size ?: 0
+        }
+        // check if we can "auto-add" sets to exercises (when user added one last time, re-propose)
+        exercises = exercises.zip(recordsForAllExercises).map { (ex, records) ->
+            val lastRecord = records.firstOrNull()
+            if (lastRecord?.reps?.size?.let { it > ex.reps.size } == true) {
+                val additionalReps = lastRecord.reps.slice(ex.reps.size until lastRecord.reps.size)
+                val additionalRest = lastRecord.rest.slice(ex.rest.size until lastRecord.rest.size)
+                val additionalSetTypes = List(additionalReps.size) { SetType.AWESOME }
+                ex.copy(
+                    reps = ex.reps.plus(additionalReps),
+                    rest = ex.rest.plus(additionalRest),
+                    setTypes = (ex.setTypes ?: List(ex.reps.size) { SetType.NORMAL })
+                        .plus(additionalSetTypes)
+                )
+
+            } else {
+                ex
+            }
         }
         val exerciseRepsWeights =
             exercises.zip(recordsAndOngoingForAllExercises).mapIndexed { index, (exercise, records) ->
@@ -961,7 +988,8 @@ class WorkoutViewModel @Inject constructor(
                             variationResKey = record.variationResKey,
                             rest = record.rest,
                             tare = record.tare,
-                            overriddenDurationBased = record.overriddenDurationBased
+                            overriddenDurationBased = record.overriddenDurationBased,
+                            setTypes = record.setTypes
                         )
                     )
                 }
@@ -1001,7 +1029,8 @@ class WorkoutViewModel @Inject constructor(
                                 variationResKey = record.variationResKey,
                                 rest = record.rest,
                                 tare = record.tare,
-                                overriddenDurationBased = record.overriddenDurationBased
+                                overriddenDurationBased = record.overriddenDurationBased,
+                                setTypes = record.setTypes
                             )
                         )
                     }
@@ -1326,10 +1355,9 @@ class WorkoutViewModel @Inject constructor(
                     imperialSystem
                 )
             }
-            // TODO: This logic kind of requires records to also hold setType, but they currently don't
             if (currentSetType == SetType.NORMAL && !isPyramid) {
                 lastOldRecord.weights.zip(
-                    setTypes ?: List(lastOldRecord.weights.size) { SetType.NORMAL }
+                    lastOldRecord.setTypes ?: List(lastOldRecord.weights.size) { SetType.NORMAL }
                 ).filter { it.second == SetType.NORMAL }.map { it.first }.average().let {
                     avgOldRecordWeight = it.toFloat()
                     // now round it to the nearest increment
@@ -1591,7 +1619,8 @@ class WorkoutViewModel @Inject constructor(
                         variationResKey = exercise.variationResKey,
                         rest = listOf(exerciseRest.toInt()),
                         tare = oldTare,
-                        overriddenDurationBased = exercise.overriddenDurationBased
+                        overriddenDurationBased = exercise.overriddenDurationBased,
+                        setTypes = exercise.setTypes
                     )
                 )
             } else {
@@ -1612,7 +1641,8 @@ class WorkoutViewModel @Inject constructor(
                         variationResKey = record.variationResKey,
                         record.rest.plus(exerciseRest.toInt()),
                         tare = oldTare,  // allow user to change the initial tare, in case they selected wrong one
-                        overriddenDurationBased = record.overriddenDurationBased
+                        overriddenDurationBased = record.overriddenDurationBased,
+                        setTypes = record.setTypes
                     )
                 )
             }

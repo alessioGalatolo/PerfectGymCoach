@@ -516,12 +516,12 @@ fun WorkoutRecap(
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         stringResource(R.string.total_volume) +
-                                                ": %.2f ".format(
+                                                ": " +
                                                     maybeKgToLb(
                                                         state.workoutRecord!!.volume.toFloat(),
                                                         state.imperialSystem
-                                                    )
-                                                ) + if (state.imperialSystem) stringResource(
+                                                    ).toInt()
+                                                 + if (state.imperialSystem) stringResource(
                                             R.string.lb
                                         ) else stringResource(R.string.kg)
                                     )

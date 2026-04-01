@@ -1,7 +1,7 @@
 package agdesigns.elevatefitness.data.db
 
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import androidx.room.TypeConverter
 import java.time.Instant

@@ -190,17 +190,23 @@ fun SharedTransitionScope.ExercisesByMuscle(
                             }
                         ) {
                             Row (Modifier.padding(dimensionResource(R.dimen.card_inner_padding))){
-                                Image(
-                                    painter = painterResource(muscle.imageRes),
-                                    contentDescription = stringResource(R.string.image_highlighting_the_muscle),
-                                    modifier = Modifier
-                                        // Set image size to 40 dp
-                                        .size(80.dp)
-                                        // Clip image to be shaped as a circle
-                                        .clip(CircleShape)
-                                )
+                                Surface(
+                                    shape = MaterialTheme.shapes.large,
+                                    color = MaterialTheme.colorScheme.surfaceBright
+                                ) {
+                                    Image(
+                                        painter = painterResource(muscle.imageRes),
+                                        contentDescription = stringResource(R.string.image_highlighting_the_muscle),
+                                        modifier = Modifier
+                                            // Set image size to 40 dp
+                                            .size(80.dp)
+                                            // Clip image to be shaped as a circle
+                                            .clip(CircleShape)
+                                            .padding(4.dp)
+                                    )
+                                }
 
-                                Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+                                Column(modifier = Modifier.align(Alignment.CenterVertically).padding(8.dp)) {
                                     Text(text = stringResource(muscle.muscleNameResource), fontWeight = FontWeight.Bold)
 //                                Spacer(modifier = Modifier.height(4.dp))
 //                                Text(text = "Some exercise names...") // TODO

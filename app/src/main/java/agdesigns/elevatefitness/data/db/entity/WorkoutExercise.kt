@@ -8,6 +8,7 @@ import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.grpc.Workout
 import kotlinx.parcelize.Parcelize
 
@@ -96,6 +97,7 @@ data class WorkoutExercise (
             .setVariation(this.variation)
             .setSupersetExercise(this.supersetExercise ?: 0L)
             .setIsDurationBased(this.overriddenDurationBased)
+            .addAllSetTypes(this.setTypes?.map { it.nameResKey } ?: emptyList())
             .build()
     }
 }

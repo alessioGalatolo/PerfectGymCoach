@@ -13,6 +13,7 @@ import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.estimate1RM
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
@@ -328,7 +329,8 @@ class ExerciseStatsViewModel @Inject constructor(
                         variationResKey = "variation_key_$id",
                         rest = rest,
                         equipment = Equipment.BARBELL,
-                        overriddenDurationBased = false
+                        overriddenDurationBased = false,
+                        setTypes = List(reps.size) { SetType.NORMAL }
                     )
                 )
 

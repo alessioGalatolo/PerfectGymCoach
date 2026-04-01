@@ -312,7 +312,14 @@ fun SharedTransitionScope.Workout(
         viewModel.onEvent(WorkoutEvent.ToggleEnterIntensityDialog)
     }
 
-    var fabHeight by remember { mutableStateOf(0.dp) }
+    var mediaControlsDismissed by rememberSaveable { mutableStateOf(false) }
+    val mediaSwipeState = rememberSwipeToDismissBoxState()
+    var fabHeight by remember(mediaState.canAskAccess, mediaState.needsAccess) {
+        val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
+                16.dp // fab bottom padding
+        val fabVisible = (!mediaState.needsAccess || mediaState.canAskAccess) && !mediaControlsDismissed
+        mutableStateOf(if (fabVisible) visibleFabHeight else 0.dp)
+    }
 
     // if bright image (i.e., white), change status bar icons to dark
     val brightImage = remember { mutableStateOf(false) }
@@ -326,8 +333,6 @@ fun SharedTransitionScope.Workout(
             Theme.DARK -> true
         }
     }}
-    var mediaControlsDismissed by rememberSaveable { mutableStateOf(false) }
-    val mediaSwipeState = rememberSwipeToDismissBoxState()
 
     // should only show preview when transitioning *into* the workout
     var containerTransitionFinished by rememberSaveable { mutableStateOf(false) }
@@ -568,9 +573,6 @@ fun SharedTransitionScope.Workout(
             cardShape = MaterialTheme.shapes.extraLarge as RoundedCornerShape,
             floatingActionButton = {
                 if (!mediaState.needsAccess || mediaState.canAskAccess) {
-                    val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
-                            16.dp // fab bottom padding
-                    fabHeight = if (mediaControlsDismissed) 0.dp else visibleFabHeight
                     AnimatedVisibility(
                         visible = containerTransitionFinished && !pagerState.isScrollInProgress && !mediaControlsDismissed,
                         enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),

@@ -22,7 +22,7 @@ data class MediaPlayingState(
     val artwork: Bitmap? = null,
     val packageName: String? = null,
     val isPlaying: Boolean = false,
-    val needsAccess: Boolean = false,
+    val needsAccess: Boolean = true,
     val hasSession: Boolean = false,
     val canAskAccess: Boolean = false,
     val activityIntent: PendingIntent? = null

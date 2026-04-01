@@ -750,7 +750,7 @@
     <string name="plan_diff_intermediate">Intermediate: feel confident to try some more advanced exercises</string>
     <string name="plan_diff_advanced">Advanced: you got this👌</string>
     <string name="splits_fullbody">Full-body routine: 1+ days a week</string>
-    <string name="splits_bro">Bro split (pull/push/legs): 3 days a week</string>
+    <string name="splits_bro">Pull/Push/Legs: 3 days a week</string>
     <string name="splits_upper_lower">Upper/Lower body split: 2+ days a week</string>
     <string name="splits_gainz">1 Muscle group per day: 5 days a week</string>
     <string name="splits_auto">Surprise me</string>
@@ -861,7 +861,7 @@
     <string name="modification_suggestion_desc_skip">Last time you skipped this exercise</string>
     <string name="modification_suggestion_desc_replace">Last time you replaced this exercise with: %1$s</string>
     <string name="modification_suggestion_not_this_time">Not this time</string>
-    <string name="modification_suggestion_do_it">Let\'s do it again!</string>
+    <string name="modification_suggestion_do_it">Okay!</string>
     <string name="exercise_type_hold">Isometric</string>
     <string name="exercise_type_reps">Traditional</string>
     <string name="exercise_type">Exercise type: </string>
@@ -884,10 +884,5 @@
     <string name="heart_rate_bpm">Heart rate (bpm)</string>
     <string name="progression_over_time">Progression over time</string>
 
-<!--    -->
-    <string name="set_types_warmup">Warm-up</string>
-    <string name="set_types_normal">Normal</string>
-    <string name="set_types_drop_set">Drop set</string>
-    <string name="set_types_failure">Failure</string>
 
 </resources>

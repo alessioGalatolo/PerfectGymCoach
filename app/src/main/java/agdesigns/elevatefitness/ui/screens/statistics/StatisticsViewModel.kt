@@ -16,6 +16,7 @@ import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import android.util.Log
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.ui.common.WorkoutFrequencyLabelsKey
 import agdesigns.elevatefitness.ui.common.chartColors
@@ -112,6 +113,8 @@ class StatisticsViewModel @Inject constructor(
     val state: StateFlow<StatisticsState> = _state.asStateFlow()
 
     var computeStatisticsJob: Job? = null
+    var changeVolumeChartJob: Job? = null
+
 
     init {
         observeData()
@@ -219,8 +222,9 @@ class StatisticsViewModel @Inject constructor(
                     recordsDateFiltered
                 } else {
                     recordsDateFiltered.filter {
-                        repository.getExercise(it.extExerciseId)
-                            .first().primaryMuscle == muscle
+                        val ex = repository.getExercise(it.extExerciseId)
+                            .first()
+                        ex.primaryMuscle == muscle || ex.secondaryMuscles.contains(muscle)
                     }
                 }
                 generateVolumeProgressionData(
@@ -287,7 +291,8 @@ class StatisticsViewModel @Inject constructor(
                 volumeProgression.mapIndexed { index, pair -> index to pair.first }.toMap()
             val maxVolume = volumeProgression.maxOfOrNull { it.second }
             val maxIndex = volumeProgression.indexOfLast { it.second == maxVolume }
-            viewModelScope.launch {
+            changeVolumeChartJob?.cancel()
+            changeVolumeChartJob = viewModelScope.launch {
                 if (volumeProgression.isEmpty())
                     return@launch
                 state.value.volumeChartProducer.runTransaction {
@@ -487,7 +492,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(60, 90),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.WARMUP, SetType.NORMAL)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 2L,
@@ -503,7 +509,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(90),
                 equipment = Equipment.DUMBBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 3L,
@@ -519,7 +526,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(120),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL)
             ),
 
             // This month
@@ -537,7 +545,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(90),
                 equipment = Equipment.DUMBBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 5L,
@@ -553,7 +562,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(90, 120),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.WARMUP, SetType.NORMAL)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 6L,
@@ -569,7 +579,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(60),
                 equipment = Equipment.MACHINE,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.WARMUP)
             ),
 
             // Older but still relevant
@@ -587,7 +598,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(90),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 8L,
@@ -603,7 +615,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(75),
                 equipment = Equipment.DUMBBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 9L,
@@ -619,7 +632,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(90, 90),
                 equipment = Equipment.CABLES,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL, SetType.NORMAL)
             ),
 
             // Variety / Distribution
@@ -637,7 +651,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(150),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 11L,
@@ -653,7 +668,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(120, 150, 180),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL, SetType.NORMAL, SetType.NORMAL)
             ),
 
             // Edge case: old record
@@ -671,7 +687,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(90),
                 equipment = Equipment.MACHINE,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.NORMAL)
             ),
 
             // Invalid edge cases (included for filtering tests)
@@ -689,7 +706,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(90),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf(SetType.DROP_SET)
             ),
             ExerciseRecordAndEquipment(
                 recordId = 14L,
@@ -705,7 +723,8 @@ class StatisticsViewModel @Inject constructor(
                 variationResKey = "",
                 rest = listOf(),
                 equipment = Equipment.BARBELL,
-                overriddenDurationBased = false
+                overriddenDurationBased = false,
+                setTypes = listOf()
             )
         )
     }

@@ -7,6 +7,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import kotlinx.parcelize.Parcelize
 import java.time.ZonedDateTime
 
@@ -53,6 +54,7 @@ data class ExerciseRecord(
     val tare: Float = 0f, // e.g. barbell weight or bodyweight
     @ColumnInfo(defaultValue = "0")
     val overriddenDurationBased: Boolean,
+    val setTypes: List<SetType>? = null
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
@@ -74,12 +76,18 @@ data class ExerciseRecordAndEquipment(
     val variationResKey: String,
     val rest: List<Int>,
     val equipment: Equipment,
-    val overriddenDurationBased: Boolean
+    val overriddenDurationBased: Boolean,
+    val setTypes: List<SetType>?
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
 }
 
+@Parcelize
+data class UpdateExerciseRecordSetTypes(
+    val recordId: Long,
+    val setTypes: List<SetType>,
+) : Parcelable
 
 @Parcelize
 data class ExerciseRecordAndInfo(
@@ -101,7 +109,8 @@ data class ExerciseRecordAndInfo(
     val imageResKey: String,
     val userDefined: Boolean = false,
     val equipment: Equipment,
-    val overriddenDurationBased: Boolean
+    val overriddenDurationBased: Boolean,
+    val setTypes: List<SetType>?
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)

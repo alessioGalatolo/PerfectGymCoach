@@ -270,6 +270,9 @@ fun Statistics(
                                             ?: value.toString() // fall back to value otherwise empty string will crash stuff
                                     },
                                     decorations = listOf(
+                                        // FIXME: the label is either above or below the horizontal line,
+                                        //  But the container has only two rounded corners which get flipped
+                                        //  If in "wrong" position
                                         rememberHorizontalLine(
                                             MeanLineKey,
                                             stringResource(R.string.average)

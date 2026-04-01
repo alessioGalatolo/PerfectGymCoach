@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.Repository
-import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -138,7 +138,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                     "",
                                 userDefined = state.value.exercise!!.userDefined,
                                 overriddenDurationBased = state.value.overriddenDurationBased,
-                                setTypes = if (state.value.advancedSets) state.value.setTypesArray else null
+                                setTypes = state.value.setTypesArray
                             )
                         )
                     }
@@ -159,7 +159,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 else
                                     "",
                                 overriddenDurationBased = state.value.overriddenDurationBased,
-                                setTypes = if (state.value.advancedSets) state.value.setTypesArray else null
+                                setTypes = state.value.setTypesArray
                             )
                         )
                     }

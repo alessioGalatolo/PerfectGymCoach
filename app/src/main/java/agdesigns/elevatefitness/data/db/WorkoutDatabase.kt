@@ -14,7 +14,8 @@ import agdesigns.elevatefitness.data.db.dao.WorkoutPlanDao
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.dao.WorkoutProgramDao
 import agdesigns.elevatefitness.data.db.dao.WorkoutRecordDao
-import agdesigns.elevatefitness.data.db.entity.SetType
+import agdesigns.elevatefitness.data.db.entity.UpdateExerciseRecordSetTypes
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.UpdateProgramExerciseSetTypes
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
@@ -209,6 +210,9 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
         db.execSQL(
             "ALTER TABLE WorkoutExercise ADD COLUMN setTypes TEXT"
         )
+        db.execSQL(
+            "ALTER TABLE ExerciseRecord ADD COLUMN setTypes TEXT"
+        )
     }
 }
 
@@ -370,6 +374,17 @@ class ExerciseDataMigrator(private val context: Context) {
             db.programExerciseDao.updateSetTypes(
                 UpdateProgramExerciseSetTypes(
                     it.programExerciseId,
+                    List(it.reps.size) { _ ->
+                        SetType.NORMAL
+                    }
+                )
+            )
+        }
+        val exerciseRecords = db.exerciseRecordDao.getAll()
+        exerciseRecords.filter { it.setTypes == null }.forEach {
+            db.exerciseRecordDao.updateSetTypes(
+                UpdateExerciseRecordSetTypes(
+                    it.recordId,
                     List(it.reps.size) { _ ->
                         SetType.NORMAL
                     }

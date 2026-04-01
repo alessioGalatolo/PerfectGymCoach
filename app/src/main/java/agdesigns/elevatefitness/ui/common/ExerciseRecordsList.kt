@@ -35,7 +35,11 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.barbellResFromWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material3.Icon
 
 // Shows a nice list of records
 fun LazyListScope.ExerciseRecordsList(
@@ -87,14 +91,27 @@ fun LazyListScope.ExerciseRecordsList(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
+                val warmupSets = exercise.setTypes?.count { it == SetType.WARMUP } ?: 0
                 exercise.reps.forEachIndexed { index, rep ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        FilledIconToggleButton(checked = false, // FIXME: can use different component?
+                        FilledIconToggleButton(
+                            enabled = false,
+                            checked = false,
                             onCheckedChange = { }) {
-                            Text((index + 1).toString())
+                            if (exercise.setTypes?.getOrElse(index) { SetType.NORMAL } == SetType.NORMAL)
+                                Text((index + 1 - warmupSets).toString())
+                            else if (exercise.setTypes?.getOrNull(index) == SetType.AWESOME) {
+                                Icon(Icons.Default.AutoAwesome, stringResource(SetType.AWESOME.displayRes))
+                            } else {
+                                Text(
+                                    stringResource(
+                                        (exercise.setTypes?.getOrNull(index) ?: SetType.NORMAL).displayRes
+                                    ).first().uppercase()
+                                )
+                            }
                         }
                         Spacer(Modifier.width(8.dp))
                         Text(

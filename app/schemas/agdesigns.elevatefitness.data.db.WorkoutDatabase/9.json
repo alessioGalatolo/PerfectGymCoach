@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 9,
-    "identityHash": "badb004a347d20b46f6a981f9901c29b",
+    "identityHash": "bba0a3fe42e568c467e40796d65b7c03",
     "entities": [
       {
         "tableName": "plan",
@@ -255,7 +255,7 @@
       },
       {
         "tableName": "ExerciseRecord",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recordId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extExerciseId` INTEGER NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extWorkoutExerciseId` INTEGER NOT NULL DEFAULT 0, `exerciseInWorkout` INTEGER NOT NULL, `date` INTEGER NOT NULL, `reps` TEXT NOT NULL, `weights` TEXT NOT NULL, `variation` TEXT NOT NULL, `variationResKey` TEXT NOT NULL DEFAULT '', `rest` TEXT NOT NULL, `tare` REAL NOT NULL, `overriddenDurationBased` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`recordId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extExerciseId` INTEGER NOT NULL, `extWorkoutId` INTEGER NOT NULL, `extWorkoutExerciseId` INTEGER NOT NULL DEFAULT 0, `exerciseInWorkout` INTEGER NOT NULL, `date` INTEGER NOT NULL, `reps` TEXT NOT NULL, `weights` TEXT NOT NULL, `variation` TEXT NOT NULL, `variationResKey` TEXT NOT NULL DEFAULT '', `rest` TEXT NOT NULL, `tare` REAL NOT NULL, `overriddenDurationBased` INTEGER NOT NULL DEFAULT 0, `setTypes` TEXT, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`extExerciseId`) REFERENCES `Exercise`(`exerciseId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "recordId",
@@ -337,6 +337,11 @@
             "affinity": "INTEGER",
             "notNull": true,
             "defaultValue": "0"
+          },
+          {
+            "fieldPath": "setTypes",
+            "columnName": "setTypes",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -848,7 +853,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'badb004a347d20b46f6a981f9901c29b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bba0a3fe42e568c467e40796d65b7c03')"
     ]
   }
 }

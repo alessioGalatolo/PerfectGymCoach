@@ -210,6 +210,9 @@ fun Workout(
                                 acceptModification = {
                                     viewModel.onEvent(WorkoutEvent.AcceptModification(it))
                                 },
+                                dismissModification = {
+                                    viewModel.onEvent(WorkoutEvent.DismissModification(it))
+                                },
                                 resetRest = {
                                     viewModel.onEvent(WorkoutEvent.ResetRest)
                                 },

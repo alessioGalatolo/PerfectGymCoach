@@ -24,6 +24,9 @@ message ProtoSuggestedModification {
   bool hasSuggestion = 1;
   ProtoModificationType type = 2;
   string targetExerciseName = 3; // empty if no target
+  // these are not really needed but help to make the object unique
+  int64 targetId = 4;
+  int64 sourceId = 5;
 }
 
 enum ProtoModificationType {
@@ -49,6 +52,7 @@ message Exercise {
   string variation = 9;
   int64 superset_exercise = 10;
   bool is_duration_based = 11;
+  repeated string set_types = 12;
 }
 
 message SuggestedRepsWeight {

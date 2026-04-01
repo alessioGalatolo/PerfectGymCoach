@@ -750,7 +750,7 @@
     <string name="plan_diff_intermediate">Intermedio: mi sento pronto a provare esercizi più avanzati</string>
     <string name="plan_diff_advanced">Avanzato: facciamo tutto 👌</string>
     <string name="splits_fullbody">Routine total body: 1+ volte a settimana</string>
-    <string name="splits_bro">Bro split (pull/push/gambe): 3 volte a settimana</string>
+    <string name="splits_bro">Pull/Push/Gambe: 3 volte a settimana</string>
     <string name="splits_upper_lower">Split parte alta/bassa: 2+ volte a settimana</string>
     <string name="splits_gainz">1 gruppo muscolare al giorno: 5 volte a settimana</string>
     <string name="splits_auto">Sorprendimi</string>
@@ -860,7 +860,7 @@
     <string name="modification_suggestion_desc_skip">L\'ultima volta hai saltato questo esercizio</string>
     <string name="modification_suggestion_desc_replace">L\'ultima volta hai sostituito questo esercizio con: %1$s</string>
     <string name="modification_suggestion_not_this_time">Non questa volta</string>
-    <string name="modification_suggestion_do_it">Facciamolo di nuovo!</string>
+    <string name="modification_suggestion_do_it">Okay!</string>
     <string name="exercise_type_hold">Isometrico</string>
     <string name="exercise_type_reps">Tradizionale</string>
     <string name="exercise_type">Tipo di esercizio: </string>
@@ -887,4 +887,5 @@
     <string name="set_types_normal">Normale</string>
     <string name="set_types_drop_set">Drop set</string>
     <string name="set_types_failure">Sfinimento</string>
+    <string name="set_types_awesome">Serie suggerite</string>
 </resources>
