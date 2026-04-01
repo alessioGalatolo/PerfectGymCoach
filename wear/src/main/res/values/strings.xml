@@ -77,6 +77,9 @@
     <string name="modification_desc_replace">Last time you replaced "%1$s" with: </string>
     <string name="modification_desc_add">Last time, after completing the last exercise, you added : </string>
     <string name="modification_desc_skip">Last time you skipped "%1$s"</string>
+    <string name="other_app_exercise_title">Stop other exercise app?</string>
+    <string name="other_app_exercise_info">Another app is currently tracking an exercise. Tracking this workout requires closing the other app. Do you want to stop it and start tracking here?</string>
+    <string name="other_app_exercise_confirm">Stop and start</string>
     <string name="hold">Hold</string>
     <string name="close">Close</string>
 

@@ -79,6 +79,9 @@
     <string name="modification_desc_replace">L\'ultima volta hai sostituito "%1$s" con: </string>
     <string name="modification_desc_add">L\'ultima volta, dopo aver completato l\'ultimo esercizio, hai aggiunto: </string>
     <string name="modification_desc_skip">L\'ultima volta hai saltato "%1$s"</string>
+    <string name="other_app_exercise_title">Fermare altra app di esercizio?</string>
+    <string name="other_app_exercise_info">Un\'altra app è in esecuzione per tenere traccia di un esercizio. Per tracciare questo allenamento, è necessario chiudere l\'altra app. Vuoi fermare l\'altra app and iniziare l\'allenamento qui?</string>
+    <string name="other_app_exercise_confirm">Ferma e inizia</string>
     <string name="hold">Durata</string>
     <string name="close">Chiudi</string>
 

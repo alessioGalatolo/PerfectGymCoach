@@ -109,7 +109,8 @@ data class WorkoutState(
     val minHeartRate: Int? = null,
     val heartRateBySecond: Map<Long, Int> = emptyMap(),
     val workoutTime: String? = null,
-    val modificationIsDismissed: Map<Workout.ProtoSuggestedModification, Boolean> = emptyMap()
+    val modificationIsDismissed: Map<Workout.ProtoSuggestedModification, Boolean> = emptyMap(),
+    val showOtherAppExerciseDialog: Boolean = false
 )
 
 sealed class WorkoutEvent {
@@ -134,6 +135,8 @@ sealed class WorkoutEvent {
 
     data object DismissHint: WorkoutEvent()
     data object CancelSetValues: WorkoutEvent()
+    data object ConfirmKillOtherApp: WorkoutEvent()
+    data object DismissOtherAppDialog: WorkoutEvent()
 
     data class AcceptModification(val index: Int): WorkoutEvent()
     data class DismissModification(val index: Int): WorkoutEvent()
@@ -282,6 +285,13 @@ class WorkoutViewModel
                             heartRateBySecond = secondsToHR.toMap()
                         )
                     }
+                }
+        }
+        viewModelScope.launch {
+            repository.service
+                .flatMapLatest { it?.otherAppInProgress ?: flowOf(false) }
+                .collect { inProgress ->
+                    _state.update { it.copy(showOtherAppExerciseDialog = inProgress) }
                 }
         }
         repository.getHealthData = {
@@ -678,6 +688,12 @@ class WorkoutViewModel
                         )
                     }
                 }
+            }
+            is WorkoutEvent.ConfirmKillOtherApp -> {
+                repository.foregroundOnlyWalkingWorkoutService?.confirmKillOtherApp()
+            }
+            is WorkoutEvent.DismissOtherAppDialog -> {
+                _state.update { it.copy(showOtherAppExerciseDialog = false) }
             }
         }
     }

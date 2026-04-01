@@ -17,6 +17,9 @@ import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -41,10 +44,12 @@ import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
+import androidx.wear.compose.material3.ConfirmationDialog
 import androidx.wear.compose.material3.ConfirmationDialogDefaults
 import androidx.wear.compose.material3.FailureConfirmationDialog
 import androidx.wear.compose.material3.HorizontalPageIndicator
 import androidx.wear.compose.material3.HorizontalPagerScaffold
+import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.ScreenScaffold
@@ -119,6 +124,32 @@ fun Workout(
                 }
             )
         },
+    )
+    AlertDialog(
+        visible = state.showOtherAppExerciseDialog,
+        onDismissRequest = { viewModel.onEvent(WorkoutEvent.DismissOtherAppDialog) },
+        title = { Text(stringResource(R.string.other_app_exercise_title)) },
+        text = { Text(stringResource(R.string.other_app_exercise_info)) },
+        confirmButton = {
+            AlertDialogDefaults.ConfirmButton(
+                onClick = { viewModel.onEvent(WorkoutEvent.ConfirmKillOtherApp) },
+            ) {
+                Icon(
+                    Icons.Default.Done,
+                    stringResource(R.string.other_app_exercise_confirm)
+                )
+            }
+        },
+        dismissButton = {
+            AlertDialogDefaults.DismissButton(
+                onClick = { viewModel.onEvent(WorkoutEvent.DismissOtherAppDialog) },
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    stringResource(R.string.close)
+                )
+            }
+        }
     )
 
     // listen for VM effects

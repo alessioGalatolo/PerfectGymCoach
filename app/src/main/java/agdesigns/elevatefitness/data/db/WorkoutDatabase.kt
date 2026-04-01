@@ -356,6 +356,23 @@ class ExerciseDataMigrator(private val context: Context) {
     }
 
     private suspend fun migrateExercises5To9(db: WorkoutDatabase) {
+        // The following is a fix for a long-standing bug on old installs (bug is now fixed but db is messed up)
+        // it doesn't really belong here but it's a good place
+        // Bug: a program can have associate exercise whose "orderInProgram" has holes
+        // e.g., ex1 -> orderInProgram = 1 (but should be 0), ex2 -> orderInProgram = 4 (but should be 2), etc.
+        val programMapEx = db.workoutProgramDao.getAllProgramsMapExercises().first()
+        for ((_, exercises) in programMapEx) {
+            exercises.sortedBy {
+                it.orderInProgram
+            }.mapIndexed { index, exercise ->
+                exercise.copy(
+                    orderInProgram = index
+                )
+            }.forEach {
+                db.programExerciseDao.update(it)
+            }
+        }
+
         // here we introduced setTypes, update workoutExercises and programExercises
         // to have a list of SetType.NORMAL that matches number of sets
         val workoutExercises = db.workoutExerciseDao.getAll()

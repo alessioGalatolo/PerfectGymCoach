@@ -808,7 +808,10 @@ class WorkoutViewModel @Inject constructor(
                     // if sets done == total sets, scroll to next if any
                     val setsDone = currentExerciseState.value.setsDone
                     val totalSets = currentExerciseState.value.currentExercise?.reps?.size ?: 0
-                    val shouldAdvanceEx = setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)
+                    val shouldAdvanceEx = false
+                    // the logic below scrolls to next exercise when completing one but I don't like it
+                    // imagine e.g., user wants to add a set
+//                    val shouldAdvanceEx = setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)
                     // check if superset
                     val exerciseToScrollTo = if (exercise?.supersetExercise != null && exercise.supersetExercise == prevExercise?.extProgramExerciseId) {
                         if (shouldAdvanceEx)

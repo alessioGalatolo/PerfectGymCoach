@@ -47,6 +47,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -77,6 +80,14 @@ class WorkoutService: LifecycleService() {
     private val localBinder = LocalBinder()
 
     private var workoutActive: Boolean = false
+
+    private val _otherAppInProgress = MutableStateFlow(false)
+    val otherAppInProgress: StateFlow<Boolean> = _otherAppInProgress.asStateFlow()
+
+    // Saved for use when user confirms overriding another app's exercise
+    private var pendingExerciseType: ExerciseType? = null
+    private var pendingCanCollectCalories: Boolean = false
+    private var pendingCanCollectHeartBeat: Boolean = false
 
     private fun canCollectHeartBeat(): Boolean {
         val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
@@ -258,49 +269,22 @@ class WorkoutService: LifecycleService() {
                 }
                 val exerciseInfo = exerciseClient.getCurrentExerciseInfoAsync().await()
                 when (exerciseInfo.exerciseTrackedStatus) {
-                    OTHER_APP_IN_PROGRESS -> Log.d(TAG, "OTHER_APP_IN_PROGRESS")
-                    OWNED_EXERCISE_IN_PROGRESS -> Log.d(TAG, "OWNED_EXERCISE_IN_PROGRESS")
+                    OTHER_APP_IN_PROGRESS -> {
+                        Log.d(TAG, "OTHER_APP_IN_PROGRESS — prompting user")
+                        pendingExerciseType = bestSupportedExercise
+                        pendingCanCollectCalories = canCollectCalories
+                        pendingCanCollectHeartBeat = canCollectHeartBeat
+                        _otherAppInProgress.value = true
+                        return@launch
+                    }
+                    OWNED_EXERCISE_IN_PROGRESS -> {
+                        Log.d(TAG, "OWNED_EXERCISE_IN_PROGRESS — ending previous and retrying")
+                        exerciseClient.endExercise()
+                        delay(1.seconds)
+                    }
                     NO_EXERCISE_IN_PROGRESS -> Log.d(TAG, "NO_EXERCISE_IN_PROGRESS")
                 }
-                var deltaDataTypes: Set<DataType<*, *>>  = buildSet {
-                    if (canCollectCalories) {
-                        add(DataType.CALORIES)
-                    }
-                    if (canCollectHeartBeat) {
-                        add(DataType.HEART_RATE_BPM)
-                    }
-                }
-                val capabilities = exerciseClient
-                    .getCapabilities()
-                    .getExerciseTypeCapabilities(
-                        bestSupportedExercise
-                    )
-                deltaDataTypes = deltaDataTypes.intersect(capabilities.supportedDataTypes)
-                val warmupConfig = WarmUpConfig(
-                    bestSupportedExercise,
-                    // this is unchecked but both CALORIES and HEART_RATE_BPM are DeltaDataType
-                    deltaDataTypes as Set<DeltaDataType<*, *>>
-                )
-                exerciseClient.prepareExercise(warmupConfig)
-
-                // Now, we can add non-DeltaDataTypes
-                val allDataTypes = buildSet {
-                    if (canCollectCalories) {
-                        add(DataType.CALORIES)
-                        add(DataType.CALORIES_TOTAL)
-                    }
-                    if (canCollectHeartBeat) {
-                        add(DataType.HEART_RATE_BPM)
-                        add(DataType.HEART_RATE_BPM_STATS)
-                    }
-                }.intersect(capabilities.supportedDataTypes)
-                val exerciseConfig = ExerciseConfig(
-                    exerciseType = bestSupportedExercise,
-                    dataTypes = allDataTypes,
-                    isAutoPauseAndResumeEnabled = false,
-                    isGpsEnabled = false,
-                )
-                exerciseClient.startExercise(exerciseConfig)
+                prepareAndStartExercise(bestSupportedExercise, canCollectCalories, canCollectHeartBeat)
             }
 
             startForeground(
@@ -314,6 +298,55 @@ class WorkoutService: LifecycleService() {
                 else
                     FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
+        }
+    }
+
+    private suspend fun prepareAndStartExercise(
+        exerciseType: ExerciseType,
+        canCollectCalories: Boolean,
+        canCollectHeartBeat: Boolean
+    ) {
+        var deltaDataTypes: Set<DataType<*, *>> = buildSet {
+            if (canCollectCalories) add(DataType.CALORIES)
+            if (canCollectHeartBeat) add(DataType.HEART_RATE_BPM)
+        }
+        val capabilities = exerciseClient
+            .getCapabilities()
+            .getExerciseTypeCapabilities(exerciseType)
+        deltaDataTypes = deltaDataTypes.intersect(capabilities.supportedDataTypes)
+        val warmupConfig = WarmUpConfig(
+            exerciseType,
+            // this is unchecked but both CALORIES and HEART_RATE_BPM are DeltaDataType
+            deltaDataTypes as Set<DeltaDataType<*, *>>
+        )
+        exerciseClient.prepareExercise(warmupConfig)
+
+        // Now, we can add non-DeltaDataTypes
+        val allDataTypes = buildSet {
+            if (canCollectCalories) {
+                add(DataType.CALORIES)
+                add(DataType.CALORIES_TOTAL)
+            }
+            if (canCollectHeartBeat) {
+                add(DataType.HEART_RATE_BPM)
+                add(DataType.HEART_RATE_BPM_STATS)
+            }
+        }.intersect(capabilities.supportedDataTypes)
+        val exerciseConfig = ExerciseConfig(
+            exerciseType = exerciseType,
+            dataTypes = allDataTypes,
+            isAutoPauseAndResumeEnabled = false,
+            isGpsEnabled = false,
+        )
+        exerciseClient.startExercise(exerciseConfig)
+    }
+
+    fun confirmKillOtherApp() {
+        val exerciseType = pendingExerciseType ?: return
+        _otherAppInProgress.value = false
+        lifecycleScope.launch {
+            prepareAndStartExercise(exerciseType, pendingCanCollectCalories, pendingCanCollectHeartBeat)
+            pendingExerciseType = null
         }
     }
 
