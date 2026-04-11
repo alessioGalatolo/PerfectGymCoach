@@ -57,6 +57,9 @@ compose_plugin = "2.3.10"
 ksp = "2.3.2"
 hilt_plugin = "2.59.2"
 protobuf_plugin = "0.9.6"
+google_services = "4.4.4"
+firebase_bom = "34.12.0"
+crashlytics = "3.0.7"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android_application" }
@@ -70,6 +73,9 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 compose-plugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "compose_plugin" }
 room = { id = "androidx.room", version.ref = "room" }
 proto = { id = "com.google.protobuf", version.ref = "protobuf_plugin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "google_services" }
+crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "crashlytics" }
+
 
 [libraries]
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
@@ -143,3 +149,7 @@ health-connect = { group = "androidx.health.connect", name = "connect-client", v
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 # For Material 3 theming in Jetpack Compose.
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase_bom" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }

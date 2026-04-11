@@ -15,3 +15,5 @@ wear/release
 *.jks
 
 .kotlin
+
+google-services.json

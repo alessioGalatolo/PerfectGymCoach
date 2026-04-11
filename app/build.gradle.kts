@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.proto)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.crashlytics)
 }
 
 room {
@@ -104,6 +106,10 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+
     implementation(libs.health.connect)
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
