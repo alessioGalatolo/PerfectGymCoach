@@ -15,10 +15,12 @@ import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 sealed interface BottomBarDestination: TopLevelRoute {
     val label: Int
@@ -51,11 +53,13 @@ data object ProfileDestination: BottomBarDestination {
     override val iconSelected = Icons.Filled.Person
 }
 
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 context(sharedTransitionScope: SharedTransitionScope)
 fun EntryProviderScope< Any>.bottomBarEntryBuilder(
     destinationsNavigator: DestinationsNavigator,
     primaryActionOrigin: MutableState<Any?>,
     primaryActionContent: MutableState<PrimaryActionContent?>,
+    refreshContentFlow: MutableSharedFlow<Any>,
 ) {
     with (sharedTransitionScope) {
         entry<HomeDestination>(metadata = FadeTransition) {
@@ -65,22 +69,26 @@ fun EntryProviderScope< Any>.bottomBarEntryBuilder(
                 changePrimaryActionContent = {
                     primaryActionOrigin.value = HomeDestination
                     primaryActionContent.value = it
-                }
+                },
+                refreshContentRequest = refreshContentFlow
             )
         }
         entry<HistoryDestination>(metadata = FadeTransition) {
             History(
-                navigator = destinationsNavigator
+                navigator = destinationsNavigator,
+                refreshContentRequest = refreshContentFlow
             )
         }
         entry<StatisticsDestination>(metadata = FadeTransition) {
             Statistics(
-                navigator = destinationsNavigator
+                navigator = destinationsNavigator,
+                refreshContentRequest = refreshContentFlow
             )
         }
         entry<ProfileDestination>(metadata = FadeTransition) {
             Profile(
-                navigator = destinationsNavigator
+                navigator = destinationsNavigator,
+                refreshContentRequest = refreshContentFlow
             )
         }
     }

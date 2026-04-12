@@ -31,6 +31,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.navigation.CustomizePlanGenerationDestination
 import agdesigns.elevatefitness.navigation.PrimaryActionContent
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.HomeDestination
 import agdesigns.elevatefitness.navigation.WorkoutDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementKey
@@ -42,6 +43,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
@@ -56,6 +58,7 @@ import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.min
 
 
@@ -66,11 +69,22 @@ import kotlin.math.min
 fun SharedTransitionScope.Home(
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
+    refreshContentRequest: SharedFlow<Any>,
     changePrimaryActionContent: (PrimaryActionContent?) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val homeState by viewModel.state.collectAsState()
     val haptic = LocalHapticFeedback.current
+    val lazyListState = rememberLazyListState()
+
+    LaunchedEffect(refreshContentRequest) {
+        refreshContentRequest.collect {
+            if (it == HomeDestination) {
+                // this refresh is for us
+                lazyListState.animateScrollToItem(0)
+            }
+        }
+    }
 
     DisposableEffect(homeState.currentPlan) {
         changePrimaryActionContent (
@@ -211,6 +225,7 @@ fun SharedTransitionScope.Home(
             && homeState.currentProgram != null
         ) {
             LazyColumn(
+                state = lazyListState,
                 contentPadding = innerPadding
             ) {
                 var currentProgram = homeState.programs?.getOrNull(homeState.currentProgram!!)
@@ -362,6 +377,7 @@ fun SharedTransitionScope.Home(
                                 containerColor = MaterialTheme.colorScheme.surface
                             ),
                             modifier = Modifier
+                                .padding(horizontal = 4.dp)
                                 .sharedBounds(
                                     sharedContentState = rememberSharedContentState(
                                         SharedElementKey(

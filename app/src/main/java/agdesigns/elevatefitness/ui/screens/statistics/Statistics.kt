@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.StatisticsDestination
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
@@ -58,6 +59,7 @@ import com.jaikeerthick.composable_graphs.composables.pie.PieChart
 import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import kotlinx.coroutines.flow.SharedFlow
 import java.text.DecimalFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -67,6 +69,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun Statistics(
     navigator: DestinationsNavigator,
+    refreshContentRequest: SharedFlow<Any>,
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -74,6 +77,14 @@ fun Statistics(
 
     // we want to have headers as top app bar titles, need listState
     val listState = rememberLazyListState()
+    LaunchedEffect(refreshContentRequest) {
+        refreshContentRequest.collect {
+            if (it == StatisticsDestination) {
+                // this refresh is for us
+                listState.animateScrollToItem(0)
+            }
+        }
+    }
     // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
     val headers = listOf(
         stringResource(R.string.s_header0_statistics),

@@ -29,13 +29,10 @@ import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.WorkoutDestination
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
@@ -85,11 +82,6 @@ fun WorkoutCard(
                     Modifier.wrapContentHeight(Alignment.Top),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    val imageWidth = with (LocalDensity.current) {
-                        LocalWindowInfo.current.containerSize.width.toDp()
-                    }
-                    val imageHeight = imageWidth/3*2
-
                     val roundedCornersShape = cardShape
                     HorizontalPager(state = pagerState,
                         modifier = Modifier.graphicsLayer {
@@ -104,7 +96,7 @@ fun WorkoutCard(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(imageHeight)
+                                    .aspectRatio(3f / 2f)
                                     .align(Alignment.TopCenter)
                             )
                         }

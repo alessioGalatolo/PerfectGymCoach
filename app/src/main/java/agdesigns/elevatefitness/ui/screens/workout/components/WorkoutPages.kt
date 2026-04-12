@@ -83,6 +83,7 @@ fun SharedTransitionScope.ExercisePages(
     bottomPadding: Dp,
     fabHeight: Dp,
     restCounterProgress: Float?,
+    showTitle: Boolean,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
     updateExerciseProbability: (Int) -> Unit,
@@ -120,49 +121,66 @@ fun SharedTransitionScope.ExercisePages(
     Column(
         Modifier.padding(top = 8.dp)
     ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(
-                onClick = { scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.currentPage-1) }},
-                enabled = horizontalPagerState.currentPage > 0,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .weight(1f, false)
-            ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack,
-                    stringResource(R.string.arrowback_icon_previous_ex)
-                )
-            }
+        if (showTitle) {
             Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .weight(4f, true)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // FIXME:
-                ProvideTextStyle(
-                    value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)) {
-                    CompositionLocalProvider(
-                        content = title
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            horizontalPagerState.animateScrollToPage(
+                                horizontalPagerState.currentPage - 1
+                            )
+                        }
+                    },
+                    enabled = horizontalPagerState.currentPage > 0,
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .weight(1f, false)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        stringResource(R.string.arrowback_icon_previous_ex)
                     )
                 }
-            }
-            IconButton(
-                onClick = { scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.currentPage+1) }},
-                enabled = horizontalPagerState.currentPage < horizontalPagerState.pageCount-1,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .weight(1f, false)
-            ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowForward,
-                    stringResource(R.string.arrowforward_icon_next_ex)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .weight(4f, true)
+                ) {
+                    // FIXME:
+                    ProvideTextStyle(
+                        value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)
+                    ) {
+                        CompositionLocalProvider(
+                            content = title
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            horizontalPagerState.animateScrollToPage(
+                                horizontalPagerState.currentPage + 1
+                            )
+                        }
+                    },
+                    enabled = horizontalPagerState.currentPage < horizontalPagerState.pageCount - 1,
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .weight(1f, false)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowForward,
+                        stringResource(R.string.arrowforward_icon_next_ex)
+                    )
+                }
             }
         }
         if (workoutState.workoutStarted) {
@@ -450,160 +468,21 @@ fun ExercisePage(
                 settingsMenu()
             }
         }
-        ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(
-                Modifier.padding(dimensionResource(R.dimen.card_inner_padding)),
-                horizontalAlignment = CenterHorizontally
-            ) {
-                Text(stringResource(R.string.rest) +
-                        ": ${exerciseRest}s", Modifier.align(Alignment.Start))
-
-                // if barbell, allow to add barbell weight (used for volume)
-                AnimatedVisibility(
-                    visible = workoutStarted && equipment == Equipment.BARBELL,
-                    enter = slideInVertically() + fadeIn(),
-                    exit = slideOutVertically() + fadeOut()
-                ) {
-                    // FIXME: barbellResFromWeight should be computed in ViewModel
-                    val barbellName: String =
-                        stringResource(barbellResFromWeight(tare ?: 0f)) +
-                                " " +
-                                weightAndUnit(tare ?: 0f,
-                                    imperialSystem,
-                                    inParenthesis = true
-                                )
-
-                    BarbellSelector(
-                        selectedBarbell = barbellName,
-                        toggleOtherEquipment = toggleOtherEquipment,
-                        useImperialSystem = imperialSystem,
-                        onBarbellSelected = { weight -> updateTare(weight) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(CenterHorizontally)
-                    )
-                }
-                repsWeightRows.forEachIndexed { setCount, (repsInRow, weightInRow, toBeDone, projectedRep, projectedWeight) ->
-                    var dialogIsOpen by rememberSaveable { mutableStateOf(false) }
-                    ChangeRepsWeightDialog(
-                        dialogIsOpen = dialogIsOpen,
-                        toggleDialog = { dialogIsOpen = !dialogIsOpen },
-                        initialReps = repsInRow,
-                        initialWeight = weightInRow,
-                        updateValues = { reps, weight ->
-                            updateRowValues(
-                                reps,
-                                weight,
-                                setCount
-                            )
-                        },
-                        deleteSet = { deleteSet(setCount) }
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(CardDefaults.shape) // rounded bounds when clicking
-                            .combinedClickable(onLongClick = {
-                                if (!toBeDone) {
-                                    haptic.performHapticFeedback(
-                                        HapticFeedbackType.LongPress
-                                    )
-                                    dialogIsOpen = true
-                                }
-                            }, onClick = {
-                                haptic.performHapticFeedback(
-                                    HapticFeedbackType.TextHandleMove // FIXME: not right haptic
-                                )
-                                updateBottomBar(
-                                    projectedRep?.toIntOrNull() ?: repsInRow.toIntOrNull(),
-                                    projectedWeight?.toFloatOrNull() ?: weightInRow.toFloatOrNull()
-                                )
-                            })
-                    ) {
-                        FilledIconToggleButton(
-                            enabled = toBeDone,
-                            checked = setsDone == setCount,
-                            onCheckedChange = {}
-                        ) {
-                            Text((setCount + 1).toString())
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        val textColor = if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
-                        val unitString = if (imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
-
-                        // Reps section
-                        Text(
-                            // FIXME: overflow in other languages
-                            text = stringResource(R.string.reps) + ": ",
-                            color = textColor
-                        )
-                        Text(
-                            text = repsInRow,
-                            color = textColor,
-                            textDecoration = if (projectedRep != null && repsInRow != projectedRep) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                        if (projectedRep != null && repsInRow != projectedRep) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = textColor
-                            )
-                            Text(
-                                text = "$projectedRep ",
-                                color = textColor
-                            )
-                        } else {
-                            Text(
-                                text = " ",
-                                color = textColor,
-                            )
-                        }
-
-                        // Weight section
-                        Text(
-                            text = stringResource(R.string.weight) + ": ", // " Weight: "
-                            color = textColor
-                        )
-                        if (projectedWeight == null || weightInRow != "...") {
-                            Text(
-                                text = weightInRow,
-                                color = textColor,
-                                textDecoration = if (projectedWeight != null && weightInRow != projectedWeight) TextDecoration.LineThrough else TextDecoration.None
-                            )
-                        }
-                        if (projectedWeight != null && weightInRow != projectedWeight) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = textColor
-                            )
-                            Text(
-                                text = projectedWeight,
-                                color = textColor
-                            )
-                        }
-
-                        // Unit
-                        Text(
-                            text = " $unitString",
-                            color = textColor
-                        )
-                    }
-                }
-                AnimatedVisibility(
-                    visible = workoutStarted,
-                    enter = slideInVertically() + fadeIn(),
-                    exit = slideOutVertically() + fadeOut()
-                ) {
-                    TextButton(onClick = addSet) {
-                        Text(stringResource(R.string.add_set))
-                    }
-                }
-            }
-        }
+        CurrentExerciseSets(
+            exerciseRest = exerciseRest,
+            equipment = equipment,
+            tare = tare,
+            repsWeightRows = repsWeightRows,
+            setsDone = setsDone,
+            imperialSystem = imperialSystem,
+            workoutStarted = workoutStarted,
+            updateRowValues = updateRowValues,
+            updateTare = updateTare,
+            updateBottomBar = updateBottomBar,
+            toggleOtherEquipment = toggleOtherEquipment,
+            addSet = addSet,
+            deleteSet = deleteSet
+        )
         Spacer(modifier = Modifier.height(8.dp))
         if (records.isNotEmpty()) {
             Text(

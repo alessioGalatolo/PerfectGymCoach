@@ -138,6 +138,7 @@ dependencies {
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.androidx.adaptive.navigation3)
     ksp(libs.room.compiler)
 
     implementation(libs.hilt.android)

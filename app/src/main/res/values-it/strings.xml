@@ -831,4 +831,6 @@
     <string name="workout_delete_completed_set">Cancella questa serie</string>
     <string name="complete_set_generic_error">Non è stato possibile completare la serie per via di un errore sconosciuto</string>
     <string name="home_fap_create_plan">Nuovo piano</string>
+    <string name="no_programs_selected">Nessun programma selezionato</string>
+    <string name="no_programs_selected_info">Selezione un programma per vedere il suo contenuto qui</string>
 </resources>

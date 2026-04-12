@@ -2,9 +2,7 @@ package agdesigns.elevatefitness.navigation
 
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.ui.screens.workout.Workout
-import agdesigns.elevatefitness.ui.screens.workout.WorkoutViewModel
 import androidx.compose.animation.SharedTransitionScope
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 

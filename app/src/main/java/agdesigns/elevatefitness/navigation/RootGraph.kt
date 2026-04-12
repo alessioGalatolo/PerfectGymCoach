@@ -5,90 +5,36 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.ui.screens.workout.Workout
 import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigation3.rememberSupportingPaneSceneStrategy
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
+import kotlinx.coroutines.flow.MutableSharedFlow
 
-
-class DestinationsNavigator(startKey: Any) {
-
-    // Maintain a stack for each top level route
-    private var topLevelStacks : LinkedHashMap<Any, SnapshotStateList<Any>> = linkedMapOf(
-        startKey to mutableStateListOf(startKey)
-    )
-
-    // Expose the current top level route for consumers
-    var topLevelKey by mutableStateOf(startKey)
-        private set
-
-    // Expose the back stack so it can be rendered by the NavDisplay
-    val backStack = mutableStateListOf(startKey)
-
-    private fun updateBackStack() =
-        backStack.apply {
-            clear()
-            addAll(topLevelStacks.flatMap { it.value })
-        }
-
-    private fun addTopLevel(key: Any){
-        // If the top level doesn't exist, add it
-        if (topLevelStacks[key] == null){
-            topLevelStacks[key] = mutableStateListOf(key)
-        } else {
-            // Otherwise just move it to the end of the stacks
-            topLevelStacks.apply {
-                remove(key)?.let {
-                    put(key, it)
-                }
-            }
-        }
-        topLevelKey = key
-        updateBackStack()
-    }
-
-    fun navigate(key: Any){
-        if (key is TopLevelRoute) {
-            addTopLevel(key)
-            return
-        }
-        topLevelStacks[topLevelKey]?.add(key)
-        updateBackStack()
-    }
-
-    fun navigateUp(){
-        val removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
-        // If the removed key was a top level key, remove the associated top level stack
-        topLevelStacks.remove(removedKey)
-        topLevelKey = topLevelStacks.keys.last()
-        updateBackStack()
-    }
-}
 
 data class PrimaryActionContent(
     val icon: ImageVector,
@@ -99,12 +45,16 @@ data class PrimaryActionContent(
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalAnimationApi::class,
-    ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class
+    ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalMaterial3AdaptiveApi::class
 )
 @Composable
 fun RootDestinationGraph(startDestination: Any) {
     val state = rememberNavigationSuiteScaffoldState()
-    val destinationsNavigator = remember { DestinationsNavigator(startDestination) }
+    val navigationViewModel = hiltViewModel<NavigationViewModel, NavigationViewModel.Factory>(
+        creationCallback = { factory -> factory.create(startDestination) }
+    )
+    val destinationsNavigator = navigationViewModel.navigator
     LaunchedEffect(destinationsNavigator.topLevelKey) {
         if (destinationsNavigator.topLevelKey in BOTTOM_BAR_ROUTES)
             state.show()
@@ -116,7 +66,6 @@ fun RootDestinationGraph(startDestination: Any) {
     val primaryActionOrigin = remember { mutableStateOf<Any?>(null) }
     val navSuiteType =
         with(currentWindowAdaptiveInfo()) {
-            Log.d("RootGraph", "Window class is $windowSizeClass")
             when {
                 windowSizeClass.minWidthDp == 0 -> NavigationSuiteType.ShortNavigationBarCompact
                 windowSizeClass.minHeightDp == 0 -> NavigationSuiteType.ShortNavigationBarMedium
@@ -126,6 +75,14 @@ fun RootDestinationGraph(startDestination: Any) {
                 else -> NavigationSuiteType.WideNavigationRailExpanded
             }
         }
+    val listDetailStrategy = rememberListDetailSceneStrategy<Any>(
+        backNavigationBehavior = BackNavigationBehavior.PopUntilContentChange,
+    )
+    val supportingPaneSceneStrategy = rememberSupportingPaneSceneStrategy<Any>()
+    val refreshContentFlow = remember { MutableSharedFlow<Any>(
+        replay = 0,      // Number of values replayed to new subscribers
+        extraBufferCapacity = 10  // Buffer for slow subscribers
+    ) }
     NavigationSuiteScaffold(
         state = state,
         navigationSuiteType = navSuiteType,
@@ -149,7 +106,10 @@ fun RootDestinationGraph(startDestination: Any) {
                     label = { Text(stringResource(destination.label)) },
                     selected = selected,
                     onClick = {
-                        destinationsNavigator.navigate(destination)
+                        destinationsNavigator.navigateUpTo(destination)
+                        if (destinationsNavigator.backStack.last() == destination) {
+                            refreshContentFlow.tryEmit(destination)
+                        }
                     }
                 )
             }
@@ -236,8 +196,9 @@ fun RootDestinationGraph(startDestination: Any) {
             NavDisplay(
                 backStack = destinationsNavigator.backStack,
                 onBack = { destinationsNavigator.navigateUp() },
+                sceneStrategy = supportingPaneSceneStrategy.then(listDetailStrategy),
                 entryProvider = entryProvider {
-                    bottomBarEntryBuilder(destinationsNavigator, primaryActionOrigin, primaryActionContent)
+                    bottomBarEntryBuilder(destinationsNavigator, primaryActionOrigin, primaryActionContent, refreshContentFlow)
                     deepScreensEntryBuilder(destinationsNavigator)
                     workoutScreenEntryBuilder(destinationsNavigator)
                 },

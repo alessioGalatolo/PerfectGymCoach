@@ -45,7 +45,9 @@ fun AddProgram(
     viewModel: ProgramsViewModel = hiltViewModel()
 ) {
     val addProgramState by viewModel.state.collectAsState()
-    viewModel.onEvent(ProgramsEvent.InitProgramView(planId))
+    LaunchedEffect(planId) {
+        viewModel.onEvent(ProgramsEvent.InitProgramView(planId))
+    }
     InsertNameDialog(
         prompt = stringResource(R.string.new_program_prompt),
         dialogueIsOpen = addProgramState.openAddProgramDialog,

@@ -43,8 +43,6 @@ import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
-import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesEvent
-import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesViewModel
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
@@ -56,8 +54,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
@@ -272,7 +268,7 @@ fun SharedTransitionScope.AddProgramExercise(
                                     stringResource(R.string.exercise_image),
                                     Modifier
                                         .fillMaxWidth()
-                                        .height(with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } / 3)
+                                        .aspectRatio(21f / 9f)
                                         .align(Alignment.TopCenter)
                                         .sharedElement(
                                             rememberSharedContentState(

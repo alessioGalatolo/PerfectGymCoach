@@ -1,10 +1,12 @@
 package agdesigns.elevatefitness.navigation
 
+import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.add_exercise.AddExerciseDialog
 import agdesigns.elevatefitness.ui.screens.create_exercise.CreateExerciseDialog
 import agdesigns.elevatefitness.ui.screens.plans.AddWorkoutPlan
@@ -18,6 +20,10 @@ import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesByMuscle
 import agdesigns.elevatefitness.ui.screens.view_exercises.ViewExercises
 import agdesigns.elevatefitness.ui.screens.workout_recap.WorkoutRecap
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 
@@ -28,7 +34,7 @@ data class AddProgramDestination(
 
 data class AddWorkoutPlanDestination(
     val openDialogNow: Boolean = false,
-): TopLevelRoute
+)
 
 
 data object CustomizePlanGenerationDestination
@@ -86,12 +92,22 @@ data class WorkoutRecapDestination(
     val workoutId: Long
 )
 
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 context(sharedTransitionScope: SharedTransitionScope)
 fun EntryProviderScope<Any>.deepScreensEntryBuilder(
     navigator: DestinationsNavigator
 ) {
     with (sharedTransitionScope) {
-        entry<AddProgramDestination>(metadata = SlideTransition) {
+        entry<AddProgramDestination>(metadata = SlideTransition + ListDetailSceneStrategy.listPane(
+            detailPlaceholder = {
+                EmptyScreenInfo(
+                    Icons.Default.Description,
+                    R.string.no_programs_selected,
+                    titleRes = R.string.no_programs_selected,
+                    subtitleRes = R.string.no_programs_selected_info
+                )
+            }
+        )) {
             AddProgram(
                 navigator = navigator,
                 planId = it.planId,
@@ -109,7 +125,7 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 navigator = navigator
             )
         }
-        entry<AddProgramExerciseDestination>(metadata = SlideTransition) {
+        entry<AddProgramExerciseDestination>(metadata = SlideTransition + ListDetailSceneStrategy.detailPane()) {
             AddProgramExercise(
                 navigator = navigator,
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
@@ -123,7 +139,7 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 exerciseId = it.exerciseId
             )
         }
-        entry<ViewExercisesDestination>(metadata = SlideTransition) {
+        entry<ViewExercisesDestination>(metadata = SlideTransition + ListDetailSceneStrategy.extraPane()) {
             ViewExercises(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = navigator,
@@ -135,7 +151,7 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 returnAfterAdding = it.returnAfterAdding
             )
         }
-        entry<AddExerciseDialogDestination> {
+        entry<AddExerciseDialogDestination>(metadata = ListDetailSceneStrategy.extraPane()) {
             AddExerciseDialog(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = navigator,
@@ -148,14 +164,14 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 continueAdding = it.continueAdding
             )
         }
-        entry<CreateExerciseDialogDestination>(metadata = FullscreenDialogTransition) {
+        entry<CreateExerciseDialogDestination>(metadata = FullscreenDialogTransition + ListDetailSceneStrategy.extraPane()) {
             CreateExerciseDialog(
                 navigator = navigator,
                 muscleOrdinal = it.muscleOrdinal,
                 filterEquipment = it.filterEquipment
             )
         }
-        entry<ExercisesByMuscleDestination>(metadata = SlideTransition) {
+        entry<ExercisesByMuscleDestination>(metadata = SlideTransition + ListDetailSceneStrategy.extraPane()) {
             ExercisesByMuscle(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = navigator,

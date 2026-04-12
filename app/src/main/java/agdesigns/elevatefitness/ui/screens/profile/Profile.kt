@@ -23,6 +23,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ProfileDestination
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
@@ -35,6 +36,7 @@ import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -53,6 +55,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.flow.SharedFlow
 import java.time.ZonedDateTime
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -66,6 +69,7 @@ import kotlin.math.roundToInt
 )
 fun Profile(
     navigator: DestinationsNavigator,
+    refreshContentRequest: SharedFlow<Any>,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val profileState by viewModel.state.collectAsState()
@@ -74,6 +78,15 @@ fun Profile(
     val validUserYear by remember { derivedStateOf {
         userYear.toIntOrNull() != null && userYear.toInt() in 1900..ZonedDateTime.now().year
     }}
+    val lazyListState = rememberLazyListState()
+    LaunchedEffect(refreshContentRequest) {
+        refreshContentRequest.collect {
+            if (it == ProfileDestination) {
+                // this refresh is for us
+                lazyListState.animateScrollToItem(0)
+            }
+        }
+    }
     LaunchedEffect(profileState.userYear){
         userYear = profileState.userYear.toString()
     }
@@ -121,6 +134,7 @@ fun Profile(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         LazyColumn(
+            state = lazyListState,
             contentPadding = innerPadding.plus(PaddingValues(vertical = 16.dp)),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier

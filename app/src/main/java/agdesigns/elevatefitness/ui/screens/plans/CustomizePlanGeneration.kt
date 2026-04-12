@@ -18,7 +18,6 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ViewGeneratedPlanDestination
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.input.nestedscroll.nestedScroll

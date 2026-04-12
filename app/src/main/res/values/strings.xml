@@ -834,4 +834,6 @@
     <string name="workout_delete_completed_set">Delete this set</string>
     <string name="complete_set_generic_error">Couldn\'t complete the set due to an unknown error.</string>
     <string name="home_fap_create_plan">New plan</string>
+    <string name="no_programs_selected">No programs selected</string>
+    <string name="no_programs_selected_info">Select a program to see its contents here</string>
 </resources>
