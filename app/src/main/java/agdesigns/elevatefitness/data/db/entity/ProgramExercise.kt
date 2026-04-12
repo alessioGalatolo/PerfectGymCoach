@@ -8,8 +8,8 @@ import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
-import androidx.room.Relation
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -48,11 +48,13 @@ data class ProgramExercise (
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String = "",
-    @Deprecated("Ensure variationResKey was resolved before using it")
     val variation: String = "",
     @ColumnInfo(defaultValue = "")
     val variationResKey: String = "",
-    val supersetExercise: Long? = null
+    val supersetExercise: Long? = null,
+    @ColumnInfo(defaultValue = "0")
+    val overriddenDurationBased: Boolean,
+    val setTypes: List<SetType>? = null
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
@@ -71,29 +73,33 @@ data class UpdateExerciseSuperset(
 ) : Parcelable
 
 @Parcelize
+data class UpdateProgramExerciseSetTypes(
+    val programExerciseId: Long,
+    val setTypes: List<SetType>,
+) : Parcelable
+
+@Parcelize
 data class ProgramExerciseAndInfo (
     @PrimaryKey(autoGenerate = true) val programExerciseId: Long = 0L,
     val extProgramId: Long,
     val extExerciseId: Long,
     val orderInProgram: Int,
-    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
     val nameResKey: String, // key of the string resource
-    @Deprecated("Use descriptionResKey instead")
     val description: String,
     val descriptionResKey: String,
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String,
-    @Deprecated("Use variationResKey instead")
     val variation: String,
     val variationResKey: String,
     val supersetExercise: Long? = null,
-    @Deprecated("Use imageResKey instead")
     val image: Int,
     val imageResKey: String,
     val equipment: Equipment,
-    val userDefined: Boolean
+    val userDefined: Boolean,
+    val overriddenDurationBased: Boolean,
+    val setTypes: List<SetType>? = null
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)

@@ -20,6 +20,8 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.RemovePlan
+import agdesigns.elevatefitness.shared.SetType
+import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSets
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
@@ -27,30 +29,20 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
+import agdesigns.elevatefitness.data.db.entity.WorkoutRecordHealthId
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
+import agdesigns.elevatefitness.data.db.entity.getDuplicatePlanName
 import android.content.Intent
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.util.Log
-import androidx.annotation.AnyRes
 import androidx.annotation.DrawableRes
 import androidx.core.net.toUri
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.wearable.Asset
-import com.google.android.gms.wearable.PutDataMapRequest
-import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.time.ZonedDateTime
 import javax.inject.Inject
@@ -66,7 +58,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 @Singleton
 class Repository @Inject constructor(
     private val db: WorkoutDatabase,
-    @ApplicationContext  private val context: Context
+    @param:ApplicationContext  private val context: Context
 ) {
 
     /*
@@ -91,6 +83,36 @@ class Repository @Inject constructor(
     suspend fun renamePlan(workoutPlanRename: WorkoutPlanRename) =
         db.workoutPlanDao.updateName(workoutPlanRename)
 
+    suspend fun duplicatePlan(planId: Long) {
+        // this is a deep copy: copy plan, programs in plan and program exercise in program
+        val plan = getPlan(planId).first() ?: return
+        val newPlanId = addPlan(
+            plan.copy(
+                planId = 0L,
+                creationDate = ZonedDateTime.now(),
+                name = getDuplicatePlanName(plan.name)
+            )
+        )
+        val programs = getPrograms(planId).first()
+        for (program in programs) {
+            val newProgramId = addProgram(
+                program.copy(
+                    programId = 0L,
+                    extPlanId = newPlanId
+                )
+            )
+            val programExercises = getProgramExercises(program.programId).first()
+            for (programExercise in programExercises) {
+                addProgramExercise(
+                    programExercise.copy(
+                        programExerciseId = 0L,
+                        extProgramId = newProgramId
+                    )
+                )
+            }
+        }
+    }
+
     /*
      * WORKOUT PROGRAM
      */
@@ -114,10 +136,42 @@ class Repository @Inject constructor(
 
     fun getPrograms(planId: Long) = db.workoutProgramDao.getPrograms(planId)
 
+    fun getProgram(programId: Long) = db.workoutProgramDao.getProgram(programId)
+
     suspend fun addProgram(program: WorkoutProgram) = db.workoutProgramDao.insert(program)
 
     suspend fun renameProgram(workoutProgramRename: WorkoutProgramRename) =
         db.workoutProgramDao.updateName(workoutProgramRename)
+
+    suspend fun duplicateProgram(programId: Long) {
+        // this could be reused in duplicatePlan...
+        val program = getProgram(programId).first()
+        if (program.extPlanId != null) {
+            val programsToShift = getPrograms(program.extPlanId).first().filter {
+                it.orderInWorkoutPlan > program.orderInWorkoutPlan
+            }
+            val reorders = programsToShift.map {
+                WorkoutProgramReorder(
+                    it.programId, it.orderInWorkoutPlan + 1
+                )
+            }
+            reorderPrograms(reorders)
+        }
+        val newProgramId = addProgram(
+            program.copy(
+                programId = 0L,
+            )
+        )
+        val programExercises = getProgramExercises(program.programId).first()
+        for (programExercise in programExercises) {
+            addProgramExercise(
+                programExercise.copy(
+                    programExerciseId = 0L,
+                    extProgramId = newProgramId
+                )
+            )
+        }
+    }
 
     suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) =
         db.workoutProgramDao.updateOrder(workoutProgramReorder)
@@ -158,6 +212,24 @@ class Repository @Inject constructor(
     suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =
         db.programExerciseDao.updateOrder(programExerciseReorders)
 
+    suspend fun duplicateProgramExercise(programExerciseId: Long) {
+        val exercise = getProgramExercise(programExerciseId).first()
+        val exercisesToShift = getProgramExercises(exercise.extProgramId)
+            .first().filter {
+                it.orderInProgram > exercise.orderInProgram
+            }
+        val reorders = exercisesToShift.map {
+            ProgramExerciseReorder(
+                it.programExerciseId, it.orderInProgram + 1
+            )
+        }
+        reorderProgramExercises(reorders)
+        addProgramExercise(
+            exercise.copy(
+                programExerciseId = 0L,
+            )
+        )
+    }
     suspend fun deleteProgramExercise(programExerciseId: Long) =
         db.programExerciseDao.delete(programExerciseId)
 
@@ -209,6 +281,11 @@ class Repository @Inject constructor(
     suspend fun addWorkoutExercises(workoutExercises: List<WorkoutExercise>) =
         db.workoutExerciseDao.insert(workoutExercises)
 
+    fun getWorkoutExercise(workoutExerciseId: Long) =
+        db.workoutExerciseDao.getWorkoutExercise(workoutExerciseId).map {
+            resolveResources(it)
+        }
+
     fun getWorkoutExercises(workoutId: Long) =
         db.workoutExerciseDao.getWorkoutExercises(workoutId).map {
             it.map { exercise -> resolveResources(exercise) }
@@ -222,6 +299,16 @@ class Repository @Inject constructor(
 
     suspend fun updateWorkoutExerciseSets(workoutExerciseUpdateSets: WorkoutExerciseUpdateSets) =
         db.workoutExerciseDao.updateSets(workoutExerciseUpdateSets)
+
+    suspend fun updateWorkoutExerciseSetTypes(
+        workoutExerciseId: Long,
+        setTypes: List<SetType>
+    ) = db.workoutExerciseDao.updateSetTypes(
+        WorkoutExerciseUpdateSetTypes(
+            workoutExerciseId,
+            setTypes
+        )
+    )
 
     fun resolveResources(workoutExercise: WorkoutExercise): WorkoutExercise {
         val name = if (workoutExercise.userDefined)
@@ -246,6 +333,40 @@ class Repository @Inject constructor(
             variation = variation,
             description = description
         )
+    }
+
+    suspend fun shiftWorkoutExercisesToRight(workoutId: Long, fromPosition: Int) {
+        return shiftWorkoutExercises(workoutId, fromPosition, 1)
+    }
+
+    suspend fun shiftWorkoutExercisesToLeft(workoutId: Long, fromPosition: Int) {
+        return shiftWorkoutExercises(workoutId, fromPosition, -1)
+    }
+
+    private suspend fun shiftWorkoutExercises(workoutId: Long, fromPosition: Int, offset: Int) {
+
+        // we need to shift all the exercises after the insert position
+        val exs = getWorkoutExercises(workoutId).first()
+        val exsToShift = buildList {
+            // the "orderInProgram" of the last ex added to the list
+            var lastInsertedIndex = fromPosition
+            // we should assume that some orderInProgram may be missing
+            for (ex in exs.sortedBy { it.orderInProgram }) {
+                if (ex.orderInProgram > lastInsertedIndex + 1)
+                    break
+                if (ex.orderInProgram >= lastInsertedIndex) {
+                    add(ex)
+                    lastInsertedIndex = ex.orderInProgram
+                }
+            }
+        }
+        for (ex in exsToShift.reversed())
+            updateWorkoutExerciseNumber(
+                WorkoutExerciseReorder(
+                    ex.workoutExerciseId,
+                    ex.orderInProgram + offset
+                )
+            )
     }
 
     /*
@@ -285,6 +406,8 @@ class Repository @Inject constructor(
         }
 
     suspend fun deleteWorkoutExerciseRecords(workoutId: Long) = db.exerciseRecordDao.deleteByWorkout(workoutId)
+
+    suspend fun deleteExerciseRecord(recordId: Long) = db.exerciseRecordDao.delete(recordId)
 
     // FIXME: bad name
     fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) =
@@ -353,6 +476,14 @@ class Repository @Inject constructor(
     suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 
     suspend fun getWorkoutsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) = db.workoutRecordDao.getWorkoutsBetween(startDate, endDate)
+
+    suspend fun updateWorkoutRecordHealthId(workoutId: Long, healthRecordId: String) =
+        db.workoutRecordDao.updateHealthId(
+            WorkoutRecordHealthId(
+                workoutId,
+                healthRecordId
+            )
+        )
 
     /**
      * Calculate how many times a plan has been cycled through.
@@ -454,11 +585,8 @@ class Repository @Inject constructor(
         val options = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
-        fun Resources.debugName(@AnyRes id: Int) = runCatching { getResourceName(id) }.getOrNull()
-        Log.d("ResCheck", "resId=$resId name=${context.resources.debugName(resId)}")
         BitmapFactory.decodeResource(context.resources, resId, options)
 
-        // FIXME: is this enough res?
         options.inSampleSize = calculateInSampleSize(options, reqWidth = 200, reqHeight = 200)
         options.inJustDecodeBounds = false
 

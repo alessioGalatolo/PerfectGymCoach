@@ -9,8 +9,8 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.ServiceConnection
-import android.graphics.Bitmap
 import android.os.Build
 import android.os.IBinder
 import android.os.VibrationEffect
@@ -18,29 +18,28 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import androidx.annotation.StringRes
-import androidx.core.content.ContextCompat
-import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.jvm.java
 
-class TimerAlarmReceiver : BroadcastReceiver() {
+private val _hintAlarmFiredFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+class RestAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -60,16 +59,80 @@ class TimerAlarmReceiver : BroadcastReceiver() {
     }
 }
 
+
+class HintAlarmReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        // Vibrate pattern
+        vibrator.vibrate(
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK)
+        )
+        _hintAlarmFiredFlow.tryEmit(Unit)
+    }
+}
+
+fun Context.exactAlarmPermissionFlow(): Flow<Boolean> = callbackFlow {
+    // Only relevant on Android 12+
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        trySend(true) // Permission not required below S
+        close()
+        return@callbackFlow
+    }
+
+    val alarmManager = getSystemService(AlarmManager::class.java)
+
+    // Emit the current state immediately
+    trySend(alarmManager.canScheduleExactAlarms())
+
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) {
+                trySend(alarmManager.canScheduleExactAlarms())
+            }
+        }
+    }
+
+    val filter = IntentFilter(AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)
+    registerReceiver(receiver, filter)
+
+    // Unregister when the flow is cancelled
+    awaitClose {
+        unregisterReceiver(receiver)
+    }
+}
+
 @Singleton
 class WearRepository @Inject constructor(
     val permissionStateDataStore: PermissionStateDataStore,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
+    // WorkoutViewModel needs to register this (very suboptimal)
+    var getHealthData: () -> Workout.CompleteWorkout? = { null }
+
+    val hasExactAlarm = context.exactAlarmPermissionFlow()
+    val hintAlarmFiredFlow: SharedFlow<Unit> = _hintAlarmFiredFlow
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    fun scheduleVibrationAlarm(durationMillis: Long) {
-        cancelAlarm()
-        val intent = Intent(context, TimerAlarmReceiver::class.java)
+    fun scheduleHintAlarm(durationMillis: Long = 2000) {
+        cancelHintAlarm()
+        val intent = Intent(context, HintAlarmReceiver::class.java)
+        scheduleAlarm(intent, durationMillis)
+    }
+
+    fun scheduleRestAlarm(durationMillis: Long) {
+        cancelRestAlarm()
+        val intent = Intent(context, RestAlarmReceiver::class.java)
+        scheduleAlarm(intent, durationMillis)
+    }
+
+    private fun scheduleAlarm(intent: Intent, durationMillis: Long) {
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             1001,
@@ -77,16 +140,34 @@ class WearRepository @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // This will fire even in ambient mode!
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis() + durationMillis,
-            pendingIntent
-        )
+        val canScheduleExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+        if (canScheduleExact) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + durationMillis,
+                pendingIntent
+            )
+        } else {
+            Log.d("WearRepository", "Cannot schedule exact alarm")
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + durationMillis,
+                pendingIntent
+            )
+        }
     }
 
-    fun cancelAlarm() {
-        val intent = Intent(context, TimerAlarmReceiver::class.java)
+    fun cancelRestAlarm() {
+        val intent = Intent(context, RestAlarmReceiver::class.java)
+        cancelAlarm(intent)
+    }
+
+    fun cancelHintAlarm() {
+        val intent = Intent(context, HintAlarmReceiver::class.java)
+        cancelAlarm(intent)
+    }
+
+    private fun cancelAlarm(intent: Intent) {
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             1001,

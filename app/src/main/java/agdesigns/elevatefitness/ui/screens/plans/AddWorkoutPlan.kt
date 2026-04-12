@@ -81,22 +81,21 @@ fun AddWorkoutPlan(
     openDialogNow: Boolean = false,
     viewModel: PlansViewModel = hiltViewModel()
 ) {
-    // FIXME: two plans and some archived ones. If swapping current plan, archived button disappears
-    val addWorkoutState by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState()
     // rename plan
     InsertNameDialog(
         prompt = stringResource(R.string.rename_plan),
-        dialogueIsOpen = addWorkoutState.openChangeNameDialog,
+        dialogueIsOpen = state.openChangeNameDialog,
         toggleDialog = { viewModel.onEvent(PlansEvent.ToggleChangeNameDialog(null)) },
-        oldName = addWorkoutState.workoutPlanMapPrograms.firstOrNull {
-            it.first.planId == addWorkoutState.planToBeRenamed
+        oldName = state.workoutPlanMapPrograms.firstOrNull {
+            it.first.planId == state.planToBeRenamed
         }?.first?.name?.let { getPlanDisplayName(it) },
         insertName = {
-            if (addWorkoutState.planToBeRenamed != null) {
+            if (state.planToBeRenamed != null) {
                 viewModel.onEvent(
                     PlansEvent.RenameProgram(
                         WorkoutPlanRename(
-                            planId = addWorkoutState.planToBeRenamed!!,
+                            planId = state.planToBeRenamed!!,
                             name = it
                         )
                     )
@@ -106,7 +105,7 @@ fun AddWorkoutPlan(
     )
     InsertNameDialog(
         prompt = stringResource(R.string.new_plan_prompt),
-        dialogueIsOpen = addWorkoutState.openAddPlanDialogue,
+        dialogueIsOpen = state.openAddPlanDialogue,
         toggleDialog = { viewModel.onEvent(PlansEvent.TogglePlanDialogue) },
         insertName = {
             planName -> viewModel.onEvent(
@@ -171,7 +170,7 @@ fun AddWorkoutPlan(
                 )
             }
         }) { innerPadding ->
-        if (addWorkoutState.workoutPlanMapPrograms.isEmpty()) {
+        if (state.workoutPlanMapPrograms.isEmpty() && state.mainPlanMapPrograms == null) {
             // if you have no plans
             EmptyScreenInfo(
                 icon = Icons.Default.ContentPaste,
@@ -183,70 +182,186 @@ fun AddWorkoutPlan(
             }
         } else {
             // if you have some plans
+            val planArchivedString = stringResource(R.string.plan_archived)
+            val undoString = stringResource(R.string.undo)
+            val planSetAsCurrentString = stringResource(R.string.plan_set_as_current)
+            val positionalThresholdFun = SwipeToDismissBoxDefaults.positionalThreshold
             LazyColumn(
                 contentPadding = innerPadding,
                 verticalArrangement = Arrangement.spacedBy(
                     dimensionResource(R.dimen.grouped_cards_between_cards)
                 ),
             ) {
-                itemsIndexed(items = addWorkoutState.workoutPlanMapPrograms, key = { _, it -> it.first.planId })
-                { index, plan ->
-                    if (index == 0){
+                if (state.mainPlanMapPrograms != null) {
+                    item(key = "currentPlanHeader") {
                         Text(
                             stringResource(R.string.current_plan),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(
-                                vertical = dimensionResource(R.dimen.header_to_content_padding)
-                            ).padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
-
-                        )
-                    } else if (index == 1) {
-                        Column (Modifier.fillMaxWidth()){
-                            Text(
-                                stringResource(R.string.other_plans),
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(
+                            modifier = Modifier
+                                .padding(
                                     vertical = dimensionResource(R.dimen.header_to_content_padding)
-                                ).padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                                )
+                                .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                        )
+                    }
+                    item(key = state.mainPlanMapPrograms!!.first.planId) {
+                        // these should not be null but you never know
+                        val plan = state.mainPlanMapPrograms?.first ?: WorkoutPlan(
+                            name = "",
+                            creationDate = ZonedDateTime.now()
+                        )
+                        val programs = state.mainPlanMapPrograms?.second ?: emptyList()
+
+                        val swipeToDismissBoxState = remember(plan.planId, plan.archived) {
+                            SwipeToDismissBoxState(
+                                initialValue = SwipeToDismissBoxValue.Settled,
+                                positionalThreshold = {
+                                    positionalThresholdFun(it * 3)
+                                }
                             )
                         }
+
+                        PlanCard(
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = dimensionResource(R.dimen.screen_edge_padding)
+                                )
+                                .padding(bottom = 8.dp),
+                            secondaryCardPosition = null,
+                            navigator = navigator,
+                            plan = plan,
+                            programs = programs,
+                            canBeSwiped = false,
+                            swipeToDismissBoxState = swipeToDismissBoxState,
+                            showCantSwipeError = {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        cantSwipeErrorString
+                                    )
+                                }
+                            },
+                            onSwipe = {
+                                viewModel.onEvent(PlansEvent.ArchivePlan(plan.planId))
+                                scope.launch {
+                                    val snackbarResult = snackbarHostState.showSnackbar(
+                                        planArchivedString,
+                                        actionLabel = undoString,
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    when (snackbarResult) {
+                                        SnackbarResult.ActionPerformed -> {
+                                            viewModel.onEvent(PlansEvent.UnarchivePlan(plan.planId))
+                                        }
+
+                                        SnackbarResult.Dismissed -> {
+                                            /* Handle snackbar dismissed */
+                                        }
+                                    }
+                                }
+                            },
+                            swipeIcon = Icons.Default.Archive,
+                            swipeDescription = stringResource(R.string.archive_plan_action),
+                            swipeBackgroundColor = MaterialTheme.colorScheme.errorContainer,
+                            primaryActionIcon = Icons.Default.Favorite,
+                            primaryActionDescription = stringResource(R.string.current_plan),
+                            onPrimaryAction = {
+                                viewModel.onEvent(PlansEvent.SetCurrentPlan(plan.planId))
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(planSetAsCurrentString)
+                                }
+                            },
+                            trailingActions = listOf({ close ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.rename)) },
+                                    onClick = {
+                                        viewModel.onEvent(PlansEvent.ToggleChangeNameDialog(plan.planId))
+                                        close()
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Edit, contentDescription = null)
+                                    }
+                                )
+                            }, { close ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.duplicate)) },
+                                    onClick = {
+                                        scope.launch {
+                                            close()
+                                            viewModel.onEvent(PlansEvent.DuplicatePlan(plan.planId))
+                                        }
+                                    },
+                                    enabled = true,
+                                    leadingIcon = {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null)
+                                    }
+                                )
+                            }, { close ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.archive_plan_action)) },
+                                    onClick = {
+                                        scope.launch {
+                                            close()
+                                            swipeToDismissBoxState.dismiss(SwipeToDismissBoxValue.StartToEnd)
+                                            viewModel.onEvent(PlansEvent.ArchivePlan(plan.planId))
+                                        }
+                                    },
+                                    enabled = false,
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Archive, contentDescription = null)
+                                    }
+                                )
+                            })
+                        )
                     }
-                    val planArchivedString = stringResource(R.string.plan_archived)
-                    val undoString = stringResource(R.string.undo)
-                    val planSetAsCurrentString = stringResource(R.string.plan_set_as_current)
-                    val positionalThresholdFun = SwipeToDismissBoxDefaults.positionalThreshold
+                }
+                item(key = "generatePlanButton") {
+                    Column(Modifier.fillMaxWidth()) {
+                        GeneratePlanButton(navigator)
+                    }
+                }
+                if (state.workoutPlanMapPrograms.isNotEmpty()) {
+                    item(key = "otherPlansHeader") {
+                        Text(
+                            stringResource(R.string.other_plans),
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .padding(
+                                    vertical = dimensionResource(R.dimen.header_to_content_padding)
+                                )
+                                .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                        )
+                    }
+                }
+                itemsIndexed(
+                    items = state.workoutPlanMapPrograms,
+                    key = { _, it -> it.first.planId }
+                ) { index, plan ->
+
                     val swipeToDismissBoxState = remember(plan.first.planId, plan.first.archived) {
                         SwipeToDismissBoxState(
                             initialValue = SwipeToDismissBoxValue.Settled,
-                            positionalThreshold = if (index != 0) {
-                                positionalThresholdFun
-                            } else { it ->
-                                positionalThresholdFun(it * 3)
-                            }
+                            positionalThreshold = positionalThresholdFun
                         )
                     }
 
-                    var cardPosition: CardPositionInGroup? = null
-                    if (index != 0) {
-                        cardPosition = if (addWorkoutState.workoutPlanMapPrograms.size == 2) CardPositionInGroup.ONLY_ONE else
+                    val cardPosition =
+                        if (state.workoutPlanMapPrograms.size == 1)
+                            CardPositionInGroup.ONLY_ONE
+                        else
                             when (index) {
-                                1 -> CardPositionInGroup.FIRST
-                                addWorkoutState.workoutPlanMapPrograms.size - 1 -> CardPositionInGroup.LAST
+                                0 -> CardPositionInGroup.FIRST
+                                state.workoutPlanMapPrograms.size - 1 -> CardPositionInGroup.LAST
                                 else -> CardPositionInGroup.MIDDLE
                             }
-                    }
                     PlanCard(
-                        modifier = if (index == 0) Modifier.padding(
-                            horizontal = dimensionResource(R.dimen.screen_edge_padding)
-                        ).padding(bottom = 8.dp)
-                        else Modifier,
+                        modifier = Modifier.padding(horizontal = 8.dp),
                         secondaryCardPosition = cardPosition,
                         navigator = navigator,
                         plan = plan.first,
                         programs = plan.second,
-                        canBeSwiped = index != 0,
+                        canBeSwiped = true,
                         swipeToDismissBoxState = swipeToDismissBoxState,
                         showCantSwipeError = {
                             scope.launch {
@@ -277,13 +392,10 @@ fun AddWorkoutPlan(
                         swipeIcon = Icons.Default.Archive,
                         swipeDescription = stringResource(R.string.archive_plan_action),
                         swipeBackgroundColor = MaterialTheme.colorScheme.errorContainer,
-                        primaryActionIcon = if (index == 0) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        primaryActionDescription = if (index == 0)
-                            stringResource(R.string.current_plan)
-                        else
-                            stringResource(
-                                R.string.set_as_current_plan
-                            ),
+                        primaryActionIcon = Icons.Default.FavoriteBorder,
+                        primaryActionDescription = stringResource(
+                            R.string.set_as_current_plan
+                        ),
                         onPrimaryAction = {
                             viewModel.onEvent(PlansEvent.SetCurrentPlan(plan.first.planId))
                             scope.launch {
@@ -303,6 +415,20 @@ fun AddWorkoutPlan(
                             )
                         }, { close ->
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.duplicate)) },
+                                onClick = {
+                                    scope.launch {
+                                        close()
+                                        viewModel.onEvent(PlansEvent.DuplicatePlan(plan.first.planId))
+                                    }
+                                },
+                                enabled = true,
+                                leadingIcon = {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null)
+                                }
+                            )
+                        }, { close ->
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.archive_plan_action)) },
                                 onClick = {
                                     scope.launch {
@@ -311,31 +437,27 @@ fun AddWorkoutPlan(
                                         viewModel.onEvent(PlansEvent.ArchivePlan(plan.first.planId))
                                     }
                                 },
-                                enabled = index != 0,
+                                enabled = true,
                                 leadingIcon = {
                                     Icon(Icons.Default.Archive, contentDescription = null)
                                 }
                             )
-                        }
-                        )
+                        })
                     )
-                    if (index == 0) {
-                        Column (Modifier.fillMaxWidth()) {
-                            GeneratePlanButton(navigator)
-                        }
-                    }
                 }
-                if (addWorkoutState.archivedPlans.isNotEmpty()) {
-                    item {
-                        if (addWorkoutState.workoutPlanMapPrograms.size <= 1) {
+                if (state.archivedPlans.isNotEmpty()) {
+                    item(key = "archivedPlans") {
+                        if (state.workoutPlanMapPrograms.size <= 1) {
                             Column (Modifier.fillMaxWidth()){
                                 Text(
                                     stringResource(R.string.other_plans),
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(
-                                        top = dimensionResource(R.dimen.header_to_content_padding)
-                                    ).padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
+                                    modifier = Modifier
+                                        .padding(
+                                            top = dimensionResource(R.dimen.header_to_content_padding)
+                                        )
+                                        .padding(horizontal = dimensionResource(R.dimen.screen_edge_padding))
                                 )
                             }
                         } else {
@@ -347,9 +469,11 @@ fun AddWorkoutPlan(
                         }
                         // Archived chat card
                         Card(
-                            modifier = Modifier.padding(
-                                horizontal = dimensionResource(R.dimen.screen_edge_padding)
-                            ).padding(top = 8.dp),
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = dimensionResource(R.dimen.screen_edge_padding)
+                                )
+                                .padding(top = 8.dp),
 //                            colors = CardDefaults.cardColors(
 //                                containerColor = MaterialTheme.colorScheme.surface
 //                            ),
@@ -371,7 +495,7 @@ fun AddWorkoutPlan(
                         }
                     }
                 }
-                item{
+                item(key = "bottomSpacers"){
                     var finalSpacerSize = 80.dp + 16.dp // large fab size + its padding FIXME: not hardcode
                     finalSpacerSize += 16.dp
                     Spacer(Modifier.height(finalSpacerSize))
@@ -427,7 +551,7 @@ fun LazyItemScope.PlanCard(
         }
     }
     SwipeToDismissBox(
-        modifier = modifier,
+        modifier = modifier.animateItem(),
         state = dismissState,
         onDismiss = { direction ->
             if (direction != SwipeToDismissBoxValue.Settled) {
@@ -539,7 +663,6 @@ fun LazyItemScope.PlanCard(
                 )
             },
             modifier = Modifier
-                .animateItem()
                 .fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(

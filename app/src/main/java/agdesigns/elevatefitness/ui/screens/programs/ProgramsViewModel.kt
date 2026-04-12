@@ -10,6 +10,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +45,8 @@ sealed class ProgramsEvent{
 
     data class DeleteProgram(val programId: Long): ProgramsEvent()
 
+    data class DuplicateProgram(val programId: Long): ProgramsEvent()
+
 }
 
 @HiltViewModel
@@ -53,6 +56,8 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
 
     private var getProgramsJob: Job? = null
     private var getProgramExercisesJob: Job? = null
+
+    val reorderCompleted = Channel<Boolean>()
 
     fun onEvent(event: ProgramsEvent){
         when (event) {
@@ -67,6 +72,7 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                             programs = programs.sortedBy { prog -> prog.orderInWorkoutPlan },
                             planName = plan?.name ?: ""
                         ) }
+                        reorderCompleted.trySend(true)
                         getProgramExercisesJob?.cancel()
                         getProgramExercisesJob = this.launch {
                             repository.getProgramExercisesAndInfo(programs.map { prg -> prg.programId }).collect{ exList ->
@@ -131,6 +137,11 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
                             WorkoutProgramReorder(it.programId, it.orderInWorkoutPlan-1)
                         }
                     )
+                }
+            }
+            is ProgramsEvent.DuplicateProgram -> {
+                viewModelScope.launch {
+                    repository.duplicateProgram(event.programId)
                 }
             }
         }

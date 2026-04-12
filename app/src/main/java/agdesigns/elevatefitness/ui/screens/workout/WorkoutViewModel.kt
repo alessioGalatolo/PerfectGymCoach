@@ -7,6 +7,7 @@ import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
@@ -31,6 +32,8 @@ import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.data.WearDataLayerRegistry
+import com.google.protobuf.Empty
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -41,6 +44,7 @@ import java.time.ZonedDateTime
 import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
+import kotlin.collections.toList
 import kotlin.math.max
 import kotlin.math.min
 
@@ -82,15 +86,39 @@ data class SetDisplayRow(
     val reps: String,
     val weight: String,
     val toBeDone: Boolean,
+    val setType: SetType = SetType.NORMAL,
     // expectations based on current session
     val projectedReps: String? = null,
     val projectedWeight: String? = null
 )
 
+data class ModificationSuggestion(
+    val type: WorkoutRecord.ModificationType,
+    // keep this reference so that we can remove it from the possible suggestions on acceptance
+    val originalModification: WorkoutRecord.WorkoutModification,
+    val newWorkoutExercise: WorkoutExercise? = null,
+) {
+    fun toProto(): Workout.ProtoSuggestedModification = Workout.ProtoSuggestedModification.newBuilder()
+        .setType(type.toProto())
+        .setHasSuggestion(true)
+        .setTargetExerciseName(newWorkoutExercise?.name ?: "")
+        .setSourceId(originalModification.sourceWorkoutExerciseId
+            ?: originalModification.sourceProgramExerciseId
+            ?: originalModification.sourceExerciseId
+            ?: 0L
+        )
+        .setTargetId(
+            originalModification.targetWorkoutExerciseId ?:
+            originalModification.targetExerciseId ?: 0L
+        )
+        .build()
+}
+
 data class WorkoutPagesContent(
     val exercises: List<WorkoutExercise> = emptyList(),
     val exerciseRecords: List<List<ExerciseRecordAndEquipment>> = emptyList(),
     val ongoingRecords: List<ExerciseRecordAndEquipment?> = emptyList(),
+    val modificationsSuggestions: List<ModificationSuggestion?> = emptyList(),
     // values to display in each exercise set card e.g., completed sets will show input from user,
     // incomplete sets will show **historic data** and have projected reps/weight
     val exerciseRepsWeightRows: List<List<SetDisplayRow>> = emptyList(),
@@ -113,7 +141,6 @@ data class WorkoutState(
     val cantRequestNotificationAccess: Boolean = true,
     val programId: Long = 0L,
     val startDate: ZonedDateTime? = null,
-    val shutDown: Boolean = false,  // used when finishing workout, waits to save then exit
     val userTheme: Theme = Theme.SYSTEM,
     val incrementBodyweight: Float = 0f,
     val incrementBarbell: Float = 0f,
@@ -129,7 +156,8 @@ data class WorkoutState(
     // TODO: really not happy about this. Belongs to WorkoutPagesContent but it was not to be
     //  updated directly by the user by the tares are
     val tares: List<Float> = emptyList(),
-    val canPostPromotedNotifications: Boolean = false
+    val canPostPromotedNotifications: Boolean = false,
+    val lastWorkoutModifications: List<WorkoutRecord.WorkoutModification> = emptyList()
 )
 
 sealed class WorkoutEffect {
@@ -137,6 +165,7 @@ sealed class WorkoutEffect {
     data class ShowMessage(val message: Int): WorkoutEffect()
     data class ShowErrorAndBack(val message: Int): WorkoutEffect()
     data class AdvancePage(val page: Int): WorkoutEffect()
+    data object ShutDown: WorkoutEffect()
 }
 
 sealed class WorkoutEvent{
@@ -166,17 +195,21 @@ sealed class WorkoutEvent{
 
     data object DontRequestOngoingWorkoutNotification: WorkoutEvent()
 
+    data class AcceptSuggestedModification(val exerciseInWorkout: Int): WorkoutEvent()
+    data object ResetWaitingForExerciseAdd: WorkoutEvent()
+    data class AddExercise(val exerciseInWorkout: Int, val originalSize: Int): WorkoutEvent()
+
     data class ReplaceExercise(val exerciseInWorkout: Int, val originalSize: Int): WorkoutEvent()
 
     data class RemoveExercise(val exerciseInWorkout: Int): WorkoutEvent()
 
     data object AddSetToCurrentExercise: WorkoutEvent()
 
-    data class UpdateExerciseProbability(val exerciseInWorkout: Int, val probability: Int): WorkoutEvent()
-
     data class UpdateReps(val newValue: String): WorkoutEvent()
 
     data class UpdateWeight(val newValue: String): WorkoutEvent()
+
+    data class UpdateSetType(val page: Int, val set: Int, val type: SetType): WorkoutEvent()
 
     // same as above but updates the weight based on the equipment's default de/increment value
     data class AutoStepWeight(
@@ -213,6 +246,11 @@ class WorkoutViewModel @Inject constructor(
     private val phoneWorkoutRepository: PhoneWorkoutRepository,
     private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
 ): ViewModel() {
+    // when resuming workout, we want to scroll to latest exercise completed.
+    // set this flag to do it
+    private var resumeAndScrollToLatest = false
+    private val workoutModifications: MutableList<WorkoutRecord.WorkoutModification> = mutableListOf()
+    private var observeAddingExerciseJob: Job? = null
 
     // effects to happen in the UI
     private val _effects = Channel<WorkoutEffect>(capacity = Channel.BUFFERED)
@@ -237,19 +275,60 @@ class WorkoutViewModel @Inject constructor(
         _allRecords,
         workoutState.map{ it.imperialSystem }.distinctUntilChanged(),
         workoutState.map { it.workoutId }.distinctUntilChanged(),
-        workoutState.map { it.tares }.distinctUntilChanged()
-    ) { exercises, records, imperialSystem, workoutId, tares ->
+        workoutState.map { it.tares }.distinctUntilChanged(),
+        workoutState.map { it.lastWorkoutModifications }.distinctUntilChanged(),
+    ) { values ->
         /**
          * Glocal stuff for pages, precompute all so that pager can cache stuff
          * Should be recomputed if exercises, records, imperialSystem, or workoutId changes
          * Should NOT be recomputed if the only change is current page
          */
+        var exercises = values[0] as List<WorkoutExercise>
+        val records = values[1] as Map<Long, List<ExerciseRecordAndEquipment>>
+        val imperialSystem = values[2] as Boolean
+        val workoutId = values[3] as Long
+        val tares = values[4] as List<Float>
+        val modifications = values[5] as List<WorkoutRecord.WorkoutModification>
         val recordsAndOngoingForAllExercises = exercises.mapIndexed { index, exercise ->
             getUpdatedRecords(exercise, records, index, workoutId)
         }
         val recordsForAllExercises = recordsAndOngoingForAllExercises.map { it.first }
+            // filter out empty records
+            .map {
+                it.filter { it.reps.isNotEmpty() }
+            }
+        if (resumeAndScrollToLatest) {
+            val index = recordsAndOngoingForAllExercises.map { it.second }.indexOfLast {
+                it != null && it.reps.isNotEmpty()
+            }
+
+            if (index != -1) {
+                _effects.trySend(
+                    WorkoutEffect.AdvancePage(index)
+                )
+                resumeAndScrollToLatest = false
+            }
+        }
         val exerciseSetsDone = recordsAndOngoingForAllExercises.map {
             it.second?.reps?.size ?: 0
+        }
+        // check if we can "auto-add" sets to exercises (when user added one last time, re-propose)
+        exercises = exercises.zip(recordsForAllExercises).map { (ex, records) ->
+            val lastRecord = records.firstOrNull()
+            if (lastRecord?.reps?.size?.let { it > ex.reps.size } == true) {
+                val additionalReps = lastRecord.reps.slice(ex.reps.size until lastRecord.reps.size)
+                val additionalRest = lastRecord.rest.slice(ex.rest.size until lastRecord.rest.size)
+                val additionalSetTypes = List(additionalReps.size) { SetType.AWESOME }
+                ex.copy(
+                    reps = ex.reps.plus(additionalReps),
+                    rest = ex.rest.plus(additionalRest),
+                    setTypes = (ex.setTypes ?: List(ex.reps.size) { SetType.NORMAL })
+                        .plus(additionalSetTypes)
+                )
+
+            } else {
+                ex
+            }
         }
         val exerciseRepsWeights =
             exercises.zip(recordsAndOngoingForAllExercises).mapIndexed { index, (exercise, records) ->
@@ -257,19 +336,32 @@ class WorkoutViewModel @Inject constructor(
                 val allRecords = records.first
                 var lastOne: SetDisplayRow? = null
                 val tare = tares.getOrNull(index) ?: 0f
+                val isPyramid = exercise.reps
+                    .zip(exercise.setTypes ?: List(exercise.reps.size) { SetType.NORMAL})
+                    .filter {
+                        it.second == SetType.NORMAL
+                    }.distinctBy { it.first }.size != 1
+                val exerciseIncrement = when (exercise.equipment) {
+                    Equipment.BARBELL -> _workoutState.value.incrementBarbell
+                    Equipment.DUMBBELL -> _workoutState.value.incrementDumbbell
+                    Equipment.MACHINE -> _workoutState.value.incrementMachine
+                    Equipment.CABLES -> _workoutState.value.incrementCable
+                    else -> _workoutState.value.incrementBodyweight
+                }
                 exercise.reps.mapIndexed { setCount, reps ->
                     val toBeDone =
                         (ongoingRecord?.reps?.size ?: 0) <= setCount  // setsDone <= setCount
+                    val isUpcomingSet = ongoingRecord?.reps?.size == setCount
                     var projectedWeight: String? = null
                     var projectedReps: String? = null
                     val repsInRow: String
                     val weightInRow: String
-                    var tareDiff = 0f
+                    var barbellDiff = 0f
                     if (toBeDone) {
                         // user has not done this set
                         repsInRow = reps.toString()
                         val historicRecord = allRecords.firstOrNull()
-                        tareDiff = if (historicRecord != null && exercise.equipment == Equipment.BARBELL)
+                        barbellDiff = if (historicRecord != null && exercise.equipment == Equipment.BARBELL)
                             tare - historicRecord.tare
                         else
                             0f
@@ -280,31 +372,26 @@ class WorkoutViewModel @Inject constructor(
                                     historicRecord.weights.getOrNull(setCount) ?: historicRecord.weights.last(),
                                     imperialSystem
                                 ).toString()
-                            } /*else if (ongoingRecord != null) {
-                                // user is doing this exercise for the first time, place ongoing values
-                                maybeKgToLb(
-                                    ongoingRecord.weights.last(),
-                                    imperialSystem
-                                ).toString()
-                            }*/ else {
+                            } else {
                                 "..."
                             }
-                        if (ongoingRecord != null) {
-                            // should not project if no records
-                            projectedReps = computeNextRep(
-                                exercise,
-                                allRecords,
-                                (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
-                                setCount
-                            )?.toString()
-                            projectedWeight = computeNextWeight(
-                                allRecords,
-                                (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
-                                setCount,
-                                tareDiff,
-                                imperialSystem
-                            )?.toString()
-                        }
+                        projectedReps = computeNextRep(
+                            exercise,
+                            allRecords,
+                            (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
+                            setCount
+                        )?.toString()
+                        projectedWeight = computeNextWeight(
+                            recordsToDisplay = allRecords,
+                            ongoingLastWeight = (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
+                            setsDone = setCount,
+                            barbellDiff = barbellDiff,
+                            imperialSystem = imperialSystem,
+                            setTypes = exercise.setTypes,
+                            isUpcomingSet = isUpcomingSet,
+                            isPyramid = isPyramid,
+                            increment = exerciseIncrement
+                        )?.toString()
                     } else {
                         // if ongoingRecord is null, it should go in the other branch anyway
                         repsInRow =
@@ -324,10 +411,11 @@ class WorkoutViewModel @Inject constructor(
                         weight = weightInRow,
                         toBeDone = toBeDone,
                         projectedReps = projectedReps,
-                        projectedWeight = projectedWeight
+                        projectedWeight = projectedWeight,
+                        setType = exercise.setTypes?.getOrNull(setCount) ?: SetType.NORMAL
                     )
                     // result of mapping
-                    if (tareDiff == 0f) {
+                    if (barbellDiff == 0f) {
                         lastOne // no changes needed
                     } else {
                         lastOne.copy(
@@ -335,7 +423,7 @@ class WorkoutViewModel @Inject constructor(
                                 .projectedWeight
                                 ?.toFloatOrNull() ?: lastOne.weight.toFloatOrNull())
                                 // split by two as it is barbell
-                                ?.minus(tareDiff / 2)?.toString()
+                                ?.minus(barbellDiff / 2)?.toString()
                         )
                     }
                 }
@@ -346,6 +434,51 @@ class WorkoutViewModel @Inject constructor(
                 it.second,
             ) ?: 0f
         }
+        // compute modifications, this is a bit slow
+        val newSuggestions = List<ModificationSuggestion?>(exercises.size) { null }.toMutableList()
+        val modificationsByProgramExercise = modifications.groupBy { it.sourceProgramExerciseId }
+        val modificationsByExercise = modifications.groupBy { it.sourceExerciseId }
+        for (i in exercises.indices) {
+            val exercise = exercises.getOrNull(i)
+            if (exercise == null) {
+                newSuggestions[i] = null
+                continue
+            }
+            if (exercise.extProgramExerciseId != null) {
+                modificationsByProgramExercise[exercise.extProgramExerciseId]
+                    ?.firstOrNull()
+                    ?.let {
+                        val newWorkoutExercise = it.targetWorkoutExerciseId?.let {
+                            repository.getWorkoutExercise(it).first()
+                        }
+                        newSuggestions[i] = ModificationSuggestion(
+                            type = it.modificationType,
+                            originalModification = it,
+                            newWorkoutExercise = newWorkoutExercise
+                        )
+                        continue
+                    }
+            }
+            if (exercise.extProgramExerciseId == null) {
+                modificationsByExercise[exercise.extExerciseId]
+                    ?.firstOrNull()
+                    ?.let {
+                        newSuggestions[i] = ModificationSuggestion(
+                            type = it.modificationType,
+                            originalModification = it,
+                            newWorkoutExercise = it.targetWorkoutExerciseId?.let {
+                                repository.getWorkoutExercise(it).first()
+                            }
+                        )
+                    }
+            }
+        }
+        _currentExerciseState.update {
+            it.copy(
+                // very bad proxy to make sure we have just processed the real values
+                isLoading = exercises.isEmpty()
+            )
+        }
         WorkoutPagesContent(
             exercises = exercises,
             exerciseRecords = recordsForAllExercises,
@@ -354,7 +487,8 @@ class WorkoutViewModel @Inject constructor(
             suggestedTares = exercisesTares,
             imperialSystem = imperialSystem,
             workoutId = workoutId,
-            ongoingRecords = recordsAndOngoingForAllExercises.map { it.second }
+            ongoingRecords = recordsAndOngoingForAllExercises.map { it.second },
+            modificationsSuggestions = newSuggestions
         )
     }.stateIn(
         viewModelScope,
@@ -367,6 +501,7 @@ class WorkoutViewModel @Inject constructor(
     private var startWorkoutJob: Job? = null
     private var pageChangeJob: Job? = null
     private var retrieveExercisesJob: Job? = null
+    private var completeSetJob: Job? = null
 
     override fun onCleared() {
         super.onCleared()
@@ -383,6 +518,8 @@ class WorkoutViewModel @Inject constructor(
         // listens to relevant changes and sends them to wear
         checkWorkoutDataChangesForWear()
         observeSetCompletionsFromWear()
+        observeWorkoutCompletionsFromWear()
+        observeAcceptedModificationsFromWear()
 
         /*
           Compute stuff specific to current exercise (should be recomputed if any value changes)
@@ -390,7 +527,7 @@ class WorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 _currentPage,
-                pagesContent
+                pagesContent,
             ) { page, pagesContent ->
                 val currentExercise = pagesContent.exercises.getOrNull(page)
                 if (currentExercise == null) {
@@ -470,8 +607,8 @@ class WorkoutViewModel @Inject constructor(
                     setsDonePerExercise = exerciseSetsDone,
                     currentExercise = currentPage,
                     restTimeSecs = restTime,
-                    restTimestamp = restTimestamp?.toInstant()?.toEpochMilli()
-                        ?: (Date().time + (restTime ?: 0L) * 1000L),
+                    restTimestamp = restTimestamp?.toInstant()?.toEpochMilli() ?:
+                        (Date().time + (restTime ?: 0L) * 1000L),
                     totalRest = totalRest,
                     workoutStarted = workoutStarted
                 )
@@ -516,17 +653,6 @@ class WorkoutViewModel @Inject constructor(
                         }
 
                         _workoutState.update { it.copy(programId = programId) }
-                        // get records to gather last workout's intensity
-                        val records =
-                            repository.getWorkoutRecordsByProgram(programId).first()
-                        if (records.isNotEmpty()) {
-                            _workoutState.update { state ->
-                                state.copy(
-                                    lastWorkoutIntensity = records.sortedBy { it.startDate }
-                                        .last().intensityPercent
-                                )
-                            }
-                        }
                         // get workout id
                         var workoutId = 0L
                         _workoutState.update {
@@ -558,7 +684,9 @@ class WorkoutViewModel @Inject constructor(
                                 reps = it.reps.toList(),
                                 rest = it.rest,
                                 supersetExercise = it.supersetExercise,
-                                userDefined = it.userDefined
+                                userDefined = it.userDefined,
+                                overriddenDurationBased = it.overriddenDurationBased,
+                                setTypes = it.setTypes
                             )
                         }
                         // add workout exercises to db
@@ -566,6 +694,24 @@ class WorkoutViewModel @Inject constructor(
                     }
                     if (event.quickStart) {
                         startWorkout()
+                    }
+                    // get records to gather last workout's intensity
+                    val records =
+                        repository.getWorkoutRecordsByProgram(workoutState.value.programId).first()
+                    if (records.isNotEmpty()) {
+                        _workoutState.update { state ->
+                            val lastRecord = records
+                                // only consider workouts that were completed
+                                .filter{ it.durationSeconds > 0L }
+                                .sortedBy { it.startDate }
+                                .lastOrNull()
+                            if (lastRecord == null)
+                                return@update state
+                            state.copy(
+                                lastWorkoutIntensity = lastRecord.intensityPercent,
+                                lastWorkoutModifications = lastRecord.workoutModifications
+                            )
+                        }
                     }
                     startRetrievingExercises()
                 }
@@ -598,31 +744,63 @@ class WorkoutViewModel @Inject constructor(
                 }
             }
             is WorkoutEvent.CompleteSet -> {
-                // TODO: check if superset and if
-                if (currentExerciseState.value.repsBottomBar.toUIntOrNull() == null ||
-                    currentExerciseState.value.weightBottomBar.toFloatOrNull() == null) {
-                    // should not happen
-                    Log.d("WorkoutViewModel", "Tried to complete a set with invalid weight or reps: $currentExerciseState")
-                    _effects.trySend(WorkoutEffect.ShowMessage(R.string.complete_set_fail))
-                    return
-                }
-
-                val exerciseRest = currentExerciseState.value.currentExercise
-                    ?.rest
-                    ?.getOrNull(currentExerciseState.value.setsDone)
-                    ?.toLong() ?: 0L
-                val exercise = currentExerciseState.value.currentExercise
-                val restTimestamp = ZonedDateTime.now().plusSeconds(exerciseRest)
                 viewModelScope.launch {
+                    startWorkoutJob?.join()
+                    if (currentExerciseState.value.repsBottomBar.toUIntOrNull() == null ||
+                        currentExerciseState.value.weightBottomBar.toFloatOrNull() == null) {
+                        // should not happen
+                        Log.d("WorkoutViewModel", "Tried to complete a set with invalid weight or reps: $currentExerciseState")
+                        _effects.trySend(WorkoutEffect.ShowMessage(R.string.complete_set_fail))
+                        return@launch
+                    }
+
+                    val exercise = currentExerciseState.value.currentExercise
+                    var exerciseRest = exercise
+                        ?.rest
+                        ?.getOrNull(currentExerciseState.value.setsDone)
+                        ?.toLong() ?: 0L
+                    val nextExercise = pagesContent.value.exercises.getOrNull(
+                        _currentPage.value + 1
+                    )
+                    val prevExercise = pagesContent.value.exercises.getOrNull(
+                        _currentPage.value - 1
+                    )
+                    // if superset with next exercise, skip rest
+                    if (exercise?.supersetExercise != null && exercise.supersetExercise == nextExercise?.extProgramExerciseId) {
+                        exerciseRest = 0L
+                    }
+                    val restTimestamp = ZonedDateTime.now().plusSeconds(exerciseRest)
+                    // if sets done == total sets, scroll to next if any
+                    val setsDone = currentExerciseState.value.setsDone
+                    val totalSets = currentExerciseState.value.currentExercise?.reps?.size ?: 0
+                    val shouldAdvanceEx = false
+                    // the logic below scrolls to next exercise when completing one but I don't like it
+                    // imagine e.g., user wants to add a set
+//                    val shouldAdvanceEx = setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)
+                    // check if superset
+                    val exerciseToScrollTo = if (exercise?.supersetExercise != null && exercise.supersetExercise == prevExercise?.extProgramExerciseId) {
+                        if (shouldAdvanceEx)
+                            _currentPage.value + 1
+                        else
+                            _currentPage.value - 1
+                    } else if (exercise?.supersetExercise != null && exercise.supersetExercise == nextExercise?.extProgramExerciseId) {
+                        _currentPage.value + 1
+                    } else if (shouldAdvanceEx) {
+                        _currentPage.value + 1
+                    } else
+                        _currentPage.value
+                    // complete first, then send to watch (will take time)
+                    completeSet(
+                        exercise = exercise,
+                        exerciseRest = exerciseRest,
+                        reps = currentExerciseState.value.repsBottomBar.toInt(),
+                        weight = currentExerciseState.value.weightBottomBar.toFloat(),
+                        restTimestamp = restTimestamp
+                    )
+                    _effects.trySend(
+                        WorkoutEffect.AdvancePage(exerciseToScrollTo)
+                    )
                     try {
-                        // if sets done == total sets, scroll to next if any
-                        val setsDone = currentExerciseState.value.setsDone
-                        val totalSets = currentExerciseState.value.currentExercise?.reps?.size ?: 0
-                        val exerciseToScrollTo = if (setsDone == totalSets - 1 && (_currentPage.value+1 < pagesContent.value.exercises.size)) {
-                            _currentPage.value+1
-                        } else {
-                            _currentPage.value
-                        }
                         if (phoneWorkoutRepository.apiIsAvailable()) {
                             phoneToWatchService.scrollToExercise(
                                 Workout.ExerciseToScrollTo.newBuilder()
@@ -640,60 +818,28 @@ class WorkoutViewModel @Inject constructor(
                         Log.e("WorkoutViewModel", "Failed to set rest/scroll to exercise on watch", e)
                     }
                 }
-                completeSet(
-                    exercise = exercise,
-                    exerciseRest = exerciseRest,
-                    reps = currentExerciseState.value.repsBottomBar.toInt(),
-                    weight = currentExerciseState.value.weightBottomBar.toFloat(),
-                    restTimestamp = restTimestamp
-                )
             }
             is WorkoutEvent.FinishWorkout -> {
                 viewModelScope.launch {
-                    val exercises = repository.getWorkoutExerciseRecordsAndInfo(workoutState.value.workoutId).first().distinct()
-                    val workoutTimeMillis = currentExerciseState.value.currentTime.toInstant().toEpochMilli() - workoutState.value.startDate!!.toInstant().toEpochMilli()
-                    val workoutTimeSeconds = workoutTimeMillis / 1000
-                    // event.workoutIntensity is 0-100, need to convert within reasonable met values
-                    val intensityMet = getMetFromIntensity(event.workoutIntensity)
-                    repository.completeWorkoutRecord(
-                        WorkoutRecordFinish(
-                            workoutId = workoutState.value.workoutId,
-                            intensity = WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY, // deprecated
-                            intensityPercent = event.workoutIntensity,
-                            durationSeconds = workoutTimeSeconds,
-                            volume = exercises.sumOf {
-                                computeVolume(
-                                    it.weights,
-                                    it.reps,
-                                    it.tare,
-                                    it.equipment
-                                ).toDouble() },
-                            activeTimeSeconds = max(0L, workoutTimeSeconds -
-                                    exercises.sumOf { it.rest.sum() }),
-                            calories = intensityMet *
-                                    preferences.getUserWeight().first() *
-                                    workoutTimeSeconds / 3600
-                        )
+                    val healthData = try {
+                        phoneToWatchService.getHealthData(Empty.newBuilder().build())
+                    } catch (e: Exception) {
+                        Log.e("WorkoutViewModel", "Failed to get health data from watch", e)
+                        Workout.CompleteWorkout.newBuilder()
+                            .setCalories(0f)
+                            .setAvgHeartRate(0)
+                            .setMaxHeartRate(0)
+                            .setMinHeartRate(0)
+                            .build()
+                    }
+                    finishWorkout(
+                        intensity = event.workoutIntensity,
+                        calories = if (healthData.calories != 0f) healthData.calories else null,
+                        maxHeartRate = if (healthData.maxHeartRate != 0) healthData.maxHeartRate else null,
+                        minHeartRate = if (healthData.minHeartRate != 0) healthData.minHeartRate else null,
+                        avgHeartRate = if (healthData.avgHeartRate != 0) healthData.avgHeartRate else null,
+                        heartRates = if (healthData.heartRatesCount > 0) healthData.heartRatesList.toList() else null
                     )
-                    val planPrograms = repository.getPlanMapPrograms().first().entries.find {
-                        it.value.find { it1 -> it1.programId == workoutState.value.programId } != null
-                    }!!
-                    val currentProgram = planPrograms.value.find {
-                        it.programId == workoutState.value.programId
-                    }!!
-                    /*
-                    scenario: user does not do the upcoming workout, does another one instead
-                        Now, after he finishes, should the next workout be the old upcoming one
-                        or the one following the workout the user actually do?
-
-                        Currently the latter
-                     */
-                    repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
-                        planId = planPrograms.key.planId,
-                        currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
-                    ))
-                    preferences.setCurrentWorkout(null)
-                    _workoutState.update { it.copy(shutDown = true) }
                 }
             }
             is WorkoutEvent.CancelWorkout -> {
@@ -753,34 +899,65 @@ class WorkoutViewModel @Inject constructor(
                 tares[_currentPage.value] = event.newValue
                 _workoutState.update { it.copy(tares = tares) }
             }
+            is WorkoutEvent.UpdateSetType -> {
+                val exercise = pagesContent.value.exercises
+                    .getOrNull(event.page)
+                val exerciseSetTypes = exercise?.setTypes
+                val newTypes = exerciseSetTypes?.toMutableList() ?: mutableListOf()
+                val currentType = newTypes.getOrElse(event.set) { SetType.NORMAL }
+                var setToChange = event.set
+                if (currentType == SetType.WARMUP && event.type != SetType.WARMUP) {
+                    // if trying to remove a warmup set that is followed by warmup sets, change the last one instead
+                    val lastIndex = newTypes.lastIndexOf(SetType.WARMUP)
+                    if (lastIndex != -1) {
+                        setToChange = lastIndex
+                    }
+                }
+                if (newTypes.size <= setToChange) {
+                    newTypes.add(event.type)
+                } else {
+                    newTypes[setToChange] = event.type
+                }
+                if (exercise != null) {
+                    viewModelScope.launch {
+                        repository.updateWorkoutExerciseSetTypes(
+                            workoutExerciseId = exercise.workoutExerciseId,
+                            setTypes = newTypes
+                        )
+                    }
+                }
+            }
             is WorkoutEvent.EditSetRecord -> {
                 viewModelScope.launch {
                     val record = currentExerciseState.value.currentExerciseOngoingRecord
 
                     if (record == null) {
                         // There is a problem
-                        Log.d("WorkoutViewModel", "Tried to edit a record that does not exist")
-                    } else {
-                        val reps = record.reps.toMutableList()
-                        val weights = record.weights.toMutableList()
-                        reps[event.set] = event.reps
-                        weights[event.set] = event.weight
-                        repository.addExerciseRecord(
-                            ExerciseRecord(
-                                recordId = record.recordId,
-                                extExerciseId = record.extExerciseId,
-                                extWorkoutId = record.extWorkoutId,
-                                exerciseInWorkout = record.exerciseInWorkout,
-                                date = record.date,
-                                reps = reps,
-                                weights = weights,
-                                variation = record.variation,
-                                variationResKey = record.variationResKey,
-                                rest = record.rest,
-                                tare = record.tare
-                            )
-                        )
+                        Log.e("WorkoutViewModel", "Tried to edit a record that does not exist")
+                        return@launch
                     }
+                    val reps = record.reps.toMutableList()
+                    val weights = record.weights.toMutableList()
+                    reps[event.set] = event.reps
+                    weights[event.set] = event.weight
+                    repository.addExerciseRecord(
+                        ExerciseRecord(
+                            recordId = record.recordId,
+                            extExerciseId = record.extExerciseId,
+                            extWorkoutId = record.extWorkoutId,
+                            extWorkoutExerciseId = record.extWorkoutExerciseId,
+                            exerciseInWorkout = record.exerciseInWorkout,
+                            date = record.date,
+                            reps = reps,
+                            weights = weights,
+                            variation = record.variation,
+                            variationResKey = record.variationResKey,
+                            rest = record.rest,
+                            tare = record.tare,
+                            overriddenDurationBased = record.overriddenDurationBased,
+                            setTypes = record.setTypes
+                        )
+                    )
                 }
             }
             is WorkoutEvent.DeleteSetRecord -> {
@@ -789,21 +966,27 @@ class WorkoutViewModel @Inject constructor(
 
                     if (record == null) {
                         // There is a problem
-                        Log.d("WorkoutViewModel", "Tried to edit a record that does not exist")
+                        Log.e("WorkoutViewModel", "Tried to edit a record that does not exist")
+                        return@launch
+                    }
+                    val reps = record.reps.toMutableList()
+                    val weights = record.weights.toMutableList()
+                    if (event.set >= reps.size || event.set >= weights.size) {
+                        Log.e("WorkoutViewModel", "Tried to delete a set that does not exist")
+                        return@launch
+                    }
+                    reps.removeAt(event.set)
+                    weights.removeAt(event.set)
+                    if (reps.isEmpty()) {
+                        // delete record instead
+                        repository.deleteExerciseRecord(record.recordId)
                     } else {
-                        val reps = record.reps.toMutableList()
-                        val weights = record.weights.toMutableList()
-                        if (event.set >= reps.size || event.set >= weights.size) {
-                            Log.d("WorkoutViewModel", "Tried to delete a set that does not exist")
-                            return@launch
-                        }
-                        reps.removeAt(event.set)
-                        weights.removeAt(event.set)
                         repository.addExerciseRecord(
                             ExerciseRecord(
                                 recordId = record.recordId,
                                 extExerciseId = record.extExerciseId,
                                 extWorkoutId = record.extWorkoutId,
+                                extWorkoutExerciseId = record.extWorkoutExerciseId,
                                 exerciseInWorkout = record.exerciseInWorkout,
                                 date = record.date,
                                 reps = reps,
@@ -811,40 +994,145 @@ class WorkoutViewModel @Inject constructor(
                                 variation = record.variation,
                                 variationResKey = record.variationResKey,
                                 rest = record.rest,
-                                tare = record.tare
+                                tare = record.tare,
+                                overriddenDurationBased = record.overriddenDurationBased,
+                                setTypes = record.setTypes
                             )
                         )
                     }
                 }
             }
-            is WorkoutEvent.ReplaceExercise -> {
+            is WorkoutEvent.AcceptSuggestedModification -> {
+                acceptModification(event.exerciseInWorkout)
+            }
+            is WorkoutEvent.ResetWaitingForExerciseAdd -> {
+                /*
+                This is used to check if user added an exercise to the workout; flow is:
+                - user taps add and navigates to adding exercise
+                - observeAddingExerciseJob checks if db gets updated
+                - once screen is resumed, ResetWaitingForExerciseAdd gets called
+                - wait for db to write and possibly observeAddingExerciseJob to finish
+                    - if doesn't finish in 2000ms we assume the user did not add an exercise
+                      (and just went back), thus terminate job
+                 */
                 viewModelScope.launch {
+                    // FIXME: currently waiting for db to update but can be variable
+                    //  should change overall logic to navigating back with result
+                    delay(2000)
+                    observeAddingExerciseJob?.cancel()
+                    observeAddingExerciseJob = null
+                }
+            }
+            is WorkoutEvent.AddExercise -> {
+                observeAddingExerciseJob?.cancel()
+                val ex = pagesContent.value.exercises.getOrNull(event.exerciseInWorkout)
+                observeAddingExerciseJob = viewModelScope.launch {
+                    val pendingModification = ex?.let {
+                        WorkoutRecord.WorkoutModification(
+                            sourceProgramExerciseId = it.extProgramExerciseId,
+                            sourceExerciseId = it.extExerciseId,
+                            sourceWorkoutExerciseId = it.workoutExerciseId,
+                            targetWorkoutExerciseId = null,
+                            targetExerciseId = null,
+                            modificationType = WorkoutRecord.ModificationType.EXERCISE_ADDED
+                        )
+                    }
+                    // wait for exercise to be added to possible scroll position
+                    pagesContent.mapNotNull { stateFlow ->
+                        if (stateFlow.exercises.size > event.originalSize) {
+                            stateFlow.exercises.getOrNull(event.exerciseInWorkout+1)
+                        } else {
+                            null
+                        }
+                    }
+                    .first()
+                    .let { exercise ->
+                        _effects.trySend(
+                            WorkoutEffect.AdvancePage(
+                                event.exerciseInWorkout+1
+                            )
+                        )
+                        pendingModification?.let {
+                            workoutModifications.add(
+                                it.copy(
+                                    targetWorkoutExerciseId = exercise.workoutExerciseId,
+                                    targetExerciseId = exercise.extExerciseId
+                                )
+                            )
+                        }
+
+                    }
+
+                }
+            }
+            is WorkoutEvent.ReplaceExercise -> {
+                observeAddingExerciseJob?.cancel()
+                val ex = pagesContent.value.exercises.getOrNull(event.exerciseInWorkout)
+                // wait for exercise to be added, then remove old one
+                observeAddingExerciseJob = viewModelScope.launch {
+                    val pendingModification = ex?.let {
+                        WorkoutRecord.WorkoutModification(
+                            sourceProgramExerciseId = it.extProgramExerciseId,
+                            sourceExerciseId = it.extExerciseId,
+                            sourceWorkoutExerciseId = it.workoutExerciseId,
+                            targetWorkoutExerciseId = null,
+                            targetExerciseId = null,
+                            modificationType = WorkoutRecord.ModificationType.EXERCISE_REPLACED
+                        )
+                    }
                     pagesContent.mapNotNull { stateFlow ->
                             if (stateFlow.exercises.size > event.originalSize) {
-                                stateFlow.exercises.last().workoutExerciseId
+                                stateFlow.exercises.last()
                             } else {
                                 null
                             }
                         }
                         .first() // Get the first non-null emission (meaning the condition is met)
-                        .let { lastWorkoutExerciseId ->
+                        .let { newEx ->
                             // Now that the condition is met, perform your repository operations
                             repository.deleteWorkoutExercise(
                                 pagesContent.value.exercises[event.exerciseInWorkout].workoutExerciseId
                             )
                             repository.updateWorkoutExerciseNumber(
                                 WorkoutExerciseReorder(
-                                    lastWorkoutExerciseId,
+                                    newEx.workoutExerciseId,
                                     event.exerciseInWorkout
                                 )
                             )
+                            pendingModification?.let {
+                                workoutModifications.add(
+                                    it.copy(
+                                        targetWorkoutExerciseId = newEx.workoutExerciseId,
+                                        targetExerciseId = newEx.extExerciseId
+                                    )
+                                )
+                            }
                         }
                 }
             }
             is WorkoutEvent.RemoveExercise -> {
+                val ex = pagesContent.value.exercises.getOrNull(event.exerciseInWorkout)
                 viewModelScope.launch {
+                    if (ex == null) {
+                        Log.w("WorkoutViewModel", "Tried to remove an exercise that does not exist")
+                        return@launch
+                    }
+                    workoutModifications.add(
+                        WorkoutRecord.WorkoutModification(
+                            sourceProgramExerciseId = ex.extProgramExerciseId,
+                            sourceExerciseId = ex.extExerciseId,
+                            sourceWorkoutExerciseId = ex.workoutExerciseId,
+                            targetWorkoutExerciseId = null,
+                            targetExerciseId = null,
+                            modificationType = WorkoutRecord.ModificationType.EXERCISE_SKIPPED
+                        )
+                    )
                     repository.deleteWorkoutExercise(
-                        pagesContent.value.exercises[event.exerciseInWorkout].workoutExerciseId
+                        ex.workoutExerciseId
+                    )
+                    repository.shiftWorkoutExercisesToLeft(
+                        workoutState.value.workoutId,
+                        event.exerciseInWorkout
                     )
                 }
             }
@@ -852,27 +1140,6 @@ class WorkoutViewModel @Inject constructor(
                 _workoutState.update { it.copy(
                     otherEquipmentDialogOpen = !workoutState.value.otherEquipmentDialogOpen
                 ) }
-            }
-
-            is WorkoutEvent.UpdateExerciseProbability -> {
-                val exerciseId = pagesContent.value.exercises[event.exerciseInWorkout].extExerciseId
-                viewModelScope.launch {
-                    var probability = repository.getExercise(exerciseId).first().probability
-                    when (event.probability) {
-                        1 -> probability *= 1.1
-                        2 -> probability = (probability / 0.9) * 1.1
-                        -1 -> probability *= 0.9
-                        -2 -> probability = (probability / 1.1) * 0.9
-                    }
-                    if (probability <= 0.0)
-                        probability = 0.01
-                    else if (probability > 2.0)
-                        probability = 2.0
-                    repository.updateExerciseProbability(
-                        exerciseId,
-                        probability
-                    )
-                }
             }
 
             is WorkoutEvent.UpdateCurrentPage -> {
@@ -898,6 +1165,86 @@ class WorkoutViewModel @Inject constructor(
         }
     }
 
+    private fun acceptModification(index: Int) {
+        val modification = pagesContent.value.modificationsSuggestions.getOrNull(
+            index
+        )
+        if (modification == null) {
+            Log.e("WorkoutViewModel", "Tried to accept a modification that does not exist with index: $index")
+            return
+        }
+        if (
+            modification.type != WorkoutRecord.ModificationType.EXERCISE_SKIPPED &&
+            modification.newWorkoutExercise == null
+        ) {
+            Log.e("WorkoutViewModel", "Tried to accept a modification ${modification.type} but newWorkoutExercise is null")
+            return
+        }
+
+        val sourceEx = pagesContent.value.exercises.getOrNull(
+            index
+        )
+        if (sourceEx == null) {
+            Log.e("WorkoutViewModel", "Tried to modify from a workout exercise that does not exist")
+            return
+        }
+        // when adding/replacing
+        var targetWorkoutExerciseId: Long? = null
+        viewModelScope.launch {
+            when (modification.type) {
+                WorkoutRecord.ModificationType.EXERCISE_ADDED -> {
+                    repository.shiftWorkoutExercisesToRight(
+                        workoutState.value.workoutId,
+                        index+1
+                    )
+                    targetWorkoutExerciseId = repository.addWorkoutExercise(
+                        modification.newWorkoutExercise!!.copy(
+                            workoutExerciseId = 0L,
+                            extWorkoutId = workoutState.value.workoutId,
+                            orderInProgram = index+1
+                        )
+                    )
+                    _effects.trySend(
+                        WorkoutEffect.AdvancePage(
+                            index+1
+                        )
+                    )
+                }
+
+                WorkoutRecord.ModificationType.EXERCISE_REPLACED -> {
+                    repository.deleteWorkoutExercise(sourceEx.workoutExerciseId)
+                    targetWorkoutExerciseId = repository.addWorkoutExercise(
+                        modification.newWorkoutExercise!!.copy(
+                            workoutExerciseId = 0L,
+                            extWorkoutId = workoutState.value.workoutId,
+                            orderInProgram = index
+                        )
+                    )
+                }
+                WorkoutRecord.ModificationType.EXERCISE_SKIPPED -> {
+                    repository.deleteWorkoutExercise(sourceEx.workoutExerciseId)
+                    repository.shiftWorkoutExercisesToLeft(
+                        workoutState.value.workoutId,
+                        index
+                    )
+                }
+            }
+            _workoutState.update {
+                it.copy(
+                    lastWorkoutModifications = it.lastWorkoutModifications.minus(
+                        modification.originalModification
+                    )
+                )
+            }
+            workoutModifications.add(
+                modification.originalModification.copy(
+                    sourceWorkoutExerciseId = sourceEx.workoutExerciseId,
+                    targetWorkoutExerciseId = targetWorkoutExerciseId,
+                )
+            )
+        }
+    }
+
     private fun getUpdatedRecords(
         currentExercise: WorkoutExercise?,
         records: Map<Long, List<ExerciseRecordAndEquipment>>,
@@ -912,7 +1259,7 @@ class WorkoutViewModel @Inject constructor(
 
         // record being set right now for current exercise
         val ongoingRecord = currentExerciseRecords.find {
-            it.extWorkoutId == workoutId && it.exerciseInWorkout == currentPage
+            it.extWorkoutId == workoutId && it.extWorkoutExerciseId == currentExercise.workoutExerciseId
         }
 
         // records for current exercise minus ongoingRecord
@@ -928,20 +1275,29 @@ class WorkoutViewModel @Inject constructor(
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
         ongoingLastWeight: Float?,
         setsDone: Int,
-        tareDiff: Float,
-        imperialSystem: Boolean
+        barbellDiff: Float,
+        imperialSystem: Boolean,
+        setTypes: List<SetType>?,
+        isUpcomingSet: Boolean, // true if is the very next set user will do
+        isPyramid: Boolean, // true if pyramid exercise e.g., reps = 2, 4, 6 (or reverse)
+        increment: Float,
     ): Float? {
         /*
          weight is taken in this order:
-         0. If first set, take from last record
+         0. If first set (or first set of a new set type), take from last record
+         0a. If not pyramid and normal set, will average over the weight of old records;
+             and take ceil following default increment
          1. If not first set, check last set weight:
-         1a. If == to the same set from last record, take from last record
+         1a. If equals to the same set from last record, take from last record
          2. Otherwise, check whether the weight also changed between sets in last record (e.g., pyramid)
          2a. If not, keep weight from previous set
          3. Otherwise, take last record increased/decreased by same amount as previous set
          */
-        val recordsToDisplay = recordsToDisplay
-        val setsDone = setsDone
+
+        // do not propagate ongoing weight across set type boundaries (e.g., warmup -> normal)
+        val previousSetType = setTypes?.getOrNull(setsDone - 1) ?: SetType.NORMAL
+        val currentSetType = setTypes?.getOrNull(setsDone) ?: SetType.NORMAL
+        val setTypeBoundary = setsDone > 0 && previousSetType != currentSetType
 
         // this is the record of the last record before current workout
         val lastOldRecord = recordsToDisplay.firstOrNull()
@@ -950,32 +1306,52 @@ class WorkoutViewModel @Inject constructor(
         var oldRecordWeightCurrentSet: Float? = null
         var oldRecordWeightPreviousSet: Float? = null
         var ongoingRecordWeightPreviousSet: Float? = null
+        var avgOldRecordWeight: Float? = null
         // for the weight, try to copy from last old record
         if (lastOldRecord != null) {
-            oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone)
-            oldRecordWeightPreviousSet = lastOldRecord.weights.getOrNull(setsDone-1)
+            oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone)?.let {
+                maybeKgToLb(
+                    it,
+                    imperialSystem
+                )
+            }
+            oldRecordWeightPreviousSet = lastOldRecord.weights.getOrNull(setsDone-1)?.let {
+                maybeKgToLb(
+                    it,
+                    imperialSystem
+                )
+            }
+            if (currentSetType == SetType.NORMAL && !isPyramid) {
+                lastOldRecord.weights.zip(
+                    lastOldRecord.setTypes ?: List(lastOldRecord.weights.size) { SetType.NORMAL }
+                ).filter { it.second == SetType.NORMAL }.map { it.first }.average().let {
+                    avgOldRecordWeight = it.toFloat()
+                    // now round it to the nearest increment
+                    if (avgOldRecordWeight % increment != 0f) {
+                        avgOldRecordWeight += increment - (avgOldRecordWeight % increment)
+                    }
+                }
+            }
         }
         if (ongoingLastWeight != null) {
             ongoingRecordWeightPreviousSet = ongoingLastWeight
         }
-        if (setsDone == 0) {
-            weightCandidate = oldRecordWeightCurrentSet
-        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet == ongoingRecordWeightPreviousSet) {
-            weightCandidate = oldRecordWeightCurrentSet
-        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet != oldRecordWeightCurrentSet) {
-            var delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
-            // if delta is due to tareDiff, it should not be propagated
-            // FIXME: if user does not follow tarediff suggestion, this does not behave well
-            //  example: historic is: 5 with 20 tare. Change to 25, suggest 2.5.
-            //  If user enters 2.5, then next set suggests 0 (while it should suggest 2.5)
-            //  If user enters 5, then next set suggests 2.5 (while it should give up and say 5)
-            delta = delta?.plus(tareDiff / 2)
-            weightCandidate = oldRecordWeightCurrentSet.plus(delta ?: 0f)
-        } else {
+        if (setsDone == 0 || setTypeBoundary) {
+            weightCandidate = avgOldRecordWeight ?: oldRecordWeightCurrentSet
+        } else if (ongoingRecordWeightPreviousSet != null) {
             weightCandidate = ongoingRecordWeightPreviousSet
+        } else {
+            weightCandidate = avgOldRecordWeight ?: oldRecordWeightCurrentSet
         }
-        weightCandidate = weightCandidate?.let { maybeKgToLb(it, imperialSystem) }
 
+        // I am not particularly convinced by this 'delta' logic. For now, let's comment it out
+//        } else if (oldRecordWeightCurrentSet != null && oldRecordWeightPreviousSet != oldRecordWeightCurrentSet) {
+//            var delta = oldRecordWeightPreviousSet?.let { ongoingRecordWeightPreviousSet?.minus(it) }
+//            weightCandidate = oldRecordWeightCurrentSet.plus(delta ?: 0f)
+
+        if (isUpcomingSet) {
+            weightCandidate = weightCandidate?.plus(barbellDiff / 2)
+        }
         return weightCandidate
     }
 
@@ -985,18 +1361,39 @@ class WorkoutViewModel @Inject constructor(
         ongoingLastRep: Int?,
         setsDone: Int
     ): Int? {
+        val setTypes = currentExercise.setTypes
+
+        // do not propagate ongoing reps across set type boundaries (e.g., warmup -> normal)
+        val previousSetType = setTypes?.getOrNull(setsDone - 1) ?: SetType.NORMAL
+        val currentSetType = setTypes?.getOrNull(setsDone) ?: SetType.NORMAL
+        val setTypeBoundary = setsDone > 0 && previousSetType != currentSetType
+
+        val lastOldRecord = recordsToDisplay.firstOrNull()
+        val oldRecordRepCurrentSet = lastOldRecord?.reps?.getOrNull(setsDone)
+        val oldRecordRepPreviousSet = lastOldRecord?.reps?.getOrNull(setsDone - 1)
+
+        // reps user should do per program
+        val upcomingReps = currentExercise.reps.getOrNull(setsDone)
+
+        if (setsDone == 0 || setTypeBoundary) {
+            // first set (or first set of a new type): prefer what user actually did last time
+            return oldRecordRepCurrentSet ?: upcomingReps
+        }
+
         // reps done last set
         val lastRepsDone = ongoingLastRep
-        // reps user should do
-        val upcomingReps = currentExercise.reps.getOrNull(setsDone)
-        val lastRepsThatShouldHaveBeenDone = currentExercise.reps.getOrNull(setsDone-1)
+        val lastRepsThatShouldHaveBeenDone = currentExercise.reps.getOrNull(setsDone - 1)
+        if (oldRecordRepPreviousSet == lastRepsDone) {
+            // user is on track with history: follow historical reps for current set
+            return oldRecordRepCurrentSet ?: upcomingReps
+        }
         if (lastRepsThatShouldHaveBeenDone == lastRepsDone) {
             // user is following program
             return upcomingReps
         }
         if (lastRepsThatShouldHaveBeenDone == upcomingReps) {
             // user is not following the program and is in a situation like this:
-            // reps to be done -> reps done
+            // (reps to be done -> reps done)
             // set 1: 10 -> 11
             // set 2: 10 -> ??
             // here, we suggest 11
@@ -1036,11 +1433,6 @@ class WorkoutViewModel @Inject constructor(
             repository.getWorkoutExercises(workoutState.value.workoutId).collect{ exs ->
                 val sortedExs = exs.sortedBy { it.orderInProgram }
                 _workoutExercises.update { sortedExs }
-                _currentExerciseState.update {
-                    it.copy(
-                        isLoading = false
-                    )
-                }
                 retrieveExercisesRecords?.cancel()
                 retrieveExercisesRecords = this.launch {
                     repository.getExerciseRecordsAndEquipment(
@@ -1064,11 +1456,6 @@ class WorkoutViewModel @Inject constructor(
         if (workoutState.value.startDate == null) {
             startWorkoutJob = viewModelScope.launch {
                 val currentDateTime = ZonedDateTime.now()
-                _workoutState.update {
-                    it.copy(
-                        startDate = currentDateTime,
-                        workoutStarted = true
-                    ) }
                 // possibly blocking
                 val workoutId = workoutState.mapNotNull {
                     if (it.workoutId != 0L) it.workoutId else null
@@ -1084,6 +1471,12 @@ class WorkoutViewModel @Inject constructor(
                 val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
                 if (autoOpenWear) {
                     phoneWorkoutRepository.openWearWorkout()
+                }
+                _workoutState.update {
+                    it.copy(
+                        startDate = currentDateTime,
+                        workoutStarted = true
+                    )
                 }
             }
         }
@@ -1112,6 +1505,8 @@ class WorkoutViewModel @Inject constructor(
             if (autoOpenWear) {
                 phoneWorkoutRepository.openWearWorkout()
             }
+            // set flag to scroll to last exercise completed when records are available
+            resumeAndScrollToLatest = true
         } else {
             Log.e(
                 "WorkoutViewModel",
@@ -1154,11 +1549,15 @@ class WorkoutViewModel @Inject constructor(
         weight: Float,
         tare: Float? = null
     ) {
-        viewModelScope.launch {
-            _currentExerciseState.update { it.copy(
-                restTimestamp = restTimestamp ?: ZonedDateTime.now().plusSeconds(exerciseRest),
-                currentExerciseRest = exerciseRest
-            ) }
+        if (completeSetJob?.isActive == true)
+            return
+        completeSetJob = viewModelScope.launch {
+            _currentExerciseState.update {
+                it.copy(
+                    restTimestamp = restTimestamp ?: ZonedDateTime.now().plusSeconds(exerciseRest),
+                    currentExerciseRest = exerciseRest
+                )
+            }
             if (exercise == null) {
                 Log.e("WorkoutViewModel", "Tried to complete a set but something went wrong")
                 _effects.trySend(WorkoutEffect.ShowMessage(R.string.complete_set_generic_error))
@@ -1175,17 +1574,19 @@ class WorkoutViewModel @Inject constructor(
                     ExerciseRecord(
                         extWorkoutId = workoutState.value.workoutId,
                         extExerciseId = exercise.extExerciseId,
+                        extWorkoutExerciseId = exercise.workoutExerciseId,
                         exerciseInWorkout = exerciseIndex,
                         date = ZonedDateTime.now(),  // FIXME? if completed from watch, this may be a few secs off
                         reps = listOf(reps),
                         weights = listOf(
-                            // TODO: make sure that watch sends weight in Lb if imperial system
                             maybeLbToKg(weight, pagesContent.value.imperialSystem)
                         ),
                         variation = exercise.variation,
                         variationResKey = exercise.variationResKey,
                         rest = listOf(exerciseRest.toInt()),
-                        tare = oldTare
+                        tare = oldTare,
+                        overriddenDurationBased = exercise.overriddenDurationBased,
+                        setTypes = exercise.setTypes
                     )
                 )
             } else {
@@ -1195,6 +1596,7 @@ class WorkoutViewModel @Inject constructor(
                         recordId = record.recordId,
                         extExerciseId = record.extExerciseId,
                         extWorkoutId = record.extWorkoutId,
+                        extWorkoutExerciseId = record.extWorkoutExerciseId,
                         exerciseInWorkout = record.exerciseInWorkout,
                         date = record.date,
                         reps = record.reps.plus(reps),
@@ -1204,7 +1606,9 @@ class WorkoutViewModel @Inject constructor(
                         variation = record.variation,
                         variationResKey = record.variationResKey,
                         record.rest.plus(exerciseRest.toInt()),
-                        tare = oldTare  // allow user to change the initial tare, in case they selected wrong one
+                        tare = oldTare,  // allow user to change the initial tare, in case they selected wrong one
+                        overriddenDurationBased = record.overriddenDurationBased,
+                        setTypes = record.setTypes
                     )
                 )
             }
@@ -1223,7 +1627,9 @@ class WorkoutViewModel @Inject constructor(
                 workoutState.map { it.incrementCable }.distinctUntilChanged(),
                 workoutState.map { it.incrementDumbbell }.distinctUntilChanged(),
                 workoutState.map { it.incrementMachine }.distinctUntilChanged(),
-                workoutState.map { it.imperialSystem }.distinctUntilChanged()
+                workoutState.map { it.imperialSystem }.distinctUntilChanged(),
+                workoutState.map { it.lastWorkoutIntensity }.distinctUntilChanged(),
+                pagesContent.map { it.modificationsSuggestions }.distinctUntilChanged()
             ) { values: Array<Any?> ->
                 val workoutId = values[0] as Long
                 val startDate = values[1] as ZonedDateTime?
@@ -1235,6 +1641,8 @@ class WorkoutViewModel @Inject constructor(
                 val incrementDumbbell = values[7] as Float
                 val incrementMachine = values[8] as Float
                 val imperialSystem = values[9] as Boolean
+                val lastWorkoutIntensity = values[10] as Float?
+                val suggestedModifications = values[11] as List<ModificationSuggestion?>
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
                 phoneWorkoutRepository.wearWorkoutStaticDeferred.await().urgentUpdateData { _ ->
@@ -1254,6 +1662,14 @@ class WorkoutViewModel @Inject constructor(
                         )
                         .setImperialSystem(imperialSystem)
                         .setActiveWorkout(true)
+                        .setPreviousIntensity(lastWorkoutIntensity ?: -1f)
+                        .addAllSuggestedModifications(
+                            suggestedModifications.map {
+                                it?.toProto() ?: Workout.ProtoSuggestedModification.newBuilder()
+                                    .setHasSuggestion(false)
+                                    .build()
+                            }
+                        )
                         .build()
                 }
             }.collect()
@@ -1306,12 +1722,12 @@ class WorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             for (setCompletion in phoneWorkoutRepository.setCompletions) {
                 if (setCompletion.workoutId != workoutState.value.workoutId) {
-                    Log.d("WorkoutViewModel", "Received set completion from wear for wrong workout")
+                    Log.e("WorkoutViewModel", "Received set completion from wear for wrong workout")
                     continue
                 }
                 if (workoutState.value.startDate == null) {
                     // user completed set from watch before starting workout
-                    onEvent(WorkoutEvent.StartWorkout)
+                    startWorkout()
                     // StartWorkout is async, need to wait for it to finish
                     startWorkoutJob?.join()
                 }
@@ -1346,11 +1762,36 @@ class WorkoutViewModel @Inject constructor(
                         // user has done all sets and is adding another one from watch
                         addSetToExercise(exercise)
                     }
-                    if (exerciseIndex != _currentPage.value) {
+
+
+                    val nextExercise = pagesContent.value.exercises.getOrNull(
+                        exerciseIndex + 1
+                    )
+                    val prevExercise = pagesContent.value.exercises.getOrNull(
+                        exerciseIndex - 1
+                    )
+                    // if sets done == total sets, scroll to next if any
+                    val totalSets = exercise.reps.size
+                    val shouldAdvanceEx =
+                        setsDone == totalSets - 1 && (exerciseIndex + 1 < pagesContent.value.exercises.size)
+                    // check if superset
+                    val exerciseToScrollTo =
+                        if (prevExercise != null && exercise.supersetExercise == prevExercise.extProgramExerciseId) {
+                            if (shouldAdvanceEx)
+                                exerciseIndex + 1
+                            else
+                                exerciseIndex - 1
+                        } else if (nextExercise != null && exercise.supersetExercise == nextExercise.extProgramExerciseId) {
+                            exerciseIndex + 1
+                        } else if (shouldAdvanceEx) {
+                            exerciseIndex + 1
+                        } else
+                            exerciseIndex
+                    if (exerciseToScrollTo != _currentPage.value) {
                         // index of exercise completed from watch is different than exercise currently
                         // being shown to user, scroll to that index
                         _effects.trySend(
-                            WorkoutEffect.AdvancePage(exerciseIndex)
+                            WorkoutEffect.AdvancePage(exerciseToScrollTo)
                         )
                     }
                     completeSet(
@@ -1358,9 +1799,10 @@ class WorkoutViewModel @Inject constructor(
                         exerciseRest = setCompletion.rest,
                         restTimestamp = setCompletion.restTimestamp.toZonedDateTime(),
                         reps = setCompletion.reps,
+                        // weight from watch is in lb
                         weight = setCompletion.weight,
                         tare = if (setCompletion.tare != 0f)
-                            maybeLbToKg(setCompletion.tare, pagesContent.value.imperialSystem)
+                        /*maybeLbToKg(*/ setCompletion.tare/*, pagesContent.value.imperialSystem)*/
                         else null
                     )
                 } else {
@@ -1372,6 +1814,112 @@ class WorkoutViewModel @Inject constructor(
             }
         }
     }
+
+    private fun observeWorkoutCompletionsFromWear() {
+        viewModelScope.launch {
+            for (workout in phoneWorkoutRepository.workoutCompletions) {
+                if (workoutState.value.startDate == null) {
+                    // user completed workout from watch before starting workout, weird but anyway
+                    startWorkout()
+                    // StartWorkout is async, need to wait for it to finish
+                    startWorkoutJob?.join()
+                }
+                finishWorkout(
+                    intensity = workout.intensity,
+                    calories = if (workout.calories != 0f) workout.calories else null,
+                    maxHeartRate = if (workout.maxHeartRate != 0) workout.maxHeartRate else null,
+                    minHeartRate = if (workout.minHeartRate != 0) workout.minHeartRate else null,
+                    avgHeartRate = if (workout.avgHeartRate != 0) workout.avgHeartRate else null,
+                    heartRates = if (workout.heartRatesCount > 0) workout.heartRatesList.toList() else null
+                )
+            }
+        }
+    }
+
+
+    private fun observeAcceptedModificationsFromWear() {
+        viewModelScope.launch {
+            for (modification in phoneWorkoutRepository.acceptedModifications) {
+                acceptModification(modification)
+            }
+        }
+    }
+
+    private suspend fun finishWorkout(
+        intensity: Float,
+        calories: Float? = null,
+        maxHeartRate: Int? = null,
+        minHeartRate: Int? = null,
+        avgHeartRate: Int? = null,
+        heartRates: List<Int>? = emptyList()
+    ) {
+        val exercises = repository.getWorkoutExerciseRecordsAndInfo(workoutState.value.workoutId).first().distinct()
+        // add all exercises with no records to modifications as skipped
+        val skippedExs = pagesContent.value.exercises.filter { original ->
+            exercises.find { it.extWorkoutExerciseId == original.workoutExerciseId } == null
+        }
+        workoutModifications.addAll(
+            skippedExs.map {
+                WorkoutRecord.WorkoutModification(
+                    sourceProgramExerciseId = it.extProgramExerciseId,
+                    sourceExerciseId = it.extExerciseId,
+                    sourceWorkoutExerciseId = it.workoutExerciseId,
+                    targetWorkoutExerciseId = null,
+                    targetExerciseId = null,
+                    modificationType = WorkoutRecord.ModificationType.EXERCISE_SKIPPED
+                )
+            }
+        )
+        val workoutTimeMillis = currentExerciseState.value.currentTime.toInstant().toEpochMilli() - workoutState.value.startDate!!.toInstant().toEpochMilli()
+        val workoutTimeSeconds = workoutTimeMillis / 1000
+        // intensity is 0-100, need to convert within reasonable met values
+        val intensityMet = getMetFromIntensity(intensity)
+        repository.completeWorkoutRecord(
+            WorkoutRecordFinish(
+                workoutId = workoutState.value.workoutId,
+                intensity = WorkoutRecord.WorkoutIntensity.NORMAL_INTENSITY, // deprecated
+                intensityPercent = intensity,
+                durationSeconds = workoutTimeSeconds,
+                volume = exercises.sumOf {
+                    computeVolume(
+                        it.weights,
+                        it.reps,
+                        it.tare,
+                        it.equipment
+                    ).toDouble() },
+                activeTimeSeconds = max(0L, workoutTimeSeconds -
+                        exercises.sumOf { it.rest.sum() }),
+                calories = calories ?: (intensityMet *
+                        preferences.getUserWeight().first() *
+                        workoutTimeSeconds / 3600),
+                workoutModifications = workoutModifications,
+                heartRates = heartRates,
+                maxHeartRate = maxHeartRate,
+                minHeartRate = minHeartRate,
+                avgHeartRate = avgHeartRate
+            )
+        )
+        val planPrograms = repository.getPlanMapPrograms().first().entries.find {
+            it.value.find { it1 -> it1.programId == workoutState.value.programId } != null
+        }!!
+        val currentProgram = planPrograms.value.find {
+            it.programId == workoutState.value.programId
+        }!!
+        /*
+        scenario: user does not do the upcoming workout, does another one instead
+            Now, after he finishes, should the next workout be the old upcoming one
+            or the one following the workout the user actually do?
+
+            Currently the latter
+         */
+        repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
+            planId = planPrograms.key.planId,
+            currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
+        ))
+        preferences.setCurrentWorkout(null)
+        _effects.trySend(WorkoutEffect.ShutDown)
+    }
+
 
     private fun observeUserPreferences() {
         viewModelScope.launch {
@@ -1439,11 +1987,12 @@ class WorkoutViewModel @Inject constructor(
                     )
                     val restTimeSecs = restTimeMillis / 1000  // convert from millis to secs
                     _currentExerciseState.update {
+                        var rest = it.currentExerciseRest?.times(1000L)?.toFloat() ?: 1f
+                        if (rest == 0f)
+                            rest = 1f
                         it.copy(
                             restTimeSecs = restTimeSecs,
-                            restProgress = restTimeMillis.toFloat().div(
-                                it.currentExerciseRest?.times(1000L)?.toFloat() ?: 1f
-                            )
+                            restProgress = restTimeMillis.toFloat().div(rest)
                         )
                     }
                 } else {

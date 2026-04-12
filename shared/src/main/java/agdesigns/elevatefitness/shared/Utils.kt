@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.shared
 
+import agdesigns.elevatefitness.shared.grpc.Info
 import android.net.Uri
 import androidx.compose.ui.res.stringResource
 import kotlin.math.round
@@ -252,3 +253,13 @@ inline fun <reified T : Any> WearDataLayerRegistry.urgentProtoDataStore(coroutin
         serializers.serializerForType<T>(),
         WearDataLayerRegistry.dataStorePath(T::class),
     )
+
+operator fun Info.VersionName.compareTo(other: Info.VersionName): Int {
+    if (this.major != other.major)
+        return this.major - other.major
+    if (this.minor != other.minor)
+        return this.minor - other.minor
+    if (this.patch != other.patch)
+        return this.patch - other.patch
+    return 0
+}

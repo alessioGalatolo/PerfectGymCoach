@@ -42,7 +42,7 @@ data class PreferencesBackup(
 
 // This handles the actual backup/restore operations
 class DatabaseBackupManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val dataStore: DataStore<Preferences>,
     private val database: WorkoutDatabase
 ) {

@@ -15,4 +15,12 @@
     <string name="equipments_cables">Cables</string>
     <string name="equipments_dumbbell">Dumbbell</string>
     <string name="equipments_machine">Machine</string>
+
+
+    <!--    -->
+    <string name="set_types_warmup">Warm-up</string>
+    <string name="set_types_normal">Normal</string>
+    <string name="set_types_drop_set">Drop set</string>
+    <string name="set_types_failure">Failure</string>
+    <string name="set_types_awesome">Suggested sets</string>
 </resources>

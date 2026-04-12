@@ -16,10 +16,17 @@ interface WorkoutProgramDao {
 
     @Query(
         "SELECT * FROM `program` " +
-        "LEFT JOIN programexercise ON `program`.programId = programexercise.extProgramId " +
-        "WHERE `program`.extPlanId LIKE :planId"
+                "LEFT JOIN programexercise ON `program`.programId = programexercise.extProgramId " +
+                "WHERE `program`.extPlanId LIKE :planId"
     )
     fun getProgramsMapExercises(planId: Long): Flow<Map<WorkoutProgram, List<ProgramExercise>>>
+
+
+    @Query(
+        "SELECT * FROM `program` " +
+                "LEFT JOIN programexercise ON `program`.programId = programexercise.extProgramId "
+    )
+    fun getAllProgramsMapExercises(): Flow<Map<WorkoutProgram, List<ProgramExercise>>>
 
     @Query(
         "SELECT * FROM `program` " +
@@ -30,6 +37,10 @@ interface WorkoutProgramDao {
 
     @Query("SELECT * FROM `program` WHERE `program`.extPlanId LIKE :planId")
     fun getPrograms(planId: Long): Flow<List<WorkoutProgram>>
+
+
+    @Query("SELECT * FROM `program` WHERE `program`.programId LIKE :programId")
+    fun getProgram(programId: Long): Flow<WorkoutProgram>
 
     @Insert
     suspend fun insert(program: WorkoutProgram): Long

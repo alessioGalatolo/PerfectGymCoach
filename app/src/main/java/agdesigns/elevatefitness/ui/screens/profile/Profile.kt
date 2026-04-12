@@ -29,34 +29,44 @@ import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
 import agdesigns.elevatefitness.utils.plus
 import android.os.Build
+import agdesigns.elevatefitness.data.HealthConnectRepository
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.background
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.SharedFlow
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -72,12 +82,8 @@ fun Profile(
     refreshContentRequest: SharedFlow<Any>,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val profileState by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState()
     var editName by remember { mutableStateOf(false) }
-    var userYear by remember { mutableStateOf("0") }
-    val validUserYear by remember { derivedStateOf {
-        userYear.toIntOrNull() != null && userYear.toInt() in 1900..ZonedDateTime.now().year
-    }}
     val lazyListState = rememberLazyListState()
     LaunchedEffect(refreshContentRequest) {
         refreshContentRequest.collect {
@@ -87,10 +93,6 @@ fun Profile(
             }
         }
     }
-    LaunchedEffect(profileState.userYear){
-        userYear = profileState.userYear.toString()
-    }
-    var editYear by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     var bmiDialogueShown by remember { mutableStateOf(false) }
@@ -122,7 +124,7 @@ fun Profile(
         uri?.let { viewModel.onEvent(ProfileEvent.ImportPreferences(it)) }
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    val snackbarMessage = profileState.backupOutcomeResId?.let { stringResource(it) }
+    val snackbarMessage = state.backupOutcomeResId?.let { stringResource(it) }
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -146,7 +148,7 @@ fun Profile(
             item {
                 val nameTextFieldState = rememberTextFieldState()
                 ProfileHeader(
-                    name = profileState.name,
+                    name = state.name,
                     editName = editName,
                     nameTextFieldState = nameTextFieldState,
                     onEditToggle = { newName ->
@@ -167,28 +169,10 @@ fun Profile(
             item {
                 ProfileSection(title = stringResource(R.string.personal_information_title)) {
                     PersonalInfoContent(
-                        profileState = profileState,
-                        editYear = editYear,
-                        userYear = userYear,
-                        validUserYear = validUserYear,
-                        onUserYearChange = { userYear = it },
-                        onEditYearToggle = {
-                            editYear = !editYear
-                            if (!editYear) {
-                                if (validUserYear) {
-                                    viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
-                                } else {
-                                    userYear = profileState.userYear.toString()
-                                }
-                            }
-                        },
-                        onYearSubmit = {
-                            if (validUserYear) {
-                                keyboardController?.hide()
-                                viewModel.onEvent(ProfileEvent.UpdateAgeYear(userYear.toInt()))
-                                editYear = false
-                                focusManager.clearFocus()
-                            }
+                        userSex = state.sex,
+                        userBirthday = state.userBirthday,
+                        updateBirthday = {
+                            viewModel.onEvent(ProfileEvent.UpdateBirthday(it))
                         },
                         onEditSex = {
                             viewModel.onEvent(ProfileEvent.UpdateSex(it))
@@ -201,7 +185,7 @@ fun Profile(
             item {
                 ProfileSection(title = stringResource(R.string.physical_measurements_title)) {
                     PhysicalMeasurementsContent(
-                        profileState = profileState,
+                        profileState = state,
                         viewModel = viewModel,
                         keyboardController = keyboardController,
                         focusManager = focusManager,
@@ -219,10 +203,79 @@ fun Profile(
                     modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
                 )
                 PreferencesContent(
-                    profileState = profileState,
+                    profileState = state,
                     viewModel = viewModel
                 )
             }
+
+            // Health Connect Section
+            if (state.isHealthConnectAvailable) {
+                item {
+                    val healthConnectPermissionsLauncher = rememberLauncherForActivityResult(
+                        PermissionController.createRequestPermissionResultContract()
+                    ) {
+                        viewModel.onEvent(ProfileEvent.RefreshHealthConnectStatus)
+                    }
+                    Text(
+                        stringResource(R.string.integrations_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
+                    )
+                    GroupedCard(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
+                        subCard {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painterResource(R.drawable.ic_health_connect_logo),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp).padding(end = 8.dp),
+                                    tint = Color.Unspecified
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.health_connect_title),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        if (state.hasHealthConnectPermissions)
+                                            stringResource(R.string.health_connect_connected)
+                                        else if (state.hasSomeHealthConnectPermissions)
+                                            stringResource(R.string.health_connect_problems)
+                                        else
+                                            stringResource(R.string.health_connect_info),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (state.hasHealthConnectPermissions) {
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    TextButton(onClick = {
+                                        healthConnectPermissionsLauncher.launch(
+                                            HealthConnectRepository.REQUIRED_PERMISSIONS
+                                        )
+                                    }) {
+                                        Text(stringResource(R.string.health_connect_connect))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 Text(
                     text = stringResource(R.string.backup_and_restore),
@@ -230,14 +283,17 @@ fun Profile(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = dimensionResource(R.dimen.header_to_content_padding))
                 )
-                GroupedCard(items = listOf(
-                    {
+                GroupedCard(colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                ) {
+                    subCard {
                         Text(
                             stringResource(R.string.backup_restore_info),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                    }, {
+                    }
+                    subCard {
                         Row(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -248,7 +304,7 @@ fun Profile(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (profileState.isBackupLoading) {
+                            if (state.isBackupLoading) {
                                 CircularWavyProgressIndicator()
                             } else {
                                 Row {
@@ -281,7 +337,7 @@ fun Profile(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (profileState.isPreferencesBackupLoading) {
+                            if (state.isPreferencesBackupLoading) {
                                 CircularWavyProgressIndicator()
                             } else {
                                 Row {
@@ -305,7 +361,7 @@ fun Profile(
                             }
                         }
                     }
-                ), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                }
             }
 
             // Equipment Increments Section
@@ -319,64 +375,62 @@ fun Profile(
                 GroupedCard(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    ),
-                    items = listOf(
-                        {
-                            IncrementRow(
-                                label = stringResource(R.string.barbell_increment),
-                                value = profileState.incrementBarbell,
-                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.bodyweight_increment),
-                                value = profileState.incrementBodyweight,
-                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.cable_increment),
-                                value = profileState.incrementCable,
-                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.dumbbell_increment),
-                                value = profileState.incrementDumbbell,
-                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }, {
-                            IncrementRow(
-                                label = stringResource(R.string.machine_increment),
-                                value = profileState.incrementMachine,
-                                unit = if (profileState.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
-                                onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
-                                keyboardController = keyboardController,
-                                focusManager = focusManager
-                            )
-                        }
                     )
-                )
+                ) {
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.barbell_increment),
+                            value = state.incrementBarbell,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBarbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.bodyweight_increment),
+                            value = state.incrementBodyweight,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementBodyweight(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.cable_increment),
+                            value = state.incrementCable,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementCable(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.dumbbell_increment),
+                            value = state.incrementDumbbell,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementDumbbell(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                    subCard {
+                        IncrementRow(
+                            label = stringResource(R.string.machine_increment),
+                            value = state.incrementMachine,
+                            unit = if (state.imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg),
+                            onValueChange = { viewModel.onEvent(ProfileEvent.UpdateIncrementMachine(it)) },
+                            keyboardController = keyboardController,
+                            focusManager = focusManager
+                        )
+                    }
+                }
             }
             item {
                 val uriHandler = LocalUriHandler.current
-                val urls = listOf(
-                    "https://github.com/alessioGalatolo/PerfectGymCoach/issues",
-                    "https://github.com/alessioGalatolo/PerfectGymCoach/discussions",
-                    "https://github.com/alessioGalatolo/PerfectGymCoach"
-                )
                 Text(
                     stringResource(R.string.feedback_title),
                     style = MaterialTheme.typography.titleMedium,
@@ -386,26 +440,36 @@ fun Profile(
                 GroupedCard(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    ),
-                    items = listOf(
-                        { ExternalLink(
+                    )
+                ) {
+                    subCard(onClick = {
+                        uriHandler.openUri("https://github.com/alessioGalatolo/PerfectGymCoach/issues")
+                    }) {
+                        ExternalLink(
                             title = stringResource(R.string.bug_report_title),
                             description = stringResource(R.string.bug_report_info),
                             leadingIcon = Icons.Default.BugReport
-                        ) },
-                        { ExternalLink(
+                        )
+                    }
+                    subCard(onClick = {
+                        uriHandler.openUri("https://github.com/alessioGalatolo/PerfectGymCoach/discussions")
+                    }) {
+                        ExternalLink(
                             title = stringResource(R.string.feature_requests_title),
                             description = stringResource(R.string.feature_request_info),
                             leadingIcon = Icons.Default.Feedback
-                        ) },
-                        { ExternalLink(
+                        )
+                    }
+                    subCard(onClick = {
+                        uriHandler.openUri("https://github.com/alessioGalatolo/PerfectGymCoach")
+                    }) {
+                        ExternalLink(
                             title = stringResource(R.string.source_code_title),
                             description = stringResource(R.string.source_code_info),
                             leadingIcon = Icons.Default.Code
-                        ) }
-                    ),
-                    onClicks = urls.map { { uriHandler.openUri(it) } }
-                )
+                        )
+                    }
+                }
             }
             item {
                 ProfileSection(title = stringResource(R.string.acknowledgements_title)) {
@@ -539,15 +603,50 @@ fun ProfileSection(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PersonalInfoContent(
-    profileState: ProfileState,
-    editYear: Boolean,
-    userYear: String,
-    validUserYear: Boolean,
-    onUserYearChange: (String) -> Unit,
-    onEditYearToggle: () -> Unit,
-    onYearSubmit: () -> Unit,
+    userSex: Sex,
+    userBirthday: ZonedDateTime,
+    updateBirthday: (ZonedDateTime) -> Unit,
     onEditSex: (Sex) -> Unit,
 ) {
+    var editYear by remember { mutableStateOf(false) }
+    if (editYear) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDate = LocalDate.of(userBirthday.year, userBirthday.month, userBirthday.dayOfMonth)
+        )
+        val confirmEnabled = remember {
+            derivedStateOf { datePickerState.selectedDateMillis != null }
+        }
+        DatePickerDialog(
+            onDismissRequest = {
+                editYear = false
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        editYear = false
+                        updateBirthday(Instant.ofEpochMilli(datePickerState.selectedDateMillis!!).atZone(
+                            ZoneId.of("UTC")
+                        ))
+                    },
+                    enabled = confirmEnabled.value,
+                ) {
+                    Text(stringResource(R.string.dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editYear = false }) { Text(stringResource(R.string.dialog_cancel)) }
+            },
+        ) {
+            // The verticalScroll will allow scrolling to show the entire month in case there is not
+            // enough horizontal space (for example, when in landscape mode).
+            // Note that it's still currently recommended to use a DisplayMode.Input at the state in
+            // those cases.
+            DatePicker(
+                state = datePickerState,
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            )
+        }
+    }
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -556,7 +655,7 @@ fun PersonalInfoContent(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            val age = ZonedDateTime.now().year - profileState.userYear
+            val age = ChronoUnit.YEARS.between(userBirthday, ZonedDateTime.now())
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -570,48 +669,12 @@ fun PersonalInfoContent(
                 )
             }
 
-            IconButton(onClick = onEditYearToggle) {
+            IconButton(onClick = { editYear = true }) {
                 if (editYear) {
-                    if (validUserYear) {
-                        Icon(Icons.Default.Done, stringResource(R.string.done_icon))
-                    } else {
-                        Icon(Icons.Default.Close, stringResource(R.string.cancel_icon))
-                    }
+                    Icon(Icons.Default.Close, stringResource(R.string.cancel_icon))
                 } else {
                     Icon(Icons.Default.Edit, stringResource(R.string.edit_icon_age))
                 }
-            }
-        }
-
-        // Year Input Row (when editing)
-        if (editYear) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.born_in),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-
-                OutlinedTextField(
-                    value = userYear,
-                    onValueChange = onUserYearChange,
-                    label = { Text(stringResource(R.string.year)) },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done
-                    ),
-                    isError = !validUserYear,
-                    keyboardActions = KeyboardActions(onDone = { onYearSubmit() }),
-                    supportingText = {
-                        if (!validUserYear) {
-                            Text(stringResource(R.string.please_enter_a_valid_year))
-                        }
-                    },
-                    modifier = Modifier.width(120.dp)
-                )
             }
         }
 
@@ -633,12 +696,12 @@ fun PersonalInfoContent(
                 horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
                 Sex.entries.forEachIndexed { index, sex ->
-                    val modifier = if (sex == profileState.sex)
+                    val modifier = if (sex == userSex)
                         Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio) // expanded
                     else Modifier.weight(1f)
 
                     ToggleButton(
-                        checked = sex == profileState.sex,
+                        checked = sex == userSex,
                         onCheckedChange = { onEditSex(sex) },
                         modifier = modifier,
                         shapes =
@@ -682,18 +745,127 @@ fun PhysicalMeasurementsContent(
         )
 
         // Height
-        MeasurementRow(
-            label = stringResource(R.string.height),
-            value = if (profileState.imperialSystem) profileState.height / 2.54f else profileState.height,
-            unit = if (profileState.imperialSystem) "in" else "cm",
-            onValueChange = { newHeight ->
-                viewModel.onEvent(ProfileEvent.UpdateHeight(
-                    if (profileState.imperialSystem) newHeight * 2.54f else newHeight
-                ))
-            },
-            keyboardController = keyboardController,
-            focusManager = focusManager
-        )
+        if (profileState.imperialSystem) {
+            var isEditing by remember { mutableStateOf(false) }
+            var feetText by remember { mutableStateOf((profileState.height / 2.54f / 12).toInt().toString()) }
+            var inchesText by remember { mutableStateOf(((profileState.height / 2.54f) % 12).toInt().toString()) }
+            val feetIsValid = feetText.toFloatOrNull() != null && feetText.toFloat() > 0
+            val inchesIsValid = inchesText.toFloatOrNull() != null && inchesText.toFloat() in 0f..11f
+
+            LaunchedEffect(profileState.height) {
+                if (!isEditing) {
+                    feetText = (profileState.height / 2.54f / 12).toInt().toString()
+                    inchesText = ((profileState.height / 2.54f) % 12).toInt().toString()
+                }
+            }
+
+            val submitValue = {
+                if (feetIsValid && inchesIsValid) {
+                    viewModel.onEvent(
+                        ProfileEvent.UpdateHeight(
+                            (feetText.toFloat() * 12 + inchesText.toFloat()) * 2.54f
+                        )
+                    )
+                    isEditing = false
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (!isEditing) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.height),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${feetText}ft ${inchesText}in",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    IconButton(onClick = { isEditing = true }) {
+                        Icon(Icons.Default.Edit, stringResource(R.string.edit_icon_measurement_i, stringResource(R.string.height)))
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = feetText,
+                        onValueChange = { feetText = it },
+                        label = { Text(stringResource(R.string.height)) },
+                        suffix = { Text("ft") },
+                        isError = !feetIsValid,
+                        supportingText = {
+                            if (!feetIsValid) {
+                                Text(stringResource(R.string.please_enter_a_valid_number))
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { submitValue() }),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedTextField(
+                        value = inchesText,
+                        onValueChange = { inchesText = it },
+                        label = { Text(stringResource(R.string.height)) },
+                        suffix = { Text("in") },
+                        isError = !inchesIsValid,
+                        supportingText = {
+                            if (!inchesIsValid) {
+                                Text(stringResource(R.string.please_enter_a_valid_number))
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { submitValue() }),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (inchesIsValid && feetIsValid) {
+                                submitValue()
+                            } else {
+                                feetText = (profileState.height / 2.54f / 12).toInt().toString()
+                                inchesText = ((profileState.height / 2.54f) % 12).toInt().toString()
+                                isEditing = false
+                            }
+                        }
+                    ) {
+                        if (inchesIsValid && feetIsValid) {
+                            Icon(Icons.Default.Done, stringResource(R.string.done_icon))
+                        } else {
+                            Icon(Icons.Default.Close, stringResource(R.string.cancel_icon))
+                        }
+                    }
+                }
+            }
+        } else {
+            MeasurementRow(
+                label = stringResource(R.string.height),
+                value = profileState.height,
+                unit = "cm",
+                onValueChange = { newHeight ->
+                    viewModel.onEvent(
+                        ProfileEvent.UpdateHeight(
+                            newHeight
+                        )
+                    )
+                },
+                keyboardController = keyboardController,
+                focusManager = focusManager
+            )
+        }
 
         // BMI
         val bmi = if (profileState.height != 0f)
@@ -841,7 +1013,8 @@ fun PreferencesContent(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
-            items = listOf({
+        ) {
+            subCard {
                 // Imperial System Switch
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -858,7 +1031,8 @@ fun PreferencesContent(
                         onCheckedChange = { viewModel.onEvent(ProfileEvent.SwitchImperialSystem(it)) }
                     )
                 }
-            }, {
+            }
+            subCard {
                 // Dark Theme Dropdown
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -914,7 +1088,8 @@ fun PreferencesContent(
                         }
                     }
                 }
-            }, {
+            }
+            subCard {
                 // select language
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -934,7 +1109,8 @@ fun PreferencesContent(
                             expanded = expanded,
                             onExpandedChange = { expanded = it }) {
                             OutlinedTextField(
-                                value = locales[profileState.language] ?: stringResource(R.string.system_default),
+                                value = locales[profileState.language]
+                                    ?: stringResource(R.string.system_default),
                                 onValueChange = { },
                                 readOnly = true,
                                 trailingIcon = {
@@ -951,39 +1127,40 @@ fun PreferencesContent(
                             ExposedDropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }) {
-                                    locales.forEach { locale ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    locale.value,
-                                                    style = MaterialTheme.typography.bodyLarge
-                                                )
-                                            },
-                                            onClick = {
-                                                expanded = false
-                                                if (locale.key != "und") {
-                                                    viewModel.onEvent(
-                                                        ProfileEvent.ChangeLanguage(
-                                                            locale.key
-                                                        )
+                                locales.forEach { locale ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                locale.value,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                        },
+                                        onClick = {
+                                            expanded = false
+                                            if (locale.key != "und") {
+                                                viewModel.onEvent(
+                                                    ProfileEvent.ChangeLanguage(
+                                                        locale.key
                                                     )
-                                                } else {
-                                                    viewModel.onEvent(ProfileEvent.ChangeLanguage(null))
-                                                }
-                                            },
-                                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                                        )
-                                    }
+                                                )
+                                            } else {
+                                                viewModel.onEvent(ProfileEvent.ChangeLanguage(null))
+                                            }
+                                        },
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                    )
                                 }
                             }
-                        } else {
-                            Text(
-                                stringResource(R.string.inapp_language_selector_not_supported),
-                                style = MaterialTheme.typography.bodySmall
-                            )
                         }
+                    } else {
+                        Text(
+                            stringResource(R.string.inapp_language_selector_not_supported),
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
-            }, {
+                }
+            }
+            subCard {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -997,10 +1174,17 @@ fun PreferencesContent(
                     Spacer(Modifier.width(8.dp))
                     Switch(
                         checked = profileState.lockHorizontalScroll,
-                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleLockHorizontalScroll(it)) }
+                        onCheckedChange = {
+                            viewModel.onEvent(
+                                ProfileEvent.ToggleLockHorizontalScroll(
+                                    it
+                                )
+                            )
+                        }
                     )
                 }
-            }, {
+            }
+            subCard {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -1017,8 +1201,8 @@ fun PreferencesContent(
                         onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(it)) }
                     )
                 }
-            })
-        )
+            }
+        }
     }
 }
 

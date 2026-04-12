@@ -43,9 +43,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 ## Screenshots
 | Material 3 Expressive | Wear OS |
 |---|---|
-| ![Expressive Update](https://github.com/user-attachments/assets/030e1427-02f9-483d-b9a1-d1e42da0b265) | ![Wear OS Demo](https://github.com/user-attachments/assets/4bb5351a-80aa-4dff-9f36-56663540078f)
- |
-
+| ![Expressive Update](https://github.com/user-attachments/assets/030e1427-02f9-483d-b9a1-d1e42da0b265) | ![Wear OS Demo](https://github.com/user-attachments/assets/4bb5351a-80aa-4dff-9f36-56663540078f)  |
 ## Tech Stack
 
 - **Language:** Kotlin
@@ -55,6 +53,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 - **Design System:** Material 3 with Expressive elements
 - **Wearable:** Wear OS integration
 - **Graphs:** [Vico](https://github.com/patrykandpatrick/vico) and [Composable-Graphs](https://github.com/jaikeerthick/Composable-Graphs)
+- **Health Connect:** Export workouts as well as track calories and Heart Rate from watch
 
 ## Getting Started
 
@@ -124,7 +123,7 @@ Distributed under the GLPv3 License. This means that you're free to use, modify,
 See the [`LICENSE`](LICENSE) file for the full legal text.
 
 ## Acknowledgments
-I do not own any of the images used in this app. They are copyright free and were collected mostly through pexels and unsplash. Many thanks to all the artist that made their images freely available: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb.
+I do not own any of the images used in this app. They are copyright free and were collected mostly through pexels and unsplash. Many thanks to all the artist that made their images freely available: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb, Viridiana Rivera, Pavel Danilyuk, kaboompics.com, Jayro Cerqueira da Silva, Amar Preciado, @marcuschanmedia | IG, Mikhail Nilov, Cleiton Silva, Gustavo Gimenez, RDNE Stock project, André Henrique, Sarazh Izmailov, Jessy Mesme, Airam Dato-on, Ahmet Kurt, Johnny Garcia, Carbell Sarfo, Sava Savov, Doğu Tuncer, Bayram Er, Tnarg, Alex O'Neal, Zeal Creative Studios.
 
 Some of the features/design elements were inspired by [Progression](https://play.google.com/store/apps/details?id=workout.progression.lite) (my favourite workout app by far, until the big subscription wall was introduced) and [GymRun](https://play.google.com/store/apps/details?id=com.imperon.android.gymapp).
 

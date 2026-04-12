@@ -82,6 +82,12 @@ fun SharedTransitionScope.Workout(
     val currentExerciseState by viewModel.currentExerciseState.collectAsState()
     val mediaState by mediaVM.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        // This should execute every time this screen is navigated to
+        // including and especially coming back from adding exercise
+        viewModel.onEvent(WorkoutEvent.ResetWaitingForExerciseAdd)
+    }
+
     // Init VM
     LaunchedEffect(programId, resumeWorkout, quickStart) {
         viewModel.onEvent(
@@ -137,16 +143,6 @@ fun SharedTransitionScope.Workout(
             cancelWorkoutDialogProgress = 1f
         } catch (_: CancellationException) {
             cancelWorkoutDialogProgress = 0f
-        }
-    }
-
-    // FIXME: should use WorkoutEffect
-    LaunchedEffect (workoutState.shutDown){
-        if (workoutState.shutDown) {
-            navigator.popAndNavigateToBottomBar(HistoryDestination)
-            navigator.navigate(
-                WorkoutRecapDestination(workoutId = workoutState.workoutId)
-            )
         }
     }
 
@@ -211,6 +207,12 @@ fun SharedTransitionScope.Workout(
                 }
                 is WorkoutEffect.AdvancePage -> {
                     pagerState.animateScrollToPage(effect.page)
+                }
+                is WorkoutEffect.ShutDown -> {
+                    navigator.popAndNavigateToBottomBar(HistoryDestination)
+                    navigator.navigate(
+                        WorkoutRecapDestination(workoutId = workoutState.workoutId)
+                    )
                 }
             }
         }
@@ -404,8 +406,7 @@ fun SharedTransitionScope.Workout(
                         FabItemData(
                             Icons.Default.Edit,
                             R.string.empty_workout_edit_text,
-
-                            ) {
+                        ) {
                             navigator.navigate(
                                 ExercisesByMuscleDestination(
                                     programName = context.getString(R.string.current_and_future_workouts),  // FIXME: all workouts?
@@ -503,28 +504,6 @@ fun SharedTransitionScope.Workout(
                         )
                     }
                 }
-//                Column(
-//                    verticalArrangement = Arrangement.Bottom,
-//                    horizontalAlignment = Alignment.End
-//                ) {
-//                    SmallFloatingActionButton(onClick = {
-//                    },
-//                    modifier = Modifier.padding(bottom = 16.dp),
-//                    containerColor = MaterialTheme.colorScheme.secondary) {
-//                        Icon(Icons.Default.Edit,
-//                            stringResource(R.string.add_an_exercise_to_current_and_future_workouts_of_this_program)
-//                        )
-//                    }
-//                    MediumFloatingActionButton(onClick = {
-//
-//                    }) {
-//                        Icon(
-//                            Icons.Default.Add,
-//                            stringResource(R.string.add_an_exercise_to_current_workout),
-//                            modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize)
-//                        )
-//                    }
-//                }
             })
         { innerPadding ->
             EmptyScreenInfo(

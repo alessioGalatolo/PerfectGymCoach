@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.ui.common
 
 import android.text.Layout
 import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -14,14 +15,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
-import com.patrykandpatrick.vico.compose.cartesian.layer.point
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
@@ -30,28 +30,25 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
-import com.patrykandpatrick.vico.compose.common.component.shapeComponent
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.insets
-import com.patrykandpatrick.vico.compose.common.shape.toVicoShape
 import com.patrykandpatrick.vico.compose.common.vicoTheme
-import com.patrykandpatrick.vico.core.cartesian.FadingEdges
-import com.patrykandpatrick.vico.core.cartesian.Scroll
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.data.ColumnCartesianLayerModel
-import com.patrykandpatrick.vico.core.cartesian.decoration.HorizontalLine
-import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
-import com.patrykandpatrick.vico.core.common.Fill
-import com.patrykandpatrick.vico.core.common.Position
-import com.patrykandpatrick.vico.core.common.component.LineComponent
-import com.patrykandpatrick.vico.core.common.data.ExtraStore
-import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import com.patrykandpatrick.vico.compose.cartesian.FadingEdges
+import com.patrykandpatrick.vico.compose.cartesian.Scroll
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.ColumnCartesianLayerModel
+import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.Position
+import com.patrykandpatrick.vico.compose.common.component.LineComponent
+import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
+import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 
 // Used to set the average value line in chart
 val MeanLineKey = ExtraStore.Key<Double>()
@@ -61,22 +58,38 @@ val BestColumnKey = ExtraStore.Key<Int>()
 val CurrentColumnKey = ExtraStore.Key<Int>()
 // same as above but for lines and is a list
 val highlightSeriesKey = ExtraStore.Key<List<Int>>()
+// key to get labels for the indices of workout frequency
+val WorkoutFrequencyLabelsKey = ExtraStore.Key<List<String>>()
+
+val chartColors = listOf(
+    Color(0xFF7F77DD),
+    Color(0xFF1D9E75),
+    Color(0xFFD85A30),
+    Color(0xFFD4537E),
+    Color(0xFF378ADD),
+    Color(0xFFEF9F27),
+    Color(0xFF639922),
+    Color(0xFFE24B4A),
+    Color(0xFF888780),
+    Color(0xFF185FA5),
+)
 
 /**
  * Draws an horizontal line for e.g., the mean value
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun rememberHorizontalLine(extraKey: ExtraStore.Key<Double>, lineText: String): HorizontalLine {
-    val fillColor = fill(MaterialTheme.colorScheme.primaryContainer)
+    val fillColor = Fill(MaterialTheme.colorScheme.primaryContainer)
     val line = rememberLineComponent(fill = fillColor, thickness = 2.dp)
     val labelComponent = rememberTextComponent(
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
-        margins = insets(start = 6.dp),
-        padding = insets(start = 8.dp, end = 8.dp, bottom = 2.dp),
+        style = TextStyle(MaterialTheme.colorScheme.onPrimaryContainer),
+        margins = Insets(start = 6.dp),
+        padding = Insets(start = 8.dp, end = 8.dp, bottom = 2.dp),
         background =
-            shapeComponent(
+            ShapeComponent(
                 fillColor,
-                CorneredShape.rounded(topLeftDp = 4f, topRightDp = 4f)
+                MaterialTheme.shapes.extraSmall.copy(bottomStart = CornerSize(0f), bottomEnd = CornerSize(0f))
             ),
     )
     return remember {
@@ -202,17 +215,17 @@ fun columnProviderWithHighlight(
 ) =
     object : ColumnCartesianLayer.ColumnProvider {
         val normal: LineComponent = rememberLineComponent(
-            fill = fill(baseColor),
+            fill = Fill(baseColor),
             thickness = thickness,
-            shape = baseShape.toVicoShape()
+            shape = baseShape
         )
         val best: LineComponent = rememberLineComponent(
-            fill = fill(MaterialTheme.colorScheme.primary),
+            fill = Fill(MaterialTheme.colorScheme.primary),
             thickness = thickness,
             shape = ColumnWithTopIndicatorShape(
                 baseColumnShape = MaterialTheme.shapes.extraSmall,
                 indicatorType = ColumnWithTopIndicatorShape.IndicatorType.CIRCLE
-            ).toVicoShape()
+            )
         )
 
         override fun getColumn(
@@ -239,40 +252,40 @@ fun lineProviderWithHighlight(
 
 
         val highlight: LineCartesianLayer.Line = LineCartesianLayer.rememberLine(
-            fill = LineCartesianLayer.LineFill.single(fill(primaryColor)),
+            fill = LineCartesianLayer.LineFill.single(Fill(primaryColor)),
             areaFill = null,
             pointProvider =
                 LineCartesianLayer.PointProvider.single(
-                    LineCartesianLayer.point(rememberShapeComponent(
-                        fill(primaryColor),
-                        MaterialTheme.shapes.extraSmall.toVicoShape()
+                    LineCartesianLayer.Point(rememberShapeComponent(
+                        Fill(primaryColor),
+                        MaterialTheme.shapes.extraSmall
                     ), size = 16.dp)  // double default size
                 ),
         )
 
         val mainLine = LineCartesianLayer.rememberLine(
-                fill = LineCartesianLayer.LineFill.single(fill(secondaryColor)),
+                fill = LineCartesianLayer.LineFill.single(Fill(secondaryColor)),
                 areaFill = null,
                 pointProvider =
                     LineCartesianLayer.PointProvider.single(
-                        LineCartesianLayer.point(
+                        LineCartesianLayer.Point(
                             rememberShapeComponent(
-                                fill(secondaryColor),
-                                CorneredShape.Pill
+                                Fill(secondaryColor),
+                                MaterialTheme.shapes.extraExtraLarge
                             )
                         )
                     ),
             )
 
         val otherLine = LineCartesianLayer.rememberLine(
-            fill = LineCartesianLayer.LineFill.single(fill(tertiaryColor)),
+            fill = LineCartesianLayer.LineFill.single(Fill(tertiaryColor)),
             areaFill = null,
             pointProvider =
                 LineCartesianLayer.PointProvider.single(
-                    LineCartesianLayer.point(
+                    LineCartesianLayer.Point(
                         rememberShapeComponent(
-                            fill(tertiaryColor),
-                            CorneredShape.Pill
+                            Fill(tertiaryColor),
+                            MaterialTheme.shapes.extraExtraLarge
                         )
                     )
                 ),
@@ -299,21 +312,24 @@ fun PillChart(
     baseColor: Color = MaterialTheme.colorScheme.secondary,
     thickness: Dp = 25.dp,
     columnCollectionSpacing: Dp = 4.dp,
-    xValueFormatter: CartesianValueFormatter = CartesianValueFormatter.Default,
-    yValueFormatter: CartesianValueFormatter = CartesianValueFormatter.Default,
+    xValueFormatter: CartesianValueFormatter = CartesianValueFormatter.decimal(),
+    yValueFormatter: CartesianValueFormatter = CartesianValueFormatter.decimal(),
     markerValueFormatter: DefaultCartesianMarker.ValueFormatter = DefaultCartesianMarker.ValueFormatter.default(),
     decorations: List<HorizontalLine> = emptyList(),
     scrollable: Boolean = false,
+    itemPlacer: VerticalAxis.ItemPlacer = remember { VerticalAxis.ItemPlacer.step() },
     modifier: Modifier = Modifier,
 ) {
     val labelBackground = rememberShapeComponent(
-        fill = fill(MaterialTheme.colorScheme.background),
-        shape = MaterialTheme.shapes.medium.toVicoShape(),
+        fill = Fill(MaterialTheme.colorScheme.background),
+        shape = MaterialTheme.shapes.medium,
     )
     val markerLabel = rememberTextComponent(
-        color = MaterialTheme.colorScheme.onSurface,
-        textAlignment = Layout.Alignment.ALIGN_CENTER,
-        padding = insets(8.dp, 4.dp),
+        style = TextStyle(
+            MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        ),
+        padding = Insets(8.dp, 4.dp),
         background = labelBackground,
     )
     CartesianChartHost(
@@ -324,7 +340,7 @@ fun PillChart(
                 columnCollectionSpacing = columnCollectionSpacing
             ),
             fadingEdges = if (scrollable)
-                FadingEdges(widthDp = 64f)
+                FadingEdges(width = 64.dp)
             else null,
             marker = rememberDefaultCartesianMarker(
                 label = markerLabel,
@@ -333,7 +349,8 @@ fun PillChart(
             startAxis = VerticalAxis.rememberStart(
                 line = rememberLineComponent(Fill.Transparent),
                 tick = rememberLineComponent(Fill.Transparent),
-                valueFormatter = yValueFormatter
+                valueFormatter = yValueFormatter,
+                itemPlacer = itemPlacer
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 tick = rememberLineComponent(Fill.Transparent),

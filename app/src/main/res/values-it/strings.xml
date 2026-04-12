@@ -67,6 +67,7 @@
     <string name="barbell_used">"Bilanciere usato: %1$s %2$s"</string>
     <string name="bodyweight_at_the_time">"Peso corporeo al momento: %1$s"</string>
     <string name="reps_weight">Ripetizioni: %1$s Peso: %2$s %3$s</string>
+    <string name="duration_weight">Mantieni: %1$ss Peso: %2$s %3$s</string>
 
     <!-- # Other -->
     <string name="magic_generation">Generazione magica</string>
@@ -154,7 +155,7 @@
     <string name="set_as_current_plan">Imposta come piano attuale</string>
     <string name="plan_set_as_current">Piano impostato come attuale</string>
     <string name="other_plans">Altri piani</string>
-    <string name="archive_plan_action">Archivia piano</string>
+    <string name="archive_plan_action">Archivia</string>
     <string name="archived_plans_title">Piani archiviati</string>
     <string name="plan_archived">Piano archiviato</string>
     <string name="undo">Annulla</string>
@@ -168,7 +169,7 @@
     <!-- View archived plans -->
     <string name="you_don_t_have_any_archived_plans">Non hai nessun piano archiviato!</string>
     <string name="plan_restored">Piano ripristinato!</string>
-    <string name="unarchive_plan">Ripristina piano</string>
+    <string name="unarchive_plan">Ripristina</string>
     <!-- Plan generation -->
     <string name="what_is_your_goal_when_training">Qual è il tuo obiettivo?</string>
     <string name="goal_i_image">Immagine %1$s</string>
@@ -195,7 +196,7 @@
     <string name="source_code_title">Codice sorgente</string>
     <string name="source_code_info">L\'intera app è open source. Sentiti libero di contribuire o semplicemente dare un\'occhiata.</string>
     <string name="acknowledgements_title">Ringraziamenti</string>
-    <string name="acknowledgements">Non possiedo nessuna delle immagini usate in questa app. Sono prive di copyright e sono state raccolte principalmente da pexels e unsplash. Molte grazie a tutti gli artisti che hanno reso disponibili le loro immagini gratuitamente: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb.</string>
+    <string name="acknowledgements">Non possiedo nessuna delle immagini usate in questa app. Sono prive di copyright e sono state raccolte principalmente da pexels e unsplash. Molte grazie a tutti gli artisti che hanno reso disponibili le loro immagini gratuitamente: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb, Viridiana Rivera, Pavel Danilyuk, kaboompics.com, Jayro Cerqueira da Silva, Amar Preciado, @marcuschanmedia | IG, Mikhail Nilov, Cleiton Silva, Gustavo Gimenez, RDNE Stock project, André Henrique, Sarazh Izmailov, Jessy Mesme, Airam Dato-on, Ahmet Kurt, Johnny Garcia, Carbell Sarfo, Sava Savov, Doğu Tuncer, Bayram Er, Tnarg, Alex O\'Neal, Zeal Creative Studios.</string>
     <string name="salute_user">Ciao, %1$s</string>
     <string name="name">Nome</string>
     <string name="age">Età</string>
@@ -226,6 +227,10 @@
     <string name="es_header5_average_reps_done">Ripetizioni medie fatte</string>
     <string name="es_header6_one_rep_max">Massimale a una ripetizione</string>
     <string name="es_header7_history">Cronologia</string>
+    <string name="es_sessions">Sessioni</string>
+    <string name="es_personal_best">Record personale</string>
+    <string name="es_total_volume">Volume totale</string>
+    <string name="es_best_1rm">Massimale</string>
     <string name="selected_value_i">Valore selezionato: %1$s</string>
     <string name="too_few_records_for_stats">Continua così! Una volta che avrai più di un record, vedrai qui le statistiche principali</string>
     <!-- Statistics -->
@@ -246,7 +251,7 @@
     <!-- ## A streak in number of days   -->
     <string name="streak_in_days">%1$sg</string>
     <string name="best_streak">Miglior serie</string>
-    <string name="sets_total">%1$s serie • %2$s %3$s totali</string>
+    <string name="sets_total">%1$s occorrenze • %2$s %3$s totali</string>
     <!-- View exercises -->
     <string name="search_exercise">Cerca esercizio…</string>
     <string name="search_icon">Cerca</string>
@@ -271,7 +276,7 @@
     <string name="info_icon_ex_desc">Descrizione esercizio</string>
     <string name="thumbup_icon_like_ex">Mi piace questo esercizio</string>
     <string name="current_exercise">Attuale</string>
-    <string name="part_of_superset">" - Parte di un superset"</string>
+    <string name="part_of_superset">"Superset con: "</string>
     <string name="current_workout">allenamento attuale</string>
     <string name="barbell">"Bilanciere: "</string>
     <string name="barbell_custom_value">%1$s (Valore personalizzato)</string>
@@ -291,7 +296,7 @@
     <string name="tease_media_access_prompt">Vuoi i tuoi brani in riproduzione qui?</string>
     <string name="tease_media_access_learn_more">Tocca per saperne di più o scorri per ignorare</string>
     <string name="no_music_playing">Nessuna musica in riproduzione</string>
-    <string name="no_music_playing_info">Riproduci un po\' di musica per vederla qui</string>
+    <string name="no_music_playing_info">Riproduci della musica per vederla qui</string>
     <string name="end_of_workout">Fine allenamento</string>
     <string name="finish">Fine</string>
     <string name="exercise_description_not_available">Descrizione non disponibile</string>
@@ -471,7 +476,6 @@
     <string name="exercise_side_crunch_name">Crunch laterale</string>
     <string name="exercise_side_crunch_desc">Sdraiati su un fianco con le gambe sovrapposte e le ginocchia leggermente piegate. Metti una mano dietro la testa. Porta il busto verso i fianchi. Ripeti dall\'altro lato.</string>
 
-    <!--    FIXME: should say Dragon flag -->
     <string name="exercise_dragon_flag_name">Dragon flag</string>
     <string name="exercise_dragon_flag_desc">Sdraiati su una panca e fissa la parte superiore del corpo con cinghie o afferrando la panca sopra la testa. Estendi le gambe dritte, poi sollevale verso il soffitto mantenendole tese, quindi abbassale senza toccare la panca.</string>
 
@@ -509,7 +513,6 @@
     <string name="exercise_dumbbell_concentration_curl_name">Curl in concentrazione con manubrio</string>
     <string name="exercise_dumbbell_concentration_curl_description">Siediti su una panca con le gambe divaricate. Tieni un manubrio con una mano e appoggia il gomito sulla coscia, appena dentro il ginocchio. Porta il manubrio verso il petto mantenendo fermo il braccio. Abbassa lentamente il peso.</string>
 
-    <!--    FIXME: "Scott" -->
     <string name="exercise_dumbbell_scott_curl_name">Curl Scott con manubri</string>
     <string name="exercise_dumbbell_scott_curl_description">Siediti su una panca preacher con le ascelle appoggiate sulla parte superiore del cuscinetto, tenendo un manubrio in ciascuna mano. Porta i manubri verso l\'alto mantenendo la parte posteriore delle braccia contro il cuscinetto. Abbassa lentamente i pesi nella posizione iniziale.</string>
 
@@ -580,10 +583,16 @@
 
     <!-- Cables -->
     <string name="exercise_cable_leg_curl_name">Leg curl ai cavi</string>
-    <string name="exercise_cable_leg_curl_description">Collega una cavigliera a una puleggia bassa. Fronte alla macchina, aggancia la cavigliera alla caviglia e fletti la gamba portando il piede verso i glutei, poi torna lentamente all\'inizio.</string>
+    <string name="exercise_cable_leg_curl_description">Collega una cavigliera a una puleggia bassa. Fronteggiando la macchina, aggancia la cavigliera alla caviglia e fletti la gamba portando il piede verso i glutei, poi torna lentamente all\'inizio.</string>
 
     <string name="exercise_cable_pull_through_name">Pull-through ai cavi</string>
     <string name="exercise_cable_pull_through_description">Stai di spalle a una puleggia bassa con corda tra le gambe. Flettiti sui fianchi tirando la corda, contrai i glutei in alto, poi torna alla posizione iniziale.</string>
+
+    <string name="exercise_cable_glute_kickback_name">Glute kickback ai cavi</string>
+    <string name="exercise_cable_glute_kickback_description">Collega una cavigliera a una puleggia bassa. Fronteggiando la macchina, aggancia la cavigliera alla caviglia e muovi la gamba verso l\'alto fino a quando non è parallela al terreno, poi torna lentamente all\'inizio.</string>
+
+    <string name="exercise_cable_hip_abduction_name">Hip abduction ai cavi</string>
+    <string name="exercise_cable_hip_abduction_description">Collega una cavigliera a una puleggia bassa. Con la macchina al tuo lato, alza la gamba lateralmente verso l\'lato, poi torna lentamente all\'inizio.</string>
 
     <!-- Bodyweight -->
     <string name="exercise_bodyweight_squat_name">Squat a corpo libero</string>
@@ -676,6 +685,16 @@
     <string name="exercise_handstand_pushups_name">Handstand push up</string>
     <string name="exercise_handstand_pushups_desc">Mettiti in posizione verticale sulle mani contro un muro per supporto. Abbassa il corpo piegando i gomiti finché la testa non è quasi a terra, poi spingi di nuovo verso l\'alto.</string>
 
+    <string name="exercise_planche_name">Planche</string>
+    <string name="exercise_planche_desc">Inclinati in avanti con le braccia tese protraendo e deprimendo le scapole, spostando il centro di gravità sulle mani fino a staccare i piedi da terra (tuck planche). Finalmente, distendi le gambe aperte (straddle planche) oppure chiuse (planche completa).</string>
+
+    <string name="exercise_front_lever_name">Front lever</string>
+    <string name="exercise_front_lever_desc">Appenditi a una sbarra e, con le braccia tese, tira il corpo fino a posizione orizzontale spingendo i dorsali verso il basso mantenendo un hollow body. Il corpo deve essere rivolto verso l\'alto e parallelo al suolo, con le braccia perpendicolari ad esso.</string>
+
+    <string name="exercise_back_lever_name">Back lever</string>
+    <string name="exercise_back_lever_desc">Da una posizione appesa invertita, abbassati lentamente all\'indietro passando per il German hang fino a portare il corpo orizzontale e rivolto verso il basso. Mantenere le braccia tese, contrarre i glutei e mantenere la tensione di tutto il corpo per tenere la posizione.</string>
+
+
     <string name="exercise_machine_shoulder_press_name">Shoulder press machine</string>
     <string name="exercise_machine_shoulder_press_desc">Siediti in una macchina per shoulder press con la schiena contro lo schienale. Afferra le maniglie e spingile sopra la testa fino a distendere le braccia, poi torna all\'inizio.</string>
 
@@ -731,7 +750,7 @@
     <string name="plan_diff_intermediate">Intermedio: mi sento pronto a provare esercizi più avanzati</string>
     <string name="plan_diff_advanced">Avanzato: facciamo tutto 👌</string>
     <string name="splits_fullbody">Routine total body: 1+ volte a settimana</string>
-    <string name="splits_bro">Bro split (pull/push/gambe): 3 volte a settimana</string>
+    <string name="splits_bro">Pull/Push/Gambe: 3 volte a settimana</string>
     <string name="splits_upper_lower">Split parte alta/bassa: 2+ volte a settimana</string>
     <string name="splits_gainz">1 gruppo muscolare al giorno: 5 volte a settimana</string>
     <string name="splits_auto">Sorprendimi</string>
@@ -833,4 +852,37 @@
     <string name="home_fap_create_plan">Nuovo piano</string>
     <string name="no_programs_selected">Nessun programma selezionato</string>
     <string name="no_programs_selected_info">Selezione un programma per vedere il suo contenuto qui</string>
+    <string name="exercises_completed">Esercizi completati:</string>
+    <string name="reorder_icon">Maniglia per riordinare</string>
+    <string name="duplicate">Duplica</string>
+    <string name="copy_of_plan_name">Copia %1$d di %2$s</string>
+    <string name="modification_suggestion_add_exercise">Aggiungi esercizio?</string>
+    <string name="modification_suggestion_skip_exercise">Salta esercizio?</string>
+    <string name="modification_suggestion_replace_exercise">Sostiuisci esercizio?</string>
+    <string name="modification_suggestion_desc_add">L\'ultima volta, dopo questo esercizio, hai aggiunto: %1$s</string>
+    <string name="modification_suggestion_desc_skip">L\'ultima volta hai saltato questo esercizio</string>
+    <string name="modification_suggestion_desc_replace">L\'ultima volta hai sostituito questo esercizio con: %1$s</string>
+    <string name="modification_suggestion_not_this_time">Non questa volta</string>
+    <string name="modification_suggestion_do_it">Okay!</string>
+    <string name="exercise_type_hold">Isometrico</string>
+    <string name="exercise_type_reps">Tradizionale</string>
+    <string name="exercise_type">Tipo di esercizio: </string>
+    <string name="exercise_hold">Mantieni</string>
+
+    <!-- Health Connect integration -->
+    <string name="integrations_title">Integrazioni</string>
+    <string name="health_connect_title" translatable="false">Health Connect</string>
+    <string name="health_connect_info">Collegati per esportare automaticamente i tuoi allenamenti</string>
+    <string name="health_connect_connected">Collegato — gli allenamenti saranno esportati automaticamente</string>
+    <string name="health_connect_problems">Problema nella connessione! Ri-controlla i permessi</string>
+    <string name="health_connect_connect">Collega</string>
+    <string name="health_connect_export">Esporta</string>
+    <string name="health_connect_connect_and_export">Collega ed Esporta</string>
+    <string name="health_connect_export_prompt">Salva questo allenamento in Health Connect</string>
+    <string name="health_connect_exported">Esportato in Health Connect</string>
+    <string name="health_connect_export_error">Esportazione fallita. Tocca per riprovare.</string>
+    <string name="health_connect_retry">Riprova</string>
+    <string name="heart_rate_bpm">Battiti (bpm)</string>
+    <string name="progression_over_time">Progressione nel tempo</string>
+
 </resources>

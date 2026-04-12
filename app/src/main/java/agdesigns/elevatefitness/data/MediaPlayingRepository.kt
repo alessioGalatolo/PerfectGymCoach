@@ -10,6 +10,7 @@ import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
@@ -67,8 +68,8 @@ data class SessionSummary(
 
 @OptIn(ExperimentalHorologistApi::class)
 class MediaPlayingRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val registry: WearDataLayerRegistry,
+    @param:ApplicationContext private val context: Context,
+    private val registry: WearDataLayerRegistry
     private val datalayerHelper: PhoneDataLayerAppHelper
 ) {
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -173,6 +174,11 @@ class MediaPlayingRepository @Inject constructor(
     // --- Controls ---
     fun play() = withController { it.transportControls.play() }
     fun pause() = withController { it.transportControls.pause() }
+
+    fun lowerVolume() = withController { it.adjustVolume(AudioManager.ADJUST_LOWER, 0) }
+
+    fun raiseVolume() = withController { it.adjustVolume(AudioManager.ADJUST_RAISE, 0) }
+
     fun togglePlayPause() = withController { c ->
         val playing = c.playbackState?.state == PlaybackState.STATE_PLAYING
         if (playing) c.transportControls.pause() else c.transportControls.play()

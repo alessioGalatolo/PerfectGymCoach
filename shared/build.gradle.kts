@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.plugin)
     alias(libs.plugins.proto)
 }
@@ -89,6 +88,7 @@ dependencies {
     api(libs.protobuf.kotlin.lite)
     api(libs.datastore.proto)
 
+    implementation(libs.compose.icons)
     implementation(libs.wearable.play.services)
     implementation(libs.horologist.datalayer)
     implementation(platform(libs.compose.bom))

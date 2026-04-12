@@ -5,6 +5,7 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.Exercise.Muscle
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
@@ -17,7 +18,6 @@ import android.util.Log
 import agdesigns.elevatefitness.shared.Equipment
 import kotlinx.coroutines.flow.first
 import java.time.ZonedDateTime
-import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
@@ -220,6 +220,7 @@ suspend fun generatePlan(
 ): Long {
     // TODO: ideally it might also take into consideration profile values e.g. sex, age, weight, etc.
     // TODO: manipulate probabilities -> decrease prob of selected exs. and increase prob of older ones
+    // TODO: add set types
     val now = ZonedDateTime.now()
     val seededRandom = Random(now.toInstant().toEpochMilli())
 
@@ -332,7 +333,7 @@ suspend fun generatePlan(
                     seededRandom = seededRandom
                 )
 
-                // TODO: this is assuming one compound only
+                // FIXME: this is assuming one compound only
                 val minCompoundSets = 4 * wantCompounds
                 var candidateCompoundSets = minCompoundSets
                 if (goalChoice == WorkoutPlanGoal.STRENGTH || resolvedDifficulty > WorkoutPlanDifficulty.BEGINNER) {
@@ -357,7 +358,15 @@ suspend fun generatePlan(
                             reps = repsList,
                             rest = restList,
                             variation = "",
-                            variationResKey = ""
+                            variationResKey = "",
+                            overriddenDurationBased = ex.isDurationBased,
+                            // for compound, have the first warmup set
+                            setTypes = List(repsList.size) {
+                                if (it == 0)
+                                    SetType.WARMUP
+                                else
+                                    SetType.NORMAL
+                            }
                         )
                     )
                     // add rest time plus 2 seconds per rep
@@ -388,6 +397,7 @@ suspend fun generatePlan(
                     val rest = sampleFromProgression(accessoryRestRange, seededRandom)
                     val repsList = MutableList(setsPerAccessory[idx]) { reps }
                     val restList = MutableList(setsPerAccessory[idx]) { rest }
+                    val setTypes = MutableList(setsPerAccessory[idx]) { SetType.NORMAL }
 
                     // wait adding program exercise to check if it should be in superset
                     var programExercise = ProgramExercise(
@@ -397,7 +407,9 @@ suspend fun generatePlan(
                         reps = repsList,
                         rest = restList,
                         variation = "",
-                        variationResKey = ""
+                        variationResKey = "",
+                        overriddenDurationBased = ex.isDurationBased,
+                        setTypes = setTypes
                     )
                     sanityCheckTotalTime += restList.sum() + 2.0 * repsList.sum()
 
@@ -415,12 +427,16 @@ suspend fun generatePlan(
                         if (repsList.size > supersetSets) {
                             programExercise = programExercise.copy(
                                 reps = repsList.take(supersetSets),
-                                rest = restList.take(supersetSets)
+                                rest = restList.take(supersetSets),
+                                setTypes = setTypes.take(supersetSets)
                             )
                         } else if (repsList.size < supersetSets) {
                             programExercise = programExercise.copy(
                                 reps = repsList + List(supersetSets - repsList.size) { repsList.last() },
-                                rest = restList + List(supersetSets - restList.size) { restList.last() }
+                                rest = restList + List(supersetSets - restList.size) { restList.last() },
+                                setTypes = setTypes + List(supersetSets - repsList.size) {
+                                    SetType.NORMAL
+                                }
                             )
                         }
                         programExercise = programExercise.copy(
@@ -557,7 +573,7 @@ private fun chooseExercisesWeighted(
     repeat(count) {
         val candidates = mutable.filter { it.exerciseId !in avoid }
         val pickFrom = candidates.ifEmpty { mutable }
-        val picked = pickFrom.weightedRandom(pickFrom.map { it.probability.toDouble() })
+        val picked = pickFrom.weightedRandom(pickFrom.map { it.probability })
         chosen += picked
         mutable.remove(picked)
         if (mutable.isEmpty()) return@repeat

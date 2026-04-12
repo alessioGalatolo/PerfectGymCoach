@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.data.Repository
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,19 +32,21 @@ data class AddExerciseState(
     val variationResKey: String = "no_variation",
     val repsArray: List<UInt> = List(5) { 8U },
     val restArray: List<UInt> = List(5) { 90U },
+    val setTypesArray: List<SetType> = List(5) { SetType.NORMAL },
     val advancedSets: Boolean = false,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val insertAtPosition: Int? = null,
+    // this gets set to exercise.isDurationBased but can be overridden by user
+    val overriddenDurationBased: Boolean = false
 )
 
 sealed class AddExerciseEvent{
-    // if exerciseId is null, will reset all the exercises probability
-    data class ResetProbability(val exerciseId: Long? = null): AddExerciseEvent()
-
     data class StartRetrievingData(
         val exerciseId: Long,
         val programId: Long = 0L,
         val workoutId: Long = 0L,
-        val programExerciseId: Long = 0L
+        val insertAtPosition: Int? = null,
+        val programExerciseId: Long? = null
     ): AddExerciseEvent()
 
     data object ToggleAdvancedSets: AddExerciseEvent()
@@ -63,6 +66,8 @@ sealed class AddExerciseEvent{
     data class UpdateRest(val newRest: UInt): AddExerciseEvent()
 
     data class UpdateRestAtIndex(val newRest: UInt, val index: Int): AddExerciseEvent()
+    data class ChangeDurationBased(val isDurationBased: Boolean): AddExerciseEvent()
+    data class UpdateSetTypeAtIndex(val setType: SetType, val index: Int): AddExerciseEvent()
 }
 
 @HiltViewModel
@@ -72,12 +77,16 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
 
     private var getDataJob: Job? = null
 
-
     fun onEvent(event: AddExerciseEvent): Boolean {
         when (event) {
             is AddExerciseEvent.StartRetrievingData -> {
                 if (getDataJob == null) {
                     getDataJob = viewModelScope.launch {
+                        _state.update {
+                            it.copy(
+                                insertAtPosition = event.insertAtPosition
+                            )
+                        }
                         retrieveData(
                             event.exerciseId,
                             event.programId,
@@ -99,6 +108,14 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 viewModelScope.launch {
                     if (state.value.workoutId != 0L) {
                         // need to add exercise to workout
+
+                        if (state.value.insertAtPosition != null) {
+                            repository.shiftWorkoutExercisesToRight(
+                                state.value.workoutId,
+                                state.value.insertAtPosition!!
+                            )
+                        }
+                        val orderInProgram = state.value.insertAtPosition ?: state.value.exerciseNumber
                         repository.addWorkoutExercise(
                             WorkoutExercise(
                                 extWorkoutId = state.value.workoutId,
@@ -110,7 +127,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 description = state.value.exercise!!.description,
                                 descriptionResKey = state.value.exercise!!.descriptionResKey,
                                 equipment = state.value.exercise!!.equipment,
-                                orderInProgram = state.value.exerciseNumber,
+                                orderInProgram = orderInProgram,
                                 reps = state.value.repsArray.map { it.toInt() },
                                 rest = state.value.restArray.map { it.toInt() },
                                 note = state.value.note,
@@ -119,7 +136,9 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                     state.value.variationResKey
                                 else
                                     "",
-                                userDefined = state.value.exercise!!.userDefined
+                                userDefined = state.value.exercise!!.userDefined,
+                                overriddenDurationBased = state.value.overriddenDurationBased,
+                                setTypes = state.value.setTypesArray
                             )
                         )
                     }
@@ -138,7 +157,9 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 variationResKey = if(state.value.variationResKey != "no_variation")
                                     state.value.variationResKey
                                 else
-                                    ""
+                                    "",
+                                overriddenDurationBased = state.value.overriddenDurationBased,
+                                setTypes = state.value.setTypesArray
                             )
                         )
                     }
@@ -158,7 +179,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     _state.update {
                         it.copy(
                             restArray = it.restArray.subList(0, event.newSets.toInt()),
-                            repsArray = it.repsArray.subList(0, event.newSets.toInt())
+                            repsArray = it.repsArray.subList(0, event.newSets.toInt()),
+                            setTypesArray = it.setTypesArray.subList(0, event.newSets.toInt())
                         )
                     }
                 } else {
@@ -169,9 +191,13 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         val newRepsArray = oldState.repsArray.plus(
                             List(event.newSets.toInt() - oldState.repsArray.size) { oldState.repsArray.last() }
                         )
+                        val newSetTypesArray = oldState.setTypesArray.plus(
+                            List(event.newSets.toInt() - oldState.setTypesArray.size) { SetType.NORMAL }
+                        )
                         oldState.copy(
                             restArray = newRestArray,
-                            repsArray = newRepsArray
+                            repsArray = newRepsArray,
+                            setTypesArray = newSetTypesArray
                         )
                     }
                 }
@@ -214,35 +240,56 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 _state.update {
                     var newRepsArray = it.repsArray
                     var newRestArray = it.restArray
+                    var newSetTypesArray = it.setTypesArray
                     if (it.advancedSets) {
-                        // was in advanced sets, now not
+                        // was in advanced sets, now not. Normalize all to first value
                         newRepsArray = newRepsArray.map { newRepsArray.first() }
                         newRestArray = newRestArray.map { newRestArray.first() }
+                        newSetTypesArray = newSetTypesArray.map { SetType.NORMAL }
                     }
                     it.copy(
                         advancedSets = !it.advancedSets,
                         repsArray = newRepsArray,
-                        restArray = newRestArray
+                        restArray = newRestArray,
+                        setTypesArray = newSetTypesArray
                     )
                 }
             }
-            is AddExerciseEvent.ResetProbability -> {
-                viewModelScope.launch {
-                    if (event.exerciseId != null)
-                        repository.updateExerciseProbability(event.exerciseId)
-                    else
-                        repository.resetAllExerciseProbability()
+            is AddExerciseEvent.UpdateSetTypeAtIndex -> {
+                // if old type is warmup, we need to make sure that it has no following warmup sets
+                val currentType = state.value.setTypesArray.getOrElse(event.index) { SetType.NORMAL }
+                if (currentType == SetType.WARMUP && event.setType == SetType.WARMUP)
+                    return false
+                var indexToChange = event.index
+                var outcome = true
+                if (currentType == SetType.WARMUP) {
+                    // change latest warmup regardless of event.index
+                    val lastWarmupSet = state.value.setTypesArray.lastIndexOf(SetType.WARMUP)
+                    if (lastWarmupSet != -1 && lastWarmupSet != event.index) {
+                        indexToChange = lastWarmupSet
+                        outcome = false
+                    }
                 }
+                _state.update {
+                    it.copy(
+                        setTypesArray = it.setTypesArray.mapIndexed { index, type ->
+                            if (index == indexToChange) event.setType else type
+                        }
+                    )
+                }
+                return outcome
+            }
+            is AddExerciseEvent.ChangeDurationBased -> {
+                _state.update { it.copy(overriddenDurationBased = event.isDurationBased) }
             }
         }
         return true
     }
 
-    private suspend fun retrieveData(exerciseId: Long, programId: Long, workoutId: Long, programExerciseId: Long) {
+    private suspend fun retrieveData(exerciseId: Long, programId: Long, workoutId: Long, programExerciseId: Long?) {
         // NOTE: we could retrieve exercise and then one of the other 3 without using combine
         // but this way we only need to keep track of one job
-        if (programExerciseId != 0L) {
-            Log.d("AddExerciseViewModel", "retrieved data: programExerciseId = $programExerciseId")
+        if (programExerciseId != null) {
             // changing an existing exercise
             combine(
                 repository.getExercise(exerciseId),
@@ -260,8 +307,12 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         variationResKey = programExercise.variationResKey,
                         repsArray = programExercise.reps.map { it.toUInt() },
                         restArray = programExercise.rest.map { it.toUInt() },
-                        advancedSets = (programExercise.reps.distinct().size + programExercise.rest.distinct().size) > 2,
-                        isLoading = false
+                        setTypesArray = programExercise.setTypes
+                            ?: List(programExercise.reps.size) { SetType.NORMAL },
+                        advancedSets = (programExercise.reps.distinct().size + programExercise.rest.distinct().size) > 2
+                                || programExercise.setTypes?.any { it != SetType.NORMAL } == true,
+                        isLoading = false,
+                        overriddenDurationBased = programExercise.overriddenDurationBased
                     )
                 }
             }.collect()
@@ -271,7 +322,6 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 repository.getExercise(exerciseId),
                 repository.getProgramMapExercises(programId),
             ) { exercise, programMapExercises ->
-                Log.d("AddExerciseViewModel", "retrieved data: $exercise $programMapExercises")
                 // adding to workout and program is only possible if program is empty
                 // thus, the number of exercises in program and workout are the same
                 val exerciseNumber = programMapExercises.values.first().size
@@ -281,7 +331,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         exerciseNumber = exerciseNumber,
                         programId = programId,
                         workoutId = workoutId,
-                        isLoading = false
+                        isLoading = false,
+                        overriddenDurationBased = exercise.isDurationBased
                     )
                 }
             }.collect()
@@ -291,13 +342,13 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                 repository.getExercise(exerciseId),
                 repository.getWorkoutExercises(workoutId)
             ) { exercise, workoutExercises ->
-                Log.d("AddExerciseViewModel", "retrieved data: $exercise $workoutExercises")
                 _state.update {
                     it.copy(
                         exercise = exercise,
                         exerciseNumber = workoutExercises.size,
                         workoutId = workoutId,
-                        isLoading = false
+                        isLoading = false,
+                        overriddenDurationBased = exercise.isDurationBased
                     )
                 }
             }.collect()

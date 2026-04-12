@@ -66,6 +66,7 @@
     <string name="barbell_used">"Barbell used: %1$s %2$s"</string>
     <string name="bodyweight_at_the_time">"Bodyweight at the time: %1$s"</string>
     <string name="reps_weight">Reps: %1$s Weight: %2$s %3$s</string>
+    <string name="duration_weight">Hold: %1$ss Weight: %2$s %3$s</string>
 
     <!-- # Other -->
     <string name="magic_generation">Magic generation</string>
@@ -153,7 +154,7 @@
     <string name="set_as_current_plan">Use as current plan</string>
     <string name="plan_set_as_current">Plan set as current</string>
     <string name="other_plans">Other plans</string>
-    <string name="archive_plan_action">Archive plan</string>
+    <string name="archive_plan_action">Archive</string>
     <string name="archived_plans_title">Archived plans</string>
     <string name="plan_archived">Plan archived</string>
     <string name="undo">Undo</string>
@@ -167,7 +168,7 @@
     <!-- View archived plans -->
     <string name="you_don_t_have_any_archived_plans">You don\'t have any archived plans!</string>
     <string name="plan_restored">Plan restored!</string>
-    <string name="unarchive_plan">Unarchive plan</string>
+    <string name="unarchive_plan">Unarchive</string>
     <!-- Plan generation -->
     <string name="what_is_your_goal_when_training">What is your goal when training?</string>
     <string name="goal_i_image">%1$s image</string>
@@ -194,7 +195,7 @@
     <string name="source_code_title">Source code</string>
     <string name="source_code_info">The entirety of this app is open source. Feel free to contribute or just look around.</string>
     <string name="acknowledgements_title">Acknowledgements</string>
-    <string name="acknowledgements">I do not own any of the images used in this app. They are copyright free and were collected mostly through pexels and unsplash. Many thanks to all the artist that made their images freely available: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb.</string>
+    <string name="acknowledgements">I do not own any of the images used in this app. They are copyright free and were collected mostly through pexels and unsplash. Many thanks to all the artist that made their images freely available: Lukas, Alesia Kozik, Tima Miroshnichenko, Bruno Bueno, Cottonbro Studio, Andrea Piacquadio, Li Sun, Gustavo Fring, Ketut Subiyanto, Ivan Samkov, Mart Production, Jonathan Borba, Max Vakhtbovych, Anete Lusina, Monstera, Andres Ayrton, Pixabay, Daniel Apodaca, Sinitta Leunen, Leon Ardho, Anastasia Shuraeva, Ruslan Khmelevsky, Barbara Olsen, Anna Shvets, Ronald Slaton, Scott Webb, Viridiana Rivera, Pavel Danilyuk, kaboompics.com, Jayro Cerqueira da Silva, Amar Preciado, @marcuschanmedia | IG, Mikhail Nilov, Cleiton Silva, Gustavo Gimenez, RDNE Stock project, André Henrique, Sarazh Izmailov, Jessy Mesme, Airam Dato-on, Ahmet Kurt, Johnny Garcia, Carbell Sarfo, Sava Savov, Doğu Tuncer, Bayram Er, Tnarg, Alex O\'Neal, Zeal Creative Studios.</string>
     <string name="salute_user">Hi, %1$s</string>
     <string name="name">Name</string>
     <string name="age">Age</string>
@@ -225,6 +226,10 @@
     <string name="es_header5_average_reps_done">Average Reps Done</string>
     <string name="es_header6_one_rep_max">One Rep Max</string>
     <string name="es_header7_history">History</string>
+    <string name="es_sessions">Sessions</string>
+    <string name="es_personal_best">Personal Best</string>
+    <string name="es_total_volume">Total Volume</string>
+    <string name="es_best_1rm">Best 1RM</string>
     <string name="selected_value_i">Selected value: %1$s</string>
     <string name="too_few_records_for_stats">Keep going! Once you have more than one record, you will see key statistics here</string>
     <!-- Statistics -->
@@ -245,7 +250,7 @@
     <!-- ## A streak in number of days   -->
     <string name="streak_in_days">%1$sd</string>
     <string name="best_streak">Best Streak</string>
-    <string name="sets_total">%1$s sets • %2$s %3$s total</string>
+    <string name="sets_total">%1$s occurrences • %2$s %3$s total</string>
     <!-- View exercises -->
     <string name="search_exercise">Search exercise…</string>
     <string name="search_icon">Search</string>
@@ -270,7 +275,7 @@
     <string name="info_icon_ex_desc">Exercise description</string>
     <string name="thumbup_icon_like_ex">Like this exercise</string>
     <string name="current_exercise">Current</string>
-    <string name="part_of_superset">" - Part of superset"</string>
+    <string name="part_of_superset">"Superset with: "</string>
     <string name="current_workout">current workout</string>
     <string name="barbell">"Barbell: "</string>
     <string name="barbell_custom_value">%1$s (Custom value)</string>
@@ -470,8 +475,7 @@
     <string name="exercise_side_crunch_name">Side crunch</string>
     <string name="exercise_side_crunch_desc">Lie on your side with legs stacked and knees slightly bent. Place one hand behind your head. Crunch your upper body towards your hips. Repeat on the other side.</string>
 
-<!--    FIXME: should say Dragon flag -->
-    <string name="exercise_dragon_flag_name">Dragon fly</string>
+    <string name="exercise_dragon_flag_name">Dragon flag</string>
     <string name="exercise_dragon_flag_desc">Lie on a bench and secure your upper body with straps or by holding the bench above your head. Extend your legs straight out, then lift them towards the ceiling while keeping them straight, then lower back to start without touching the bench.</string>
 
     <string name="exercise_ab_roller_name">Ab roller</string>
@@ -491,8 +495,7 @@
     <string name="exercise_variation_preacher">Preacher</string>
     <string name="exercise_variation_scott">Scott</string>
 
-    <!-- TODO: remove "with bar" after migration-->
-    <string name="exercise_cable_curl_name">Cable curl (with bar)</string>
+    <string name="exercise_cable_curl_name">Cable curl</string>
     <string name="exercise_cable_curl_description">Attach a straight bar to a low pulley cable machine. Stand facing the machine, grab the bar with both hands, palms facing up. Curl the bar towards your chest, keeping your elbows stationary, then slowly lower the bar back down.</string>
     <string name="exercise_variation_bar">Bar</string>
     <string name="exercise_variation_rope">Rope</string>
@@ -509,13 +512,12 @@
     <string name="exercise_dumbbell_concentration_curl_name">Dumbbell concentration curl</string>
     <string name="exercise_dumbbell_concentration_curl_description">Sit on a bench with your legs spread. Hold a dumbbell with one hand and rest your elbow on your thigh, just inside your knee. Curl the dumbbell towards your chest, keep your upper arm stable. Slowly lower the weight back down.</string>
 
-<!--    FIXME: "Scott" -->
-    <string name="exercise_dumbbell_scott_curl_name">Dumbbell scott curl</string>
+    <string name="exercise_dumbbell_scott_curl_name">Dumbbell Scott curl</string>
     <string name="exercise_dumbbell_scott_curl_description">Sit at a preacher bench with your armpits at the top of the pad, holding a dumbbell in each hand. Curl the dumbbells while keeping your back of the arms against the pad. Lower the weights slowly back to the starting position.</string>
 
     <!-- ================== TRICEPS ================== -->
 <!--    FIXME: "triceps extension" -->
-    <string name="exercise_barbell_triceps_extensions_name">Barbell triceps extensions</string>
+    <string name="exercise_barbell_triceps_extensions_name">Barbell triceps extension</string>
     <string name="exercise_barbell_triceps_extensions_description">Lie on a bench with a barbell held above your chest, arms extended. Slowly lower the barbell behind your head by bending your elbows, keeping your upper arms stationary. Extend your arms back to the starting position.</string>
 
     <string name="exercise_close_grip_bench_press_name">Close grip bench press</string>
@@ -586,6 +588,12 @@
 
     <string name="exercise_cable_pull_through_name">Cable pull-through</string>
     <string name="exercise_cable_pull_through_description">Stand facing away from a low cable pulley with a rope attachment between your legs. Hinge at your hips to pull the rope through, squeezing your glutes at the top, then return to the starting position.</string>
+
+    <string name="exercise_cable_glute_kickback_name">Cable glute kickback</string>
+    <string name="exercise_cable_glute_kickback_description">Attach an ankle cuff to a low cable pulley. Face the machine, attach the cuff to your ankle, and move your leg upwards so that it is parallel to the ground, then slowly return to the starting position.</string>
+
+    <string name="exercise_cable_hip_abduction_name">Cable hip thrust</string>
+    <string name="exercise_cable_hip_abduction_description">Attach an ankle cuff to a low cable pulley. Turn your side to the machine, and lift your leg out to the side in a controlled arc, then return to the starting position.</string>
 
     <!-- Bodyweight -->
     <string name="exercise_bodyweight_squat_name">Bodyweight squat</string>
@@ -678,6 +686,15 @@
     <string name="exercise_handstand_pushups_name">Handstand push ups</string>
     <string name="exercise_handstand_pushups_desc">Get into a handstand position against a wall for support. Lower your body by bending your elbows until your head nearly touches the floor, then push back up to the starting position.</string>
 
+    <string name="exercise_planche_name">Planche</string>
+    <string name="exercise_planche_desc">Place both hands on the ground while crouching. Slowly push your weight to your hands while lifting your legs from the ground (tuck planche). Finally, distend your legs either open (straddle planche) or close together (full planche).</string>
+
+    <string name="exercise_front_lever_name">Front lever</string>
+    <string name="exercise_front_lever_desc">Hang from a bar and, with straight arms, pull your body up to horizontal by driving your lats down while maintaining a hollow body. Your body should face upward and be parallel to the ground, with arms perpendicular to it.</string>
+
+    <string name="exercise_back_lever_name">Back lever</string>
+    <string name="exercise_back_lever_desc">From an inverted hang, slowly lower yourself backward through a German hang until your body is horizontal and facing downward. Keep your arms straight, squeeze your glutes, and maintain full body tension to hold the position.</string>
+
     <string name="exercise_machine_shoulder_press_name">Machine shoulder press</string>
     <string name="exercise_machine_shoulder_press_desc">Sit in a shoulder press machine with your back against the pad. Grip the handles and press them overhead until your arms are extended, then lower back to the start.</string>
 
@@ -733,7 +750,7 @@
     <string name="plan_diff_intermediate">Intermediate: feel confident to try some more advanced exercises</string>
     <string name="plan_diff_advanced">Advanced: you got this👌</string>
     <string name="splits_fullbody">Full-body routine: 1+ days a week</string>
-    <string name="splits_bro">Bro split (pull/push/legs): 3 days a week</string>
+    <string name="splits_bro">Pull/Push/Legs: 3 days a week</string>
     <string name="splits_upper_lower">Upper/Lower body split: 2+ days a week</string>
     <string name="splits_gainz">1 Muscle group per day: 5 days a week</string>
     <string name="splits_auto">Surprise me</string>
@@ -836,4 +853,39 @@
     <string name="home_fap_create_plan">New plan</string>
     <string name="no_programs_selected">No programs selected</string>
     <string name="no_programs_selected_info">Select a program to see its contents here</string>
+    <string name="exercises_completed">Exercises completed:</string>
+    <string name="reorder_icon">Drag handle to reorder</string>
+    <string name="duplicate">Duplicate</string>
+    <string name="copy_of_plan_name">Copy %1$d of %2$s</string>
+    <string name="modification_suggestion_add_exercise">Add exercise?</string>
+    <string name="modification_suggestion_skip_exercise">Skip exercise?</string>
+    <string name="modification_suggestion_replace_exercise">Replace exercise?</string>
+    <string name="modification_suggestion_desc_add">Last time, after this exercise, you added: %1$s</string>
+    <string name="modification_suggestion_desc_skip">Last time you skipped this exercise</string>
+    <string name="modification_suggestion_desc_replace">Last time you replaced this exercise with: %1$s</string>
+    <string name="modification_suggestion_not_this_time">Not this time</string>
+    <string name="modification_suggestion_do_it">Okay!</string>
+    <string name="exercise_type_hold">Isometric</string>
+    <string name="exercise_type_reps">Traditional</string>
+    <string name="exercise_type">Exercise type: </string>
+<!--    What to tell the user i.e., reps vs hold -->
+    <string name="exercise_hold">Hold</string>
+
+    <!-- Health Connect integration -->
+    <string name="integrations_title">Integrations</string>
+    <string name="health_connect_title" translatable="false">Health Connect</string>
+    <string name="health_connect_info">Connect to export your workouts automatically</string>
+    <string name="health_connect_connected">Connected — workouts will be automatically exported</string>
+    <string name="health_connect_problems">Problem connecting! Please review the permissions</string>
+    <string name="health_connect_connect">Connect</string>
+    <string name="health_connect_export">Export</string>
+    <string name="health_connect_connect_and_export">Connect &amp; Export</string>
+    <string name="health_connect_export_prompt">Save this workout to Health Connect</string>
+    <string name="health_connect_exported">Exported to Health Connect</string>
+    <string name="health_connect_export_error">Export failed. Tap to retry.</string>
+    <string name="health_connect_retry">Retry</string>
+    <string name="heart_rate_bpm">Heart rate (bpm)</string>
+    <string name="progression_over_time">Progression over time</string>
+
+
 </resources>

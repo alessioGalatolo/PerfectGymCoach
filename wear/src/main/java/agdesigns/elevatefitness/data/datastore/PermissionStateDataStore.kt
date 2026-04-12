@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class PermissionStateDataStore @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
         "permission_state_data_store",
@@ -21,10 +21,10 @@ class PermissionStateDataStore @Inject constructor(
     /**
      * Returns whether the rationale for a permission has been shown to the user before.
      */
-    val hasPreviouslyShownRationaleFlow: Flow<ShownRationaleStatus> =
+    fun hasPreviouslyShownRationale(permission: String): Flow<ShownRationaleStatus> =
         context.dataStore.data
             .map { preferences ->
-                when (preferences[HAS_SHOWN_RATIONALE_KEY]) {
+                when (preferences[booleanPreferencesKey(permission)]) {
                     true -> ShownRationaleStatus.HAS_SHOWN
                     else -> ShownRationaleStatus.HAS_NOT_SHOWN
                 }
@@ -33,14 +33,11 @@ class PermissionStateDataStore @Inject constructor(
     /**
      * Updates whether the rationale for a permission has been shown to the user before.
      */
-    suspend fun setHasPreviouslyShownRationale(hasShownRationale: ShownRationaleStatus) {
+    suspend fun setHasPreviouslyShownRationale(hasShownRationale: ShownRationaleStatus, permission: String) {
         context.dataStore.edit { preferences ->
-            preferences[HAS_SHOWN_RATIONALE_KEY] =
+            preferences[booleanPreferencesKey(permission)] =
                 hasShownRationale == ShownRationaleStatus.HAS_SHOWN
         }
-    }
-    companion object {
-        private val HAS_SHOWN_RATIONALE_KEY = booleanPreferencesKey("has_shown_rationale")
     }
 }
 

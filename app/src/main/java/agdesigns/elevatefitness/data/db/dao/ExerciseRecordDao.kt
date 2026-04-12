@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.data.db.dao
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
+import agdesigns.elevatefitness.data.db.entity.UpdateExerciseRecordSetTypes
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -36,6 +37,11 @@ interface ExerciseRecordDao {
         "DELETE FROM exerciserecord WHERE exerciserecord.extWorkoutId LIKE :workoutId"
     )
     suspend fun deleteByWorkout(workoutId: Long)
+
+    @Query(
+        "DELETE FROM exerciserecord WHERE exerciserecord.recordId LIKE :recordId"
+    )
+    suspend fun delete(recordId: Long)
 
     @Query(
         "SELECT * FROM exerciserecord " +
@@ -75,6 +81,8 @@ interface ExerciseRecordDao {
     )
     fun getRecordsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime): Flow<List<ExerciseRecord>>
 
+    @Update(entity = ExerciseRecord::class)
+    fun updateSetTypes(update: UpdateExerciseRecordSetTypes)
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insert(plan: ExerciseRecord): Long

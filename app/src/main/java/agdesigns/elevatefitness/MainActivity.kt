@@ -20,6 +20,7 @@ import agdesigns.elevatefitness.navigation.RootDestinationGraph
 import android.net.Uri
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.platform.LocalView
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -31,7 +32,6 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var preferences: PreferenceRepository
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -41,27 +41,34 @@ class MainActivity : ComponentActivity() {
             DeepLinkMatcher(it).match()
         } ?: HomeDestination // fallback if intent.uri is null or match is not found
 
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        ComposeView(this).consumeWindowInsets = true
+        // Call enableEdgeToEdge() BEFORE setContent, with a default style.
+        enableEdgeToEdge()
 
         setContent {
             val userPreference = preferences.getTheme().collectAsState(initial = Theme.SYSTEM)
             val systemTheme = isSystemInDarkTheme()
-            val darkTheme by remember { derivedStateOf {
-                when (userPreference.value) {
-                    Theme.SYSTEM -> systemTheme
-                    Theme.LIGHT -> false
-                    Theme.DARK -> true
+            val darkTheme by remember {
+                derivedStateOf {
+                    when (userPreference.value) {
+                        Theme.SYSTEM -> systemTheme
+                        Theme.LIGHT -> false
+                        Theme.DARK -> true
+                    }
                 }
-            }}
-            DisposableEffect(darkTheme) {
-                enableEdgeToEdge(
-                    statusBarStyle = SystemBarStyle.auto(
-                        android.graphics.Color.TRANSPARENT,
-                        android.graphics.Color.TRANSPARENT,
-                    ) { darkTheme }
-                )
-                onDispose {}
+            }
+
+            // Re-call enableEdgeToEdge() reactively when the theme changes,
+            // but keep the initial call above to avoid flicker on first frame.
+            val view = LocalView.current
+            if (!view.isInEditMode) {
+                SideEffect {
+                    enableEdgeToEdge(
+                        statusBarStyle = SystemBarStyle.auto(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT,
+                        ) { darkTheme }
+                    )
+                }
             }
 
             ElevateFitnessTheme (darkTheme = darkTheme) {

@@ -61,6 +61,8 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.ui.common.lazyGroupedCard
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ceil
@@ -79,6 +81,7 @@ fun SharedTransitionScope.ViewExercises(
     focusSearch: Boolean = false,
     programName: String = "",
     returnAfterAdding: Boolean = false,
+    insertAtPosition: Int? = null,
     viewModel: ExercisesViewModel = hiltViewModel()
 ) {
     val sharedTransitionScope: SharedTransitionScope = this
@@ -255,6 +258,9 @@ fun SharedTransitionScope.ViewExercises(
                                         lazyListState.animateScrollToItem(0)
                                     }
                                 }
+                                val recentSearchesCardColor = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                )
                                 LazyColumn(
                                     state = lazyListState,
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -270,39 +276,23 @@ fun SharedTransitionScope.ViewExercises(
                                                     .padding(horizontal = 16.dp)
                                                     .padding(top = 16.dp)
                                             )
-                                            val maxSuggestions = remember(
-                                                exercisesState.searchResults,
-                                                exercisesState.recentSearches
-                                            ) {
-                                                if (exercisesState.searchResults != null && exercisesState.searchResults!!.isNotEmpty()) {
-                                                    min(2, exercisesState.recentSearches.size)
-                                                } else {
-                                                    exercisesState.recentSearches.size
-                                                }
-                                            }
-                                            // TODO: put as lazylistscope so that item placement can be animated
+                                        }
+                                        item {
                                             GroupedCard(
-                                                modifier = Modifier.padding(vertical = 8.dp),
-                                                colors = CardDefaults.cardColors(
-                                                    containerColor = MaterialTheme.colorScheme.surface
-                                                ),
-                                                items = exercisesState.recentSearches.subList(
+                                                colors = recentSearchesCardColor,
+                                                modifier = Modifier.padding(horizontal = 8.dp)
+                                            ) {
+                                                val maxSuggestions =
+                                                    if (exercisesState.searchResults != null && exercisesState.searchResults!!.isNotEmpty()) {
+                                                        min(2, exercisesState.recentSearches.size)
+                                                    } else {
+                                                        exercisesState.recentSearches.size
+                                                    }
+                                                exercisesState.recentSearches.subList(
                                                     0,
                                                     maxSuggestions
-                                                ).map {
-                                                    @Composable {
-                                                        Row(Modifier.fillMaxWidth()) {
-                                                            Icon(
-                                                                Icons.Default.History,
-                                                                stringResource(R.string.history_icon_recent_search)
-                                                            )
-                                                            Spacer(Modifier.width(8.dp))
-                                                            Text(it)
-                                                        }
-                                                    }
-                                                },
-                                                onClicks = exercisesState.recentSearches.map {
-                                                    {
+                                                ).forEach {
+                                                    subCard(onClick = {
                                                         viewModel.searchFieldState.edit {
                                                             replace(
                                                                 0,
@@ -314,9 +304,18 @@ fun SharedTransitionScope.ViewExercises(
                                                         scope.launch {
                                                             searchBarState.animateToCollapsed()
                                                         }
+                                                    }) {
+                                                        Row(Modifier.fillMaxWidth()) {
+                                                            Icon(
+                                                                Icons.Default.History,
+                                                                stringResource(R.string.history_icon_recent_search)
+                                                            )
+                                                            Spacer(Modifier.width(8.dp))
+                                                            Text(it)
+                                                        }
                                                     }
                                                 }
-                                            )
+                                            }
                                         }
                                     }
                                     if (exercisesState.searchResults != null && exercisesState.searchResults!!.isNotEmpty()) {
@@ -354,6 +353,7 @@ fun SharedTransitionScope.ViewExercises(
                                                         previewExercise = result.exercise,
                                                         programId = programId,
                                                         workoutId = workoutId,
+                                                        insertAtPosition = insertAtPosition,
                                                         programName = programName,
                                                         returnAfterAdding = returnAfterAdding,
                                                     )
@@ -411,6 +411,7 @@ fun SharedTransitionScope.ViewExercises(
                                     previewExercise = exercise,
                                     programId = programId,
                                     workoutId = workoutId,
+                                    insertAtPosition = insertAtPosition,
                                     programName = programName,
                                     returnAfterAdding = returnAfterAdding,
                                 )

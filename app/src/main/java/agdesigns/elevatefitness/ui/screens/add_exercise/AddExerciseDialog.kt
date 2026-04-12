@@ -22,13 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
 import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
+import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
-import agdesigns.elevatefitness.ui.common.InfoDialog
-import agdesigns.elevatefitness.ui.common.ResetExerciseProbabilityDialog
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.home.components.ValueSuggestionRow
@@ -40,14 +40,14 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.ImeAction
 import coil3.compose.AsyncImage
@@ -64,26 +64,28 @@ fun SharedTransitionScope.AddExerciseDialog(
     navigator: DestinationsNavigator,
     previewExercise: Exercise,
     programId: Long = 0L, // programId != 0L means we are adding an exercise to a program (and maybe a current workout)
-    workoutId: Long = 0L, // workoutId != 0L we're adding to a ongoing workout (and maybe a program)
-    programExerciseId: Long = 0L,  // != 0L if we are changing an existing exercise
+    workoutId: Long = 0L, // workoutId != 0L we're adding to an ongoing workout (and maybe a program)
+    programExerciseId: Long? = null,  // != 0L if we are changing an existing exercise
     programName: String = "",
     returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
     continueAdding: Boolean = true,  // if true, expects user to continue adding exercise,
+    insertAtPosition: Int? = null,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
     assert(workoutId != 0L || programId != 0L)
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
-
+    val haptics = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.onEvent(
             AddExerciseEvent.StartRetrievingData(
-                previewExercise.exerciseId,
-                programId,
-                workoutId,
-                programExerciseId
+                exerciseId = previewExercise.exerciseId,
+                programId = programId,
+                workoutId = workoutId,
+                insertAtPosition = insertAtPosition,
+                programExerciseId = programExerciseId
             )
         )
     }
@@ -133,19 +135,6 @@ fun SharedTransitionScope.AddExerciseDialog(
         }
     )
 
-    var awesomeDialogOpen by rememberSaveable { mutableStateOf(false) }
-    InfoDialog(
-        dialogueIsOpen = awesomeDialogOpen,
-        toggleDialogue = { awesomeDialogOpen = !awesomeDialogOpen }) {
-        Text(stringResource(R.string.probability_info))
-    }
-    var resetProbabilityDialogOpen by rememberSaveable { mutableStateOf(false) }
-    ResetExerciseProbabilityDialog(
-        dialogIsOpen = resetProbabilityDialogOpen,
-        toggleDialog = { resetProbabilityDialogOpen = !resetProbabilityDialogOpen },
-        resetExercise = { viewModel.onEvent(AddExerciseEvent.ResetProbability(state.exercise!!.exerciseId)) },
-        resetAllExercises = { viewModel.onEvent(AddExerciseEvent.ResetProbability()) }
-    )
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // make topappbar opaque
@@ -157,7 +146,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                 SharedElementKey(
                     "AddExerciseDialog",
                     SharedElementType.Bounds,
-                    idLong = exercise.exerciseId
+                    idLong = programExerciseId ?: exercise.exerciseId
                 )
             ),
             animatedVisibilityScope,
@@ -273,32 +262,6 @@ fun SharedTransitionScope.AddExerciseDialog(
                             .clip(AbsoluteRoundedCornerShape(0.dp, 0.dp, 12.dp, 12.dp))
                     )
                 }
-
-                item {
-                    Row(
-                        verticalAlignment = CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .animateItem()
-                            .padding(horizontal = 16.dp)
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Icon(Icons.Default.AutoAwesome,
-                            stringResource(R.string.magic_generation)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        val currentProbability = exercise.probability
-                        Text(stringResource(R.string.current_probability_2f, currentProbability))
-                        TextButton(onClick = { resetProbabilityDialogOpen = true }) {
-                            Text(stringResource(R.string.reset))
-                        }
-                        IconButton(onClick = { awesomeDialogOpen = true }) {
-                            Icon(Icons.AutoMirrored.Filled.HelpOutline,
-                                stringResource(R.string.more_info)
-                            )
-                        }
-                    }
-                }
                 item {
                     OutlinedTextField(
                         shape = MaterialTheme.shapes.large,
@@ -352,7 +315,10 @@ fun SharedTransitionScope.AddExerciseDialog(
                                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                                        .menuAnchor(
+                                            ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                            true
+                                        )
                                 )
                                 ExposedDropdownMenu(
                                     expanded = expanded.value,
@@ -375,6 +341,54 @@ fun SharedTransitionScope.AddExerciseDialog(
                                             )
                                         }
                                 }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Row(
+                        verticalAlignment = CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem()
+                            .padding(horizontal = 16.dp)
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(stringResource(R.string.exercise_type))
+                        Spacer(Modifier.width(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                        ) {
+                            TonalToggleButton(
+                                checked = state.overriddenDurationBased,
+                                onCheckedChange = {
+                                    viewModel.onEvent(
+                                        AddExerciseEvent.ChangeDurationBased(true)
+                                    )
+                                },
+                                shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+                                modifier = if (state.overriddenDurationBased)
+                                    Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio)
+                                else Modifier.weight(1f),
+                            ) {
+                                Text(stringResource(R.string.exercise_type_hold))
+                            }
+                            TonalToggleButton(
+                                checked = !state.overriddenDurationBased,
+                                onCheckedChange = {
+                                    viewModel.onEvent(
+                                        AddExerciseEvent.ChangeDurationBased(false)
+                                    )
+                                },
+                                shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+                                modifier = if (!state.overriddenDurationBased)
+                                    Modifier.weight(1f + ButtonGroupDefaults.ExpandedRatio)
+                                else Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    stringResource(R.string.reps)
+                                )
                             }
                         }
                     }
@@ -510,7 +524,12 @@ fun SharedTransitionScope.AddExerciseDialog(
                                         keyboardType = KeyboardType.Number,
                                         imeAction = ImeAction.Done
                                     ),
-                                    label = { Text(stringResource(R.string.reps)) },
+                                    label = { Text(
+                                        if (state.overriddenDurationBased)
+                                            stringResource(R.string.exercise_hold)
+                                        else
+                                            stringResource(R.string.reps)
+                                    ) },
                                     isError = !repsTextIsValid,
                                     supportingText = if (!repsTextIsValid) {
                                         { Text(stringResource(R.string.please_enter_a_valid_number)) }
@@ -554,6 +573,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                     item {
                         Spacer(Modifier.height(16.dp))
                     }
+                    val totalWarmupSets = state.setTypesArray.count { it == SetType.WARMUP }
                     itemsIndexed(items = state.repsArray, { i, _ -> i }) { index, reps ->
                         // reps/rest when advanced sets if off
                         var repsBeingFocussed by remember { mutableStateOf(false) }
@@ -604,14 +624,59 @@ fun SharedTransitionScope.AddExerciseDialog(
 //                                    .padding(bottom = 8.dp)
                         ) {
                             Row(Modifier.weight(1.5f), verticalAlignment = CenterVertically) {
-                                FilledIconToggleButton(checked = false,
-                                    onCheckedChange = { }) {
-                                    Text((index + 1).toString())
+                                Box {
+                                    var expanded by remember { mutableStateOf(false) }
+                                    val currentSetType = state.setTypesArray.getOrElse(index) { SetType.NORMAL }
+                                    // used to see if this set can be a warm-up, we disallow warmups in the middle
+                                    val previousWereWarmups = totalWarmupSets >= index
+                                    FilledTonalIconToggleButton(
+                                        checked = false,
+                                        onCheckedChange = { expanded = !expanded },
+                                    ) {
+                                        if (currentSetType == SetType.NORMAL) {
+                                            Text((index + 1 - totalWarmupSets).toString())
+                                        } else {
+                                            Text(stringResource(currentSetType.displayRes).first().uppercase())
+                                        }
+                                    }
+                                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                        SetType.visibleEntries.forEach { type ->
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(type.displayRes)) },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        type.icon,
+                                                        stringResource(type.displayRes)
+                                                    )
+                                                },
+                                                onClick = {
+                                                    val outcome = viewModel.onEvent(
+                                                        AddExerciseEvent.UpdateSetTypeAtIndex(
+                                                            type,
+                                                            index
+                                                        )
+                                                    )
+                                                    expanded = false
+                                                    if (!outcome) {
+                                                        scope.launch {
+                                                            haptics.performHapticFeedback(
+                                                                HapticFeedbackType.Reject
+                                                            )
+                                                        }
+                                                    }
+                                                },
+                                                enabled = type != SetType.WARMUP || previousWereWarmups
+                                            )
+                                        }
+                                    }
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 // FIXME: should register when textfield gets focus
                                 TextFieldWithButtons(
-                                    prompt = stringResource(R.string.reps),
+                                    prompt = if (state.overriddenDurationBased)
+                                        stringResource(R.string.exercise_hold)
+                                    else
+                                        stringResource(R.string.reps),
                                     text = { repsTextFieldState.text.toString() },
                                     onNewText = {
                                         repsTextFieldState.setTextAndPlaceCursorAtEnd(it)

@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.ui.screens.profile
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.BackupRepository
+import agdesigns.elevatefitness.data.HealthConnectRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,11 +14,12 @@ import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 import javax.inject.Inject
 
 data class ProfileState(
     val weight: Float = 0f,
-    val userYear: Int = 0,
+    val userBirthday: ZonedDateTime = ZonedDateTime.now(),
     val height: Float = 0f,
     val sex: Sex = Sex.OTHER,
     val theme: Theme = Theme.SYSTEM,
@@ -33,13 +35,16 @@ data class ProfileState(
     val isPreferencesBackupLoading: Boolean = false,
     val backupOutcomeResId: Int? = null,
     val lockHorizontalScroll: Boolean = false,
-    val autoOpenWear: Boolean = false
+    val autoOpenWear: Boolean = false,
+    val isHealthConnectAvailable: Boolean = false,
+    val hasHealthConnectPermissions: Boolean = false,
+    val hasSomeHealthConnectPermissions: Boolean = false
 )
 
 sealed class ProfileEvent{
     data class UpdateWeight(val newWeight: Float): ProfileEvent()
 
-    data class UpdateAgeYear(val newYear: Int): ProfileEvent()
+    data class UpdateBirthday(val newBirthday: ZonedDateTime): ProfileEvent()
 
     data class UpdateHeight(val newHeight: Float): ProfileEvent()
 
@@ -76,24 +81,35 @@ sealed class ProfileEvent{
     data class ImportPreferences(val fileUri: Uri): ProfileEvent()
 
     data object ResetOutcomeMessage: ProfileEvent()
+    data object RefreshHealthConnectStatus : ProfileEvent()
 }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
-    private val preferences: PreferenceRepository
+    private val preferences: PreferenceRepository,
+    private val healthConnectRepository: HealthConnectRepository
 ): ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isHealthConnectAvailable = healthConnectRepository.isAvailable,
+                    hasHealthConnectPermissions = healthConnectRepository.hasAllPermissions(),
+                    hasSomeHealthConnectPermissions = healthConnectRepository.hasSomePermissions()
+                )
+            }
+        }
+        viewModelScope.launch {
             combine(
                 preferences.getUserWeight(),
                 preferences.getUserHeight(),
                 preferences.getUserSex(),
                 preferences.getUserName(),
-                preferences.getUserYear(),
+                preferences.getUserBirthday(),
                 preferences.getImperialSystem(),
                 preferences.getTheme(),
                 preferences.getBodyweightIncrement(),
@@ -103,7 +119,7 @@ class ProfileViewModel @Inject constructor(
                 preferences.getCableIncrement(),
                 preferences.getLanguage(),
                 preferences.getLockHorizontalScroll(),
-                preferences.getAutoOpenWear()
+                preferences.getAutoOpenWear(),
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -111,7 +127,7 @@ class ProfileViewModel @Inject constructor(
                         height = values[1] as Float,
                         sex = values[2] as Sex,
                         name = values[3] as String,
-                        userYear = values[4] as Int,
+                        userBirthday = values[4] as ZonedDateTime,
                         imperialSystem = values[5] as Boolean,
                         theme = values[6] as Theme,
                         incrementBodyweight = values[7] as Float,
@@ -121,10 +137,13 @@ class ProfileViewModel @Inject constructor(
                         incrementCable = values[11] as Float,
                         language = values[12] as String?,
                         lockHorizontalScroll = values[13] as Boolean,
-                        autoOpenWear = values[14] as Boolean
+                        autoOpenWear = values[14] as Boolean,
                     )
                 }
             }.collect()
+        }
+        viewModelScope.launch {
+            checkHealthConnectWeight()
         }
     }
 
@@ -143,6 +162,8 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.UpdateWeight -> {
                 viewModelScope.launch {
                     preferences.setUserWeight(event.newWeight)
+                    preferences.setWeightRecordDate(ZonedDateTime.now())
+                    healthConnectRepository.writeWeight(event.newWeight.toDouble())
                 }
             }
             is ProfileEvent.UpdateHeight -> {
@@ -150,9 +171,9 @@ class ProfileViewModel @Inject constructor(
                     preferences.setUserHeight(event.newHeight)
                 }
             }
-            is ProfileEvent.UpdateAgeYear -> {
+            is ProfileEvent.UpdateBirthday -> {
                 viewModelScope.launch {
-                    preferences.setUserYear(event.newYear)
+                    preferences.setUserBirthday(event.newBirthday)
                 }
             }
             is ProfileEvent.SwitchImperialSystem -> {
@@ -306,7 +327,33 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.ResetOutcomeMessage -> {
                 _state.update { it.copy(backupOutcomeResId = null) }
             }
+            is ProfileEvent.RefreshHealthConnectStatus -> {
+                viewModelScope.launch {
+                    val hasPermissions = healthConnectRepository.hasAllPermissions()
+                    _state.update {
+                        it.copy(
+                            hasHealthConnectPermissions = hasPermissions,
+                            hasSomeHealthConnectPermissions = healthConnectRepository.hasSomePermissions()
+                        )
+                    }
+                    if (hasPermissions) {
+                        // check/update weight
+                        checkHealthConnectWeight()
+                    }
+                }
+            }
         }
     }
 
+    private suspend fun checkHealthConnectWeight() {
+        // check if user has recorded a new weight on health connect
+        val weight = healthConnectRepository.getWeight()
+        // if is newer than what we have, override
+        val ourDate = preferences.getWeightRecordDate().first()
+        if (weight != null && weight.time.isAfter(ourDate.toInstant())) {
+            Log.d("ProfileViewModel", "checkHealthConnectWeight: new weight")
+            preferences.setUserWeight(weight.weight.inKilograms.toFloat())
+            preferences.setWeightRecordDate(ZonedDateTime.ofInstant(weight.time, weight.zoneOffset))
+        }
+    }
 }

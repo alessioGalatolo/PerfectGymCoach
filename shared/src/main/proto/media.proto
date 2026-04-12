@@ -23,4 +23,6 @@ service MediaService {
   rpc playPause(google.protobuf.Empty) returns (setMediaResponse);
   rpc next(google.protobuf.Empty) returns (setMediaResponse);
   rpc previous(google.protobuf.Empty) returns (setMediaResponse);
+  rpc raiseVolume(google.protobuf.Empty) returns (setMediaResponse);
+  rpc lowerVolume(google.protobuf.Empty) returns (setMediaResponse);
 }

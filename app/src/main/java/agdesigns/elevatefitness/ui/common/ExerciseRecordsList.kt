@@ -35,49 +35,24 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.barbellResFromWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material3.Icon
 
 // Shows a nice list of records
 fun LazyListScope.ExerciseRecordsList(
     useImperialSystem: Boolean,
-    exerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     exerciseRecordsWithImage: List<ExerciseRecordAndInfo> = emptyList(),
     onRecordClick: (Long) -> Unit = {},
 ) {
-    if (exerciseRecordsWithImage.isEmpty() && exerciseRecords.isEmpty())
-        Log.e("ExerciseRecordsList", "Cannot create exercise record list because all lists passed are empty")
-    else if (exerciseRecordsWithImage.isNotEmpty() && exerciseRecords.isNotEmpty())
-        Log.w("ExerciseRecordsList", "ExerciseRecordsList received non empty lists of both exerciseRecords and exerciseRecordsWithImage. Only the latter will be used.")
-    var exerciseRecordsToUse = exerciseRecordsWithImage
-    if (exerciseRecordsToUse.isEmpty()){
-        exerciseRecordsToUse = exerciseRecords.map {
-            ExerciseRecordAndInfo(
-                recordId = it.recordId,
-                extExerciseId = it.extExerciseId,
-                extWorkoutId = it.extWorkoutId,
-                exerciseInWorkout = it.exerciseInWorkout,
-                date = it.date,
-                reps = it.reps,
-                weights = it.weights,
-                variation = it.variation,
-                variationResKey = it.variationResKey,
-                rest = it.rest,
-                tare = it.tare,
-                equipment = it.equipment,
-                name = "",
-                nameResKey = "",
-                image = ID_NULL,
-                imageResKey = ""
-            )
-        }
-    }
-    // FIXME: maybe add date in card
-    exerciseRecordsToUse = exerciseRecordsToUse.sortedByDescending { it.date }
-    items (items = exerciseRecordsToUse, key = { it.recordId }) { exercise ->
+    items (items = exerciseRecordsWithImage, key = { it.recordId }) { exercise ->
         Card (onClick = {
             onRecordClick(exercise.recordId)
         }, modifier = Modifier
             .fillMaxWidth()
+            .padding(bottom = 8.dp)
             .padding(horizontal = 16.dp)){
             if (exercise.image != ID_NULL) {
                 AsyncImage(
@@ -116,19 +91,35 @@ fun LazyListScope.ExerciseRecordsList(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
+                val warmupSets = exercise.setTypes?.count { it == SetType.WARMUP } ?: 0
                 exercise.reps.forEachIndexed { index, rep ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        FilledIconToggleButton(checked = false, // FIXME: can use different component?
+                        FilledIconToggleButton(
+                            enabled = false,
+                            checked = false,
                             onCheckedChange = { }) {
-                            Text((index + 1).toString())
+                            if (exercise.setTypes?.getOrElse(index) { SetType.NORMAL } == SetType.NORMAL)
+                                Text((index + 1 - warmupSets).toString())
+                            else if (exercise.setTypes?.getOrNull(index) == SetType.AWESOME) {
+                                Icon(Icons.Default.AutoAwesome, stringResource(SetType.AWESOME.displayRes))
+                            } else {
+                                Text(
+                                    stringResource(
+                                        (exercise.setTypes?.getOrNull(index) ?: SetType.NORMAL).displayRes
+                                    ).first().uppercase()
+                                )
+                            }
                         }
                         Spacer(Modifier.width(8.dp))
                         Text(
                             stringResource(
-                                R.string.reps_weight,
+                                if (exercise.overriddenDurationBased)
+                                    R.string.duration_weight
+                                else
+                                    R.string.reps_weight,
                                 rep,
                                 maybeKgToLb(exercise.weights[index], useImperialSystem),
                                 if (useImperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)

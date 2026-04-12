@@ -42,6 +42,10 @@ class Phone2WatchService: BaseGrpcDataService<WorkoutWearServiceGrpcKt.WorkoutWe
                 wearRepository.handleStopWorkout()
                 return Empty.newBuilder().build()
             }
+
+            override suspend fun getHealthData(request: Empty): Workout.CompleteWorkout {
+                return wearRepository.getHealthData() ?: Workout.CompleteWorkout.getDefaultInstance()
+            }
         }
     }
 }

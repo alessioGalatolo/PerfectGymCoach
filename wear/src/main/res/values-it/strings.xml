@@ -5,7 +5,8 @@
     <string name="active_workout">Allenamento attivo</string>
     <string name="stop_workout_notification_text">Interrompi allenamento</string>
     <string name="launch_activity">Apri app</string>
-    <string name="notification_permission_explanation">Questa app ha bisogno del permesso per mostrare attività in corso (allenamento in corso)</string>
+    <string name="permissions_explanation_title">Per favore, autorizza i permessi</string>
+    <string name="permissions_explanation">Questa app usa i permessi richiesti per darti la migliore esperienza possibile durante il tuo allenamento. Not garantire questi permessi non permetterà che l\'app funzioni correttamente.</string>
     <string name="show_permission">Mostra richesta permesso</string>
     <string name="show_settings">Mostra impostazioni</string>
     <string name="go_back">Torna indietro</string>
@@ -62,5 +63,26 @@
     <string name="rest_hint_start_weight_generic">Carica %1$s%2$s</string>
     <string name="rest_hint_start_reps_title">Ripetizioni</string>
     <string name="rest_hint_start_reps">Inizia con %1$s ripetizioni</string>
+    <string name="end_workout">Fine allenamento?</string>
+    <string name="how_intense_was_this_workout">Quanto intenso era l\'allenamento?</string>
+    <string name="raise_audio_volume">Aumenta il volume dell\'audio</string>
+    <string name="lower_audio_volume">Diminuisci il volume dell\'audio</string>
+    <string name="superset">Superset</string>
+    <string name="permission_request_alarm">Questa app usa questo permesso per vibrare alla fine del riposo tra una serie e l\'altra. Negare questo permesso causerà vibrazioni a tempi inesatti.</string>
+    <string name="permission_exact_alarm_title"><![CDATA[Concedere permesso \'Sveglie & Promemoria\'?]]></string>
+    <string name="phone_app_version_incompatible">Versione dell\'app cellulare incompatibile</string>
+    <string name="phone_app_version_incompatible_desc">Per favore, aggiorna l\'app del cellulare</string>
+    <string name="modification_desc_do_it_again">. Vuoi farlo di nuovo?</string>
+    <string name="modification_title_replace">Sostituisci esercizio?</string>
+    <string name="modification_title_add">Aggiungi esercizio?</string>
+    <string name="modification_title_skip">Saltare esercizio?</string>
+    <string name="modification_desc_replace">L\'ultima volta hai sostituito "%1$s" con: </string>
+    <string name="modification_desc_add">L\'ultima volta, dopo aver completato l\'ultimo esercizio, hai aggiunto: </string>
+    <string name="modification_desc_skip">L\'ultima volta hai saltato "%1$s"</string>
+    <string name="other_app_exercise_title">Fermare altra app di esercizio?</string>
+    <string name="other_app_exercise_info">Un\'altra app è in esecuzione per tenere traccia di un esercizio. Per tracciare questo allenamento, è necessario chiudere l\'altra app. Vuoi fermare l\'altra app and iniziare l\'allenamento qui?</string>
+    <string name="other_app_exercise_confirm">Ferma e inizia</string>
+    <string name="hold">Durata</string>
+    <string name="close">Chiudi</string>
 
 </resources>

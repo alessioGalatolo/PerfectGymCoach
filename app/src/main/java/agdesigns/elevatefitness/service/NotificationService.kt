@@ -57,7 +57,7 @@ fun getTintedIcon(context: Context, iconId: Int): Icon {
 
 @Singleton
 class NotificationService @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     private val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -91,7 +91,7 @@ class NotificationService @Inject constructor(
     fun canPostPromotedNotifications() = notificationManager.canPostPromotedNotifications()
 
     fun buildBaseProgressStyle(state: WorkoutNotificationState): NotificationCompat.ProgressStyle {
-        if (state.restTimeSecs != null && state.totalRest != null && state.restTimeSecs != 0L) {
+        if (state.restTimeSecs != null && state.totalRest != null && state.restTimeSecs != 0L && state.totalRest != 0L) {
             return NotificationCompat.ProgressStyle()
                 .setProgress((state.restTimeSecs * 100 / state.totalRest).toInt())
         }
@@ -132,7 +132,7 @@ class NotificationService @Inject constructor(
             .setProgressSegments(
                 state.setsPerExercise.mapIndexed { index, it ->
                     val color = if (index <= state.currentExercise) {
-                        if (state.setsDonePerExercise[index] == it)
+                        if (state.setsDonePerExercise.getOrNull(index) == it)
                             segmentFinishedColor
                         else
                             segmentUnfinishedColor
@@ -144,7 +144,7 @@ class NotificationService @Inject constructor(
             )
 
         var progress = 0
-        for (i in 0..state.currentExercise-1) {
+        for (i in 0 until state.currentExercise) {
             progress += state.setsPerExercise.getOrNull(i) ?: 0
         }
         progress += state.setsDonePerExercise.getOrNull(state.currentExercise) ?: 0

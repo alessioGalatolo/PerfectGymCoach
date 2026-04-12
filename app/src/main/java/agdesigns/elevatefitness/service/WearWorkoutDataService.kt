@@ -41,9 +41,9 @@ class WearWorkoutDataService: BaseGrpcDataService<WorkoutServiceGrpcKt.WorkoutSe
 
             override suspend fun setCompleted(request: Workout.SetCompleted): Workout.SetCompletedResponse {
                 Log.d("WearWorkoutDataService", "Received set completed request: $request")
-                repository.handleSetCompleted(request)
+                val success = repository.handleSetCompleted(request)
                 return Workout.SetCompletedResponse.newBuilder()
-                    .setSuccess(true)
+                    .setSuccess(success)
                     .setMessage("Set recorded")
                     .build()
             }
@@ -53,6 +53,17 @@ class WearWorkoutDataService: BaseGrpcDataService<WorkoutServiceGrpcKt.WorkoutSe
                     .setActive(repository.ongoingWorkout)
                     .build()
             }
+
+            override suspend fun completeWorkout(request: Workout.CompleteWorkout): Empty {
+                repository.handleCompleteWorkout(request)
+                return Empty.newBuilder().build()
+            }
+
+            override suspend fun acceptModification(request: Workout.AcceptedModification): Empty {
+                repository.handleAcceptModification(request.exerciseIndex)
+                return Empty.newBuilder().build()
+            }
+
         }
     }
 

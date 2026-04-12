@@ -16,6 +16,23 @@ message WorkoutStaticData {
   DefaultIncrements default_increments = 7;
   bool imperial_system = 8;
   bool active_workout = 9;
+  float previous_intensity = 10;
+  repeated ProtoSuggestedModification suggested_modifications = 11;
+}
+
+message ProtoSuggestedModification {
+  bool hasSuggestion = 1;
+  ProtoModificationType type = 2;
+  string targetExerciseName = 3; // empty if no target
+  // these are not really needed but help to make the object unique
+  int64 targetId = 4;
+  int64 sourceId = 5;
+}
+
+enum ProtoModificationType {
+    EXERCISE_ADDED = 0;
+    EXERCISE_SKIPPED = 1;
+    EXERCISE_REPLACED = 2;
 }
 
 message WorkoutDynamicData {
@@ -24,15 +41,18 @@ message WorkoutDynamicData {
 }
 
 message Exercise {
-  int64 exercise_id = 1;
-  string name = 2;
-  string equipment = 3;
-  int32 orderInProgram = 4;
-  repeated int32 reps = 5;
-  repeated int32 rest = 6;
-  string note = 7;
-  string variation = 8;
-  int64 superset_exercise = 9;
+  int64 workout_exercise_id = 1;
+  int64 program_exercise_id = 2;
+  string name = 3;
+  string equipment = 4;
+  int32 orderInProgram = 5;
+  repeated int32 reps = 6;
+  repeated int32 rest = 7;
+  string note = 8;
+  string variation = 9;
+  int64 superset_exercise = 10;
+  bool is_duration_based = 11;
+  repeated string set_types = 12;
 }
 
 message SuggestedRepsWeight {
@@ -68,10 +88,25 @@ message WorkoutActiveResponse {
   bool active = 1;
 }
 
+message CompleteWorkout {
+  float intensity = 1;
+  float calories = 2;
+  int32 max_heart_rate = 3;
+  int32 avg_heart_rate = 4;
+  int32 min_heart_rate = 5;
+  repeated int32 heart_rates = 6;
+}
+
+message AcceptedModification {
+  int32 exercise_index = 1;
+}
+
 // gRPC service for events
 service WorkoutService {
   rpc workoutActive(google.protobuf.Empty) returns (WorkoutActiveResponse);
   rpc setCompleted(SetCompleted) returns (SetCompletedResponse);
+  rpc completeWorkout(CompleteWorkout) returns (google.protobuf.Empty);
+  rpc acceptModification(AcceptedModification) returns (google.protobuf.Empty);
 }
 
 message ExerciseToScrollTo {
@@ -84,7 +119,7 @@ message RestPhone2Watch {
   google.protobuf.Timestamp rest_timestamp = 2;
 }
 
-// used by phone to tell watch to advance exercise
+// used by phone to tell watch stuff
 service WorkoutWearService {
   // TODO: merge scrollToExercise into set rest, scroll to exercise should be a
   //  side effect of a set completed on phone
@@ -92,4 +127,5 @@ service WorkoutWearService {
   rpc setRest(RestPhone2Watch) returns (google.protobuf.Empty);
   // stops workout on watch
   rpc stopWorkout(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc getHealthData(google.protobuf.Empty) returns (CompleteWorkout);
 }

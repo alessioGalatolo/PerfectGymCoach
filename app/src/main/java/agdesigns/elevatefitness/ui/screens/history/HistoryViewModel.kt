@@ -103,7 +103,7 @@ class HistoryViewModel @Inject constructor(
                             weekIteration = week
                             true
                         } else false
-                        records.forEach {
+                        records.sortedByDescending { it.startDate }.forEach {
                             mainList.add(
                                 HistoryScreenListItem(
                                     workout = it,

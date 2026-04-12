@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.data.db.dao
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSets
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
+import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -22,8 +23,11 @@ interface WorkoutExerciseDao {
     @Query("SELECT * FROM workoutexercise WHERE extWorkoutId LIKE :workoutId")
     fun getWorkoutExercises(workoutId: Long): Flow<List<WorkoutExercise>>
 
+    @Query("SELECT * FROM workoutexercise WHERE workoutExerciseId LIKE :workoutExerciseId")
+    fun getWorkoutExercise(workoutExerciseId: Long): Flow<WorkoutExercise>
+
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun insert(exercise: WorkoutExercise)
+    suspend fun insert(exercise: WorkoutExercise): Long
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insert(exercises: List<WorkoutExercise>)
@@ -36,4 +40,7 @@ interface WorkoutExerciseDao {
 
     @Update(entity = WorkoutExercise::class)
     suspend fun updateSets(workoutExerciseUpdateSets: WorkoutExerciseUpdateSets)
+
+    @Update(entity = WorkoutExercise::class)
+    suspend fun updateSetTypes(updated: WorkoutExerciseUpdateSetTypes)
 }

@@ -1,12 +1,14 @@
 package agdesigns.elevatefitness.presentation.screens.workout.components
 
-import agdesigns.elevatefitness.shared.R
+import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.shared.R as sharedR
 import agdesigns.elevatefitness.presentation.screens.common.MorphPolygonShape
-import agdesigns.elevatefitness.presentation.screens.common.RoundedPolygonShape
 import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
 import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
+import agdesigns.elevatefitness.shared.SetType
+import agdesigns.elevatefitness.shared.grpc.Workout
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -22,18 +24,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.Morph
@@ -41,18 +55,19 @@ import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material3.AlertDialog
+import androidx.wear.compose.material3.AlertDialogDefaults
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.controls.MediaButton
 import com.google.android.horologist.media.ui.components.controls.MediaButtonDefaults
-import com.google.android.horologist.media.ui.components.display.TextMediaDisplay
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 import com.google.android.horologist.media.ui.util.isLargeScreen
+import kotlinx.coroutines.delay
 
 @Composable
 fun WorkoutPage(
@@ -60,127 +75,127 @@ fun WorkoutPage(
     exercisesState: ExercisesState,
     workoutState: WorkoutState,
     listState: ScalingLazyListState,
-    changeWeight: (Int) -> Unit,
-    fineGrainedChangeWeight: (Int) -> Unit,
-    changeReps: (Int) -> Unit,
-    changeTare: (Int) -> Unit,
+    ambientState: AmbientState,
+    acceptModification: (Int) -> Unit,
+    dismissModification: (Int) -> Unit,
     startRest: () -> Unit,
     resetRest: () -> Unit,
-    completeSet: () -> Unit,
     onNextExercise: () -> Unit,
     onPreviousExercise: () -> Unit,
-    onDismissHint: () -> Unit
+    onDismissHint: () -> Unit,
 ) {
-    val currentExercise = remember(workoutState.currentExerciseIndex, exercisesState.exercises) {
-        exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex)
-            ?: exercisesState.exercises.lastOrNull()
-    }
     val setsDone = remember (workoutState.currentExerciseIndex, exercisesState.exercisesSetsDone) {
         exercisesState.exercisesSetsDone.getOrNull(workoutState.currentExerciseIndex) ?: 0
     }
     val currentImage = remember(workoutState.currentExerciseIndex, exercisesState.images) {
         exercisesState.images.getOrNull(workoutState.currentExerciseIndex)
     }
-    AmbientAware { ambientState ->
-        if (currentImage != null && ambientState.isInteractive) {
-            VignetteImage(
-                currentImage.asImageBitmap(),
-                alpha = 0.15f,
-            )
-        }
-        if ((workoutState.ongoingRestProgression ?: 0f) > 0f || workoutState.settingSetValues) {
-            CompleteSetAndRestScreen(
-                restProgression = workoutState.ongoingRestProgression ?: 1f,
-                currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
-                nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount }
-                        ?: false) {
-                    val repsWeight = exercisesState.suggestedRepsWeight.getOrNull(
-                        workoutState.currentExerciseIndex
-                    )
-                    val setsDone = exercisesState.exercisesSetsDone.getOrNull(
-                        workoutState.currentExerciseIndex
-                    ) ?: 0
-                    (currentExercise.name ?: "") + " (${repsWeight?.getReps(setsDone)}x${
-                        repsWeight?.getWeight(
-                            setsDone
-                        )
-                    }${
-                        if (exercisesState.imperialSystem)
-                            stringResource(R.string.lb)
-                        else
-                            stringResource(R.string.kg)
-                    })"
-                } else {
-                    exercisesState.exercises.getOrNull(workoutState.currentExerciseIndex + 1)?.name
-                        ?: ""
-                },
-                // FIXME: doesn't make much sense to pass states and values above explicitly, remove states
-                workoutState = workoutState,
-                exercisesState = exercisesState,
-                ambientState = ambientState,
-                changeReps = changeReps,
-                changeWeight = changeWeight,
-                fineGrainedChangeWeight = fineGrainedChangeWeight,
-                changeTare = changeTare,
-                skipRest = resetRest,
-                completeSet = completeSet,
-                onDismissHint = onDismissHint
-            )
-        } else {
-            val exerciseName = remember(
-                workoutState.currentExerciseIndex,
-                exercisesState.exercises,
-                exercisesState.exercisesSetsDone
+    val currentSetType = workoutState.currentExercise?.setTypesList?.getOrNull(setsDone)?.let {
+        SetType.fromResKey(it)
+    } ?: SetType.NORMAL
+    if (currentImage != null && ambientState.isInteractive) {
+        VignetteImage(
+            currentImage.asImageBitmap(),
+            alpha = 0.15f,
+        )
+    }
+    if ((workoutState.ongoingRestProgression ?: 0f) > 0f && workoutState.successfullySetValues) {
+        RestScreen(
+            restProgression = workoutState.ongoingRestProgression ?: 1f,
+            currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
+            nextSetExerciseName = workoutState.nextSetExerciseName,
+            ambientState = ambientState,
+            hints = workoutState.inRestHints,
+            showHintDialog = workoutState.showHintDialog,
+            skipRest = resetRest,
+            onDismissHint = onDismissHint
+        )
+    } else {
+        ExercisePage(
+            exerciseName = workoutState.currentExercise?.name ?: "",
+            setsDone = setsDone,
+            totalSets = workoutState.currentExercise?.restCount ?: 0,
+            exerciseSubtitle = if (
+                currentSetType != SetType.NORMAL
             ) {
-                (currentExercise?.name
-                    ?: "") + " (${setsDone + 1}/${currentExercise?.restCount ?: 0})"
-            }
-
-            ExercisePage(
-                exerciseTitle = exerciseName,
-                exerciseSubtitle = "${workoutState.currentReps} x ${workoutState.currentWeight} " +
-                        if (exercisesState.imperialSystem)
-                            stringResource(agdesigns.elevatefitness.shared.R.string.lb)
-                        else
-                            stringResource(agdesigns.elevatefitness.shared.R.string.kg),
-                bottomText = currentExercise?.note ?: "",
-                startRest = startRest,
-                hasPrevious = workoutState.currentExerciseIndex > 0,
-                hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
-                ambientState = ambientState,
-                onNext = {
-                    if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
-                        onNextExercise()
-                    }
-                },
-                onPrevious = {
-                    if (workoutState.currentExerciseIndex > 0) {
-                        onPreviousExercise()
-                    }
+                stringResource(currentSetType.displayRes).first().uppercase() + ": "
+            } else { "" }
+                + "${workoutState.currentReps}" +
+                    if (workoutState.currentExercise?.isDurationBased == true) {
+                        "s "
+                    } else { " " }
+                +
+                    "x ${workoutState.currentWeight}" +
+                    if (exercisesState.imperialSystem)
+                        stringResource(sharedR.string.lb)
+                    else
+                        stringResource(sharedR.string.kg),
+            isSuperset = workoutState.currentExercise?.supersetExercise != 0L && exercisesState.exercises.any {
+                it.programExerciseId == workoutState.currentExercise?.supersetExercise
+            },
+            bottomText = workoutState.currentExercise?.note ?: "",
+            startRest = startRest,
+            hasPrevious = workoutState.currentExerciseIndex > 0,
+            hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
+            ambientState = ambientState,
+            modification = if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
+                exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)
+            else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
+                exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)
+            else null,
+            // this is really ugly, should compute modification in VM instead
+            modificationDismissedMap = workoutState.modificationIsDismissed,
+            acceptModification = {
+                if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
+                    acceptModification(workoutState.currentExerciseIndex-1)
+                else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
+                    acceptModification(workoutState.currentExerciseIndex)
+            },
+            dismissModification = {
+                if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
+                    dismissModification(workoutState.currentExerciseIndex-1)
+                else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
+                    dismissModification(workoutState.currentExerciseIndex)
+            },
+            onNext = {
+                if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
+                    onNextExercise()
                 }
+            },
+            onPrevious = {
+                if (workoutState.currentExerciseIndex > 0) {
+                    onPreviousExercise()
+                }
+            },
 
-            )
-        }
+        )
     }
 }
 
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun ExercisePage(
-    exerciseTitle: String,
+    exerciseName: String,
+    setsDone: Int,
+    totalSets: Int,
     exerciseSubtitle: String,
+    isSuperset: Boolean,
     bottomText: String,
     hasPrevious: Boolean,
     hasNext: Boolean,
     ambientState: AmbientState,
+    modification: Workout.ProtoSuggestedModification?,
+    acceptModification: () -> Unit,
+    dismissModification: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
-    startRest: () -> Unit
+    startRest: () -> Unit,
+    modificationDismissedMap: Map<Workout.ProtoSuggestedModification, Boolean>,
 ) {
     PlayerScreen(
         mediaDisplay = {
             TextHeaderWithMarquee(
-                title = exerciseTitle,
+                title = exerciseName + " (${setsDone + 1}/$totalSets)",
                 subtitle = exerciseSubtitle,
                 ambientState = ambientState
             )
@@ -250,42 +265,71 @@ fun ExercisePage(
                     } else {
                         MaterialTheme.colorScheme.primary
                     }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .rotate(45f)
-                            .clip(
-                                MorphPolygonShape(morph, animatedProgress.value)
-                            )
-                            .border(
-                                1.dp,
-                                MaterialTheme.colorScheme.primary,
-                                MorphPolygonShape(morph, animatedProgress.value)
-                            )
-                            .rotate(-45f)
-                            .clickable(interactionSource = interactionSource, indication = null, onClick = startRest)
-                            .background(background),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.Default.Done,
+                    Box {
+                        Box(
                             modifier = Modifier
-                                .defaultMinSize(
-                                    minWidth = ButtonDefaults.DefaultButtonSize,
-                                    minHeight = ButtonDefaults.DefaultButtonSize,
+                                .fillMaxSize()
+                                .rotate(45f)
+                                .clip(
+                                    MorphPolygonShape(morph, animatedProgress.value)
                                 )
-                                .size(if (LocalConfiguration.current.isLargeScreen)
-                                    38.dp
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    MorphPolygonShape(morph, animatedProgress.value)
+                                )
+                                .rotate(-45f)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null,
+                                    onClick = {
+                                        startRest()
+                                    }
+                                )
+                                .background(background),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Default.Done,
+                                modifier = Modifier
+                                    .defaultMinSize(
+                                        minWidth = ButtonDefaults.DefaultButtonSize,
+                                        minHeight = ButtonDefaults.DefaultButtonSize,
+                                    )
+                                    .size(
+                                        if (LocalConfiguration.current.isLargeScreen)
+                                            38.dp
+                                        else
+                                            32.dp
+                                    )
+                                    .align(Alignment.Center),
+                                contentDescription = stringResource(agdesigns.elevatefitness.R.string.done_icon),
+                                tint = if (ambientState.isAmbient)
+                                    MaterialTheme.colorScheme.primary
                                 else
-                                    32.dp
-                                )
-                                .align(Alignment.Center),
-                            contentDescription = "", // FIXME
-                            tint = if (ambientState.isAmbient)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onPrimary,
-                        )
+                                    MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                        if (isSuperset) {
+                            val buttonBackground = if (ambientState.isAmbient) {
+                                Color.Transparent
+                            } else {
+                                MaterialTheme.colorScheme.secondary
+                            }
+                            Icon(
+                                Icons.Default.Link,
+                                stringResource(agdesigns.elevatefitness.R.string.superset),
+                                tint = if (ambientState.isAmbient)
+                                    MaterialTheme.colorScheme.secondary
+                                else
+                                    MaterialTheme.colorScheme.onSecondary,
+                                modifier = Modifier
+                                    .rotate(-45f)
+                                    .align(Alignment.BottomEnd)
+                                    .clip(MaterialTheme.shapes.extraLarge)
+                                    .background(buttonBackground)
+                            )
+                        }
                     }
                 }
             )
@@ -299,4 +343,85 @@ fun ExercisePage(
             }
         },
     )
+    // we only suggest modification is the user has not done any sets yet
+    if (modification != null && setsDone == 0) {
+        var dialogVisible by rememberSaveable(modification) { mutableStateOf(false) }
+        val haptics = LocalHapticFeedback.current
+        LaunchedEffect(modification) {
+            if (modificationDismissedMap[modification] != true) {
+                delay(2000)
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                dialogVisible = true
+            }
+        }
+        AlertDialog(
+            visible = dialogVisible,
+            onDismissRequest = { dialogVisible = false },
+            confirmButton = {
+                AlertDialogDefaults.ConfirmButton(
+                    onClick = {
+                        dialogVisible = false
+                        acceptModification()
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Done,
+                        null
+                    )
+                }
+            },
+            title = {
+                val text = when (modification.type) {
+                    Workout.ProtoModificationType.EXERCISE_REPLACED -> stringResource(R.string.modification_title_replace)
+                    Workout.ProtoModificationType.EXERCISE_ADDED -> stringResource(R.string.modification_title_add)
+                    Workout.ProtoModificationType.EXERCISE_SKIPPED -> stringResource(R.string.modification_title_skip)
+                    else -> ""
+                }
+                Text(
+                    text,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            dismissButton = {
+                AlertDialogDefaults.DismissButton(
+                    onClick = {
+                        dialogVisible = false
+                        dismissModification()
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        null
+                    )
+                }
+            },
+            text = {
+                val text = when (modification.type) {
+                    Workout.ProtoModificationType.EXERCISE_REPLACED -> buildAnnotatedString {
+                        append(stringResource(R.string.modification_desc_replace, exerciseName))
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append(modification.targetExerciseName)
+                        }
+                        append(stringResource(R.string.modification_desc_do_it_again))
+                    }
+                    Workout.ProtoModificationType.EXERCISE_ADDED -> buildAnnotatedString {
+                        // FIXME: add back name of previous exercise
+                        append(stringResource(R.string.modification_desc_add))
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append(modification.targetExerciseName)
+                        }
+                        append(stringResource(R.string.modification_desc_do_it_again))
+                    }
+                    Workout.ProtoModificationType.EXERCISE_SKIPPED -> buildAnnotatedString {
+                        append(stringResource(R.string.modification_desc_skip, exerciseName))
+                        append(stringResource(R.string.modification_desc_do_it_again))
+                    }
+                    else -> buildAnnotatedString { append("")  }
+                }
+                Text(text)
+            },
+        )
+    }
+
 }

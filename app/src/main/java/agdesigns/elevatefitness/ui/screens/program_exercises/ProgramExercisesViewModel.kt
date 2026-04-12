@@ -10,6 +10,7 @@ import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +33,8 @@ sealed class ProgramExercisesEvent{
 
     data class DeleteExercise(val programExerciseId: Long): ProgramExercisesEvent()
 
+    data class DuplicateExercise(val programExerciseId: Long): ProgramExercisesEvent()
+
 }
 
 @HiltViewModel
@@ -40,6 +43,8 @@ class ProgramExercisesViewModel @Inject constructor(
 ): ViewModel() {
     private val _state = MutableStateFlow(ProgramExercisesState())
     val state: StateFlow<ProgramExercisesState> = _state.asStateFlow()
+
+    val reorderCompleted: Channel<Boolean> = Channel()
 
     private var getProgramExercisesJob: Job? = null
 
@@ -53,12 +58,12 @@ class ProgramExercisesViewModel @Inject constructor(
                 getProgramExercisesJob?.cancel()
                 getProgramExercisesJob = viewModelScope.launch {
                     repository.getProgramExercisesWithExercise(event.programId).collect { exsPairs ->
-                        Log.d("ProgramExercises", "ProgramExercises = $exsPairs")
                         val sorted = exsPairs.sortedBy { it.first.orderInProgram }
                         _state.update { state -> state.copy(
                             programExercises = sorted.map { it.first },
                             exercises = sorted.map { it.second }
                         ) }
+                        reorderCompleted.trySend(true)
                     }
                 }
             }
@@ -163,6 +168,11 @@ class ProgramExercisesViewModel @Inject constructor(
                     repository.updateExerciseSuperset(
                         exercisesToUpdate
                     )
+                }
+            }
+            is ProgramExercisesEvent.DuplicateExercise -> {
+                viewModelScope.launch {
+                    repository.duplicateProgramExercise(event.programExerciseId)
                 }
             }
         }

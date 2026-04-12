@@ -12,31 +12,29 @@ import kotlinx.parcelize.Parcelize
 @Entity
 data class Exercise(
     @PrimaryKey(autoGenerate = true) val exerciseId: Long = 0L,
-    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
     @ColumnInfo(defaultValue = "")
     val nameResKey: String, // key of the string resource
     val equipment: Equipment,
     val primaryMuscle: Muscle,
     val secondaryMuscles: List<Muscle> = emptyList(),
-    @Deprecated("Use imageResKey instead")
     val image: Int = R.drawable.finish_workout,
     @ColumnInfo(defaultValue = "finish_workout")
     val imageResKey: String = "finish_workout",
-    @Deprecated("Use descriptionResKey instead")
     val description: String = "Description not available",
     @ColumnInfo(defaultValue = "description_not_available")
     val descriptionResKey: String = "description_not_available",
     val difficulty: ExerciseDifficulty = ExerciseDifficulty.INTERMEDIATE,
     val probability: Double = 1.0, // weight used when randomly selecting exercises
-    @Deprecated("Use variationsResIds instead")
     val variations: List<String> = emptyList(),
     @ColumnInfo(defaultValue = "")
     val variationsResKeys: List<String> = emptyList(),
     @ColumnInfo(defaultValue = "0")
     val userDefined: Boolean = false,  // exercise was created by user
     @ColumnInfo(defaultValue = "1")  // This is set when adding a column in the migration, sets everything to true
-    val needsMigration: Boolean = false // this is set when adding an exercise, doesn't need migration
+    val needsMigration: Boolean = false, // this is set when adding an exercise, doesn't need migration
+    @ColumnInfo(defaultValue = "0")
+    val isDurationBased: Boolean = false, // e.g., plank, planche, etc.
 ) : Parcelable {
     // Helper properties for UI
     val nameResource: Int
@@ -98,19 +96,37 @@ data class Exercise(
 }
 
 fun getImageResource(name: String): Int = when(name) {
+    "ab_machine" -> R.drawable.ab_machine
     "ab_roller" -> R.drawable.ab_roller
+    "abduction_machine" -> R.drawable.abduction_machine
+    "back_lever" -> R.drawable.back_lever
+    "barbell_bench_close_grip" -> R.drawable.barbell_bench_close_grip
     "barbell_clean" -> R.drawable.barbell_clean
     "barbell_curl" -> R.drawable.barbell_curl
+    "barbell_hip_thrust" -> R.drawable.barbell_hip_thrust
     "barbell_lunge" -> R.drawable.barbell_lunge
     "barbell_row" -> R.drawable.barbell_row
+    "barbell_shrug" -> R.drawable.barbell_shrug
+    "barbell_skull_crusher" -> R.drawable.barbell_skull_crusher
     "barbell_squat" -> R.drawable.barbell_squat
+    "barbell_tbar" -> R.drawable.barbell_tbar
     "bench_dip" -> R.drawable.bench_dip
     "bench_press" -> R.drawable.bench_press
+    "biceps_machine" -> R.drawable.biceps_machine
     "cable_crossover" -> R.drawable.cable_crossover
     "cable_curl" -> R.drawable.cable_curl
+    "cable_delt_fly" -> R.drawable.cable_delt_fly
+    "cable_face_pull" -> R.drawable.cable_face_pull
+    "cable_hip_abduction" -> R.drawable.cable_hip_abduction
+    "cable_overhead_triceps" -> R.drawable.cable_overhead_triceps
+    "cable_pullover" -> R.drawable.cable_pullover
     "cable_pushdown" -> R.drawable.cable_pushdown
     "cable_row" -> R.drawable.cable_row
+    "cable_shoulder_press" -> R.drawable.cable_shoulder_press
+    "cable_side_raise" -> R.drawable.cable_side_raise
     "calf" -> R.drawable.calf
+    "calves_machine" -> R.drawable.calves_machine
+    "calves_raises" -> R.drawable.calves_raises
     "chest_dip" -> R.drawable.chest_dip
     "chest_press" -> R.drawable.chest_press
     "chin_up" -> R.drawable.chin_up
@@ -118,41 +134,66 @@ fun getImageResource(name: String): Int = when(name) {
     "concentration_curl" -> R.drawable.concentration_curl
     "crunch" -> R.drawable.crunch
     "deadlift" -> R.drawable.deadlift
+    "dragon_flag" -> R.drawable.dragon_flag
     "dumbbell_bench_press" -> R.drawable.dumbbell_bench_press
     "dumbbell_curl" -> R.drawable.dumbbell_curl
+    "dumbbell_deadlift" -> R.drawable.dumbbell_deadlift
+    "dumbbell_front_raise" -> R.drawable.dumbbell_front_raise
     "dumbbell_lunge" -> R.drawable.dumbbell_lunge
+    "dumbbell_pullover" -> R.drawable.dumbbell_pullover
     "dumbbell_row" -> R.drawable.dumbbell_row
+    "dumbbell_row_standing" -> R.drawable.dumbbell_row_standing
     "dumbbell_shoulder_press" -> R.drawable.dumbbell_shoulder_press
     "dumbbell_shrug" -> R.drawable.dumbbell_shrug
+    "dumbbell_side_raise" -> R.drawable.dumbbell_side_raise
+    "dumbbell_skull_crusher" -> R.drawable.dumbbell_skull_crusher
+    "dumbbell_split_squat" -> R.drawable.dumbbell_split_squat
+    "dumbbell_triceps_close_grip" -> R.drawable.dumbbell_triceps_close_grip
+    "dumbbell_triceps_extension" -> R.drawable.dumbbell_triceps_extension
+    "dumbbell_upright_row" -> R.drawable.dumbbell_upright_row
+    "front_lever" -> R.drawable.front_lever
     "generic_barbell" -> R.drawable.generic_barbell
     "generic_cable" -> R.drawable.generic_cable
     "generic_dumbbell" -> R.drawable.generic_dumbbell
     "generic_machine" -> R.drawable.generic_machine
+    "glutes_cable" -> R.drawable.glutes_cable
+    "glutes_machine" -> R.drawable.glutes_machine
+    "goblet_squat" -> R.drawable.goblet_squat
+    "hack_squat_machine" -> R.drawable.hack_squat_machine
     "headstand_push_up" -> R.drawable.headstand_push_up
     "hyperextensions" -> R.drawable.hyperextensions
     "incline_bench_press" -> R.drawable.incline_bench_press
     "knee_raises" -> R.drawable.knee_raises
     "lat_pulldown" -> R.drawable.lat_pulldown
+    "leg_extension" -> R.drawable.leg_extension
     "leg_machine" -> R.drawable.leg_machine
     "leg_press" -> R.drawable.leg_press
     "leg_raises" -> R.drawable.leg_raises
     "lunge" -> R.drawable.lunge
     "machine_fly" -> R.drawable.machine_fly
+    "machine_shoulder_press" -> R.drawable.machine_shoulder_press
     "muscle_up" -> R.drawable.muscle_up
+    "planche" -> R.drawable.planche
     "plank" -> R.drawable.plank
     "pull_up" -> R.drawable.pull_up
     "push_up" -> R.drawable.push_up
     "romanian_deadlift" -> R.drawable.romanian_deadlift
     "rope_climb" -> R.drawable.rope_climb
+    "row_machine" -> R.drawable.row_machine
     "russian_twist" -> R.drawable.russian_twist
+    "scott_barbell" -> R.drawable.scott_barbell
     "scott_dumbbell" -> R.drawable.scott_dumbbell
     "shoulder_press" -> R.drawable.shoulder_press
     "side_crunch" -> R.drawable.side_crunch
     "side_plank" -> R.drawable.side_plank
+    "side_raise" -> R.drawable.side_raise
+    "split_squat" -> R.drawable.split_squat
     "sit_ups" -> R.drawable.sit_ups
     "squat" -> R.drawable.squat
     "step_ups" -> R.drawable.step_ups
+    "step_ups_better" -> R.drawable.step_ups_better
     "sumo_deadlift" -> R.drawable.sumo_deadlift
+    "vertical_traction" -> R.drawable.vertical_traction
     "wide_pull_up" -> R.drawable.wide_pull_up
     else -> R.drawable.finish_workout
 }
@@ -166,6 +207,10 @@ fun getNameDescriptionResource(key: String): Int = when (key) {
     "exercise_decline_bench_press_description" -> R.string.exercise_decline_bench_press_description
     "exercise_cable_crossover_name" -> R.string.exercise_cable_crossover_name
     "exercise_cable_crossover_description" -> R.string.exercise_cable_crossover_description
+    "exercise_cable_glute_kickback_name" -> R.string.exercise_cable_glute_kickback_name
+    "exercise_cable_glute_kickback_description" -> R.string.exercise_cable_glute_kickback_description
+    "exercise_cable_hip_abduction_name" -> R.string.exercise_cable_hip_abduction_name
+    "exercise_cable_hip_abduction_description" -> R.string.exercise_cable_hip_abduction_description
     "exercise_chest_dip_name" -> R.string.exercise_chest_dip_name
     "exercise_chest_dip_description" -> R.string.exercise_chest_dip_description
     "exercise_push_up_name" -> R.string.exercise_push_up_name
@@ -362,6 +407,12 @@ fun getNameDescriptionResource(key: String): Int = when (key) {
     "exercise_cable_shoulder_press_desc" -> R.string.exercise_cable_shoulder_press_desc
     "exercise_handstand_pushups_name" -> R.string.exercise_handstand_pushups_name
     "exercise_handstand_pushups_desc" -> R.string.exercise_handstand_pushups_desc
+    "exercise_planche_name" -> R.string.exercise_planche_name
+    "exercise_planche_desc" -> R.string.exercise_planche_desc
+    "exercise_front_lever_name" -> R.string.exercise_front_lever_name
+    "exercise_front_lever_desc" -> R.string.exercise_front_lever_desc
+    "exercise_back_lever_name" -> R.string.exercise_back_lever_name
+    "exercise_back_lever_desc" -> R.string.exercise_back_lever_desc
     "exercise_machine_shoulder_press_name" -> R.string.exercise_machine_shoulder_press_name
     "exercise_machine_shoulder_press_desc" -> R.string.exercise_machine_shoulder_press_desc
     "exercise_front_raise_name" -> R.string.exercise_front_raise_name

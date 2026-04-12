@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.plugin)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
@@ -54,8 +53,8 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 30
         targetSdk = 36
-        versionCode = 16  // cannot match app version
-        versionName = "0.0.6b" // match phone app version + eventual revisions
+        versionCode = 25  // cannot match app version
+        versionName = "0.0.9" // match phone app version + eventual revisions
     }
 
     buildTypes {
@@ -102,6 +101,7 @@ dependencies {
     implementation(libs.lifecycle.service)
     implementation(libs.datastore.preferences)
     implementation(libs.accompanist.permissions)
+    implementation(libs.health.services)
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.hilt.android)

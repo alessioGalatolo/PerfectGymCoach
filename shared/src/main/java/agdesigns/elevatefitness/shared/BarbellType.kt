@@ -4,11 +4,11 @@ enum class BarbellType(val barbellResKey: String, val weight: Map<Boolean, Float
     // name, weight[false] = kg, true = lbs
     // FIXME: double check US weights
     EZ_CURL_LIGHT("barbells_light_ez_curl_bar", mapOf(Pair(false, 5f), Pair(true, 15f))),
-    EZ_CURL("barbells_ez_curl_bar", mapOf(Pair(false, 12f), Pair(true, 30f))),
-    YOUNG_OLYMPIC("barbells_young_s_olympic_bar", mapOf(Pair(false, 10f), Pair(true, 25f))),
-    WOMEN_OLYMPIC("barbells_women_s_olympic_bar", mapOf(Pair(false, 15f), Pair(true, 35f))),
-    MEN_OLYMPIC("barbells_men_s_olympic_bar", mapOf(Pair(false, 20f), Pair(true, 45f))),
-    SQUAT("barbells_squat_bar", mapOf(Pair(false, 25f), Pair(true, 55f))),
+    EZ_CURL("barbells_ez_curl_bar", mapOf(Pair(false, 10f), Pair(true, 25f))),
+    YOUNG_OLYMPIC("barbells_young_s_olympic_bar", mapOf(Pair(false, 10f), Pair(true, 22f))),
+    WOMEN_OLYMPIC("barbells_women_s_olympic_bar", mapOf(Pair(false, 15f), Pair(true, 33f))),
+    MEN_OLYMPIC("barbells_men_s_olympic_bar", mapOf(Pair(false, 20f), Pair(true, 44f))),
+    SQUAT("barbells_squat_bar", mapOf(Pair(false, 25f), Pair(true, 60f))),
     OTHER("barbells_other", mapOf(Pair(false, 0f), Pair(true, 0f)));
 
     val barbellResource: Int

@@ -1,6 +1,8 @@
 package agdesigns.elevatefitness.data.db
 
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.shared.SetType
+import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import androidx.room.TypeConverter
 import java.time.Instant
 import java.time.ZoneId
@@ -21,10 +23,14 @@ class Converters {
         if (value == 0L) null else Instant.ofEpochMilli(value).atZone(zoneId)
 
     @TypeConverter
-    fun listIntToString(value: List<Int>): String = if (value.isEmpty()) "" else value.joinToString(",")
+    fun listIntToString(value: List<Int>?): String? = value?.let {
+        if (value.isEmpty()) "" else value.joinToString(",")
+    }
 
     @TypeConverter
-    fun stringToListInt(value: String): List<Int> = if (value.isEmpty()) emptyList() else value.split(",").map { it.toInt() }
+    fun stringToListInt(value: String?): List<Int>? = value?.let {
+        if (value.isEmpty()) emptyList() else value.split(",").map { it.toInt() }
+    }
 
     @TypeConverter
     fun listFloatToString(value: List<Float>): String = if (value.isEmpty()) "" else value.joinToString(",")
@@ -53,5 +59,28 @@ class Converters {
             emptyList()
         else
             value.split("/****/")
+    }
+
+    @TypeConverter
+    fun workoutModificationsToString(value: List<WorkoutRecord.WorkoutModification>): String {
+        return value.joinToString("/****/") { it.toString() }
+    }
+
+    @TypeConverter
+    fun stringToWorkoutModifications(value: String): List<WorkoutRecord.WorkoutModification> {
+        return if (value.isBlank())
+            emptyList()
+        else
+            value.split("/****/").map {
+                WorkoutRecord.WorkoutModification.fromString(it)
+            }
+    }
+
+    @TypeConverter
+    fun listSetTypeToListInt(value: List<SetType>): List<Int> = value.map { it.ordinal }
+
+    @TypeConverter
+    fun listIntToListSetType(value: List<Int>): List<SetType> = value.map {
+        SetType.entries[it]
     }
 }

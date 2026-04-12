@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import agdesigns.elevatefitness.shared.Equipment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -179,7 +180,7 @@ fun RowScope.TextFieldWithButtons(
             value = text(),
             onValueChange = onNewText,
             singleLine = true,
-            label = { Text(prompt) },
+            label = { Text(prompt, overflow = TextOverflow.Ellipsis, maxLines = 1) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             isError = !textIsValid(text()),
             modifier = Modifier
@@ -193,6 +194,59 @@ fun RowScope.TextFieldWithButtons(
             onIncrement()
         }, modifier = Modifier
             .weight(0.3f)
+            .minimumInteractiveComponentSize()) {
+            Icon(Icons.Filled.Add, stringResource(R.string.increase_i, contentDescription))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun TextFieldWithButtons(
+    prompt: String,
+    hapticsEnabled: Boolean = false,
+    text: () -> String,
+    onNewText: (String) -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+    textIsValid: (String) -> Boolean = { true },
+    contentDescription: String = ""
+) {
+    val haptics = LocalHapticFeedback.current
+    Row(verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        IconButton(onClick = {
+            if (hapticsEnabled)
+                haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
+            onDecrement()
+        }, modifier = Modifier
+            .weight(0.2f)
+            .minimumInteractiveComponentSize()) {
+            Icon(
+                Icons.Filled.Remove,
+                stringResource(
+                    R.string.decrease_i, contentDescription
+                ))
+        }
+        OutlinedTextField(
+            shape = MaterialTheme.shapes.large,
+            value = text(),
+            onValueChange = onNewText,
+            singleLine = true,
+            label = { Text(prompt, overflow = TextOverflow.Ellipsis, maxLines = 1) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = !textIsValid(text()),
+            modifier = Modifier
+                .weight(0.6f)
+        )
+        IconButton(onClick = {
+            if (hapticsEnabled)
+                haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
+            onIncrement()
+        }, modifier = Modifier
+            .weight(0.2f)
             .minimumInteractiveComponentSize()) {
             Icon(Icons.Filled.Add, stringResource(R.string.increase_i, contentDescription))
         }

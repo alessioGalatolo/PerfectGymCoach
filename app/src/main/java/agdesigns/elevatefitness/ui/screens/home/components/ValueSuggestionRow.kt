@@ -2,12 +2,14 @@ package agdesigns.elevatefitness.ui.screens.home.components
 
 import agdesigns.elevatefitness.R
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.ButtonDefaults
@@ -17,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,10 +32,19 @@ fun <T> ValueSuggestionRow(
     onClick: (T) -> Unit,
     valueIsSelected: (T) -> Boolean,
 ) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(shouldBeShown) {
+        if (shouldBeShown) {
+            val indexOfSelected = options.indexOfFirst(valueIsSelected)
+            if (indexOfSelected != -1) {
+                listState.animateScrollToItem(indexOfSelected+1)
+            }
+        }
+    }
     AnimatedVisibility(shouldBeShown) {
-        LazyRow {
+        LazyRow(state = listState) {
             item {
-                Spacer(Modifier.padding(4.dp))
+                Spacer(Modifier.width(4.dp))
             }
             options.forEach { option ->
                 item {
@@ -62,7 +74,7 @@ fun <T> ValueSuggestionRow(
                 }
             }
             item {
-                Spacer(Modifier.padding(4.dp))
+                Spacer(Modifier.width(4.dp))
             }
         }
     }

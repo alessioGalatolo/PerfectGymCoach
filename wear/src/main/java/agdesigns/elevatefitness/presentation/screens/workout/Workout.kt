@@ -1,12 +1,25 @@
 package agdesigns.elevatefitness.presentation.screens.workout
 
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.datastore.ShownRationaleStatus
+import agdesigns.elevatefitness.presentation.screens.home.HomeViewModel
+import agdesigns.elevatefitness.presentation.screens.home.components.PermissionRequiredScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.EndWorkoutPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingWorkoutScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.MediaPlayingPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.WorkoutPage
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -20,18 +33,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
+import androidx.wear.compose.material3.ConfirmationDialog
 import androidx.wear.compose.material3.ConfirmationDialogDefaults
 import androidx.wear.compose.material3.FailureConfirmationDialog
 import androidx.wear.compose.material3.HorizontalPageIndicator
 import androidx.wear.compose.material3.HorizontalPagerScaffold
+import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.OpenOnPhoneDialog
 import androidx.wear.compose.material3.OpenOnPhoneDialogDefaults
 import androidx.wear.compose.material3.ScreenScaffold
@@ -39,19 +57,38 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.confirmationDialogCurvedText
 import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.horologist.compose.ambient.AmbientAware
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.system.exitProcess
 
 
 @Composable
 fun Workout(
     onBack: () -> Unit,
+    navigateToSelectValues: () -> Unit,
+    terminate: () -> Unit,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
+    val listState = rememberScalingLazyListState()
+    val exercisesState by viewModel.exercisesState.collectAsState()
+    val state by viewModel.state.collectAsState()
+    val mediaState by viewModel.mediaState.collectAsState()
+    val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.onEvent(WorkoutEvent.StopActivity)
+            if (!state.settingSetValues) {
+                scope.launch {
+                    viewModel.onEvent(WorkoutEvent.StopActivity)
+                    delay(500L)
+                    terminate()
+                }
+            }
         }
     }
     var nonRetriableErrorDialogShown by rememberSaveable { mutableStateOf(false) }
@@ -59,7 +96,6 @@ fun Workout(
 
     val curvedTextStyle = ConfirmationDialogDefaults.curvedTextStyle
     val text = stringResource(R.string.non_retriable_error_with_phone)
-    // FIXME: compose bug? where curved text is not entirely shown
     FailureConfirmationDialog(
         visible = nonRetriableErrorDialogShown,
         onDismissRequest = { nonRetriableErrorDialogShown = false },
@@ -89,6 +125,32 @@ fun Workout(
             )
         },
     )
+    AlertDialog(
+        visible = state.showOtherAppExerciseDialog,
+        onDismissRequest = { viewModel.onEvent(WorkoutEvent.DismissOtherAppDialog) },
+        title = { Text(stringResource(R.string.other_app_exercise_title)) },
+        text = { Text(stringResource(R.string.other_app_exercise_info)) },
+        confirmButton = {
+            AlertDialogDefaults.ConfirmButton(
+                onClick = { viewModel.onEvent(WorkoutEvent.ConfirmKillOtherApp) },
+            ) {
+                Icon(
+                    Icons.Default.Done,
+                    stringResource(R.string.other_app_exercise_confirm)
+                )
+            }
+        },
+        dismissButton = {
+            AlertDialogDefaults.DismissButton(
+                onClick = { viewModel.onEvent(WorkoutEvent.DismissOtherAppDialog) },
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    stringResource(R.string.close)
+                )
+            }
+        }
+    )
 
     // listen for VM effects
     LaunchedEffect(viewModel) {
@@ -100,18 +162,15 @@ fun Workout(
                 is WorkoutEffect.NonRetriableError -> {
                     nonRetriableErrorDialogShown = true
                 }
+                is WorkoutEffect.NavigateToSelectValues -> {
+                    navigateToSelectValues()
+                }
             }
         }
     }
-    val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    val exercisesState by viewModel.exercisesState.collectAsState()
-    val state by viewModel.state.collectAsState()
-    val mediaState by viewModel.mediaState.collectAsState()
-    val listState = rememberScalingLazyListState()
     LaunchedEffect(exercisesState.activeWorkout) {
         if (!exercisesState.activeWorkout) {
-            onBack()
+            terminate()
         }
     }
     if (exercisesState.exercises.isNotEmpty()) {
@@ -124,83 +183,100 @@ fun Workout(
         val text = OpenOnPhoneDialogDefaults.text
         val style = OpenOnPhoneDialogDefaults.curvedTextStyle
         var openOnPhone by remember { mutableStateOf(false) }
-        OpenOnPhoneDialog(
-            visible = openOnPhone,
-            onDismissRequest = { openOnPhone = false },
-            curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
-        )
-        ScreenScaffold(
-            modifier = Modifier.background(Color.Transparent),
-            scrollState = listState,
-            timeText = { TimeText() },
-        ) { contentPadding ->
-            HorizontalPagerScaffold(
-                pagerState = pagerState,
-                pageIndicator = { HorizontalPageIndicator(pagerState = pagerState) },
-            ) {
-                HorizontalPager(
-                    pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    when (page) {
-                        0 -> EndWorkoutPage(
-                            contentPadding,
-                            endWorkout = {
-                                scope.launch {
-                                    viewModel.onEvent(WorkoutEvent.StopActivity)
-                                    openOnPhone = true
-                                    delay(OpenOnPhoneDialogDefaults.DurationMillis)
-                                    delay(500L)
-                                    exitProcess(0) // FIXME
+        AmbientAware { ambientState ->
+            OpenOnPhoneDialog(
+                visible = openOnPhone,
+                onDismissRequest = { openOnPhone = false },
+                curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
+            )
+            ScreenScaffold(
+                modifier = Modifier.background(Color.Transparent),
+                scrollState = listState,
+                timeText = {
+                    if (pagerState.currentPage != 0) {
+                        TimeText()
+                    }
+                },
+            ) { contentPadding ->
+                HorizontalPagerScaffold(
+                    pagerState = pagerState,
+                    pageIndicator = { HorizontalPageIndicator(pagerState = pagerState) },
+                ) {
+                    HorizontalPager(
+                        pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        when (page) {
+                            0 -> EndWorkoutPage(
+                                contentPadding,
+                                ambientState = ambientState,
+                                lastIntensity = exercisesState.lastIntensity,
+                                workoutTime = state.workoutTime,
+                                heartRate = state.currentHeartRate,
+                                calories = state.totalCalories,
+                                endWorkout = { intensity ->
+                                    scope.launch {
+                                        viewModel.onEvent(WorkoutEvent.EndWorkout(workoutIntensity = intensity))
+                                        openOnPhone = true
+                                        delay(OpenOnPhoneDialogDefaults.DurationMillis)
+                                        delay(500L)
+                                        terminate()
+                                    }
+                                },
+                                terminate = {
+                                    scope.launch {
+                                        viewModel.onEvent(WorkoutEvent.StopActivity)
+                                        delay(500L)
+                                        terminate()
+                                    }
                                 }
-                            }
-                        )
-                        1 -> WorkoutPage(
-                            contentPadding,
-                            workoutState = state,
-                            exercisesState = exercisesState,
-                            listState = listState,
-                            changeWeight = {
-                                viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
-                            },
-                            fineGrainedChangeWeight = {
-                                viewModel.onEvent(WorkoutEvent.FineGrainedChangeWeight(it))
-                            },
-                            changeReps = {
-                                viewModel.onEvent(WorkoutEvent.ChangeReps(it))
-                            },
-                            changeTare = {
-                                viewModel.onEvent(WorkoutEvent.ChangeTare(it))
-                            },
-                            resetRest = {
-                                viewModel.onEvent(WorkoutEvent.ResetRest)
-                            },
-                            startRest = {
-                                viewModel.onEvent(WorkoutEvent.StartRest)
-                            },
-                            completeSet = {
-                                viewModel.onEvent(WorkoutEvent.CompleteSet)
-                            },
-                            onNextExercise = {
-                                viewModel.onEvent(WorkoutEvent.NextExercise)
-                            },
-                            onPreviousExercise = {
-                                viewModel.onEvent(WorkoutEvent.PreviousExercise)
-                            },
-                            onDismissHint = {
-                                viewModel.onEvent(WorkoutEvent.DismissHint)
-                            }
-                        )
-                        2 -> MediaPlayingPage(
-                            mediaState,
-                            onPlayPause = {
-                                viewModel.onEvent(WorkoutEvent.PlayPauseMedia)
-                            }, onNext = {
-                                viewModel.onEvent(WorkoutEvent.NextMedia)
-                            }, onPrevious = {
-                                viewModel.onEvent(WorkoutEvent.PreviousMedia)
-                            }
-                        )
+                            )
+
+                            1 -> WorkoutPage(
+                                contentPadding,
+                                workoutState = state,
+                                exercisesState = exercisesState,
+                                listState = listState,
+                                ambientState = ambientState,
+                                acceptModification = {
+                                    viewModel.onEvent(WorkoutEvent.AcceptModification(it))
+                                },
+                                dismissModification = {
+                                    viewModel.onEvent(WorkoutEvent.DismissModification(it))
+                                },
+                                resetRest = {
+                                    viewModel.onEvent(WorkoutEvent.ResetRest)
+                                },
+                                startRest = {
+                                    viewModel.onEvent(WorkoutEvent.StartRest)
+                                },
+                                onNextExercise = {
+                                    viewModel.onEvent(WorkoutEvent.NextExercise)
+                                },
+                                onPreviousExercise = {
+                                    viewModel.onEvent(WorkoutEvent.PreviousExercise)
+                                },
+                                onDismissHint = {
+                                    viewModel.onEvent(WorkoutEvent.DismissHint)
+                                },
+                            )
+
+                            2 -> MediaPlayingPage(
+                                mediaState,
+                                ambientState = ambientState,
+                                onPlayPause = {
+                                    viewModel.onEvent(WorkoutEvent.PlayPauseMedia)
+                                }, onNext = {
+                                    viewModel.onEvent(WorkoutEvent.NextMedia)
+                                }, onPrevious = {
+                                    viewModel.onEvent(WorkoutEvent.PreviousMedia)
+                                }, raiseVolume = {
+                                    viewModel.onEvent(WorkoutEvent.RaiseVolume)
+                                }, lowerVolume = {
+                                    viewModel.onEvent(WorkoutEvent.LowerVolume)
+                                }
+                            )
+                        }
                     }
                 }
             }

@@ -4,7 +4,8 @@
     <string name="active_workout">Active workout</string>
     <string name="stop_workout_notification_text">Stop workout</string>
     <string name="launch_activity">Open app</string>
-    <string name="notification_permission_explanation">This app requires permission to show ongoing activity (workout in progress)</string>
+    <string name="permissions_explanation_title">Please grant permission(s)</string>
+    <string name="permissions_explanation">This app uses the requested permissions to give you the best experience during your workout, not granting them will cause the app to not work properly.</string>
     <string name="show_permission">Launch</string>
     <string name="show_settings">Show settings</string>
     <string name="go_back">Go back</string>
@@ -60,6 +61,27 @@
     <string name="rest_hint_start_weight_generic">Load %1$s%2$s</string>
     <string name="rest_hint_start_reps_title">Reps</string>
     <string name="rest_hint_start_reps">Start with %1$s reps</string>
+    <string name="end_workout">End Workout?</string>
+    <string name="how_intense_was_this_workout">How intense was this workout?</string>
+    <string name="raise_audio_volume">Raise audio volume</string>
+    <string name="lower_audio_volume">Lower audio volume</string>
+    <string name="superset">Superset</string>
+    <string name="permission_request_alarm">This app uses alarm permission to vibrate when rest time finishes. Not granting this permission will cause vibration at inexact times</string>
+    <string name="permission_exact_alarm_title"><![CDATA[Grant \'Alarm & Reminders\' permission?]]></string>
+    <string name="phone_app_version_incompatible">Phone app version incompatible</string>
+    <string name="phone_app_version_incompatible_desc">Please update the phone app</string>
+    <string name="modification_desc_do_it_again">. Do you want to do it again?</string>
+    <string name="modification_title_replace">Replace exercise?</string>
+    <string name="modification_title_add">Add exercise?</string>
+    <string name="modification_title_skip">Skip exercise?</string>
+    <string name="modification_desc_replace">Last time you replaced "%1$s" with: </string>
+    <string name="modification_desc_add">Last time, after completing the last exercise, you added : </string>
+    <string name="modification_desc_skip">Last time you skipped "%1$s"</string>
+    <string name="other_app_exercise_title">Stop other exercise app?</string>
+    <string name="other_app_exercise_info">Another app is currently tracking an exercise. Tracking this workout requires closing the other app. Do you want to stop it and start tracking here?</string>
+    <string name="other_app_exercise_confirm">Stop and start</string>
+    <string name="hold">Hold</string>
+    <string name="close">Close</string>
 
     <!--
     This string is used for square devices and overridden by hello_world in

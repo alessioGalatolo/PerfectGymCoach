@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.ui.screens.workout.components.TextFieldWithButtons
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -139,39 +140,6 @@ fun InsertNameDialog(
     }
 }
 
-@Composable
-fun ResumeWorkout(
-    dialogueIsOpen: Boolean,
-    discardWorkout: () -> Unit,
-    resumeWorkout: () -> Unit
-) {
-    if (dialogueIsOpen) {
-        AlertDialog(
-            onDismissRequest = {
-            },
-            title = {
-                Text(text = stringResource(R.string.resume_unfinished_workout))
-            },
-            text = {
-               Text(stringResource(R.string.resume_workout_info))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = resumeWorkout
-                ) {
-                    Text(stringResource(R.string.resume))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = discardWorkout
-                ) {
-                    Text(stringResource(R.string.discard_workout))
-                }
-            }
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -411,20 +379,21 @@ fun ChangeRepsWeightDialog(
             title = { Text(stringResource(R.string.change_reps_weight_title)) },
             text = {
                 Column(Modifier.fillMaxWidth()) {
-                    // TODO: it would be nice to have plus/minus buttons here
-                    OutlinedTextField(
-                        value = reps,
-                        onValueChange = {reps = it},
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        label = { Text(stringResource(R.string.new_reps_value)) }
+                    TextFieldWithButtons(
+                        prompt = stringResource(R.string.new_reps_value),
+                        text = { reps },
+                        onNewText = { reps = it },
+                        onIncrement = { reps = ((reps.toUIntOrNull() ?: 0U) + 1U).toString() },
+                        onDecrement = { reps = ((reps.toUIntOrNull() ?: 0U) - 1U).toString() },
+                        textIsValid = { reps -> reps.toUIntOrNull() != null }
                     )
-                    OutlinedTextField(
-                        value = weight,
-                        onValueChange = {weight = it},
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        label = { Text(stringResource(R.string.new_weight_value)) }
+                    TextFieldWithButtons(
+                        prompt = stringResource(R.string.new_weight_value),
+                        text = { weight },
+                        onNewText = { weight = it },
+                        onIncrement = { weight = ((weight.toFloatOrNull() ?: 0f) + 0.5f).toString() },
+                        onDecrement = { weight = ((weight.toFloatOrNull() ?: 0f) - 0.5f).toString() },
+                        textIsValid = { weight -> weight.toFloatOrNull() != null }
                     )
                     Card (
                         onClick = {
@@ -625,76 +594,6 @@ fun RequestNotificationAccessDialog(
                     }
                 ) {
                     Text(stringResource(R.string.request_notification_access_cancel))
-                }
-            }
-        )
-    }
-}
-
-@Composable
-fun ResetExerciseProbabilityDialog(
-    dialogIsOpen: Boolean,
-    toggleDialog: () -> Unit,
-    resetExercise: () -> Unit,
-    resetAllExercises: () -> Unit
-) {
-    val (resetAllChecked, onStateChange) = remember { mutableStateOf(false) }
-    if (dialogIsOpen) {
-        AlertDialog(
-            onDismissRequest = {
-                toggleDialog()
-            },
-            title = {
-                Text(text = stringResource(R.string.reset_exercise_probability_title))
-            },
-            text = {
-                Column {
-                    Text(text = stringResource(R.string.reset_exercise_probability_info))
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .toggleable(
-                                value = resetAllChecked,
-                                onValueChange = { onStateChange(!resetAllChecked) },
-                                role = Role.Checkbox
-                            )
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = resetAllChecked,
-                            onCheckedChange = null // null recommended for accessibility with screenreaders
-                        )
-                        Text(
-                            text = stringResource(R.string.reset_all_exercises_probability),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (resetAllChecked) {
-                            resetAllExercises()
-                        } else {
-                            resetExercise()
-                        }
-                        toggleDialog()
-                    }
-                ) {
-                    Text(stringResource(R.string.reset))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        toggleDialog()
-                    }
-                ) {
-                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )

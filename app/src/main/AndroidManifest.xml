@@ -4,12 +4,23 @@
 
     <!--Permission for posting notifications-->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Health Connect permissions -->
+    <uses-permission android:name="android.permission.health.WRITE_EXERCISE"/>
+    <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"/>
+    <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
+    <uses-permission android:name="android.permission.health.WRITE_WEIGHT"/>
     <!--Permission for live update eligibility-->
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
     <!-- Keep alive   -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- Required for Health Connect package visibility on Android 11+ -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
 
     <application
         android:enableOnBackInvokedCallback="true"
@@ -47,11 +58,19 @@
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <!--
+                For each of these, we only set the specific path of the service
+                This cannot be set explicitly and is controlled by horologist
+                The path will be "/grpc/${type.simpleName}
+
+                We do this to avoid unnecessary NPE caused by all services receiving all messages
+                 -->
                 <data
                     android:host="*"
-                    android:pathPrefix="/grpc/"
+                    android:path="/grpc/WorkoutServiceCoroutineStub"
                     android:scheme="wear"
                     />
+
             </intent-filter>
         </service>
         <service
@@ -60,11 +79,11 @@
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
-                <data
-                    android:host="*"
-                    android:pathPrefix="/grpc/"
+                <data android:host="*"
+                    android:path="/grpc/PhoneInfoServiceCoroutineStub"
                     android:scheme="wear"
                     />
+
             </intent-filter>
         </service>
         <service
@@ -75,11 +94,22 @@
                 <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
                 <data
                     android:host="*"
-                    android:pathPrefix="/grpc/"
+                    android:path="/grpc/MediaServiceCoroutineStub"
                     android:scheme="wear"
                     />
             </intent-filter>
         </service>
+        <!-- Required by Health Connect to show permission usage to users -->
+        <activity
+            android:name=".PrivacyPolicyActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:launchMode="standard"
@@ -89,15 +119,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <intent-filter>
-                <!-- DEPRECATED (watch now uses "autoopenworkout") -> TODO remove -->
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="myapp"
-                    android:host="openapp" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

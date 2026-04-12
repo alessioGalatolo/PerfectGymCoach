@@ -8,6 +8,7 @@ import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.Index
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.grpc.Workout
 import kotlinx.parcelize.Parcelize
 
@@ -50,15 +51,12 @@ data class WorkoutExercise (
     val extWorkoutId: Long,
     val extProgramExerciseId: Long? = null,
     val extExerciseId: Long,
-    @Deprecated("Unless user-defined exercise, use nameResKey instead")
     val name: String,
     @ColumnInfo(defaultValue = "")
     val nameResKey: String, // key of the string resource
-    @Deprecated("Use imageResKey instead")
     val image: Int,
     @ColumnInfo(defaultValue = "")
     val imageResKey: String,
-    @Deprecated("Use descriptionResKey instead")
     val description: String,
     @ColumnInfo(defaultValue = "")
     val descriptionResKey: String,
@@ -67,13 +65,15 @@ data class WorkoutExercise (
     val reps: List<Int>,
     val rest: List<Int>,
     val note: String,
-    @Deprecated("Use variationResKey instead")
     val variation: String,
     @ColumnInfo(defaultValue = "")
     val variationResKey: String,
     val supersetExercise: Long? = null,
     @ColumnInfo(defaultValue = "0")
-    val userDefined: Boolean = false
+    val userDefined: Boolean = false,
+    @ColumnInfo(defaultValue = "0")
+    val overriddenDurationBased: Boolean,
+    val setTypes: List<SetType>? = null
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)
@@ -86,7 +86,8 @@ data class WorkoutExercise (
 
     fun toProto(): Workout.Exercise {
         return Workout.Exercise.newBuilder()
-            .setExerciseId(this.workoutExerciseId)
+            .setWorkoutExerciseId(this.workoutExerciseId)
+            .setProgramExerciseId(this.extProgramExerciseId ?: 0L)
             .setName(this.name)
             .setEquipment(this.equipment.equipmentResKey)
             .setOrderInProgram(this.orderInProgram)
@@ -95,6 +96,8 @@ data class WorkoutExercise (
             .setNote(this.note)
             .setVariation(this.variation)
             .setSupersetExercise(this.supersetExercise ?: 0L)
+            .setIsDurationBased(this.overriddenDurationBased)
+            .addAllSetTypes(this.setTypes?.map { it.nameResKey } ?: emptyList())
             .build()
     }
 }
@@ -110,4 +113,10 @@ data class WorkoutExerciseUpdateSets(
     val workoutExerciseId: Long,
     val reps: List<Int>,
     val rest: List<Int>
+): Parcelable
+
+@Parcelize
+data class WorkoutExerciseUpdateSetTypes(
+    val workoutExerciseId: Long,
+    val setTypes: List<SetType>
 ): Parcelable

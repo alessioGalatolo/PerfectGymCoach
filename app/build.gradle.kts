@@ -2,19 +2,19 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.plugin)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.proto)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.crashlytics)
 }
 
 room {
-    schemaDirectory("$projectDir/schemas")
+    schemaDirectory(layout.projectDirectory.dir("schemas"))
 }
 
 protobuf {
@@ -43,8 +43,8 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "0.0.6b"
+        versionCode = 24
+        versionName = "0.0.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -103,15 +103,14 @@ android {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
     }
-
-    applicationVariants.configureEach {
-        kotlin.sourceSets.named(name) {
-            kotlin.srcDir("build/generated/ksp/$name/kotlin")
-        }
-    }
 }
 
 dependencies {
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+
+    implementation(libs.health.connect)
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
     implementation(project(":shared"))
@@ -124,6 +123,9 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.material3.adaptive.navigation.suite)
     implementation(libs.adaptive)
+    implementation(libs.androidx.adaptive.navigation3)
+    implementation(libs.reorderable)
+    ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)
     implementation(libs.graphs)
@@ -138,7 +140,6 @@ dependencies {
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    implementation(libs.androidx.adaptive.navigation3)
     ksp(libs.room.compiler)
 
     implementation(libs.hilt.android)
