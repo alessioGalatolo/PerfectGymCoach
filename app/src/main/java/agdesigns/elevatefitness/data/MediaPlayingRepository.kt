@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.shared.MEDIA_IMAGES_PATH
 import agdesigns.elevatefitness.shared.bitmapArrayStore
 import agdesigns.elevatefitness.shared.grpc.Media.MediaPlaying
 import agdesigns.elevatefitness.service.NotificationListener
+import agdesigns.elevatefitness.shared.WearBitmapArrayStore
 import agdesigns.elevatefitness.utils.notificationAccessFlow
 import android.app.PendingIntent
 import android.content.ComponentName
@@ -17,12 +18,16 @@ import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import androidx.datastore.core.DataStore
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoDataStore
 import com.google.android.horologist.data.WearDataLayerRegistry
+import com.google.android.horologist.data.apphelper.DataLayerAppHelper
+import com.google.android.horologist.datalayer.phone.PhoneDataLayerAppHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,16 +69,31 @@ data class SessionSummary(
 @OptIn(ExperimentalHorologistApi::class)
 class MediaPlayingRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val registry: WearDataLayerRegistry
+    private val registry: WearDataLayerRegistry,
+    private val datalayerHelper: PhoneDataLayerAppHelper
 ) {
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val wearImagesStore = registry.bitmapArrayStore(
-        coroutineScope = secondaryScope,
-        path = MEDIA_IMAGES_PATH
-    )
-    private val wearMediaStore = registry.protoDataStore<MediaPlaying>(
-        coroutineScope = secondaryScope,
-    )
+    private val wearImagesStoreDeferred = CompletableDeferred<WearBitmapArrayStore>()
+    // FIXME: this should be urgent
+    private val wearMediaStoreDeferred = CompletableDeferred<DataStore<MediaPlaying>>()
+
+    init {
+        secondaryScope.launch {
+            if (datalayerHelper.isAvailable()) {
+                wearMediaStoreDeferred.complete(
+                    registry.protoDataStore<MediaPlaying>(
+                        coroutineScope = secondaryScope,
+                    )
+                )
+                wearImagesStoreDeferred.complete(
+                    registry.bitmapArrayStore(
+                        coroutineScope = secondaryScope,
+                        path = MEDIA_IMAGES_PATH
+                    )
+                )
+            }
+        }
+    }
 
     private val manager: MediaSessionManager =
         context.getSystemService(MediaSessionManager::class.java)
@@ -121,8 +141,9 @@ class MediaPlayingRepository @Inject constructor(
         }
         // send now playing to wear
         secondaryScope.launch {
+            if (!datalayerHelper.isAvailable()) return@launch
             nowPlaying.collect { media ->
-                wearMediaStore.updateData {
+                wearMediaStoreDeferred.await().updateData {
                     MediaPlaying.newBuilder()
                         .setTitle(media.title ?: "")
                         .setArtist(media.artist ?: "")
@@ -131,7 +152,7 @@ class MediaPlayingRepository @Inject constructor(
                 }
 
                 if (media.artwork != null) {
-                    wearImagesStore.updateData {
+                    wearImagesStoreDeferred.await().updateData {
                         // avoid sending if same bitmap
                         if (it.getOrNull(0) == media.artwork)
                             it

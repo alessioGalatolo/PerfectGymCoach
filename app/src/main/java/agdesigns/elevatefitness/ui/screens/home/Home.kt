@@ -23,11 +23,17 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.WorkoutCard
+import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
+import agdesigns.elevatefitness.navigation.AddProgramDestination
+import agdesigns.elevatefitness.navigation.AddWorkoutPlanDestination
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import agdesigns.elevatefitness.navigation.BottomNavigationGraph
+import agdesigns.elevatefitness.navigation.CustomizePlanGenerationDestination
+import agdesigns.elevatefitness.navigation.PrimaryActionContent
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.HomeDestination
+import agdesigns.elevatefitness.navigation.WorkoutDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
@@ -44,6 +50,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
@@ -58,18 +65,11 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
-import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
-import com.ramcosta.composedestinations.generated.destinations.AddWorkoutPlanDestination
-import com.ramcosta.composedestinations.generated.destinations.CustomizePlanGenerationDestination
-import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.min
 
 
-@Destination<BottomNavigationGraph>(start = true, style = FadeTransition::class)
 @Composable
 @OptIn(ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class,
     ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class
@@ -77,10 +77,42 @@ import kotlin.math.min
 fun SharedTransitionScope.Home(
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
+    refreshContentRequest: SharedFlow<Any>,
+    changePrimaryActionContent: (PrimaryActionContent?) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val haptic = LocalHapticFeedback.current
+    val lazyListState = rememberLazyListState()
+
+    LaunchedEffect(refreshContentRequest) {
+        refreshContentRequest.collect {
+            if (it == HomeDestination) {
+                // this refresh is for us
+                lazyListState.animateScrollToItem(0)
+            }
+        }
+    }
+
+    // FABs are placed by parent, notify what to put
+    DisposableEffect(state.currentPlan) {
+        changePrimaryActionContent (
+            if (state.currentPlan == null)
+                PrimaryActionContent(
+                    icon = Icons.Default.Add,
+                    labelId = R.string.home_fap_create_plan,
+                    onClick = {
+                        navigator.navigate(
+                            AddWorkoutPlanDestination(openDialogNow = true)
+                        )
+                    }
+                )
+            else null
+        )
+        onDispose {
+            changePrimaryActionContent(null)
+        }
+    }
 
     var resumeWorkoutPossible by remember {
         mutableStateOf(false)
@@ -142,25 +174,6 @@ fun SharedTransitionScope.Home(
     Scaffold(
         // use a primary container to put emphasis on upcoming workout in elevated card
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        floatingActionButton = {
-            if (state.currentPlan == null) {
-                MediumFloatingActionButton(
-                    onClick = {
-                        navigator.navigate(
-                            AddWorkoutPlanDestination(openDialogNow = true)
-                        )
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(
-                            FloatingActionButtonDefaults.MediumIconSize
-                        )
-                    )
-                }
-            }
-        }
     ) { innerPadding ->
         if (state.currentPlan == null) {
             EmptyScreenInfo(
@@ -196,7 +209,8 @@ fun SharedTransitionScope.Home(
                     onClick = {
                         navigator.navigate(
                             AddWorkoutPlanDestination()
-                        ) },
+                        )
+                    },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) { Text(stringResource(R.string.change_workout_plan)) }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -706,7 +720,7 @@ fun PlanChangeReminder(
                 Button(
                     onClick = {
                         navigator.navigate(
-                            CustomizePlanGenerationDestination()
+                            CustomizePlanGenerationDestination
                         )
                     },
                     modifier = Modifier.weight(1f),

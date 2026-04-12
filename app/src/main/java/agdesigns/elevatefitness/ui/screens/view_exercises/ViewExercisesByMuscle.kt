@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ViewExercisesDestination
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.utils.plus
@@ -35,12 +35,9 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.ViewExercisesDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
-@Destination<ChangePlanGraph>(style = SlideTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )
@@ -55,6 +52,13 @@ fun SharedTransitionScope.ExercisesByMuscle(
     returnAfterAdding: Boolean = false, // if adding a single exercise to workout, return to workout instead of program
     insertAtPosition: Int? = null,
 ) {
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(Unit) {
+        // When in Dual pane, the first textfield automatically gets focus (for some reason)
+        // this (tries to) avoid that
+        focusManager.clearFocus()
+    }
+
     // scroll behaviour for top bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         rememberTopAppBarState()
@@ -72,7 +76,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
                 snackbarHostState.showSnackbar(snackbarText)
                 showSnackbar.value = false
             } else {
-                navigator.navigateUp()
+               navigator.navigateUp()
             }
         }
     }
@@ -137,7 +141,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
                                     muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
                                     focusSearch = true,
                                     programName = programName,
-                                    returnAfterAdding = returnAfterAdding
+                                    returnAfterAdding = returnAfterAdding,
                                 )
                             )
                         }
@@ -159,7 +163,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
                                 muscleOrdinal = Exercise.Muscle.EVERYTHING.ordinal,
                                 focusSearch = true,
                                 programName = programName,
-                                returnAfterAdding = returnAfterAdding
+                                returnAfterAdding = returnAfterAdding,
                             )
                         ) },
                         placeholder = { Text(stringResource(R.string.search_exercise)) },
@@ -184,7 +188,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
                                         insertAtPosition = insertAtPosition,
                                         muscleOrdinal = muscle.ordinal,
                                         programName = programName,
-                                        returnAfterAdding = returnAfterAdding
+                                        returnAfterAdding = returnAfterAdding,
                                     )
                                 )
                             }

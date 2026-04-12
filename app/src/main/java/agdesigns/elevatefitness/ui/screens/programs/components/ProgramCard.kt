@@ -4,6 +4,9 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
+import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.WorkoutDestination
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -65,9 +69,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
-import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 
@@ -120,11 +121,6 @@ fun LazyItemScope.ProgramCard(
                         Modifier.wrapContentHeight(Alignment.Top),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        val imageWidth = with(LocalDensity.current) {
-                            LocalWindowInfo.current.containerSize.width.toDp()
-                        }
-                        val imageHeight = imageWidth / 3 * 2
-
                         HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.graphicsLayer {
@@ -139,7 +135,7 @@ fun LazyItemScope.ProgramCard(
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(imageHeight)
+                                        .aspectRatio(3f / 2f)
                                         .align(Alignment.TopCenter)
                                 )
                             }

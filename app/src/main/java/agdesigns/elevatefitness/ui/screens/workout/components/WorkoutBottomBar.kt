@@ -21,6 +21,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import agdesigns.elevatefitness.shared.Equipment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -29,6 +30,8 @@ fun WorkoutBottomBar(
     workoutState: WorkoutState,
     currentExerciseState: CurrentExerciseState,
     contentPadding: PaddingValues,
+    containerColor: Color,
+    hideMainAction: Boolean,
     startWorkout: () -> Unit,
     completeWorkout: () -> Unit,
     completeSet: () -> Unit,
@@ -41,25 +44,28 @@ fun WorkoutBottomBar(
     val imeVisible = WindowInsets.isImeVisible
     Column(
         Modifier
-            .background(NavigationBarDefaults.containerColor)
+            .background(containerColor)
             .padding(contentPadding)
-            .padding(horizontal = 16.dp)
     ) {
         if (!workoutState.workoutStarted) {
-            // workout has not started
-            Button(
-                onClick = startWorkout,
-                Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.start_workout))
+            if (!hideMainAction) {
+                // workout has not started
+                Button(
+                    onClick = startWorkout,
+                    Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.start_workout))
+                }
             }
         } else if (currentExerciseState.currentExercise == null) {
             // workout has started and it is on the end page
-            Button(
-                onClick = completeWorkout,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.complete_workout))
+            if (!hideMainAction) {
+                Button(
+                    onClick = completeWorkout,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.complete_workout))
+                }
             }
         } else if (currentExerciseState.setsDone >= currentExerciseState.currentExercise.reps.size) {
             // workout started and the user has done all the sets in the page
@@ -69,11 +75,13 @@ fun WorkoutBottomBar(
             ) {
                 Text(stringResource(R.string.add_set))
             }
-            Button(
-                onClick = goToNextExercise,
-                Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.next_exercise))
+            if (!hideMainAction) {
+                Button(
+                    onClick = goToNextExercise,
+                    Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.next_exercise))
+                }
             }
 
         } else {
@@ -118,15 +126,17 @@ fun WorkoutBottomBar(
              but it's bad to hardcode the padding. There are also still some bugs with keyboard and
              this bottom bar.
              */
-            Row(Modifier.fillMaxWidth()) {
-                Button(
-                    enabled = currentExerciseState.repsIsValid && currentExerciseState.weightIsValid,
-                    onClick = completeSet,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = if (imeVisible) 48.dp else 0.dp)
-                ) {
-                    Text(stringResource(R.string.complete_set))
+            if (!hideMainAction) {
+                Row(Modifier.fillMaxWidth()) {
+                    Button(
+                        enabled = currentExerciseState.repsIsValid && currentExerciseState.weightIsValid,
+                        onClick = completeSet,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = if (imeVisible) 48.dp else 0.dp)
+                    ) {
+                        Text(stringResource(R.string.complete_set))
+                    }
                 }
             }
         }

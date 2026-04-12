@@ -26,14 +26,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.shared.Equipment
-import agdesigns.elevatefitness.shared.WORKOUT_IMAGES_PATH
-import agdesigns.elevatefitness.shared.bitmapArrayStore
 import agdesigns.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
-import agdesigns.elevatefitness.shared.urgentProtoDataStore
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.WearDataLayerRegistry
 import com.google.protobuf.Empty
@@ -246,7 +243,6 @@ class WorkoutViewModel @Inject constructor(
     private val repository: Repository,
     private val preferences: PreferenceRepository,
     private val notificationService: NotificationService,
-    private val registry: WearDataLayerRegistry,
     private val phoneWorkoutRepository: PhoneWorkoutRepository,
     private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub
 ): ViewModel() {
@@ -255,11 +251,6 @@ class WorkoutViewModel @Inject constructor(
     private var resumeAndScrollToLatest = false
     private val workoutModifications: MutableList<WorkoutRecord.WorkoutModification> = mutableListOf()
     private var observeAddingExerciseJob: Job? = null
-
-    // split static data (e.g., exercises) with data that is frequently changing to avoid too many messages
-    private val wearWorkoutStatic = registry.urgentProtoDataStore<Workout.WorkoutStaticData>(viewModelScope)
-    private val wearWorkoutDynamic = registry.urgentProtoDataStore<Workout.WorkoutDynamicData>(viewModelScope)
-    private val wearWorkoutImages = registry.bitmapArrayStore(viewModelScope, WORKOUT_IMAGES_PATH)
 
     // effects to happen in the UI
     private val _effects = Channel<WorkoutEffect>(capacity = Channel.BUFFERED)
@@ -521,42 +512,15 @@ class WorkoutViewModel @Inject constructor(
 
     init {
         phoneWorkoutRepository.startOngoingWorkout()
-        viewModelScope.launch {
-            combine(
-                preferences.getTheme(),
-                preferences.getImperialSystem(),
-                preferences.getBodyweightIncrement(),
-                preferences.getBarbellIncrement(),
-                preferences.getDumbbellIncrement(),
-                preferences.getMachineIncrement(),
-                preferences.getCableIncrement(),
-                preferences.getDontWantNotificationAccess(),
-                preferences.getLockHorizontalScroll(),
-                preferences.getAutoOpenWear(),
-                preferences.getDontWantOngoingWorkoutNotification()
-            ) { values: Array<Any?> ->
-                _workoutState.update {
-                    it.copy(
-                        userTheme = values[0] as Theme,
-                        imperialSystem = values[1] as Boolean,
-                        incrementBodyweight = values[2] as Float,
-                        incrementBarbell = values[3] as Float,
-                        incrementDumbbell = values[4] as Float,
-                        incrementMachine = values[5] as Float,
-                        incrementCable = values[6] as Float,
-                        cantRequestNotificationAccess = values[7] as Boolean,
-                        lockHorizontalScroll = values[8] as Boolean,
-                        autoOpenWear = values[9] as Boolean,
-                        cantRequestOngoingWorkoutNotification = values[10] as Boolean
-                    )
-                }
-            }.collect()
-        }
+
+        observeUserPreferences()
+
         // listens to relevant changes and sends them to wear
         checkWorkoutDataChangesForWear()
         observeSetCompletionsFromWear()
         observeWorkoutCompletionsFromWear()
         observeAcceptedModificationsFromWear()
+
         /*
           Compute stuff specific to current exercise (should be recomputed if any value changes)
          */
@@ -582,12 +546,13 @@ class WorkoutViewModel @Inject constructor(
                     val title = currentExercise.name.plus(variation)
                     val recordsToDisplay =
                         pagesContent.exerciseRecords.getOrNull(page) ?: emptyList()
-                    val currentExerciseOngoingRecord = pagesContent.ongoingRecords.getOrNull(page)
+                    val currentExerciseOngoingRecord =
+                        pagesContent.ongoingRecords.getOrNull(page)
                     val setsDone = currentExerciseOngoingRecord?.reps?.size ?: 0
                     val repsWeight = pagesContent.exerciseRepsWeightRows
                         .getOrNull(page)
                         ?.getOrNull(setsDone)
-                    val repsToShow = repsWeight?.let{ it.projectedReps ?: it.reps }
+                    val repsToShow = repsWeight?.let { it.projectedReps ?: it.reps }
                     var weightToShow = repsWeight?.let { it.projectedWeight ?: it.weight }
                     if (weightToShow == "...") {
                         // TODO: it would be cool to infer this value from other exercises
@@ -836,23 +801,21 @@ class WorkoutViewModel @Inject constructor(
                         WorkoutEffect.AdvancePage(exerciseToScrollTo)
                     )
                     try {
-                        phoneToWatchService.scrollToExercise(
-                            Workout.ExerciseToScrollTo.newBuilder()
-                                .setExerciseIndex(exerciseToScrollTo)
-                                .build()
-                        )
+                        if (phoneWorkoutRepository.apiIsAvailable()) {
+                            phoneToWatchService.scrollToExercise(
+                                Workout.ExerciseToScrollTo.newBuilder()
+                                    .setExerciseIndex(exerciseToScrollTo)
+                                    .build()
+                            )
+                            phoneToWatchService.setRest(
+                                Workout.RestPhone2Watch.newBuilder()
+                                    .setRest(exerciseRest)
+                                    .setRestTimestamp(restTimestamp.toProtoTimestamp())
+                                    .build()
+                            )
+                        }
                     } catch (e: Exception) {
-                        Log.e("WorkoutViewModel", "Failed to scroll to exercise on watch", e)
-                    }
-                    try {
-                        phoneToWatchService.setRest(
-                            Workout.RestPhone2Watch.newBuilder()
-                                .setRest(exerciseRest)
-                                .setRestTimestamp(restTimestamp.toProtoTimestamp())
-                                .build()
-                        )
-                    } catch (e: Exception) {
-                        Log.e("WorkoutViewModel", "Failed to set rest on watch", e)
+                        Log.e("WorkoutViewModel", "Failed to set rest/scroll to exercise on watch", e)
                     }
                 }
             }
@@ -1507,7 +1470,7 @@ class WorkoutViewModel @Inject constructor(
 
                 val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
                 if (autoOpenWear) {
-                    repository.openWearWorkout()
+                    phoneWorkoutRepository.openWearWorkout()
                 }
                 _workoutState.update {
                     it.copy(
@@ -1540,7 +1503,7 @@ class WorkoutViewModel @Inject constructor(
             }
             val autoOpenWear = workoutState.mapNotNull { it.autoOpenWear }.first()
             if (autoOpenWear) {
-                repository.openWearWorkout()
+                phoneWorkoutRepository.openWearWorkout()
             }
             // set flag to scroll to last exercise completed when records are available
             resumeAndScrollToLatest = true
@@ -1682,32 +1645,36 @@ class WorkoutViewModel @Inject constructor(
                 val suggestedModifications = values[11] as List<ModificationSuggestion?>
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
-                wearWorkoutStatic.urgentUpdateData { _ ->
-                    Workout.WorkoutStaticData.newBuilder()
-                        .setWorkoutId(workoutId)
-                        .setStartDate(startDateTimestamp)
-                        .addAllExercises(exercises.map { it.toProto() })
-                        .addAllSuggestedTares(suggestedTares)
-                        .setDefaultIncrements(
-                            Workout.DefaultIncrements.newBuilder()
-                                .setBarbell(incrementBarbell)
-                                .setBodyweight(incrementBodyweight)
-                                .setCable(incrementCable)
-                                .setDumbbell(incrementDumbbell)
-                                .setMachine(incrementMachine)
-                                .build()
-                        )
-                        .setImperialSystem(imperialSystem)
-                        .setActiveWorkout(true)
-                        .setPreviousIntensity(lastWorkoutIntensity ?: -1f)
-                        .addAllSuggestedModifications(
-                            suggestedModifications.map {
-                                it?.toProto() ?: Workout.ProtoSuggestedModification.newBuilder()
-                                    .setHasSuggestion(false)
+                try {
+                    phoneWorkoutRepository.wearWorkoutStaticDeferred.await().urgentUpdateData { _ ->
+                        Workout.WorkoutStaticData.newBuilder()
+                            .setWorkoutId(workoutId)
+                            .setStartDate(startDateTimestamp)
+                            .addAllExercises(exercises.map { it.toProto() })
+                            .addAllSuggestedTares(suggestedTares)
+                            .setDefaultIncrements(
+                                Workout.DefaultIncrements.newBuilder()
+                                    .setBarbell(incrementBarbell)
+                                    .setBodyweight(incrementBodyweight)
+                                    .setCable(incrementCable)
+                                    .setDumbbell(incrementDumbbell)
+                                    .setMachine(incrementMachine)
                                     .build()
-                            }
-                        )
-                        .build()
+                            )
+                            .setImperialSystem(imperialSystem)
+                            .setActiveWorkout(true)
+                            .setPreviousIntensity(lastWorkoutIntensity ?: -1f)
+                            .addAllSuggestedModifications(
+                                suggestedModifications.map {
+                                    it?.toProto() ?: Workout.ProtoSuggestedModification.newBuilder()
+                                        .setHasSuggestion(false)
+                                        .build()
+                                }
+                            )
+                            .build()
+                    }
+                } catch (e: Exception) {
+                    Log.e("WorkoutViewModel", "Failed to sync static data to wear", e)
                 }
             }.collect()
         }
@@ -1716,31 +1683,39 @@ class WorkoutViewModel @Inject constructor(
                 pagesContent.map { it.exerciseRepsWeightRows }.distinctUntilChanged(),
                 pagesContent.map { it.exerciseSetsDone }.distinctUntilChanged()
             ) { repsWeightRows, setsDone ->
-                wearWorkoutDynamic.urgentUpdateData { _ ->
-                    Workout.WorkoutDynamicData.newBuilder()
-                        .addAllSuggestedRepsWeight(
-                            repsWeightRows.map { repsWeights ->
-                                Workout.SuggestedRepsWeight.newBuilder()
-                                    .addAllReps(repsWeights.map {
-                                        it.projectedReps ?: it.reps
-                                    })
-                                    .addAllWeight(repsWeights.map {
-                                        it.projectedWeight ?: it.weight
-                                    })
-                                    .build()
-                            }
-                        )
-                        .addAllSetsDone(setsDone)
-                        .build()
+                try {
+                    phoneWorkoutRepository.wearWorkoutDynamicDeferred.await().urgentUpdateData { _ ->
+                        Workout.WorkoutDynamicData.newBuilder()
+                            .addAllSuggestedRepsWeight(
+                                repsWeightRows.map { repsWeights ->
+                                    Workout.SuggestedRepsWeight.newBuilder()
+                                        .addAllReps(repsWeights.map {
+                                            it.projectedReps ?: it.reps
+                                        })
+                                        .addAllWeight(repsWeights.map {
+                                            it.projectedWeight ?: it.weight
+                                        })
+                                        .build()
+                                }
+                            )
+                            .addAllSetsDone(setsDone)
+                            .build()
+                    }
+                } catch (e: Exception) {
+                    Log.e("WorkoutViewModel", "Failed to sync dynamic data to wear", e)
                 }
             }.collect()
         }
         viewModelScope.launch {
             pagesContent.map { it.exercises }.map { it.map{ it.image } }.distinctUntilChanged().collect {
                 images ->
-                wearWorkoutImages.updateData {
-                    images.map { repository.getBitmapFromResId(it) }
-                }
+                    try {
+                        phoneWorkoutRepository.wearWorkoutImagesDeferred.await().updateData {
+                            images.map { repository.getBitmapFromResId(it) }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("WorkoutViewModel", "Failed to sync images to wear", e)
+                    }
             }
         }
     }
@@ -1955,6 +1930,41 @@ class WorkoutViewModel @Inject constructor(
         ))
         preferences.setCurrentWorkout(null)
         _effects.trySend(WorkoutEffect.ShutDown)
+    }
+
+
+    private fun observeUserPreferences() {
+        viewModelScope.launch {
+            combine(
+                preferences.getTheme(),
+                preferences.getImperialSystem(),
+                preferences.getBodyweightIncrement(),
+                preferences.getBarbellIncrement(),
+                preferences.getDumbbellIncrement(),
+                preferences.getMachineIncrement(),
+                preferences.getCableIncrement(),
+                preferences.getDontWantNotificationAccess(),
+                preferences.getLockHorizontalScroll(),
+                preferences.getAutoOpenWear(),
+                preferences.getDontWantOngoingWorkoutNotification()
+            ) { values: Array<Any?> ->
+                _workoutState.update {
+                    it.copy(
+                        userTheme = values[0] as Theme,
+                        imperialSystem = values[1] as Boolean,
+                        incrementBodyweight = values[2] as Float,
+                        incrementBarbell = values[3] as Float,
+                        incrementDumbbell = values[4] as Float,
+                        incrementMachine = values[5] as Float,
+                        incrementCable = values[6] as Float,
+                        cantRequestNotificationAccess = values[7] as Boolean,
+                        lockHorizontalScroll = values[8] as Boolean,
+                        autoOpenWear = values[9] as Boolean,
+                        cantRequestOngoingWorkoutNotification = values[10] as Boolean
+                    )
+                }
+            }.collect()
+        }
     }
 
     private fun startTimer(){

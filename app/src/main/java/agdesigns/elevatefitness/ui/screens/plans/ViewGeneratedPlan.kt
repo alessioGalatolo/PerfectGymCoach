@@ -11,17 +11,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
-import agdesigns.elevatefitness.navigation.GeneratePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.AddProgramDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import androidx.compose.foundation.background
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.AddProgramDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Destination<GeneratePlanGraph>(style = SlideTransition::class)
 @Composable
 fun ViewGeneratedPlan(
     navigator: DestinationsNavigator,

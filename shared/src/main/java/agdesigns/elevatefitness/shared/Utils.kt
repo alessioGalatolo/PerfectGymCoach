@@ -117,12 +117,15 @@ fun Timestamp.toZonedDateTime(): ZonedDateTime? {
 public object PairedWatch : TargetNodeId {
     @OptIn(ExperimentalHorologistApi::class)
     override suspend fun evaluate(dataLayerRegistry: WearDataLayerRegistry): String? {
-        val capabilitySearch = dataLayerRegistry.capabilityClient.getCapability(
-            TargetNodeId.HOROLOGIST_WATCH,
-            CapabilityClient.FILTER_ALL,
-        ).await()
-
-        return capabilitySearch.nodes.singleOrNull()?.id
+        return try {
+            val capabilitySearch = dataLayerRegistry.capabilityClient.getCapability(
+                TargetNodeId.HOROLOGIST_WATCH,
+                CapabilityClient.FILTER_ALL,
+            ).await()
+            capabilitySearch.nodes.singleOrNull()?.id
+        } catch (e: Exception) {
+            null
+        }
     }
 }
 

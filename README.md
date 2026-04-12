@@ -32,6 +32,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 
 - **Material 3 Expressive** - Beautiful, colorful UI with smooth animations and physics-based interactions
 - **Wear OS Companion** - Track workouts directly from your smartwatch
+- **Adaptive Layout** - Adapts to any screen size
 - **Custom Workout Plans** - Create and manage personalized workout routines
 - **Progress Tracking** - Monitor your fitness journey over time
 - **Intuitive UX** - Designed by someone frustrated with bad fitness app UX
@@ -48,7 +49,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 - **Language:** Kotlin
 - **UI Framework:** Jetpack Compose
 - **Architecture:** MVI (Model-ViewModel-Intent)
-- **Navigation:** [Compose Destinations](https://github.com/raamcosta/compose-destinations)
+- **Navigation:** V3
 - **Design System:** Material 3 with Expressive elements
 - **Wearable:** Wear OS integration
 - **Graphs:** [Vico](https://github.com/patrykandpatrick/vico) and [Composable-Graphs](https://github.com/jaikeerthick/Composable-Graphs)

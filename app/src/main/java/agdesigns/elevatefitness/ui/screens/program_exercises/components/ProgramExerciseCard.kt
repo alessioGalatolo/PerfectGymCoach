@@ -3,11 +3,12 @@ package agdesigns.elevatefitness.ui.screens.program_exercises.components
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
+import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -70,8 +71,6 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.toBitmap
-import com.ramcosta.composedestinations.generated.destinations.AddExerciseDialogDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 
@@ -178,7 +177,7 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                         )
                                     ),
                                     animatedVisibilityScope,
-                                    boundsTransform = BoundsTransform { _, _ ->
+                                    boundsTransform = { _, _ ->
                                         MotionScheme.expressive().slowSpatialSpec()
                                     }
                                 )
@@ -317,7 +316,7 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                 )
                             ),
                             animatedVisibilityScope,
-                            boundsTransform = BoundsTransform { _, _ ->
+                            boundsTransform = { _, _ ->
                                 MotionScheme.expressive().slowSpatialSpec()
                             }
                         )

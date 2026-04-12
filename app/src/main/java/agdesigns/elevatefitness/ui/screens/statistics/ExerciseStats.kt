@@ -12,8 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
 import agdesigns.elevatefitness.ui.screens.statistics.ExerciseStatsEvent.ChangeOneRepMaxFormula
 import agdesigns.elevatefitness.utils.getStickyHeader
 import agdesigns.elevatefitness.ui.common.MeanLineKey
@@ -37,12 +38,10 @@ import coil3.compose.AsyncImage
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 
-@Destination<ChangePlanGraph>(style = SlideTransition::class)
+
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
     ExperimentalMaterial3ExpressiveApi::class
 )

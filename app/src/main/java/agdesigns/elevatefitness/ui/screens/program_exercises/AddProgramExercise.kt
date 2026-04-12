@@ -26,8 +26,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
-import agdesigns.elevatefitness.navigation.SlideTransition
+import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.ui.screens.program_exercises.components.ProgramExerciseCard
@@ -46,13 +47,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.ui.draw.shadow
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.crossfade
+import coil3.toBitmap
 
-@Destination<ChangePlanGraph>(style = SlideTransition::class)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )
@@ -214,7 +218,7 @@ fun SharedTransitionScope.AddProgramExercise(
                                         .wrapContentHeight()
                                 ) {
                                     val linked =
-                                        programExercise.supersetExercise == state.programExercises[index - 1].programExerciseId
+                                        programExercise.supersetExercise == state.programExercises[index-1].programExerciseId
                                     val orientation = remember { Animatable(0f) }
                                     val scale = remember { Animatable(1f) }
                                     LaunchedEffect(linked) {

@@ -20,6 +20,9 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
@@ -63,9 +66,6 @@ import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.text.style.TextDecoration
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
-import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -90,6 +90,7 @@ fun SharedTransitionScope.ExercisePages(
     bottomPadding: Dp,
     fabHeight: Dp,
     restCounterProgress: Float?,
+    showTitle: Boolean,
     title: @Composable () -> Unit,
     addSet: () -> Unit,
     updateTare: (Float) -> Unit,
@@ -129,49 +130,66 @@ fun SharedTransitionScope.ExercisePages(
     Column(
         Modifier.padding(top = 8.dp)
     ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(
-                onClick = { scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.currentPage-1) }},
-                enabled = horizontalPagerState.currentPage > 0,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .weight(1f, false)
-            ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack,
-                    stringResource(R.string.arrowback_icon_previous_ex)
-                )
-            }
+        if (showTitle) {
             Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .weight(4f, true)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // FIXME:
-                ProvideTextStyle(
-                    value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)) {
-                    CompositionLocalProvider(
-                        content = title
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            horizontalPagerState.animateScrollToPage(
+                                horizontalPagerState.currentPage - 1
+                            )
+                        }
+                    },
+                    enabled = horizontalPagerState.currentPage > 0,
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .weight(1f, false)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        stringResource(R.string.arrowback_icon_previous_ex)
                     )
                 }
-            }
-            IconButton(
-                onClick = { scope.launch { horizontalPagerState.animateScrollToPage(horizontalPagerState.currentPage+1) }},
-                enabled = horizontalPagerState.currentPage < horizontalPagerState.pageCount-1,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .weight(1f, false)
-            ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowForward,
-                    stringResource(R.string.arrowforward_icon_next_ex)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .weight(4f, true)
+                ) {
+                    // FIXME:
+                    ProvideTextStyle(
+                        value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)
+                    ) {
+                        CompositionLocalProvider(
+                            content = title
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            horizontalPagerState.animateScrollToPage(
+                                horizontalPagerState.currentPage + 1
+                            )
+                        }
+                    },
+                    enabled = horizontalPagerState.currentPage < horizontalPagerState.pageCount - 1,
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .weight(1f, false)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowForward,
+                        stringResource(R.string.arrowforward_icon_next_ex)
+                    )
+                }
             }
         }
         if (workoutState.workoutStarted) {

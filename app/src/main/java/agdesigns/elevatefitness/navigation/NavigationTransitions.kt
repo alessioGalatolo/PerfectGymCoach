@@ -5,85 +5,74 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MotionScheme
-import androidx.navigation.NavBackStackEntry
-import com.ramcosta.composedestinations.spec.DestinationStyle
+import androidx.navigation3.ui.NavDisplay
+
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-object FadeTransition : DestinationStyle.Animated() {
-
-    override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition? = {
-        fadeIn(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition? = {
-        fadeOut(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition? = {
-        fadeIn(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition? = {
-        fadeOut(MotionScheme.expressive().defaultEffectsSpec())
-    }
+val SlideTransition = NavDisplay.transitionSpec {
+    slideIntoContainer(
+        AnimatedContentTransitionScope.SlideDirection.Left,
+        MotionScheme.expressive().slowSpatialSpec()
+    ) + fadeIn(
+        MotionScheme.expressive().slowEffectsSpec()
+    ) togetherWith
+            ExitTransition.None
+} + NavDisplay.popTransitionSpec {
+    EnterTransition.None togetherWith
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                MotionScheme.expressive().slowSpatialSpec()
+            ) + fadeOut(
+        MotionScheme.expressive().slowEffectsSpec()
+    )
+} + NavDisplay.predictivePopTransitionSpec {
+    EnterTransition.None togetherWith
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                MotionScheme.expressive().slowSpatialSpec()
+            ) + fadeOut(
+        MotionScheme.expressive().slowEffectsSpec()
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-object FullscreenDialogTransition : DestinationStyle.Animated() {
+val FadeTransition = NavDisplay.transitionSpec {
+    fadeIn(MotionScheme.expressive().slowEffectsSpec()) togetherWith
+            ExitTransition.None
+} + NavDisplay.popTransitionSpec {
+    EnterTransition.None togetherWith
+            fadeOut(MotionScheme.expressive().slowEffectsSpec())
+} + NavDisplay.predictivePopTransitionSpec {
+    EnterTransition.None togetherWith
+            fadeOut(MotionScheme.expressive().slowEffectsSpec())
+}
 
-    override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition? = {
-        slideIntoContainer(
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+val FullscreenDialogTransition = NavDisplay.transitionSpec {
+    slideIntoContainer(
             AnimatedContentTransitionScope.SlideDirection.Up,
-            MotionScheme.expressive().defaultSpatialSpec()
-        ) + fadeIn(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition? = {
+            MotionScheme.expressive().slowSpatialSpec()
+        ) + fadeIn(
+            MotionScheme.expressive().slowEffectsSpec()
+        ) togetherWith
+            ExitTransition.None
+} + NavDisplay.popTransitionSpec {
+    EnterTransition.None togetherWith
         slideOutOfContainer(
-            AnimatedContentTransitionScope.SlideDirection.Down,
-            MotionScheme.expressive().defaultSpatialSpec()
-        ) + fadeOut(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition? = {
-        slideIntoContainer(
-            AnimatedContentTransitionScope.SlideDirection.Up,
-            MotionScheme.expressive().defaultSpatialSpec()
-        ) + fadeIn(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition? = {
-        slideOutOfContainer(
-            AnimatedContentTransitionScope.SlideDirection.Down,
-            MotionScheme.expressive().defaultSpatialSpec()
-        ) + fadeOut(MotionScheme.expressive().defaultEffectsSpec())
-    }
+                AnimatedContentTransitionScope.SlideDirection.Down,
+                MotionScheme.expressive().slowSpatialSpec()
+        ) + fadeOut(
+            MotionScheme.expressive().slowEffectsSpec()
+        )
+} + NavDisplay.predictivePopTransitionSpec {
+    EnterTransition.None togetherWith
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Down,
+                MotionScheme.expressive().slowSpatialSpec()
+            ) + fadeOut(
+        MotionScheme.expressive().slowEffectsSpec()
+    )
 }
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-object SlideTransition : DestinationStyle.Animated() {
-    override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition? = {
-        slideIntoContainer(
-            AnimatedContentTransitionScope.SlideDirection.Left,
-            MotionScheme.expressive().defaultSpatialSpec()
-        ) + fadeIn(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition? = {
-        fadeOut(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition? = {
-        fadeIn(MotionScheme.expressive().defaultEffectsSpec())
-    }
-
-    override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition? = {
-        slideOutOfContainer(
-            AnimatedContentTransitionScope.SlideDirection.Right,
-            MotionScheme.expressive().defaultSpatialSpec()
-        ) + fadeOut(MotionScheme.expressive().defaultEffectsSpec())
-    }
-}
-

@@ -60,15 +60,6 @@ class Repository @Inject constructor(
     private val db: WorkoutDatabase,
     @param:ApplicationContext  private val context: Context
 ) {
-    fun openWearWorkout() {
-        // maybe open wear os app
-        val openWearIntent = Intent(Intent.ACTION_VIEW).apply {
-            addCategory(Intent.CATEGORY_BROWSABLE)
-            data = "elevatefitnesswear://startworkout".toUri()
-        }
-        val remoteActivityHelper = RemoteActivityHelper(context)
-        remoteActivityHelper.startRemoteActivity(openWearIntent)
-    }
 
     /*
      * WORKOUT PLAN

@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.ui.screens.home
 
+import agdesigns.elevatefitness.data.PhoneWorkoutRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,9 +9,7 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.shared.grpc.Workout
-import agdesigns.elevatefitness.shared.urgentProtoDataStore
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.data.WearDataLayerRegistry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,10 +46,8 @@ sealed class HomeEvent{
 class HomeViewModel @Inject constructor(
     private val repository: Repository,
     private val preferences: PreferenceRepository,
-    private val registry: WearDataLayerRegistry
+    private val phoneWorkoutRepository: PhoneWorkoutRepository
 ): ViewModel() {
-    private val wearWorkoutStatic = registry.urgentProtoDataStore<Workout.WorkoutStaticData>(viewModelScope)
-
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
@@ -65,10 +62,12 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             // if we are in home, there is no workout. Make sure it is sent to wear
             // (this could happen if phone app is abruptly terminated)
-            wearWorkoutStatic.urgentUpdateData {
-                Workout.WorkoutStaticData.newBuilder()
-                    .setActiveWorkout(false)
-                    .build()
+            if (phoneWorkoutRepository.apiIsAvailable()) {
+                phoneWorkoutRepository.wearWorkoutStaticDeferred.await().urgentUpdateData {
+                    Workout.WorkoutStaticData.newBuilder()
+                        .setActiveWorkout(false)
+                        .build()
+                }
             }
         }
         viewModelScope.launch {

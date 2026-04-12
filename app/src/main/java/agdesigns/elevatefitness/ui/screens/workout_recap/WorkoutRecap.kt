@@ -22,13 +22,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
-import agdesigns.elevatefitness.navigation.FullscreenDialogTransition
+import agdesigns.elevatefitness.data.HealthConnectRepository
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import agdesigns.elevatefitness.navigation.WorkoutOnlyGraph
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
@@ -36,13 +37,20 @@ import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
 import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.ui.common.lineProviderWithHighlight
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withLink
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
+import androidx.health.connect.client.PermissionController
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -56,15 +64,7 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.common.LegendItem
-import agdesigns.elevatefitness.data.HealthConnectRepository
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.text.TextStyle
-import androidx.health.connect.client.PermissionController
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis.ItemPlacer
 import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalBox
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
@@ -73,15 +73,10 @@ import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.HistoryDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 
-@Destination<WorkoutOnlyGraph>(style = FullscreenDialogTransition::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
@@ -169,10 +164,6 @@ fun WorkoutRecap(
                     IconButton(
                         onClick = {
                             navigator.navigateUp()
-                            navigator.navigateUp()
-                            navigator.navigate(
-                                HistoryDestination()
-                            )
                         },
                         shapes = IconButtonDefaults.shapes()
                 ) {

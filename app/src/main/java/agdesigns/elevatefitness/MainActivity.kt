@@ -14,14 +14,15 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.WindowCompat
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Theme
+import agdesigns.elevatefitness.navigation.DeepLinkMatcher
+import agdesigns.elevatefitness.navigation.HomeDestination
+import agdesigns.elevatefitness.navigation.RootDestinationGraph
+import android.net.Uri
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.platform.LocalView
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
-import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.rememberNavHostEngine
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -33,6 +34,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // simple deeplink parsing
+        val uri: Uri? = intent.data
+        val startDestination: Any = uri?.let {
+            DeepLinkMatcher(it).match()
+        } ?: HomeDestination // fallback if intent.uri is null or match is not found
 
         // Call enableEdgeToEdge() BEFORE setContent, with a default style.
         enableEdgeToEdge()
@@ -64,17 +71,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // navigation controller for everything (main screen)
-            val engine = rememberNavHostEngine()
-            val navController = engine.rememberNavController()
-
             ElevateFitnessTheme (darkTheme = darkTheme) {
                 ProvideVicoTheme(rememberM3VicoTheme()) {
-                    DestinationsNavHost(
-                        navGraph = NavGraphs.root,
-                        engine = engine,
-                        navController = navController
-                    )
+                    RootDestinationGraph(startDestination = startDestination)
                 }
             }
         }

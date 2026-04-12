@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -24,12 +25,15 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.getVariation
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.home.components.ValueSuggestionRow
 import agdesigns.elevatefitness.ui.screens.workout.components.TextFieldWithButtons
+import android.util.Log
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
@@ -44,21 +48,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.ImeAction
 import coil3.compose.AsyncImage
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
-import com.ramcosta.composedestinations.generated.destinations.ExercisesByMuscleDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlin.math.max
 
-@Destination<ChangePlanGraph>
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
 )
@@ -81,8 +78,12 @@ fun SharedTransitionScope.AddExerciseDialog(
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
+        // When in Dual pane, the first textfield automatically gets focus (for some reason)
+        // this avoids that
+        focusManager.clearFocus()
         viewModel.onEvent(
             AddExerciseEvent.StartRetrievingData(
                 exerciseId = previewExercise.exerciseId,
@@ -140,8 +141,6 @@ fun SharedTransitionScope.AddExerciseDialog(
     )
 
 
-    val imageWidth = with (LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
-    val imageHeight = imageWidth/3*2
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // make topappbar opaque
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
@@ -250,7 +249,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(imageHeight)
+                            .aspectRatio(3f / 2f)
                             .padding(bottom = 16.dp)
                             .sharedElement(
                                 rememberSharedContentState(

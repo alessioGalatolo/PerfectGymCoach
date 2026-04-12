@@ -6,8 +6,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.StatisticsDestination
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.navigation.BottomNavigationGraph
 import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.MeanLineKey
@@ -67,19 +69,17 @@ import com.jaikeerthick.composable_graphs.composables.pie.model.PieData
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.generated.destinations.ExerciseStatsDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.flow.SharedFlow
 import java.text.DecimalFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
-@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 fun Statistics(
     navigator: DestinationsNavigator,
+    refreshContentRequest: SharedFlow<Any>,
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -87,6 +87,14 @@ fun Statistics(
 
     // we want to have headers as top app bar titles, need listState
     val listState = rememberLazyListState()
+    LaunchedEffect(refreshContentRequest) {
+        refreshContentRequest.collect {
+            if (it == StatisticsDestination) {
+                // this refresh is for us
+                listState.animateScrollToItem(0)
+            }
+        }
+    }
     // (key, title) -> we start from MAX_VALUE to avoid conflicts with auto assigned keys
     val headers = listOf(
         stringResource(R.string.s_header0_statistics),

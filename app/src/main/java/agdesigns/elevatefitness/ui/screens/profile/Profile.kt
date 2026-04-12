@@ -22,8 +22,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
-import agdesigns.elevatefitness.navigation.BottomNavigationGraph
-import agdesigns.elevatefitness.navigation.FadeTransition
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ProfileDestination
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
@@ -38,6 +38,7 @@ import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldState
@@ -59,9 +60,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.flow.SharedFlow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -70,7 +70,6 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-@Destination<BottomNavigationGraph>(style = FadeTransition::class)
 @Composable
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -79,11 +78,21 @@ import kotlin.math.roundToInt
     ExperimentalMaterial3ExpressiveApi::class
 )
 fun Profile(
-    destinationsNavigator: DestinationsNavigator,
+    navigator: DestinationsNavigator,
+    refreshContentRequest: SharedFlow<Any>,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     var editName by remember { mutableStateOf(false) }
+    val lazyListState = rememberLazyListState()
+    LaunchedEffect(refreshContentRequest) {
+        refreshContentRequest.collect {
+            if (it == ProfileDestination) {
+                // this refresh is for us
+                lazyListState.animateScrollToItem(0)
+            }
+        }
+    }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     var bmiDialogueShown by remember { mutableStateOf(false) }
@@ -127,6 +136,7 @@ fun Profile(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         LazyColumn(
+            state = lazyListState,
             contentPadding = innerPadding.plus(PaddingValues(vertical = 16.dp)),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
