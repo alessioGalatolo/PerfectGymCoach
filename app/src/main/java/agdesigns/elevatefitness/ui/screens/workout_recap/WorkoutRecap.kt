@@ -24,7 +24,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
-import agdesigns.elevatefitness.navigation.HistoryDestination
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
@@ -139,10 +138,6 @@ fun WorkoutRecap(
                     IconButton(
                         onClick = {
                             navigator.navigateUp()
-                            navigator.navigateUp()
-                            navigator.navigate(
-                                HistoryDestination
-                            )
                         },
                         shapes = IconButtonDefaults.shapes()
                 ) {

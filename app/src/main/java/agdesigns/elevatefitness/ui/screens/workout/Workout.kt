@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
+import agdesigns.elevatefitness.navigation.HistoryDestination
 import agdesigns.elevatefitness.navigation.WorkoutRecapDestination
 import agdesigns.elevatefitness.ui.common.CancelWorkoutDialog
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
@@ -142,7 +143,7 @@ fun SharedTransitionScope.Workout(
     // FIXME: should use WorkoutEffect
     LaunchedEffect (workoutState.shutDown){
         if (workoutState.shutDown) {
-            navigator.navigateUp()
+            navigator.popAndNavigateToBottomBar(HistoryDestination)
             navigator.navigate(
                 WorkoutRecapDestination(workoutId = workoutState.workoutId)
             )

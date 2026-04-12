@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import agdesigns.elevatefitness.R
-import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
@@ -16,13 +15,19 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberSupportingPaneSceneStrategy
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.scene.SceneStrategy
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.background
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -55,11 +60,16 @@ fun RootDestinationGraph(startDestination: Any) {
         creationCallback = { factory -> factory.create(startDestination) }
     )
     val destinationsNavigator = navigationViewModel.navigator
-    LaunchedEffect(destinationsNavigator.topLevelKey) {
-        if (destinationsNavigator.topLevelKey in BOTTOM_BAR_ROUTES)
-            state.show()
-        else
-            state.hide()
+    // history is the only bottom bar route which is allowed to be in a pane,
+    // if it happens remove the nav bar
+    val showNavBar by remember {
+        derivedStateOf {
+            destinationsNavigator.topLevelKey in BOTTOM_BAR_ROUTES
+                && destinationsNavigator.backStack.none { it is WorkoutRecapDestination }
+        }
+    }
+    LaunchedEffect(showNavBar) {
+        if (showNavBar) state.show() else state.hide()
     }
     val primaryActionContent = remember { mutableStateOf<PrimaryActionContent?>(null) }
     // whose action it is
@@ -75,9 +85,18 @@ fun RootDestinationGraph(startDestination: Any) {
                 else -> NavigationSuiteType.WideNavigationRailExpanded
             }
         }
-    val listDetailStrategy = rememberListDetailSceneStrategy<Any>(
+    val innerListDetail = rememberListDetailSceneStrategy<Any>(
         backNavigationBehavior = BackNavigationBehavior.PopUntilContentChange,
     )
+    // Only activate the list-detail two-pane layout when a detailPane entry (marked with
+    // DETAIL_PANE_METADATA_KEY) is actually in the back stack. Without this guard, any listPane
+    // entry shown alone would split the screen with an empty pane on wide layouts.
+    val listDetailStrategy = remember(innerListDetail) {
+        SceneStrategy { entries: List<NavEntry<Any>> ->
+            if (entries.none { it.metadata[DETAIL_PANE_METADATA_KEY] == true }) null
+            else with(innerListDetail) { calculateScene(entries) }
+        }
+    }
     val supportingPaneSceneStrategy = rememberSupportingPaneSceneStrategy<Any>()
     val refreshContentFlow = remember { MutableSharedFlow<Any>(
         replay = 0,      // Number of values replayed to new subscribers
@@ -194,6 +213,7 @@ fun RootDestinationGraph(startDestination: Any) {
     ) {
         SharedTransitionLayout {
             NavDisplay(
+                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
                 backStack = destinationsNavigator.backStack,
                 onBack = { destinationsNavigator.navigateUp() },
                 sceneStrategy = supportingPaneSceneStrategy.then(listDetailStrategy),

@@ -30,6 +30,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,6 +83,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFloatingActionButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFloatingActionButton
 import androidx.compose.material3.OutlinedButton
@@ -94,6 +96,7 @@ import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
@@ -166,19 +169,23 @@ fun SharedTransitionScope.DoublePaneWorkout(
         animationSpec = tween(500, easing = LinearEasing),
     )
 
-    // Separate title for the top app bar (single line, no shared element)
-    val titleTopBar = @Composable {
-        Text(
-            currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-
     val scaffoldNavigator = rememberListDetailPaneScaffoldNavigator()
 
     NavigableListDetailPaneScaffold(
+        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
         navigator = scaffoldNavigator,
+        paneExpansionDragHandle = { state ->
+            val interactionSource = remember { MutableInteractionSource() }
+            VerticalDragHandle(
+                modifier =
+                    Modifier.paneExpansionDraggable(
+                        state,
+                        LocalMinimumInteractiveComponentSize.current,
+                        interactionSource,
+                    ),
+                interactionSource = interactionSource,
+            )
+        },
         listPane = {
             AnimatedPane {
                 // ---- LEFT PANE: exercise image + list + media ----

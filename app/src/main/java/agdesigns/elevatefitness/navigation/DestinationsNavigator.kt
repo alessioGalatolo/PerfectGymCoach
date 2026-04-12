@@ -56,9 +56,18 @@ class DestinationsNavigator(startKey: Any) {
         val removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
         // If the removed key was a top level key, remove the associated top level stack
         topLevelStacks.remove(removedKey)
-        // FIXME: NoSuchElementException: Collection is empty. when closing workout recap after workout
-        topLevelKey = topLevelStacks.keys.last()
+        topLevelKey = topLevelStacks.keys.lastOrNull() ?: return
         updateBackStack()
+    }
+
+    /**
+     * Pops the current top-level stack (e.g. WorkoutDestination) and navigates to a bottom bar
+     * destination, resetting that destination's back stack.
+     */
+    fun popAndNavigateToBottomBar(destination: BottomBarDestination) {
+        topLevelStacks.remove(topLevelKey)
+        topLevelStacks.remove(destination)
+        addTopLevel(destination)
     }
 
     fun navigateUpTo(destination: BottomBarDestination) {

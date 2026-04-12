@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.EntryProviderScope
@@ -73,7 +74,7 @@ fun EntryProviderScope< Any>.bottomBarEntryBuilder(
                 refreshContentRequest = refreshContentFlow
             )
         }
-        entry<HistoryDestination>(metadata = FadeTransition) {
+        entry<HistoryDestination>(metadata = FadeTransition + ListDetailSceneStrategy.listPane(sceneKey = HistoryDetailSceneKey)) {
             History(
                 navigator = destinationsNavigator,
                 refreshContentRequest = refreshContentFlow

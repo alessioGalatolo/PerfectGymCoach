@@ -92,6 +92,16 @@ data class WorkoutRecapDestination(
     val workoutId: Long
 )
 
+// Scene key objects that separate different list-detail flows, preventing the strategy from
+// grouping entries from unrelated flows when multiple top-level stacks are active.
+internal object HistoryDetailSceneKey
+internal object ProgramDetailSceneKey
+
+// Custom metadata key added to every detailPane entry. The SceneStrategy wrapper in RootGraph
+// reads this to decide whether to activate the two-pane layout at all, so that a listPane shown
+// alone never splits the screen with an empty pane on the right.
+internal const val DETAIL_PANE_METADATA_KEY = "detail_pane_present"
+
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 context(sharedTransitionScope: SharedTransitionScope)
 fun EntryProviderScope<Any>.deepScreensEntryBuilder(
@@ -99,6 +109,7 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
 ) {
     with (sharedTransitionScope) {
         entry<AddProgramDestination>(metadata = SlideTransition + ListDetailSceneStrategy.listPane(
+            sceneKey = ProgramDetailSceneKey,
             detailPlaceholder = {
                 EmptyScreenInfo(
                     Icons.Default.Description,
@@ -107,7 +118,9 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                     subtitleRes = R.string.no_programs_selected_info
                 )
             }
-        )) {
+            // This is not a detail pane, but will make this render with an empty screen on the right
+            // Which I prefer in this case
+        ) + mapOf(DETAIL_PANE_METADATA_KEY to true)) {
             AddProgram(
                 navigator = navigator,
                 planId = it.planId,
@@ -125,7 +138,11 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 navigator = navigator
             )
         }
-        entry<AddProgramExerciseDestination>(metadata = SlideTransition + ListDetailSceneStrategy.detailPane()) {
+        entry<AddProgramExerciseDestination>(
+            metadata = SlideTransition
+                + ListDetailSceneStrategy.detailPane(sceneKey = ProgramDetailSceneKey)
+                + mapOf(DETAIL_PANE_METADATA_KEY to true)
+        ) {
             AddProgramExercise(
                 navigator = navigator,
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
@@ -139,7 +156,9 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 exerciseId = it.exerciseId
             )
         }
-        entry<ViewExercisesDestination>(metadata = SlideTransition + ListDetailSceneStrategy.extraPane()) {
+        entry<ViewExercisesDestination>(
+            metadata = SlideTransition + ListDetailSceneStrategy.extraPane(sceneKey = ProgramDetailSceneKey)
+        ) {
             ViewExercises(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = navigator,
@@ -151,7 +170,9 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 returnAfterAdding = it.returnAfterAdding
             )
         }
-        entry<AddExerciseDialogDestination>(metadata = ListDetailSceneStrategy.extraPane()) {
+        entry<AddExerciseDialogDestination>(
+            metadata = ListDetailSceneStrategy.extraPane(sceneKey = ProgramDetailSceneKey)
+        ) {
             AddExerciseDialog(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = navigator,
@@ -164,14 +185,18 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 continueAdding = it.continueAdding
             )
         }
-        entry<CreateExerciseDialogDestination>(metadata = FullscreenDialogTransition + ListDetailSceneStrategy.extraPane()) {
+        entry<CreateExerciseDialogDestination>(
+            metadata = FullscreenDialogTransition + ListDetailSceneStrategy.extraPane(sceneKey = ProgramDetailSceneKey)
+        ) {
             CreateExerciseDialog(
                 navigator = navigator,
                 muscleOrdinal = it.muscleOrdinal,
                 filterEquipment = it.filterEquipment
             )
         }
-        entry<ExercisesByMuscleDestination>(metadata = SlideTransition + ListDetailSceneStrategy.extraPane()) {
+        entry<ExercisesByMuscleDestination>(
+            metadata = SlideTransition + ListDetailSceneStrategy.extraPane(sceneKey = ProgramDetailSceneKey)
+        ) {
             ExercisesByMuscle(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = navigator,
@@ -195,7 +220,11 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 navigator = navigator
             )
         }
-        entry<WorkoutRecapDestination>(metadata = FullscreenDialogTransition) {
+        entry<WorkoutRecapDestination>(
+            metadata = SlideTransition
+                + ListDetailSceneStrategy.detailPane(sceneKey = HistoryDetailSceneKey)
+                + mapOf(DETAIL_PANE_METADATA_KEY to true)
+        ) {
             WorkoutRecap(
                 navigator = navigator,
                 workoutId = it.workoutId
