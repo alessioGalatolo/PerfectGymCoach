@@ -42,7 +42,7 @@ data object CustomizePlanGenerationDestination
 data class AddProgramExerciseDestination(
     val programName: String,
     val programId: Long
-)
+): TopLevelRoute
 
 data class ExerciseStatsDestination(
     val exerciseId: Long
@@ -63,7 +63,7 @@ data class AddExerciseDialogDestination(
     val programId: Long = 0L, // programId != 0L means we are adding an exercise to a program (and maybe a current workout)
     val workoutId: Long = 0L, // workoutId != 0L we're adding to a ongoing workout (and maybe a program)
     val insertAtPosition: Int? = null,
-    val programExerciseId: Long = 0L,  // != 0L if we are changing an existing exercise
+    val programExerciseId: Long? = null,  // != 0L if we are changing an existing exercise
     val programName: String = "",
     val returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
     val continueAdding: Boolean = true,
@@ -143,6 +143,7 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
         }
         entry<AddProgramExerciseDestination>(
             metadata = SlideTransition
+                    // TODO: extra placeholder for when tapping edit in workout card
                 + ListDetailSceneStrategy.detailPane(sceneKey = ProgramDetailSceneKey)
                 + mapOf(DETAIL_PANE_METADATA_KEY to true)
         ) {

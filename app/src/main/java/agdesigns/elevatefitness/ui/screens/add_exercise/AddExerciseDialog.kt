@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -32,6 +33,7 @@ import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.home.components.ValueSuggestionRow
 import agdesigns.elevatefitness.ui.screens.workout.components.TextFieldWithButtons
+import android.util.Log
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
@@ -76,8 +78,12 @@ fun SharedTransitionScope.AddExerciseDialog(
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
+        // When in Dual pane, the first textfield automatically gets focus (for some reason)
+        // this avoids that
+        focusManager.clearFocus()
         viewModel.onEvent(
             AddExerciseEvent.StartRetrievingData(
                 exerciseId = previewExercise.exerciseId,

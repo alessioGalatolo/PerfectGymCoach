@@ -94,6 +94,7 @@ fun SharedTransitionScope.Home(
         }
     }
 
+    // FABs are placed by parent, notify what to put
     DisposableEffect(state.currentPlan) {
         changePrimaryActionContent (
             if (state.currentPlan == null)
@@ -102,10 +103,7 @@ fun SharedTransitionScope.Home(
                     labelId = R.string.home_fap_create_plan,
                     onClick = {
                         navigator.navigate(
-                            WorkoutDestination(
-                                programId = 0L,
-                                quickStart = true
-                            )
+                            AddWorkoutPlanDestination(openDialogNow = true)
                         )
                     }
                 )

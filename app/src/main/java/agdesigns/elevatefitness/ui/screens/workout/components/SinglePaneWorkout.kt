@@ -262,7 +262,9 @@ fun SharedTransitionScope.SinglePaneWorkout(
                             )
                         }
                     },
-                    updateReps = { value -> viewModel.onEvent(WorkoutEvent.UpdateReps(value)) },
+                    updateReps = { value ->
+                        viewModel.onEvent(WorkoutEvent.UpdateReps(value))
+                    },
                     updateWeight = { value ->
                         viewModel.onEvent(
                             WorkoutEvent.UpdateWeight(
@@ -308,9 +310,6 @@ fun SharedTransitionScope.SinglePaneWorkout(
         cardShape = MaterialTheme.shapes.extraLarge as RoundedCornerShape,
         floatingActionButton = {
             if (!mediaState.needsAccess || mediaState.canAskAccess) {
-                val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
-                        16.dp // fab bottom padding
-                fabHeight = if (mediaControlsDismissed) 0.dp else visibleFabHeight
                 AnimatedVisibility(
                     visible = containerTransitionFinished && !pagerState.isScrollInProgress && !mediaControlsDismissed,
                     enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
@@ -384,10 +383,10 @@ fun SharedTransitionScope.SinglePaneWorkout(
             updateValues = { a, b, c, d ->
                 viewModel.onEvent(
                     WorkoutEvent.EditSetRecord(
-                        a,
-                        b,
-                        c,
-                        d
+                        reps = a,
+                        weight = b,
+                        exerciseInWorkout = c,
+                        set = d
                     )
                 )
             },

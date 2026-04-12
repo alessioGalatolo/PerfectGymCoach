@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 
-class DestinationsNavigator(startKey: Any) {
+open class DestinationsNavigator(startKey: Any) {
 
     // Maintain a stack for each top level route
     private var topLevelStacks : LinkedHashMap<Any, SnapshotStateList<Any>> = linkedMapOf(
@@ -43,7 +43,7 @@ class DestinationsNavigator(startKey: Any) {
         updateBackStack()
     }
 
-    fun navigate(key: Any){
+    open fun navigate(key: Any){
         if (key is TopLevelRoute) {
             addTopLevel(key)
             return
@@ -52,7 +52,7 @@ class DestinationsNavigator(startKey: Any) {
         updateBackStack()
     }
 
-    fun navigateUp() {
+    open fun navigateUp() {
         val removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
         // If the removed key was a top level key, remove the associated top level stack
         topLevelStacks.remove(removedKey)

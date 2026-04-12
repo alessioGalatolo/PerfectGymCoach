@@ -143,7 +143,10 @@ fun SharedTransitionScope.WorkoutExerciseImage(
                     .graphicsLayer(
                         shape = imageCorners,
                         clip = true
-                    ),
+                    )
+                    .onGloballyPositioned {
+                        setImageHeight(with(density) { it.size.height.toDp() })
+                    },
                 contentScale = ContentScale.Crop
             )
         }

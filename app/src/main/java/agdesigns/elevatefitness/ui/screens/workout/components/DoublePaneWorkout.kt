@@ -2,22 +2,41 @@ package agdesigns.elevatefitness.ui.screens.workout.components
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.navigation.CreateExerciseDialogDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
+import agdesigns.elevatefitness.navigation.InPaneNavigator
+import agdesigns.elevatefitness.navigation.ViewExercisesDestination
 import agdesigns.elevatefitness.ui.common.MediaPlayingState
 import agdesigns.elevatefitness.ui.common.MediaViewModel
 import agdesigns.elevatefitness.ui.common.SwipeableMediaPlaying
 import agdesigns.elevatefitness.ui.common.SwipeableMediaPlayingDefaults
+import agdesigns.elevatefitness.ui.screens.add_exercise.AddExerciseDialog
+import agdesigns.elevatefitness.ui.screens.create_exercise.CreateExerciseDialog
+import agdesigns.elevatefitness.ui.screens.statistics.ExerciseStats
+import agdesigns.elevatefitness.ui.screens.view_exercises.ExercisesByMuscle
+import agdesigns.elevatefitness.ui.screens.view_exercises.ViewExercises
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.ui.screens.workout.CurrentExerciseState
 import agdesigns.elevatefitness.ui.screens.workout.WorkoutEvent
 import agdesigns.elevatefitness.ui.screens.workout.WorkoutPagesContent
 import agdesigns.elevatefitness.ui.screens.workout.WorkoutState
 import agdesigns.elevatefitness.ui.screens.workout.WorkoutViewModel
+import agdesigns.elevatefitness.utils.largeLandscapeDirective
 import android.util.Log
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -86,6 +105,7 @@ import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFloatingActionButton
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ProvideTextStyle
@@ -98,6 +118,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
@@ -128,11 +149,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3AdaptiveApi::class,
+    ExperimentalSharedTransitionApi::class,
 )
 @Composable
 fun SharedTransitionScope.DoublePaneWorkout(
@@ -164,12 +187,26 @@ fun SharedTransitionScope.DoublePaneWorkout(
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
 
+    // Right-pane navigation stack. When non-empty the top entry replaces the normal exercise
+    // content. InPaneNavigator intercepts pane-eligible destinations (ExercisesByMuscle,
+    // ViewExercises, AddExerciseDialog) and pushes/pops this stack instead of the global one.
+    val rightPaneStack = remember { mutableStateListOf<Any>() }
+    val inPaneNavigator = remember { InPaneNavigator(rightPaneStack, navigator) }
+
+    BackHandler(enabled = rightPaneStack.isNotEmpty()) {
+        inPaneNavigator.navigateUp()
+    }
+
     val restProgressAnim by animateFloatAsState(
         targetValue = currentExerciseState.restProgress,
         animationSpec = tween(500, easing = LinearEasing),
     )
 
-    val scaffoldNavigator = rememberListDetailPaneScaffoldNavigator()
+    val scaffoldNavigator = rememberListDetailPaneScaffoldNavigator(
+        scaffoldDirective = largeLandscapeDirective(
+            currentWindowAdaptiveInfo()
+        )
+    )
 
     NavigableListDetailPaneScaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
@@ -229,7 +266,14 @@ fun SharedTransitionScope.DoublePaneWorkout(
                             ) {
                                 IconButton(
                                     shapes = IconButtonDefaults.shapes(),
-                                    onClick = onClose,
+                                    onClick = {
+                                        scope.launch {
+                                            // we may have some inPaneNavigation, close all the onClose
+                                            inPaneNavigator.popAllRightPanes()
+                                            delay(200L)
+                                            onClose()
+                                        }
+                                    },
                                     colors = IconButtonDefaults.iconButtonColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                                     )
@@ -271,7 +315,12 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                     name = ex.name,
                                     imageModel = ex.image,
                                     selected = selected,
-                                    onClick = { scope.launch { pagerState.animateScrollToPage(page) } }
+                                    onClick = {
+                                        scope.launch {
+                                            inPaneNavigator.popAllRightPanes()
+                                            pagerState.animateScrollToPage(page)
+                                        }
+                                    }
                                 )
                             }
                             if (workoutState.workoutStarted) {
@@ -280,6 +329,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                         pagerState.currentPage == pagesContent.exercises.size
                                     Card(
                                         onClick = {
+                                            inPaneNavigator.popAllRightPanes()
                                             scope.launch {
                                                 pagerState.animateScrollToPage(pagesContent.exercises.size)
                                             }
@@ -361,295 +411,363 @@ fun SharedTransitionScope.DoublePaneWorkout(
             }
         }, detailPane = {
             AnimatedPane {
-                var toolbarHeight by remember { mutableStateOf(96.dp) }
-                Scaffold(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    snackbarHost = { SnackbarHost(snackbarHostState) },
-                    topBar = {
-                        if (workoutState.workoutStarted) {
-                            TopAppBar(
-                                title = {
-                                    Text(currentExerciseState.workoutTimeFormatted)
-                                },
-                                colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                ),
-                                actions = {
-                                    AnimatedVisibility(
-                                        visible = containerTransitionFinished
-                                                && !currentExerciseState.isLoading
-                                                && workoutState.workoutStarted,
-                                        enter = EnterTransition.None,
-                                        exit = ExitTransition.None
-                                    ) {
-                                        FilledIconButton(
-                                            onClick = {
-                                                completeWorkout()
-                                            }, shapes = IconButtonDefaults.shapes(
-                                                MaterialTheme.shapes.small,
-                                                MaterialTheme.shapes.extraLarge
-                                            ),
-                                            modifier = Modifier.animateEnterExit(
-                                                enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()),
-                                                exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec())
-                                            )
-                                        ) {
-                                            Icon(
-                                                Icons.Default.DoneAll,
-                                                stringResource(R.string.finish),
-                                            )
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    },
-                    floatingActionButton = {
-                        AnimatedVisibility(
-                            visible = containerTransitionFinished && !pagerState.isScrollInProgress,
-                            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
-                            exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut(),
-                            modifier = Modifier.padding(start = 32.dp) // only necessary when put as a fab
-                        ) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                // normally, floating toolbar is 64.dp and fap is 56.dp but our toolbar
-                                // is larger, so maintain that ratio
-                                val density = LocalDensity.current
-                                // if currentExercise is null, only show fab to complete workout
-                                if (currentExerciseState.currentExercise != null && workoutState.workoutStarted) {
-                                    HorizontalFloatingToolbar(
-                                        expanded = false,
-                                        colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
-                                        modifier = Modifier.weight(1f)
-                                            .onGloballyPositioned {
-                                                with(density) {
-                                                    toolbarHeight = it.size.height.toDp()
-                                                }
-                                            },
-                                    ) {
-                                        WorkoutBottomBar(
-                                            workoutState = workoutState,
-                                            currentExerciseState = currentExerciseState,
-                                            contentPadding = PaddingValues(),
-                                            containerColor = Color.Transparent,
-                                            hideMainAction = true,
-                                            startWorkout = {
-                                                scope.launch {
-                                                    haptics.performHapticFeedback(
-                                                        HapticFeedbackType.ToggleOn
-                                                    )
-                                                }
-                                                viewModel.onEvent(WorkoutEvent.StartWorkout)
-                                            },
-                                            completeWorkout = completeWorkout,
-                                            completeSet = completeSet,
-                                            addSet = {
-                                                scope.launch {
-                                                    haptics.performHapticFeedback(
-                                                        HapticFeedbackType.ToggleOn
-                                                    )
-                                                }
-                                                viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise)
-                                            },
-                                            goToNextExercise = {
-                                                scope.launch {
-                                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                                }
-                                            },
-                                            updateReps = { value ->
-                                                viewModel.onEvent(
-                                                    WorkoutEvent.UpdateReps(
-                                                        value
-                                                    )
-                                                )
-                                            },
-                                            updateWeight = { value ->
-                                                viewModel.onEvent(
-                                                    WorkoutEvent.UpdateWeight(
-                                                        value
-                                                    )
-                                                )
-                                            },
-                                            autoStepWeight = { newValue, equipment, decrement ->
-                                                viewModel.onEvent(
-                                                    WorkoutEvent.AutoStepWeight(
-                                                        newValue,
-                                                        equipment,
-                                                        decrement
-                                                    )
-                                                )
-                                            }
-                                        )
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                }
-                                if (!workoutState.workoutStarted) {
-                                    // complete workout
-                                    LargeFloatingActionButton({
-                                        scope.launch {
-                                            haptics.performHapticFeedback(
-                                                HapticFeedbackType.ToggleOn
-                                            )
-                                        }
-                                        viewModel.onEvent(WorkoutEvent.StartWorkout)
-                                    }) {
-                                        Icon(
-                                            Icons.Default.PlayArrow,
-                                            stringResource(R.string.start_workout)
-                                        )
-                                    }
-                                } else if (currentExerciseState.currentExercise == null) {
-                                    // complete workout
-                                    LargeFloatingActionButton(
-                                        onClick = completeWorkout
-                                    ) {
-                                        Icon(
-                                            Icons.Default.DoneAll,
-                                            stringResource(R.string.complete_workout)
-                                        )
-                                    }
-                                } else if (currentExerciseState.setsDone >= currentExerciseState.currentExercise.reps.size) {
-                                    // next exercise button
-                                    FloatingActionButton(
-                                        modifier = Modifier.size(toolbarHeight * 56 / 64),
-                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                        onClick = {
-                                            scope.launch {
-                                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                            }
-                                        }
-                                    ) {
-                                        Icon(
-                                            Icons.Default.SkipNext,
-                                            stringResource(R.string.next_exercise)
-                                        )
-                                    }
-                                } else {
-                                    // complete set button
-                                    FloatingActionButton(
-                                        modifier = Modifier.size(toolbarHeight * 56 / 64),
-                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                        onClick = completeSet
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Done,
-                                            stringResource(R.string.complete_set)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                ) { innerPadding ->
-                    // ---- RIGHT PANE: exercise content + bottom bar ----
-                    Column(
-                        Modifier
-                            .fillMaxHeight()
-                            .verticalScroll(scrollState)
-                    ) {
-                        Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-                        ExercisePages(
-                            navigator = navigator,
-                            horizontalPagerState = pagerState,
-                            currentExerciseState = currentExerciseState,
-                            pagesContent = pagesContent,
-                            previewExercise = previewExercise,
-                            workoutState = workoutState,
-                            bottomPadding = innerPadding.calculateBottomPadding(),
-                            fabHeight = toolbarHeight + 16.dp,
-                            restCounterProgress = restProgressAnim,
-                            showTitle = false,
-                            title = title,
-                            addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
-                            updateBottomBar = { rep, weight ->
-                                if (rep != null)
-                                    viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
-                                else
-                                    Log.e("Workout", "updateBottomBar called with null rep")
-                                if (weight != null)
-                                    viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
-                            },
-                            updateValues = { a, b, c, d ->
-                                viewModel.onEvent(
-                                    WorkoutEvent.EditSetRecord(
-                                        a,
-                                        b,
-                                        c,
-                                        d
-                                    )
-                                )
-                            },
-                            deleteSet = { exerciseInWorkout, set ->
-                                viewModel.onEvent(
-                                    WorkoutEvent.DeleteSetRecord(
-                                        exerciseInWorkout,
-                                        set
-                                    )
-                                )
-                            },
-                            updateTare = { tare ->
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateTare(
-                                        tare
-                                    )
-                                )
-                            },
-                            toggleOtherEquipment = {
-                                viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog)
-                            },
-                            addExercise = { exerciseInWorkout, originalSize ->
-                                viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
-                            },
-                            changeExercise = { exerciseInWorkout, originalSize ->
-                                scope.launch {
-                                    viewModel.onEvent(
-                                        WorkoutEvent.ReplaceExercise(
-                                            exerciseInWorkout,
-                                            originalSize
-                                        )
-                                    )
-                                }
-                            },
-                            removeExercise = {
-                                viewModel.onEvent(
-                                    WorkoutEvent.RemoveExercise(
-                                        it
-                                    )
-                                )
-                            },
-                            mediaControlsDismissed = !mediaState.canAskAccess || mediaControlsDismissed,
-                            resetMediaControlVisibility = {
-                                scope.launch {
-                                    mediaSwipeState.reset()
-                                    setDismissMediaControl(false)
-                                    mediaVM.resetCanRequestAccess()
-                                }
-                            },
-                            dontRequestOngoingWorkoutNotification = {
-                                viewModel.onEvent(WorkoutEvent.DontRequestOngoingWorkoutNotification)
-                            },
-                            refreshPromotedNotificationAccess = {
-                                viewModel.onEvent(WorkoutEvent.RefreshHasPromptedNotificationsAccess)
-                            },
-                            onAcceptSuggestion = {
-                                viewModel.onEvent(
-                                    WorkoutEvent.AcceptSuggestedModification(it)
-                                )
-                            },
-                            updateSetType = { page, set, type ->
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateSetType(
-                                        page,
-                                        set,
-                                        type
-                                    )
-                                )
-                            }
+                AnimatedContent(
+                    targetState = rightPaneStack.lastOrNull(),
+                    transitionSpec = { slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        MotionScheme.expressive().slowSpatialSpec()
+                    ) + fadeIn(
+                        MotionScheme.expressive().slowEffectsSpec()
+                    ) togetherWith
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                MotionScheme.expressive().slowSpatialSpec()
+                            ) + fadeOut(
+                        MotionScheme.expressive().slowEffectsSpec()
+                    )
+                 },
+                    label = "RightPaneContent"
+                ) { topScreen ->
+                    Log.d("DoublePaneWorkout", topScreen.toString())
+                    when (topScreen) {
+                        is ExercisesByMuscleDestination -> ExercisesByMuscle(
+                            animatedVisibilityScope = this@AnimatedContent,
+                            navigator = inPaneNavigator,
+                            programName = topScreen.programName,
+                            workoutId = topScreen.workoutId,
+                            successfulAddExercise = topScreen.successfulAddExercise,
+                            returnAfterAdding = true,
+                            insertAtPosition = topScreen.insertAtPosition,
                         )
+                        is ViewExercisesDestination -> ViewExercises(
+                            animatedVisibilityScope = this@AnimatedContent,
+                            navigator = inPaneNavigator,
+                            programId = topScreen.programId,
+                            workoutId = topScreen.workoutId,
+                            muscleOrdinal = topScreen.muscleOrdinal,
+                            focusSearch = topScreen.focusSearch,
+                            programName = topScreen.programName,
+                            returnAfterAdding = topScreen.returnAfterAdding,
+                            insertAtPosition = topScreen.insertAtPosition,
+                            viewModel = hiltViewModel(key = topScreen.toString())
+                        )
+                        is AddExerciseDialogDestination -> AddExerciseDialog(
+                            animatedVisibilityScope = this@AnimatedContent,
+                            navigator = inPaneNavigator,
+                            previewExercise = topScreen.previewExercise,
+                            programId = topScreen.programId,
+                            workoutId = topScreen.workoutId,
+                            programExerciseId = topScreen.programExerciseId,
+                            programName = topScreen.programName,
+                            returnAfterAdding = topScreen.returnAfterAdding,
+                            insertAtPosition = topScreen.insertAtPosition,
+                            continueAdding = topScreen.continueAdding,
+                            viewModel = hiltViewModel(key = topScreen.toString())
+                        )
+                        is CreateExerciseDialogDestination -> CreateExerciseDialog(
+                            navigator = inPaneNavigator,
+                            muscleOrdinal = topScreen.muscleOrdinal,
+                            filterEquipment = topScreen.filterEquipment,
+                            viewModel = hiltViewModel(key = topScreen.toString())
+                        )
+                        is ExerciseStatsDestination -> ExerciseStats(
+                            navigator = inPaneNavigator,
+                            exerciseId = topScreen.exerciseId,
+                            viewModel = hiltViewModel(key = topScreen.toString())
+                        )
+                        else -> {
+                            var toolbarHeight by remember { mutableStateOf(96.dp) }
+                            Scaffold(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                snackbarHost = { SnackbarHost(snackbarHostState) },
+                                topBar = {
+                                    if (workoutState.workoutStarted) {
+                                        TopAppBar(
+                                            title = {
+                                                Text(currentExerciseState.workoutTimeFormatted)
+                                            },
+                                            colors = TopAppBarDefaults.topAppBarColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                            ),
+                                            actions = {
+                                                AnimatedVisibility(
+                                                    visible = containerTransitionFinished
+                                                            && !currentExerciseState.isLoading
+                                                            && workoutState.workoutStarted,
+                                                    enter = EnterTransition.None,
+                                                    exit = ExitTransition.None
+                                                ) {
+                                                    FilledIconButton(
+                                                        onClick = {
+                                                            completeWorkout()
+                                                        }, shapes = IconButtonDefaults.shapes(
+                                                            MaterialTheme.shapes.small,
+                                                            MaterialTheme.shapes.extraLarge
+                                                        ),
+                                                        modifier = Modifier.animateEnterExit(
+                                                            enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()),
+                                                            exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec())
+                                                        )
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.DoneAll,
+                                                            stringResource(R.string.finish),
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
+                                },
+                                floatingActionButton = {
+                                    AnimatedVisibility(
+                                        visible = containerTransitionFinished && !pagerState.isScrollInProgress,
+                                        enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+                                        exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut(),
+                                        modifier = Modifier.padding(start = 32.dp) // only necessary when put as a fab
+                                    ) {
+                                        Row(
+                                            Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            // normally, floating toolbar is 64.dp and fap is 56.dp but our toolbar
+                                            // is larger, so maintain that ratio
+                                            val density = LocalDensity.current
+                                            // if currentExercise is null, only show fab to complete workout
+                                            if (currentExerciseState.currentExercise != null && workoutState.workoutStarted) {
+                                                HorizontalFloatingToolbar(
+                                                    expanded = false,
+                                                    colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+                                                    modifier = Modifier.weight(1f)
+                                                        .onGloballyPositioned {
+                                                            with(density) {
+                                                                toolbarHeight = it.size.height.toDp()
+                                                            }
+                                                        },
+                                                ) {
+                                                    WorkoutBottomBar(
+                                                        workoutState = workoutState,
+                                                        currentExerciseState = currentExerciseState,
+                                                        contentPadding = PaddingValues(),
+                                                        containerColor = Color.Transparent,
+                                                        hideMainAction = true,
+                                                        startWorkout = {
+                                                            scope.launch {
+                                                                haptics.performHapticFeedback(
+                                                                    HapticFeedbackType.ToggleOn
+                                                                )
+                                                            }
+                                                            viewModel.onEvent(WorkoutEvent.StartWorkout)
+                                                        },
+                                                        completeWorkout = completeWorkout,
+                                                        completeSet = completeSet,
+                                                        addSet = {
+                                                            scope.launch {
+                                                                haptics.performHapticFeedback(
+                                                                    HapticFeedbackType.ToggleOn
+                                                                )
+                                                            }
+                                                            viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise)
+                                                        },
+                                                        goToNextExercise = {
+                                                            scope.launch {
+                                                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                                            }
+                                                        },
+                                                        updateReps = { value ->
+                                                            viewModel.onEvent(
+                                                                WorkoutEvent.UpdateReps(
+                                                                    value
+                                                                )
+                                                            )
+                                                        },
+                                                        updateWeight = { value ->
+                                                            viewModel.onEvent(
+                                                                WorkoutEvent.UpdateWeight(
+                                                                    value
+                                                                )
+                                                            )
+                                                        },
+                                                        autoStepWeight = { newValue, equipment, decrement ->
+                                                            viewModel.onEvent(
+                                                                WorkoutEvent.AutoStepWeight(
+                                                                    newValue,
+                                                                    equipment,
+                                                                    decrement
+                                                                )
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                                Spacer(Modifier.width(8.dp))
+                                            }
+                                            if (!workoutState.workoutStarted) {
+                                                // complete workout
+                                                LargeFloatingActionButton({
+                                                    scope.launch {
+                                                        haptics.performHapticFeedback(
+                                                            HapticFeedbackType.ToggleOn
+                                                        )
+                                                    }
+                                                    viewModel.onEvent(WorkoutEvent.StartWorkout)
+                                                }) {
+                                                    Icon(
+                                                        Icons.Default.PlayArrow,
+                                                        stringResource(R.string.start_workout)
+                                                    )
+                                                }
+                                            } else if (currentExerciseState.currentExercise == null) {
+                                                // complete workout
+                                                LargeFloatingActionButton(
+                                                    onClick = completeWorkout
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.DoneAll,
+                                                        stringResource(R.string.complete_workout)
+                                                    )
+                                                }
+                                            } else if (currentExerciseState.setsDone >= currentExerciseState.currentExercise.reps.size) {
+                                                // next exercise button
+                                                FloatingActionButton(
+                                                    modifier = Modifier.size(toolbarHeight * 56 / 64),
+                                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                                    onClick = {
+                                                        scope.launch {
+                                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                                        }
+                                                    }
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.SkipNext,
+                                                        stringResource(R.string.next_exercise)
+                                                    )
+                                                }
+                                            } else {
+                                                // complete set button
+                                                FloatingActionButton(
+                                                    modifier = Modifier.size(toolbarHeight * 56 / 64),
+                                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                                    onClick = completeSet
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Done,
+                                                        stringResource(R.string.complete_set)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ) { innerPadding ->
+                                // ---- RIGHT PANE: exercise content + bottom bar ----
+                                Column(
+                                    Modifier
+                                        .fillMaxHeight()
+                                        .verticalScroll(scrollState)
+                                ) {
+                                    Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+                                    ExercisePages(
+                                        navigator = inPaneNavigator,
+                                        horizontalPagerState = pagerState,
+                                        currentExerciseState = currentExerciseState,
+                                        pagesContent = pagesContent,
+                                        previewExercise = previewExercise,
+                                        workoutState = workoutState,
+                                        bottomPadding = innerPadding.calculateBottomPadding(),
+                                        fabHeight = toolbarHeight + 16.dp,
+                                        restCounterProgress = restProgressAnim,
+                                        showTitle = false,
+                                        title = title,
+                                        addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
+                                        updateBottomBar = { rep, weight ->
+                                            if (rep != null)
+                                                viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
+                                            else
+                                                Log.e("Workout", "updateBottomBar called with null rep")
+                                            if (weight != null)
+                                                viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
+                                        },
+                                        updateValues = { a, b, c, d ->
+                                            viewModel.onEvent(
+                                                WorkoutEvent.EditSetRecord(
+                                                    a,
+                                                    b,
+                                                    c,
+                                                    d
+                                                )
+                                            )
+                                        },
+                                        deleteSet = { exerciseInWorkout, set ->
+                                            viewModel.onEvent(
+                                                WorkoutEvent.DeleteSetRecord(
+                                                    exerciseInWorkout,
+                                                    set
+                                                )
+                                            )
+                                        },
+                                        updateTare = { tare ->
+                                            viewModel.onEvent(
+                                                WorkoutEvent.UpdateTare(
+                                                    tare
+                                                )
+                                            )
+                                        },
+                                        toggleOtherEquipment = {
+                                            viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog)
+                                        },
+                                        addExercise = { exerciseInWorkout, originalSize ->
+                                            viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
+                                        },
+                                        changeExercise = { exerciseInWorkout, originalSize ->
+                                            scope.launch {
+                                                viewModel.onEvent(
+                                                    WorkoutEvent.ReplaceExercise(
+                                                        exerciseInWorkout,
+                                                        originalSize
+                                                    )
+                                                )
+                                            }
+                                        },
+                                        removeExercise = {
+                                            viewModel.onEvent(
+                                                WorkoutEvent.RemoveExercise(
+                                                    it
+                                                )
+                                            )
+                                        },
+                                        mediaControlsDismissed = !mediaState.canAskAccess || mediaControlsDismissed,
+                                        resetMediaControlVisibility = {
+                                            scope.launch {
+                                                mediaSwipeState.reset()
+                                                setDismissMediaControl(false)
+                                                mediaVM.resetCanRequestAccess()
+                                            }
+                                        },
+                                        dontRequestOngoingWorkoutNotification = {
+                                            viewModel.onEvent(WorkoutEvent.DontRequestOngoingWorkoutNotification)
+                                        },
+                                        refreshPromotedNotificationAccess = {
+                                            viewModel.onEvent(WorkoutEvent.RefreshHasPromptedNotificationsAccess)
+                                        },
+                                        onAcceptSuggestion = {
+                                            viewModel.onEvent(
+                                                WorkoutEvent.AcceptSuggestedModification(it)
+                                            )
+                                        },
+                                        updateSetType = { page, set, type ->
+                                            viewModel.onEvent(
+                                                WorkoutEvent.UpdateSetType(
+                                                    page,
+                                                    set,
+                                                    type
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

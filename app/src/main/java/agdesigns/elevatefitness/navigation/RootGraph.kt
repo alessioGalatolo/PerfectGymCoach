@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.utils.largeLandscapeDirective
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
@@ -87,6 +88,7 @@ fun RootDestinationGraph(startDestination: Any) {
         }
     val innerListDetail = rememberListDetailSceneStrategy<Any>(
         backNavigationBehavior = BackNavigationBehavior.PopUntilContentChange,
+        directive = largeLandscapeDirective(currentWindowAdaptiveInfo())
     )
     // Only activate the list-detail two-pane layout when a detailPane entry (marked with
     // DETAIL_PANE_METADATA_KEY) is actually in the back stack. Without this guard, any listPane
@@ -97,7 +99,9 @@ fun RootDestinationGraph(startDestination: Any) {
             else with(innerListDetail) { calculateScene(entries) }
         }
     }
-    val supportingPaneSceneStrategy = rememberSupportingPaneSceneStrategy<Any>()
+    val supportingPaneSceneStrategy = rememberSupportingPaneSceneStrategy<Any>(
+        directive = largeLandscapeDirective(currentWindowAdaptiveInfo())
+    )
     val refreshContentFlow = remember { MutableSharedFlow<Any>(
         replay = 0,      // Number of values replayed to new subscribers
         extraBufferCapacity = 10  // Buffer for slow subscribers

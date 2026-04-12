@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -120,11 +121,6 @@ fun LazyItemScope.ProgramCard(
                         Modifier.wrapContentHeight(Alignment.Top),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        val imageWidth = with(LocalDensity.current) {
-                            LocalWindowInfo.current.containerSize.width.toDp()
-                        }
-                        val imageHeight = imageWidth / 3 * 2
-
                         HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.graphicsLayer {
@@ -139,7 +135,7 @@ fun LazyItemScope.ProgramCard(
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(imageHeight)
+                                        .aspectRatio(3f / 2f)
                                         .align(Alignment.TopCenter)
                                 )
                             }
