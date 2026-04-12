@@ -69,7 +69,7 @@ data class SessionSummary(
 @OptIn(ExperimentalHorologistApi::class)
 class MediaPlayingRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val registry: WearDataLayerRegistry
+    private val registry: WearDataLayerRegistry,
     private val datalayerHelper: PhoneDataLayerAppHelper
 ) {
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -141,6 +141,7 @@ class MediaPlayingRepository @Inject constructor(
         }
         // send now playing to wear
         secondaryScope.launch {
+            if (!datalayerHelper.isAvailable()) return@launch
             nowPlaying.collect { media ->
                 wearMediaStoreDeferred.await().updateData {
                     MediaPlaying.newBuilder()

@@ -1645,32 +1645,36 @@ class WorkoutViewModel @Inject constructor(
                 val suggestedModifications = values[11] as List<ModificationSuggestion?>
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
-                phoneWorkoutRepository.wearWorkoutStaticDeferred.await().urgentUpdateData { _ ->
-                    Workout.WorkoutStaticData.newBuilder()
-                        .setWorkoutId(workoutId)
-                        .setStartDate(startDateTimestamp)
-                        .addAllExercises(exercises.map { it.toProto() })
-                        .addAllSuggestedTares(suggestedTares)
-                        .setDefaultIncrements(
-                            Workout.DefaultIncrements.newBuilder()
-                                .setBarbell(incrementBarbell)
-                                .setBodyweight(incrementBodyweight)
-                                .setCable(incrementCable)
-                                .setDumbbell(incrementDumbbell)
-                                .setMachine(incrementMachine)
-                                .build()
-                        )
-                        .setImperialSystem(imperialSystem)
-                        .setActiveWorkout(true)
-                        .setPreviousIntensity(lastWorkoutIntensity ?: -1f)
-                        .addAllSuggestedModifications(
-                            suggestedModifications.map {
-                                it?.toProto() ?: Workout.ProtoSuggestedModification.newBuilder()
-                                    .setHasSuggestion(false)
+                try {
+                    phoneWorkoutRepository.wearWorkoutStaticDeferred.await().urgentUpdateData { _ ->
+                        Workout.WorkoutStaticData.newBuilder()
+                            .setWorkoutId(workoutId)
+                            .setStartDate(startDateTimestamp)
+                            .addAllExercises(exercises.map { it.toProto() })
+                            .addAllSuggestedTares(suggestedTares)
+                            .setDefaultIncrements(
+                                Workout.DefaultIncrements.newBuilder()
+                                    .setBarbell(incrementBarbell)
+                                    .setBodyweight(incrementBodyweight)
+                                    .setCable(incrementCable)
+                                    .setDumbbell(incrementDumbbell)
+                                    .setMachine(incrementMachine)
                                     .build()
-                            }
-                        )
-                        .build()
+                            )
+                            .setImperialSystem(imperialSystem)
+                            .setActiveWorkout(true)
+                            .setPreviousIntensity(lastWorkoutIntensity ?: -1f)
+                            .addAllSuggestedModifications(
+                                suggestedModifications.map {
+                                    it?.toProto() ?: Workout.ProtoSuggestedModification.newBuilder()
+                                        .setHasSuggestion(false)
+                                        .build()
+                                }
+                            )
+                            .build()
+                    }
+                } catch (e: Exception) {
+                    Log.e("WorkoutViewModel", "Failed to sync static data to wear", e)
                 }
             }.collect()
         }
@@ -1679,30 +1683,38 @@ class WorkoutViewModel @Inject constructor(
                 pagesContent.map { it.exerciseRepsWeightRows }.distinctUntilChanged(),
                 pagesContent.map { it.exerciseSetsDone }.distinctUntilChanged()
             ) { repsWeightRows, setsDone ->
-                phoneWorkoutRepository.wearWorkoutDynamicDeferred.await().urgentUpdateData { _ ->
-                    Workout.WorkoutDynamicData.newBuilder()
-                        .addAllSuggestedRepsWeight(
-                            repsWeightRows.map { repsWeights ->
-                                Workout.SuggestedRepsWeight.newBuilder()
-                                    .addAllReps(repsWeights.map {
-                                        it.projectedReps ?: it.reps
-                                    })
-                                    .addAllWeight(repsWeights.map {
-                                        it.projectedWeight ?: it.weight
-                                    })
-                                    .build()
-                            }
-                        )
-                        .addAllSetsDone(setsDone)
-                        .build()
+                try {
+                    phoneWorkoutRepository.wearWorkoutDynamicDeferred.await().urgentUpdateData { _ ->
+                        Workout.WorkoutDynamicData.newBuilder()
+                            .addAllSuggestedRepsWeight(
+                                repsWeightRows.map { repsWeights ->
+                                    Workout.SuggestedRepsWeight.newBuilder()
+                                        .addAllReps(repsWeights.map {
+                                            it.projectedReps ?: it.reps
+                                        })
+                                        .addAllWeight(repsWeights.map {
+                                            it.projectedWeight ?: it.weight
+                                        })
+                                        .build()
+                                }
+                            )
+                            .addAllSetsDone(setsDone)
+                            .build()
+                    }
+                } catch (e: Exception) {
+                    Log.e("WorkoutViewModel", "Failed to sync dynamic data to wear", e)
                 }
             }.collect()
         }
         viewModelScope.launch {
             pagesContent.map { it.exercises }.map { it.map{ it.image } }.distinctUntilChanged().collect {
                 images ->
-                    phoneWorkoutRepository.wearWorkoutImagesDeferred.await().updateData {
-                        images.map { repository.getBitmapFromResId(it) }
+                    try {
+                        phoneWorkoutRepository.wearWorkoutImagesDeferred.await().updateData {
+                            images.map { repository.getBitmapFromResId(it) }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("WorkoutViewModel", "Failed to sync images to wear", e)
                     }
             }
         }

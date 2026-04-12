@@ -4,6 +4,9 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
+import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
+import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.WorkoutDestination
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -65,9 +68,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.ramcosta.composedestinations.generated.destinations.AddProgramExerciseDestination
-import com.ramcosta.composedestinations.generated.destinations.WorkoutDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 

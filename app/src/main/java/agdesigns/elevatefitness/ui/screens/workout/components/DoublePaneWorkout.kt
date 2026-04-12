@@ -565,23 +565,6 @@ fun SharedTransitionScope.DoublePaneWorkout(
                             showTitle = false,
                             title = title,
                             addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
-                            updateExerciseProbability = { probability ->
-                                scope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    snackbarHostState.showSnackbar(
-                                        if (probability > 0)
-                                            context.getString(R.string.increasing_exercise_probability)
-                                        else
-                                            context.getString(R.string.decreasing_exercise_probability)
-                                    )
-                                }
-                                viewModel.onEvent(
-                                    WorkoutEvent.UpdateExerciseProbability(
-                                        pagerState.currentPage,
-                                        probability
-                                    )
-                                )
-                            },
                             updateBottomBar = { rep, weight ->
                                 if (rep != null)
                                     viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
@@ -591,7 +574,14 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                     viewModel.onEvent(WorkoutEvent.UpdateWeight(weight.toString()))
                             },
                             updateValues = { a, b, c, d ->
-                                viewModel.onEvent(WorkoutEvent.EditSetRecord(a, b, c, d))
+                                viewModel.onEvent(
+                                    WorkoutEvent.EditSetRecord(
+                                        a,
+                                        b,
+                                        c,
+                                        d
+                                    )
+                                )
                             },
                             deleteSet = { exerciseInWorkout, set ->
                                 viewModel.onEvent(
@@ -611,6 +601,9 @@ fun SharedTransitionScope.DoublePaneWorkout(
                             toggleOtherEquipment = {
                                 viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog)
                             },
+                            addExercise = { exerciseInWorkout, originalSize ->
+                                viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
+                            },
                             changeExercise = { exerciseInWorkout, originalSize ->
                                 scope.launch {
                                     viewModel.onEvent(
@@ -628,11 +621,12 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                     )
                                 )
                             },
-                            mediaControlsDismissed = mediaControlsDismissed,
+                            mediaControlsDismissed = !mediaState.canAskAccess || mediaControlsDismissed,
                             resetMediaControlVisibility = {
                                 scope.launch {
                                     mediaSwipeState.reset()
                                     setDismissMediaControl(false)
+                                    mediaVM.resetCanRequestAccess()
                                 }
                             },
                             dontRequestOngoingWorkoutNotification = {
@@ -640,6 +634,20 @@ fun SharedTransitionScope.DoublePaneWorkout(
                             },
                             refreshPromotedNotificationAccess = {
                                 viewModel.onEvent(WorkoutEvent.RefreshHasPromptedNotificationsAccess)
+                            },
+                            onAcceptSuggestion = {
+                                viewModel.onEvent(
+                                    WorkoutEvent.AcceptSuggestedModification(it)
+                                )
+                            },
+                            updateSetType = { page, set, type ->
+                                viewModel.onEvent(
+                                    WorkoutEvent.UpdateSetType(
+                                        page,
+                                        set,
+                                        type
+                                    )
+                                )
                             }
                         )
                     }

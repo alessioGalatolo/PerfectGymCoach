@@ -36,6 +36,8 @@ import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlinx.coroutines.android.awaitFrame
 import sh.calvin.reorderable.rememberReorderableLazyListState
 

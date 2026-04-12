@@ -51,6 +51,7 @@ data class ExerciseStatsDestination(
 data class ViewExercisesDestination(
     val programId: Long = 0L,
     val workoutId: Long = 0L,
+    val insertAtPosition: Int? = null,
     val muscleOrdinal: Int,
     val focusSearch: Boolean = false,
     val programName: String = "",
@@ -61,6 +62,7 @@ data class AddExerciseDialogDestination(
     val previewExercise: Exercise,
     val programId: Long = 0L, // programId != 0L means we are adding an exercise to a program (and maybe a current workout)
     val workoutId: Long = 0L, // workoutId != 0L we're adding to a ongoing workout (and maybe a program)
+    val insertAtPosition: Int? = null,
     val programExerciseId: Long = 0L,  // != 0L if we are changing an existing exercise
     val programName: String = "",
     val returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
@@ -77,7 +79,8 @@ data class ExercisesByMuscleDestination(
     val programId: Long = 0,
     val workoutId: Long = 0,
     val successfulAddExercise: Boolean = false,
-    val returnAfterAdding: Boolean = false
+    val returnAfterAdding: Boolean = false,
+    val insertAtPosition: Int? = null,
 )
 
 data class ViewGeneratedPlanDestination(
@@ -167,7 +170,8 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 muscleOrdinal = it.muscleOrdinal,
                 focusSearch = it.focusSearch,
                 programName = it.programName,
-                returnAfterAdding = it.returnAfterAdding
+                returnAfterAdding = it.returnAfterAdding,
+                insertAtPosition = it.insertAtPosition
             )
         }
         entry<AddExerciseDialogDestination>(
@@ -182,6 +186,7 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 programExerciseId = it.programExerciseId,
                 programName = it.programName,
                 returnAfterAdding = it.returnAfterAdding,
+                insertAtPosition = it.insertAtPosition,
                 continueAdding = it.continueAdding
             )
         }
@@ -204,7 +209,8 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 programId = it.programId,
                 workoutId = it.workoutId,
                 successfulAddExercise = it.successfulAddExercise,
-                returnAfterAdding = it.returnAfterAdding
+                returnAfterAdding = it.returnAfterAdding,
+                insertAtPosition = it.insertAtPosition
             )
         }
         entry<ViewGeneratedPlanDestination>(metadata = SlideTransition) {

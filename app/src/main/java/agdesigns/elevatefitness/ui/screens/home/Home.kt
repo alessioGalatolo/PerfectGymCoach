@@ -23,12 +23,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.WorkoutCard
 import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
 import agdesigns.elevatefitness.navigation.AddProgramDestination
 import agdesigns.elevatefitness.navigation.AddWorkoutPlanDestination
-import agdesigns.elevatefitness.ui.common.ResumeWorkout
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import agdesigns.elevatefitness.navigation.CustomizePlanGenerationDestination
@@ -96,9 +94,9 @@ fun SharedTransitionScope.Home(
         }
     }
 
-    DisposableEffect(homeState.currentPlan) {
+    DisposableEffect(state.currentPlan) {
         changePrimaryActionContent (
-            if (homeState.currentPlan == null)
+            if (state.currentPlan == null)
                 PrimaryActionContent(
                     icon = Icons.Default.Add,
                     labelId = R.string.home_fap_create_plan,

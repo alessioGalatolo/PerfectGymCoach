@@ -275,20 +275,6 @@ fun SharedTransitionScope.Workout(
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
         }
         viewModel.onEvent(WorkoutEvent.CompleteSet)
-        if ((currentExerciseState.currentExercise?.supersetExercise ?: 0L) != 0L) {
-            val superExercise = pagesContent.exercises.find {
-                it.extProgramExerciseId == currentExerciseState.currentExercise?.supersetExercise
-            }
-            if (superExercise != null) {
-                if (pagesContent.exercises.indexOf(superExercise) >
-                    pagesContent.exercises.indexOf(currentExerciseState.currentExercise)
-                ) {
-                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
-                } else {
-                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-                }
-            }
-        }
     }
 
 

@@ -27,7 +27,6 @@ import agdesigns.elevatefitness.data.db.entity.getVariation
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
 import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
-import agdesigns.elevatefitness.navigation.ChangePlanGraph
 import agdesigns.elevatefitness.ui.common.DiscardChangesDialog
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType

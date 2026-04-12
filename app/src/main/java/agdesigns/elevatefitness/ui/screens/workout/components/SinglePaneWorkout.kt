@@ -133,7 +133,12 @@ fun SharedTransitionScope.SinglePaneWorkout(
     val haptics = LocalHapticFeedback.current
     val context = LocalContext.current
 
-    var fabHeight by remember { mutableStateOf(0.dp) }
+    var fabHeight by remember(mediaState.canAskAccess, mediaState.needsAccess) {
+        val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
+                16.dp // fab bottom padding
+        val fabVisible = (!mediaState.needsAccess || mediaState.canAskAccess) && !mediaControlsDismissed
+        mutableStateOf(if (fabVisible) visibleFabHeight else 0.dp)
+    }
 
     // if bright image (i.e., white), change status bar icons to dark
     var brightImage by remember { mutableStateOf(false) }
@@ -367,22 +372,6 @@ fun SharedTransitionScope.SinglePaneWorkout(
             showTitle = true,
             title = title,
             addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },
-            updateExerciseProbability = { probability ->
-                scope.launch {
-                    // if already snackbarring, dismiss it before a new one.
-                    snackbarHostState.currentSnackbarData?.dismiss()
-                    if (probability > 0)
-                        snackbarHostState.showSnackbar(context.getString(R.string.increasing_exercise_probability))
-                    else
-                        snackbarHostState.showSnackbar(context.getString(R.string.decreasing_exercise_probability))
-                }
-                viewModel.onEvent(
-                    WorkoutEvent.UpdateExerciseProbability(
-                        pagerState.currentPage,
-                        probability
-                    )
-                )
-            },
             updateBottomBar = { rep, weight ->
                 if (rep != null)
                     viewModel.onEvent(WorkoutEvent.UpdateReps(rep.toString()))
@@ -412,6 +401,9 @@ fun SharedTransitionScope.SinglePaneWorkout(
             },
             updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
             toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
+            addExercise = { exerciseInWorkout, originalSize ->
+                viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
+            },
             changeExercise = { exerciseInWorkout, originalSize ->
                 scope.launch {
                     viewModel.onEvent(
@@ -423,11 +415,13 @@ fun SharedTransitionScope.SinglePaneWorkout(
                 }
             },
             removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) },
-            mediaControlsDismissed = mediaControlsDismissed,
+            mediaControlsDismissed = !mediaState.canAskAccess || mediaControlsDismissed,
             resetMediaControlVisibility = {
                 scope.launch {
                     mediaSwipeState.reset()
                     setDismissMediaControl(false)
+                    mediaVM.resetCanRequestAccess()
+
                 }
             },
             dontRequestOngoingWorkoutNotification = {
@@ -438,6 +432,20 @@ fun SharedTransitionScope.SinglePaneWorkout(
             refreshPromotedNotificationAccess = {
                 viewModel.onEvent(
                     WorkoutEvent.RefreshHasPromptedNotificationsAccess
+                )
+            },
+            onAcceptSuggestion = {
+                viewModel.onEvent(
+                    WorkoutEvent.AcceptSuggestedModification(it)
+                )
+            },
+            updateSetType = { page, set, type ->
+                viewModel.onEvent(
+                    WorkoutEvent.UpdateSetType(
+                        page,
+                        set,
+                        type
+                    )
                 )
             }
         )
