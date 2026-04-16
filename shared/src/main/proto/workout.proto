@@ -101,12 +101,23 @@ message AcceptedModification {
   int32 exercise_index = 1;
 }
 
+message AddSetRequest {
+  int64 workout_id = 1;
+  int64 exercise_id = 2;
+}
+
+message ExtendRestRequest {
+  int64 additional_seconds = 1;
+}
+
 // gRPC service for events
 service WorkoutService {
   rpc workoutActive(google.protobuf.Empty) returns (WorkoutActiveResponse);
   rpc setCompleted(SetCompleted) returns (SetCompletedResponse);
   rpc completeWorkout(CompleteWorkout) returns (google.protobuf.Empty);
   rpc acceptModification(AcceptedModification) returns (google.protobuf.Empty);
+  rpc addSet(AddSetRequest) returns (google.protobuf.Empty);
+  rpc extendRest(ExtendRestRequest) returns (google.protobuf.Empty);
 }
 
 message ExerciseToScrollTo {

@@ -1,21 +1,20 @@
 [versions]
 # Jetpack compose
-compose_bom = "2026.03.00"
-kotlinx_serialization = "1.10.0"
-material3 = "1.5.0-alpha15"  # handle material 3 seperately to get latest
+compose_bom = "2026.03.01"
+kotlinx_serialization = "1.11.0"
+material3 = "1.5.0-alpha17"  # handle material 3 seperately to get latest
 activity_compose = "1.13.0"  # back handler, etc.
 accompanist = "0.37.3"
 coil = "3.4.0"
 # navigation and adaptive
-nav3Core = "1.0.1"
+nav3Core = "1.1.0"
 lifecycleViewmodelNav3 = "2.10.0"
 material3AdaptiveNavigationSuite = "1.4.0"
-adaptive = "1.2.0"
+adaptive = "1.3.0-alpha10"
 reorderable = "3.0.0"
 # material icons are now depracted
 legacy_material_icons = "1.7.8"
 # facilitators
-destinations = "2.3.0"
 hilt = "2.59.2"
 hilt_navigation_compose = "1.3.0"
 lifecycle = "2.10.0"
@@ -31,8 +30,8 @@ wear_ongoing = "1.1.0"  # ongoing activity
 kotlin_coroutines_play_services = "1.10.2"
 health = "1.1.0-rc01"
 # compose wear os
-wear_compose = "1.6.0-rc01"
-wear_compose_material3 = "1.6.0-rc01"
+wear_compose = "1.6.1"  # v1.7.0 alpha contains gesture support but doesn't work yet
+wear_compose_material3 = "1.6.1"
 wear_tooling_preview = "1.0.0"
 core_splashscreen = "1.2.0"
 horologist = "0.8.3-alpha"
@@ -40,9 +39,9 @@ horologist = "0.8.3-alpha"
 palette = "1.0.0"
 android_shapes = "1.1.0"
 health_connect = "1.1.0"
-# external libraries
+# plots
 graphs = "1.2.5"
-vico = "3.0.3"  # plots
+vico = "3.0.3"  # v3.1.0 contains pie charts, todo migrate
 # tests
 espresso = "3.7.0"
 junit = "4.13.2"
@@ -54,18 +53,18 @@ grpc-gen-kotlin = "1.5.0:jdk8@jar"
 grpc-kotlin = "1.5.0"
 protobuf-gen-javalite = "3.0.0"
 # Plugin versions
-android_application = "9.0.1"
-android_library = "9.0.1"
-kotlin_android = "2.3.10"
-kotlin_serialization = "2.3.10"
-compose_plugin = "2.3.10"
+android_application = "9.1.1"
+android_library = "9.1.1"
+kotlin_android = "2.3.20"
+kotlin_serialization = "2.3.20"
+compose_plugin = "2.3.20"
 ksp = "2.3.2"
 hilt_plugin = "2.59.2"
 protobuf_plugin = "0.9.6"
 google_services = "4.4.4"
 firebase_bom = "34.12.0"
 crashlytics = "3.0.7"
-adaptive_navigation3 = "1.3.0-alpha09"
+adaptive_navigation3 = "1.3.0-alpha10"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android_application" }
@@ -127,10 +126,6 @@ dagger = { group = "com.google.dagger", name = "dagger-compiler", version.ref = 
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "hilt_navigation_compose" }
-compose-destinations-core = { group = "io.github.raamcosta.compose-destinations", name = "core", version.ref = "destinations" }
-compose-destinations-bottom-sheet = { group = "io.github.raamcosta.compose-destinations", name = "bottom-sheet", version.ref = "destinations" }
-compose-destinations-ksp = { group = "io.github.raamcosta.compose-destinations", name = "ksp", version.ref = "destinations" }
-compose-destinations-wear = { group = "io.github.raamcosta.compose-destinations", name = "wear-core", version.ref = "destinations" }
 graphs = { group = "com.github.jaikeerthick", name = "Composable-Graphs", version.ref = "graphs" }
 wearable-play-services = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "wearable_play_services" }
 wear-remote-interactions = { group = "androidx.wear", name = "wear-remote-interactions", version.ref = "wear_remote_interactions" }

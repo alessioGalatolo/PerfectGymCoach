@@ -7,7 +7,7 @@
     <string name="profile">Profilo</string>
     <string name="workout_empty_exercises">Non hai aggiunto alcun esercizio a questo programma, usa il pulsante qui sotto per aggiungerne alcuni!</string>
     <string name="volume_info">Info volume: Il termine "volume" in questo contesto indica la quantità totale di peso sollevato: Esercizi x Serie x Ripetizioni x Peso. Molti studi hanno mostrato la correlazione diretta tra il volume totale sollevato e la crescita muscolare. Ciò significa che per aumentare la massa muscolare il volume deve crescere, aumentando i pesi, il numero di ripetizioni, ecc.</string>
-    <string name="calories_info">Il consumo calorico è calcolato in base alla durata dell\'allenamento, alla sua intensità, al tuo peso corporeo (non dimenticare di impostarlo nella scheda Profilo!) e ad alcuni valori supportati dalla ricerca sul consumo energetico dell\'allenamento con i pesi. NB: questo consumo calorico è solo approssimativo e potrebbe non riflettere il consumo reale.</string>
+    <string name="calories_info">A meno che tu non abbia tracciato questo allenamento con un orologio compatibile, il consumo calorico è calcolato in base alla durata dell\'allenamento, alla sua intensità, al tuo peso corporeo e ad alcuni valori supportati dalla ricerca sul consumo energetico dell\'allenamento con i pesi. \nNB: questo consumo calorico è solo approssimativo e potrebbe non riflettere il consumo reale.</string>
     <string name="bmi_info"><![CDATA[Il Body Mass Index (BMI) è un calcolo usato per valutare la salute di una persona solo in base al peso e all\'altezza. Un BMI elevato è considerato un fattore di rischio per es. diabete, malattie cardiovascolari, ecc. Un valore compreso tra 18.5 e 25 è considerato normale, un valore inferiore a 18.5 è sottopeso e un valore superiore a 25 fino a 30 è considerato sovrappeso; mentre oltre 30 una persona è considerata obesa. NB: la valutazione della salute è solo approssimativa e non dovrebbe essere considerata rilevante per alcune persone, per es. giovani (<18) ed anziani (>65), bodybuilder, atleti, donne in gravidanza, ecc. Si consiglia di consultare un medico se sei preoccupato per la tua salute.]]></string>
     <string name="save">Salva</string>
     <string name="fill_every_field">Compila correttamente tutti i campi per poter salvare</string>
@@ -873,7 +873,7 @@
     <string name="integrations_title">Integrazioni</string>
     <string name="health_connect_title" translatable="false">Health Connect</string>
     <string name="health_connect_info">Collegati per esportare automaticamente i tuoi allenamenti</string>
-    <string name="health_connect_connected">Collegato — gli allenamenti saranno esportati automaticamente</string>
+    <string name="health_connect_connected">Collegato: gli allenamenti saranno esportati automaticamente</string>
     <string name="health_connect_problems">Problema nella connessione! Ri-controlla i permessi</string>
     <string name="health_connect_connect">Collega</string>
     <string name="health_connect_export">Esporta</string>
@@ -884,5 +884,18 @@
     <string name="health_connect_retry">Riprova</string>
     <string name="heart_rate_bpm">Battiti (bpm)</string>
     <string name="progression_over_time">Progressione nel tempo</string>
-
+    <string name="avg_heart_rate">Battiti medi</string>
+    <string name="max_heart_rate">Battito massimo</string>
+    <string name="min_heart_rate">Battito minimo</string>
+    <string name="bpm_value">%1$s bpm</string>
+    <string name="kcal_value">%1$s kcal</string>
+    <string name="minutes_value">%1$s min</string>
+    <string name="total_sets">Serie totali</string>
+    <string name="heart_rate_zones">Zone dei battiti</string>
+    <string name="hr_zone_warm_up">Riscaldamento</string>
+    <string name="hr_zone_light">Leggero</string>
+    <string name="hr_zone_aerobic">Aerobico</string>
+    <string name="hr_zone_anaerobic">Anaerobico</string>
+    <string name="hr_zone_peak">Massimo</string>
+    <string name="n_min">%1$sm</string>
 </resources>

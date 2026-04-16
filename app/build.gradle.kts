@@ -37,7 +37,7 @@ protobuf {
 
 android {
     namespace = "agdesigns.elevatefitness"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "agdesigns.elevatefitness"
@@ -125,7 +125,6 @@ dependencies {
     implementation(libs.adaptive)
     implementation(libs.androidx.adaptive.navigation3)
     implementation(libs.reorderable)
-    ksp(libs.compose.destinations.ksp)
 
     implementation(libs.wearable.play.services)
     implementation(libs.graphs)

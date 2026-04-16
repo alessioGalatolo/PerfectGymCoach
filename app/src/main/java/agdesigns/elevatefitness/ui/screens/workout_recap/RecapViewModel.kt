@@ -34,10 +34,13 @@ enum class HealthConnectExportStatus {
 data class RecapState(
     val workoutId: Long = 0L,
     val workoutRecord: WorkoutRecord? = null,
+    val previousRecord: WorkoutRecord? = null,
+    val previousWorkoutTotalSets: Int? = null,
     val programName: String = "",
     val olderRecords: List<WorkoutRecord> = emptyList(),
     val exerciseRecords: List<ExerciseRecordAndInfo> = emptyList(),
     val volumeChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val intensityChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val caloriesChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val timeChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val hasHRData: Boolean = false,
@@ -146,6 +149,21 @@ class RecapViewModel @Inject constructor(
                                             it[highlightSeriesKey] = listOf(1)
                                         }
                                     }
+                                    state.value.intensityChartProducer.runTransaction {
+                                        lineSeries {
+                                            series(
+                                                sortedRecords.indices.toList(),
+                                                sortedRecords.map { it.intensityPercent }
+                                            )
+                                            series(
+                                                listOf(sortedRecords.indexOf(workoutRecord)),
+                                                listOf(workoutRecord.intensityPercent)
+                                            )
+                                        }
+                                        extras {
+                                            it[highlightSeriesKey] = listOf(1)
+                                        }
+                                    }
                                     state.value.caloriesChartProducer.runTransaction {
                                         columnSeries {
                                             series(
@@ -163,17 +181,17 @@ class RecapViewModel @Inject constructor(
                                         lineSeries {
                                             series(
                                                 sortedRecords.indices.toList(),
-                                                sortedRecords.map { it.durationSeconds })
+                                                sortedRecords.map { it.durationSeconds / 60.0 })
                                             series(
                                                 sortedRecords.indices.toList(),
-                                                sortedRecords.map { it.activeTimeSeconds })
+                                                sortedRecords.map { it.activeTimeSeconds / 60.0})
                                             series(
                                                 listOf(sortedRecords.indexOf(workoutRecord)),
-                                                listOf(workoutRecord.durationSeconds)
+                                                listOf(workoutRecord.durationSeconds / 60.0)
                                             )
                                             series(
                                                 listOf(sortedRecords.indexOf(workoutRecord)),
-                                                listOf(workoutRecord.activeTimeSeconds)
+                                                listOf(workoutRecord.activeTimeSeconds / 60.0)
                                             )
                                         }
                                         extras {
@@ -209,11 +227,28 @@ class RecapViewModel @Inject constructor(
                                         repository.getProgram(workoutRecord.extProgramId)
                                             .first().name
                                     }.getOrDefault("")
+                                    val currentIndex = sortedRecords.indexOf(workoutRecord)
+                                    // only set previous record workout if current is the last one
+                                    // (i.e., the screen is the result of finishing a workout, not coming from history)
+
+                                    val previousRecord = if (currentIndex < sortedRecords.size - 1) {
+                                        null
+                                    } else {
+                                        sortedRecords.getOrNull(currentIndex - 1)
+                                    }
+                                    val previousWorkoutTotalSets = previousRecord?.let { prev ->
+                                        repository.getWorkoutExerciseRecordsAndInfo(prev.workoutId)
+                                            .first()
+                                            .filter { it.reps.isNotEmpty() }
+                                            .sumOf { it.reps.size }
+                                    }
                                     _state.update {
                                         it.copy(
                                             olderRecords = sortedRecords,
                                             exerciseRecords = sortedDistinctExercises,
                                             workoutRecord = workoutRecord,
+                                            previousRecord = previousRecord,
+                                            previousWorkoutTotalSets = previousWorkoutTotalSets,
                                             programName = programName,
                                             index2date = index2date,
                                             hasHRData = hasHRData,

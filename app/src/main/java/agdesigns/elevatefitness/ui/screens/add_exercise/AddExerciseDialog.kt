@@ -78,12 +78,8 @@ fun SharedTransitionScope.AddExerciseDialog(
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
-        // When in Dual pane, the first textfield automatically gets focus (for some reason)
-        // this avoids that
-        focusManager.clearFocus()
         viewModel.onEvent(
             AddExerciseEvent.StartRetrievingData(
                 exerciseId = previewExercise.exerciseId,

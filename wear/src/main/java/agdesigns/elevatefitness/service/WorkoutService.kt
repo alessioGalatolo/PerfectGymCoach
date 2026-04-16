@@ -25,6 +25,7 @@ import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServices
 import androidx.health.services.client.HealthServicesClient
+import androidx.health.services.client.HealthServicesException
 import androidx.health.services.client.clearUpdateCallback
 import androidx.health.services.client.data.Availability
 import androidx.health.services.client.data.DataType
@@ -279,7 +280,11 @@ class WorkoutService: LifecycleService() {
                     }
                     OWNED_EXERCISE_IN_PROGRESS -> {
                         Log.d(TAG, "OWNED_EXERCISE_IN_PROGRESS — ending previous and retrying")
-                        exerciseClient.endExercise()
+                        try {
+                            exerciseClient.endExercise()
+                        } catch (exception: HealthServicesException) {
+                            Log.e(TAG, "Error ending exercise", exception)
+                        }
                         delay(1.seconds)
                     }
                     NO_EXERCISE_IN_PROGRESS -> Log.d(TAG, "NO_EXERCISE_IN_PROGRESS")

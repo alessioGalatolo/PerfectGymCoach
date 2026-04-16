@@ -3,9 +3,7 @@ package agdesigns.elevatefitness.presentation.screens.select_values
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarquee
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
-import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutEvent
-import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutViewModel
 import agdesigns.elevatefitness.shared.BarbellType
 import agdesigns.elevatefitness.shared.Equipment
@@ -56,6 +54,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.wear.compose.foundation.AmbientMode
+import androidx.wear.compose.foundation.LocalAmbientModeManager
 import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import androidx.wear.compose.material3.AnimatedText
 import androidx.wear.compose.material3.ButtonDefaults
@@ -71,8 +71,6 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.rememberAnimatedTextFontRegistry
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.compose.ambient.AmbientAware
-import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.compose.rotaryinput.accumulatedBehavior
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
@@ -124,141 +122,142 @@ fun SelectValuesScreen(
             }
         }
     }
-    AmbientAware { ambientState ->
-        ScreenScaffold(
-            timeText = { TimeText() }
-        ) { _ ->
-            if (currentImage != null && ambientState.isInteractive) {
-                VignetteImage(
-                    currentImage.asImageBitmap(),
-                    alpha = 0.15f,
+    val ambientModeManager = LocalAmbientModeManager.current
+    val ambientMode = ambientModeManager?.currentAmbientMode ?: AmbientMode.Interactive
+
+    ScreenScaffold(
+        timeText = { TimeText() }
+    ) { _ ->
+        if (currentImage != null && ambientMode is AmbientMode.Interactive) {
+            VignetteImage(
+                currentImage.asImageBitmap(),
+                alpha = 0.15f,
+            )
+        }
+
+        // totalValuePages: number of value-selection pages (2 = reps+weight, 3 = reps+weight+barbell)
+        val totalValuePages = rememberSaveable(
+            exercisesState.exercises,
+            exercisesState.exercisesSetsDone,
+            state.currentExerciseIndex
+        ) {
+            val currentEx =
+                exercisesState.exercises.getOrNull(state.currentExerciseIndex)
+            val setsDone =
+                exercisesState.exercisesSetsDone.getOrNull(state.currentExerciseIndex)
+                    ?: 0
+            val equipment = Equipment.fromResKey(currentEx?.equipment)
+            if (equipment == Equipment.BARBELL && setsDone == 0) 3 else 2
+        }
+
+        // page: 0 -> select reps, 1 -> select weight, 2 -> select barbell tare (if applicable)
+        var page by rememberSaveable(totalValuePages) { mutableIntStateOf(0) }
+
+        AnimatedContent(
+            targetState = page,
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(300, delayMillis = 150)) +
+                        scaleIn(
+                            initialScale = 0.5f,
+                            animationSpec = tween(300, delayMillis = 150)
+                        ))
+                    .togetherWith(fadeOut(animationSpec = tween(150)))
+            }
+        ) { animatedPage ->
+            when (animatedPage) {
+                0 -> SelectSingleValue(
+                    title = if (isDurationBased)
+                        stringResource(R.string.hold)
+                    else
+                        stringResource(R.string.reps),
+                    subtitle = "",
+                    value = state.currentReps.toString(),
+                    subValue = "",
+                    useArrowButtons = false,
+                    changeValue = {
+                        viewModel.onEvent(WorkoutEvent.ChangeReps(it))
+                    },
+                    nextButtonText = stringResource(R.string.complete_set_next),
+                    ambientMode = ambientMode,
+                    onNext = { page = 1 },
                 )
-            }
 
-            // totalValuePages: number of value-selection pages (2 = reps+weight, 3 = reps+weight+barbell)
-            val totalValuePages = rememberSaveable(
-                exercisesState.exercises,
-                exercisesState.exercisesSetsDone,
-                state.currentExerciseIndex
-            ) {
-                val currentEx =
-                    exercisesState.exercises.getOrNull(state.currentExerciseIndex)
-                val setsDone =
-                    exercisesState.exercisesSetsDone.getOrNull(state.currentExerciseIndex)
-                        ?: 0
-                val equipment = Equipment.fromResKey(currentEx?.equipment)
-                if (equipment == Equipment.BARBELL && setsDone == 0) 3 else 2
-            }
-
-            // page: 0 -> select reps, 1 -> select weight, 2 -> select barbell tare (if applicable)
-            var page by rememberSaveable(totalValuePages) { mutableIntStateOf(0) }
-
-            AnimatedContent(
-                targetState = page,
-                transitionSpec = {
-                    (fadeIn(animationSpec = tween(300, delayMillis = 150)) +
-                            scaleIn(
-                                initialScale = 0.5f,
-                                animationSpec = tween(300, delayMillis = 150)
-                            ))
-                        .togetherWith(fadeOut(animationSpec = tween(150)))
-                }
-            ) { animatedPage ->
-                when (animatedPage) {
-                    0 -> SelectSingleValue(
-                        title = if (isDurationBased)
-                            stringResource(R.string.hold)
-                        else
-                            stringResource(R.string.reps),
-                        subtitle = "",
-                        value = state.currentReps.toString(),
-                        subValue = "",
-                        useArrowButtons = false,
-                        changeValue = {
-                            viewModel.onEvent(WorkoutEvent.ChangeReps(it))
-                        },
-                        nextButtonText = stringResource(R.string.complete_set_next),
-                        ambientState = ambientState,
-                        onNext = { page = 1 },
-                    )
-
-                    1 -> SelectSingleValue(
-                        title = stringResource(R.string.weight),
-                        subtitle = "",
-                        value = "${state.currentWeight.toInt()}",
-                        subValue = if ("%.2f".format(state.currentWeight % 1) != "0.00")
-                            "%.2f".format(state.currentWeight % 1).substring(1)
-                        else
-                            "",
-                        changeValue = {
-                            viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
-                        },
-                        fineGrainedChangeValue = {
-                            viewModel.onEvent(WorkoutEvent.FineGrainedChangeWeight(it))
-                        },
-                        nextButtonText = if (totalValuePages == 2)
-                            stringResource(R.string.done_icon)
-                        else
-                            stringResource(R.string.complete_set_next),
-                        useArrowButtons = false,
-                        ambientState = ambientState,
-                        onNext = {
-                            if (totalValuePages == 2) {
-                                valuesCompleted = true
-                                viewModel.onEvent(WorkoutEvent.CompleteSet)
-                                navController.navigateUp()
-                            } else {
-                                page = 2
-                            }
-                        },
-                    )
-
-                    2 -> {
-                        // TODO: move barbell selection to first place so that we can change the suggested
-                        //  weight if barbell changes
-                        val type = BarbellType.entries[state.tareIndex]
-                        val weight = if (type == BarbellType.OTHER)
-                            state.tareBarbell
-                        else
-                            type.weight[exercisesState.imperialSystem] ?: 0f
-
-                        val weightMainValue = "%.0f".format(floor(weight))
-                        val weightSubValue = if ("%.2f".format(weight % 1) != "0.00")
-                            "%.2f".format(weight % 1).substring(1)
-                        else
-                            ""
-                        SelectSingleValue(
-                            title = stringResource(R.string.barbell),
-                            subtitle = stringResource(type.barbellResource),
-                            value = weightMainValue,
-                            subValue = weightSubValue + if (exercisesState.imperialSystem)
-                                stringResource(agdesigns.elevatefitness.shared.R.string.lb)
-                            else
-                                stringResource(agdesigns.elevatefitness.shared.R.string.kg),
-                            nextButtonText = stringResource(R.string.done_icon),
-                            useArrowButtons = true,
-                            ambientState = ambientState,
-                            changeValue = {
-                                viewModel.onEvent(WorkoutEvent.ChangeTare(it))
-                            }
-                        ) {
+                1 -> SelectSingleValue(
+                    title = stringResource(R.string.weight),
+                    subtitle = "",
+                    value = "${state.currentWeight.toInt()}",
+                    subValue = if ("%.2f".format(state.currentWeight % 1) != "0.00")
+                        "%.2f".format(state.currentWeight % 1).substring(1)
+                    else
+                        "",
+                    changeValue = {
+                        viewModel.onEvent(WorkoutEvent.ChangeWeight(it))
+                    },
+                    fineGrainedChangeValue = {
+                        viewModel.onEvent(WorkoutEvent.FineGrainedChangeWeight(it))
+                    },
+                    nextButtonText = if (totalValuePages == 2)
+                        stringResource(R.string.done_icon)
+                    else
+                        stringResource(R.string.complete_set_next),
+                    useArrowButtons = false,
+                    ambientMode = ambientMode,
+                    onNext = {
+                        if (totalValuePages == 2) {
                             valuesCompleted = true
                             viewModel.onEvent(WorkoutEvent.CompleteSet)
                             navController.navigateUp()
+                        } else {
+                            page = 2
                         }
-                    }
-
-                    else -> {}
-                }
-            }
-            if (ambientState.isInteractive) {
-                CircularProgressIndicator(
-                    progress = { animatedRestProgression.value },
-                    startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,
-                    endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
-                    strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
+                    },
                 )
+
+                2 -> {
+                    // TODO: move barbell selection to first place so that we can change the suggested
+                    //  weight if barbell changes
+                    val type = BarbellType.entries[state.tareIndex]
+                    val weight = if (type == BarbellType.OTHER)
+                        state.tareBarbell
+                    else
+                        type.weight[exercisesState.imperialSystem] ?: 0f
+
+                    val weightMainValue = "%.0f".format(floor(weight))
+                    val weightSubValue = if ("%.2f".format(weight % 1) != "0.00")
+                        "%.2f".format(weight % 1).substring(1)
+                    else
+                        ""
+                    SelectSingleValue(
+                        title = stringResource(R.string.barbell),
+                        subtitle = stringResource(type.barbellResource),
+                        value = weightMainValue,
+                        subValue = weightSubValue + if (exercisesState.imperialSystem)
+                            stringResource(agdesigns.elevatefitness.shared.R.string.lb)
+                        else
+                            stringResource(agdesigns.elevatefitness.shared.R.string.kg),
+                        nextButtonText = stringResource(R.string.done_icon),
+                        useArrowButtons = true,
+                        ambientMode = ambientMode,
+                        changeValue = {
+                            viewModel.onEvent(WorkoutEvent.ChangeTare(it))
+                        }
+                    ) {
+                        valuesCompleted = true
+                        viewModel.onEvent(WorkoutEvent.CompleteSet)
+                        navController.navigateUp()
+                    }
+                }
+
+                else -> {}
             }
+        }
+        if (ambientMode is AmbientMode.Interactive) {
+            CircularProgressIndicator(
+                progress = { animatedRestProgression.value },
+                startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,
+                endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
+                strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
+            )
         }
     }
 }
@@ -273,7 +272,7 @@ fun SelectSingleValue(
     subValue: String,
     nextButtonText: String,
     useArrowButtons: Boolean,  // used for barbell selection
-    ambientState: AmbientState,
+    ambientMode: AmbientMode,
     changeValue: (Int) -> Unit,
     fineGrainedChangeValue: (Int) -> Unit = changeValue,  // mainly used for weight
     onNext: () -> Unit
@@ -320,7 +319,7 @@ fun SelectSingleValue(
             TextHeaderWithMarquee(
                 title = title,
                 subtitle = subtitle,
-                ambientState = ambientState
+                ambientMode = ambientMode
             )
         },
         controlButtons = {
@@ -335,7 +334,7 @@ fun SelectSingleValue(
                             .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
                             .width(IconButtonDefaults.DefaultButtonSize),
                         shapes = IconButtonDefaults.animatedShapes(),
-                        colors = if (ambientState.isAmbient)
+                        colors = if (ambientMode is AmbientMode.Ambient)
                             IconButtonDefaults.outlinedIconButtonColors()
                         else
                             IconButtonDefaults.iconButtonColors(
@@ -411,7 +410,7 @@ fun SelectSingleValue(
                             .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
                             .width(IconButtonDefaults.DefaultButtonSize),
                         shapes = IconButtonDefaults.animatedShapes(),
-                        colors = if (ambientState.isAmbient)
+                        colors = if (ambientMode is AmbientMode.Ambient)
                             IconButtonDefaults.outlinedIconButtonColors()
                         else
                             IconButtonDefaults.iconButtonColors(
@@ -444,11 +443,11 @@ fun SelectSingleValue(
         buttons = {
             EdgeButton(
                 onClick = onNext,
-                colors = if (ambientState.isInteractive)
+                colors = if (ambientMode is AmbientMode.Interactive)
                     ButtonDefaults.filledVariantButtonColors()
                 else
                     ButtonDefaults.outlinedButtonColors(),
-                border = if (ambientState.isInteractive)
+                border = if (ambientMode is AmbientMode.Interactive)
                     null
                 else
                     ButtonDefaults.outlinedButtonBorder(true),

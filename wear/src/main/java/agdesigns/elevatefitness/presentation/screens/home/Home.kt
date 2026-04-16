@@ -38,6 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.AmbientMode
+import androidx.wear.compose.foundation.LocalAmbientModeManager
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -57,7 +59,6 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.google.android.horologist.compose.ambient.AmbientAware
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -86,176 +87,177 @@ fun Home(
     val style = OpenOnPhoneDialogDefaults.curvedTextStyle
     val listState = rememberScalingLazyListState()
 
-    AmbientAware { ambientState ->
-        ScreenScaffold(listState) {
-            var hasCheckedAlarmPermission by remember { mutableStateOf(false) }
-            RequestAlarmPermission(
-                listState,
-                viewModel,
-                setHasCheckPermission = {
-                    hasCheckedAlarmPermission = true
-                }
+    val ambientModeManager = LocalAmbientModeManager.current
+    val ambientMode = ambientModeManager?.currentAmbientMode ?: AmbientMode.Interactive
+
+    ScreenScaffold(listState) {
+        var hasCheckedAlarmPermission by remember { mutableStateOf(false) }
+        RequestAlarmPermission(
+            listState,
+            viewModel,
+            setHasCheckPermission = {
+                hasCheckedAlarmPermission = true
+            }
+        )
+        if (hasCheckedAlarmPermission) {
+            var hasAskedForPermissions by rememberSaveable {
+                mutableStateOf(false)
+            }
+            val canShowRationales by viewModel.canShowRationales.collectAsState(
+                null
             )
-            if (hasCheckedAlarmPermission) {
-                var hasAskedForPermissions by rememberSaveable {
-                    mutableStateOf(false)
-                }
-                val canShowRationales by viewModel.canShowRationales.collectAsState(
-                    null
-                )
-                val permissions = rememberMultiplePermissionsState(
-                    viewModel.permissionsNeeded
-                ) {
+            val permissions = rememberMultiplePermissionsState(
+                viewModel.permissionsNeeded
+            ) {
+                hasAskedForPermissions = true
+            }
+            LaunchedEffect(Unit) {
+                if (!permissions.allPermissionsGranted) {
+                    permissions.launchMultiplePermissionRequest()
+                } else {
                     hasAskedForPermissions = true
                 }
-                LaunchedEffect(Unit) {
-                    if (!permissions.allPermissionsGranted) {
+            }
+            if (hasAskedForPermissions &&
+                !permissions.allPermissionsGranted &&
+                canShowRationales?.isNotEmpty() ?: true
+            ) {
+                // asked for permissions, some were denied, but we can show rationales
+                PermissionRequiredScreen(
+                    listState,
+                    titleResId = R.string.permissions_explanation_title,
+                    descResId = R.string.permissions_explanation,
+                    onPermissionClick = {
                         permissions.launchMultiplePermissionRequest()
-                    } else {
-                        hasAskedForPermissions = true
-                    }
-                }
-                if (hasAskedForPermissions &&
-                    !permissions.allPermissionsGranted &&
-                    canShowRationales?.isNotEmpty() ?: true
-                ) {
-                    // asked for permissions, some were denied, but we can show rationales
-                    PermissionRequiredScreen(
-                        listState,
-                        titleResId = R.string.permissions_explanation_title,
-                        descResId = R.string.permissions_explanation,
-                        onPermissionClick = {
-                            permissions.launchMultiplePermissionRequest()
-                        },
-                        buttonLabelResId = R.string.show_permission,
-                        onNotNowClick = {
-                            for (permission in canShowRationales?.keys ?: emptyList()) {
-                                scope.launch {
-                                    viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
-                                        ShownRationaleStatus.HAS_SHOWN,
-                                        permission = permission
-                                    )
-                                }
+                    },
+                    buttonLabelResId = R.string.show_permission,
+                    onNotNowClick = {
+                        for (permission in canShowRationales?.keys ?: emptyList()) {
+                            scope.launch {
+                                viewModel.permissionStateDataStore.setHasPreviouslyShownRationale(
+                                    ShownRationaleStatus.HAS_SHOWN,
+                                    permission = permission
+                                )
                             }
+                        }
+                    }
+                )
+            } else if (hasAskedForPermissions) {
+                if (homeState.incompatibleVersion) {
+                    AlertDialog(
+                        visible = homeState.incompatibleVersion,
+                        icon = {
+                            Icon(
+                                Icons.Default.PhonelinkErase,
+                                stringResource(R.string.phone_app_version_incompatible),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(
+                                    ButtonDefaults.LargeIconSize
+                                )
+                            )
+                        },
+                        title = {
+                            Text(
+                                stringResource(R.string.phone_app_version_incompatible),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                        },
+                        text = {
+                            Text(stringResource(R.string.phone_app_version_incompatible_desc))
+                        },
+                        edgeButton = {
+                            EdgeButton(onClick = {
+                                viewModel.onEvent(HomeEvent.RetryVersionCheck)
+                            }) {
+                                Text(stringResource(R.string.retriable_error_retry))
+                            }
+                        },
+                        onDismissRequest = {}
+                    )
+                } else {
+                    OpenOnPhoneDialog(
+                        visible = showConfirmation,
+                        onDismissRequest = { showConfirmation = false },
+                        curvedText = {
+                            openOnPhoneDialogCurvedText(
+                                text = text,
+                                style = style
+                            )
                         }
                     )
-                } else if (hasAskedForPermissions) {
-                    if (homeState.incompatibleVersion) {
-                        AlertDialog(
-                            visible = homeState.incompatibleVersion,
-                            icon = {
-                                Icon(
-                                    Icons.Default.PhonelinkErase,
-                                    stringResource(R.string.phone_app_version_incompatible),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(
-                                        ButtonDefaults.LargeIconSize
-                                    )
-                                )
-                            },
-                            title = {
+                    LaunchedEffect(activeWorkout) {
+                        if (activeWorkout) {
+                            openWorkoutScreen()
+                        }
+                    }
+                    LaunchedEffect(Unit) {
+                        // PermissionRequiredScreen shares the same state, if we begin with that screen and scroll
+                        // then we should scroll back before showing the actual screen
+                        listState.scrollToItem(0)
+                    }
+                    ScalingLazyColumn(
+                        state = listState,
+                        contentPadding = SCALING_LIST_PADDING_VALUES,
+                        // param below will avoid having the last element scroll all the way to the center
+                        // but will create problems with google's review process
+                        //                autoCentering = null
+                    ) {
+                        if (!homeState.workoutRunningFromPhone) {
+                            item {
                                 Text(
-                                    stringResource(R.string.phone_app_version_incompatible),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    text = stringResource(R.string.no_workout_detected),
                                     textAlign = TextAlign.Center
                                 )
-                            },
-                            text = {
-                                Text(stringResource(R.string.phone_app_version_incompatible_desc))
-                            },
-                            edgeButton = {
-                                EdgeButton(onClick = {
-                                    viewModel.onEvent(HomeEvent.RetryVersionCheck)
-                                }) {
-                                    Text(stringResource(R.string.retriable_error_retry))
-                                }
-                            },
-                            onDismissRequest = {}
-                        )
-                    } else {
-                        OpenOnPhoneDialog(
-                            visible = showConfirmation,
-                            onDismissRequest = { showConfirmation = false },
-                            curvedText = {
-                                openOnPhoneDialogCurvedText(
-                                    text = text,
-                                    style = style
-                                )
                             }
-                        )
-                        LaunchedEffect(activeWorkout) {
-                            if (activeWorkout) {
-                                openWorkoutScreen()
+                            item {
+                                Spacer(Modifier.height(16.dp))
                             }
-                        }
-                        LaunchedEffect(Unit) {
-                            // PermissionRequiredScreen shares the same state, if we begin with that screen and scroll
-                            // then we should scroll back before showing the actual screen
-                            listState.scrollToItem(0)
-                        }
-                        ScalingLazyColumn(
-                            state = listState,
-                            contentPadding = SCALING_LIST_PADDING_VALUES,
-                            // param below will avoid having the last element scroll all the way to the center
-                            // but will create problems with google's review process
-                            //                autoCentering = null
-                        ) {
-                            if (!homeState.workoutRunningFromPhone) {
-                                item {
-                                    Text(
-                                        text = stringResource(R.string.no_workout_detected),
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                                item {
-                                    Spacer(Modifier.height(16.dp))
-                                }
-                                item {
-                                    Button(
-                                        colors = if (ambientState.isInteractive)
-                                            ButtonDefaults.buttonColors()
+                            item {
+                                Button(
+                                    colors = if (ambientMode is AmbientMode.Interactive)
+                                        ButtonDefaults.buttonColors()
+                                    else
+                                        ButtonDefaults.outlinedButtonColors(),
+                                    border = if (ambientMode is AmbientMode.Ambient)
+                                        ButtonDefaults.outlinedButtonBorder(true)
+                                    else null,
+                                    onClick = {
+                                        remoteActivityHelper.startRemoteActivity(
+                                            openAppIntent
+                                        )
+                                        showConfirmation = true
+                                    }
+                                ) {
+                                    Icon(
+                                        if (ambientMode is AmbientMode.Interactive)
+                                            Icons.Default.PhoneAndroid
                                         else
-                                            ButtonDefaults.outlinedButtonColors(),
-                                        border = if (ambientState.isAmbient)
-                                            ButtonDefaults.outlinedButtonBorder(true)
-                                        else null,
+                                            Icons.Outlined.PhoneAndroid,
+                                        stringResource(R.string.phone_icon)
+                                    )
+                                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                    Text(stringResource(R.string.open_phone_app))
+                                }
+                            }
+                            if (homeState.phoneVersionInfo == null) {
+                                // if we have info about the phone app version, it must be installed
+                                // if we don't it may be either outdated or not installed
+                                item {
+                                    TextButton(
+                                        modifier = Modifier.fillMaxWidth(),
                                         onClick = {
                                             remoteActivityHelper.startRemoteActivity(
-                                                openAppIntent
+                                                getAppIntent
                                             )
                                             showConfirmation = true
                                         }
                                     ) {
-                                        Icon(
-                                            if (ambientState.isInteractive)
-                                                Icons.Default.PhoneAndroid
-                                            else
-                                                Icons.Outlined.PhoneAndroid,
-                                            stringResource(R.string.phone_icon)
+                                        Text(
+                                            stringResource(R.string.get_phone_app),
+                                            maxLines = 1
                                         )
-                                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                                        Text(stringResource(R.string.open_phone_app))
-                                    }
-                                }
-                                if (homeState.phoneVersionInfo == null) {
-                                    // if we have info about the phone app version, it must be installed
-                                    // if we don't it may be either outdated or not installed
-                                    item {
-                                        TextButton(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            onClick = {
-                                                remoteActivityHelper.startRemoteActivity(
-                                                    getAppIntent
-                                                )
-                                                showConfirmation = true
-                                            }
-                                        ) {
-                                            Text(
-                                                stringResource(R.string.get_phone_app),
-                                                maxLines = 1
-                                            )
-                                        }
                                     }
                                 }
                             }

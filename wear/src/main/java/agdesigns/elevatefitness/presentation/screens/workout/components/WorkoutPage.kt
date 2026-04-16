@@ -53,6 +53,7 @@ import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
+import androidx.wear.compose.foundation.AmbientMode
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material3.AlertDialog
@@ -61,7 +62,6 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.components.controls.MediaButton
 import com.google.android.horologist.media.ui.components.controls.MediaButtonDefaults
@@ -75,7 +75,7 @@ fun WorkoutPage(
     exercisesState: ExercisesState,
     workoutState: WorkoutState,
     listState: ScalingLazyListState,
-    ambientState: AmbientState,
+    ambientMode: AmbientMode,
     acceptModification: (Int) -> Unit,
     dismissModification: (Int) -> Unit,
     startRest: () -> Unit,
@@ -83,6 +83,8 @@ fun WorkoutPage(
     onNextExercise: () -> Unit,
     onPreviousExercise: () -> Unit,
     onDismissHint: () -> Unit,
+    onAddSet: () -> Unit,
+    onExtendRest: () -> Unit,
 ) {
     val setsDone = remember (workoutState.currentExerciseIndex, exercisesState.exercisesSetsDone) {
         exercisesState.exercisesSetsDone.getOrNull(workoutState.currentExerciseIndex) ?: 0
@@ -93,7 +95,7 @@ fun WorkoutPage(
     val currentSetType = workoutState.currentExercise?.setTypesList?.getOrNull(setsDone)?.let {
         SetType.fromResKey(it)
     } ?: SetType.NORMAL
-    if (currentImage != null && ambientState.isInteractive) {
+    if (currentImage != null && ambientMode is AmbientMode.Interactive) {
         VignetteImage(
             currentImage.asImageBitmap(),
             alpha = 0.15f,
@@ -104,14 +106,18 @@ fun WorkoutPage(
             restProgression = workoutState.ongoingRestProgression ?: 1f,
             currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
             nextSetExerciseName = workoutState.nextSetExerciseName,
-            ambientState = ambientState,
+            ambientMode = ambientMode,
             hints = workoutState.inRestHints,
             showHintDialog = workoutState.showHintDialog,
+            isLastSet = workoutState.isLastSet,
             skipRest = resetRest,
-            onDismissHint = onDismissHint
+            onDismissHint = onDismissHint,
+            onAddSet = onAddSet,
+            onExtendRest = onExtendRest,
         )
     } else {
         ExercisePage(
+            heartRate = workoutState.currentHeartRate,
             exerciseName = workoutState.currentExercise?.name ?: "",
             setsDone = setsDone,
             totalSets = workoutState.currentExercise?.restCount ?: 0,
@@ -137,7 +143,7 @@ fun WorkoutPage(
             startRest = startRest,
             hasPrevious = workoutState.currentExerciseIndex > 0,
             hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
-            ambientState = ambientState,
+            ambientMode = ambientMode,
             modification = if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
                 exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)
             else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
@@ -175,6 +181,7 @@ fun WorkoutPage(
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun ExercisePage(
+    heartRate: Int?,
     exerciseName: String,
     setsDone: Int,
     totalSets: Int,
@@ -183,7 +190,7 @@ fun ExercisePage(
     bottomText: String,
     hasPrevious: Boolean,
     hasNext: Boolean,
-    ambientState: AmbientState,
+    ambientMode: AmbientMode,
     modification: Workout.ProtoSuggestedModification?,
     acceptModification: () -> Unit,
     dismissModification: () -> Unit,
@@ -197,7 +204,7 @@ fun ExercisePage(
             TextHeaderWithMarquee(
                 title = exerciseName + " (${setsDone + 1}/$totalSets)",
                 subtitle = exerciseSubtitle,
-                ambientState = ambientState
+                ambientMode = ambientMode
             )
         },
         controlButtons = {
@@ -208,7 +215,7 @@ fun ExercisePage(
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
                         "",
                         modifier = Modifier.fillMaxSize(),
-                        colors = if (ambientState.isInteractive)
+                        colors = if (ambientMode is AmbientMode.Interactive)
                             MediaButtonDefaults.mediaButtonDefaultColors
                         else
                             ButtonDefaults.outlinedButtonColors(
@@ -224,7 +231,7 @@ fun ExercisePage(
                         "",
                         modifier = Modifier.fillMaxSize(),
                         enabled = hasNext,
-                        colors = if (ambientState.isInteractive)
+                        colors = if (ambientMode is AmbientMode.Interactive)
                             MediaButtonDefaults.mediaButtonDefaultColors
                         else
                             ButtonDefaults.outlinedButtonColors(
@@ -260,7 +267,7 @@ fun ExercisePage(
                         label = "progress",
                         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                     )
-                    val background = if (ambientState.isAmbient) {
+                    val background = if (ambientMode is AmbientMode.Ambient) {
                         Color.Transparent
                     } else {
                         MaterialTheme.colorScheme.primary
@@ -304,14 +311,14 @@ fun ExercisePage(
                                     )
                                     .align(Alignment.Center),
                                 contentDescription = stringResource(agdesigns.elevatefitness.R.string.done_icon),
-                                tint = if (ambientState.isAmbient)
+                                tint = if (ambientMode is AmbientMode.Ambient)
                                     MaterialTheme.colorScheme.primary
                                 else
                                     MaterialTheme.colorScheme.onPrimary,
                             )
                         }
                         if (isSuperset) {
-                            val buttonBackground = if (ambientState.isAmbient) {
+                            val buttonBackground = if (ambientMode is AmbientMode.Ambient) {
                                 Color.Transparent
                             } else {
                                 MaterialTheme.colorScheme.secondary
@@ -319,7 +326,7 @@ fun ExercisePage(
                             Icon(
                                 Icons.Default.Link,
                                 stringResource(agdesigns.elevatefitness.R.string.superset),
-                                tint = if (ambientState.isAmbient)
+                                tint = if (ambientMode is AmbientMode.Ambient)
                                     MaterialTheme.colorScheme.secondary
                                 else
                                     MaterialTheme.colorScheme.onSecondary,
@@ -339,6 +346,11 @@ fun ExercisePage(
                 Text(
                     bottomText,
                     modifier = Modifier.basicMarquee()
+                )
+            } else {
+                HeartRate(
+                    heartRate,
+                    ambientMode
                 )
             }
         },

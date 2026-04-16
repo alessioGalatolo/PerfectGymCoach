@@ -47,7 +47,7 @@ protobuf {
 
 android {
     namespace = "agdesigns.elevatefitness"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "agdesigns.elevatefitness"
@@ -102,7 +102,6 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.accompanist.permissions)
     implementation(libs.health.services)
-    ksp(libs.compose.destinations.ksp)
 
     implementation(libs.hilt.android)
     ksp(libs.dagger)

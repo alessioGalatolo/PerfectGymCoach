@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Room
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,13 +18,11 @@ import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.AmbientMode
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.compose.ambient.AmbientState
-import com.google.android.horologist.images.base.paintable.Paintable
-import com.google.android.horologist.images.base.paintable.PaintableIcon
 import com.google.android.horologist.media.ui.util.isLargeScreen
 
 /**
@@ -37,11 +33,11 @@ import com.google.android.horologist.media.ui.util.isLargeScreen
 fun TextHeaderWithMarquee(
     title: String,
     subtitle: String,
-    ambientState: AmbientState,
+    ambientMode: AmbientMode,
     modifier: Modifier = Modifier,
     titleIcon: ImageVector? = null,
 ) {
-    val marqueeModifier = if (ambientState.isInteractive) {
+    val marqueeModifier = if (ambientMode is AmbientMode.Interactive) {
         Modifier.basicMarquee()
     } else Modifier
     val isLargeScreen = LocalConfiguration.current.isLargeScreen

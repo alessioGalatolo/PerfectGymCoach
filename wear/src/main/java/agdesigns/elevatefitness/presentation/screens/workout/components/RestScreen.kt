@@ -46,15 +46,23 @@ import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarque
 import agdesigns.elevatefitness.presentation.screens.workout.InRestHint
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreTime
+import androidx.compose.material.icons.filled.PlusOne
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
+import androidx.wear.compose.foundation.AmbientMode
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
 import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material.ButtonDefaults
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.compose.ambient.AmbientState
+import com.google.android.horologist.media.ui.components.controls.MediaButton
+import com.google.android.horologist.media.ui.components.controls.MediaButtonDefaults
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 import com.google.android.horologist.media.ui.util.isLargeScreen
 
@@ -64,11 +72,14 @@ fun RestScreen(
     restProgression: Float,
     currentRestSeconds: Long,
     nextSetExerciseName: String,
-    ambientState: AmbientState,
+    ambientMode: AmbientMode,
     hints: List<InRestHint>,
     showHintDialog: Boolean,
+    isLastSet: Boolean,
     onDismissHint: () -> Unit,
     skipRest: () -> Unit,
+    onAddSet: () -> Unit,
+    onExtendRest: () -> Unit,
 ) {
     var previousRestProgression by remember { mutableFloatStateOf(restProgression) }
 
@@ -92,13 +103,16 @@ fun RestScreen(
     Rest(
         nextSetExerciseName = nextSetExerciseName,
         currentRestSeconds = currentRestSeconds,
-        ambientState = ambientState,
+        ambientMode = ambientMode,
         hints = hints,
         showHintDialog = showHintDialog,
+        isLastSet = isLastSet,
         onDismissHint = onDismissHint,
-        skipRest = skipRest
+        skipRest = skipRest,
+        onAddSet = onAddSet,
+        onExtendRest = onExtendRest,
     )
-    if (ambientState.isInteractive) {
+    if (ambientMode is AmbientMode.Interactive) {
         CircularProgressIndicator(
             progress = { animatedRestProgression.value },
             startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center
@@ -114,11 +128,14 @@ fun RestScreen(
 fun Rest(
     nextSetExerciseName: String,
     currentRestSeconds: Long,
-    ambientState: AmbientState,
+    ambientMode: AmbientMode,
     hints: List<InRestHint>,
     showHintDialog: Boolean,
+    isLastSet: Boolean,
     onDismissHint: () -> Unit,
     skipRest: () -> Unit,
+    onAddSet: () -> Unit,
+    onExtendRest: () -> Unit,
 ) {
     val nextThingString = if (nextSetExerciseName.isNotBlank())
         stringResource(R.string.next_thing)
@@ -166,7 +183,7 @@ fun Rest(
             TextHeaderWithMarquee(
                 title = nextThingString,
                 subtitle = nextSetExerciseName,
-                ambientState = ambientState,
+                ambientMode = ambientMode,
                 modifier = Modifier.padding(CircularProgressIndicatorDefaults.FullScreenPadding)
             )
         },
@@ -176,8 +193,28 @@ fun Rest(
                     .fillMaxWidth()
                     .height(middleSize),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Absolute.Center,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
+                if (isLastSet) {
+                    MediaButton(
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onAddSet()
+                        },
+                        icon = Icons.Default.PlusOne,
+                        contentDescription = stringResource(R.string.add_set),
+                        modifier = Modifier.weight(1f),
+                        colors = if (ambientMode is AmbientMode.Interactive)
+                            MediaButtonDefaults.mediaButtonDefaultColors
+                        else
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
                 val poly = remember {
                     RoundedPolygon.star(
                         6,
@@ -202,7 +239,7 @@ fun Rest(
                     ),
                     label = "rotation"
                 )
-                val background = if (ambientState.isAmbient) {
+                val background = if (ambientMode is AmbientMode.Ambient) {
                     Color.Transparent
                 } else {
                     MaterialTheme.colorScheme.primary
@@ -211,7 +248,7 @@ fun Rest(
                 Box(
                     modifier = Modifier
                         .size(middleSize)
-                        .rotate(if (ambientState.isAmbient) 0f else rotation) // Apply rotation here
+                        .rotate(if (ambientMode is AmbientMode.Ambient) 0f else rotation) // Apply rotation here
                         .clip(clipShape)
                         // this will only be visible in ambient mode as the background becomes transparent
                         .border(1.dp, MaterialTheme.colorScheme.primary, clipShape)
@@ -221,12 +258,12 @@ fun Rest(
                     val minutes = currentRestSeconds.floorDiv(60)
                     val seconds = currentRestSeconds.mod(60)
                     Text(
-                        text = if (ambientState.isInteractive)
+                        text = if (ambientMode is AmbientMode.Interactive)
                             "%02d:%02d".format(minutes, seconds)
                         else
                             "%02d:--".format(minutes),
                         style = MaterialTheme.typography.numeralExtraSmall,
-                        color = if (ambientState.isAmbient) {
+                        color = if (ambientMode is AmbientMode.Ambient) {
                             Color.White
                         } else
                             MaterialTheme.colorScheme.onPrimary,
@@ -234,12 +271,27 @@ fun Rest(
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .rotate(
-                                if (ambientState.isAmbient)
+                                if (ambientMode is AmbientMode.Ambient)
                                     0f
                                 else -rotation // Counter-rotate text to keep it upright
                             )
                     )
                 }
+                MediaButton(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onExtendRest()
+                    },
+                    icon = Icons.Filled.MoreTime,
+                    contentDescription = stringResource(R.string.extend_rest),
+                    modifier = Modifier.weight(1f),
+                    colors = if (ambientMode is AmbientMode.Interactive)
+                        MediaButtonDefaults.mediaButtonDefaultColors
+                    else
+                        ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                )
             }
         },
         buttons = {

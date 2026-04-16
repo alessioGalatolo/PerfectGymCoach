@@ -63,6 +63,16 @@ class PhoneWorkoutRepository(
     )
     val acceptedModifications: ReceiveChannel<Int> = _acceptedModifications
 
+    private val _addSetRequests = Channel<Workout.AddSetRequest>(
+        capacity = Channel.UNLIMITED
+    )
+    val addSetRequests: ReceiveChannel<Workout.AddSetRequest> = _addSetRequests
+
+    private val _extendRestRequests = Channel<Long>(
+        capacity = Channel.UNLIMITED
+    )
+    val extendRestRequests: ReceiveChannel<Long> = _extendRestRequests
+
 
     var ongoingWorkout: Boolean = false
 
@@ -89,6 +99,14 @@ class PhoneWorkoutRepository(
 
     fun handleAcceptModification(modificationIndex: Int) {
         _acceptedModifications.trySend(modificationIndex)
+    }
+
+    fun handleAddSet(request: Workout.AddSetRequest) {
+        _addSetRequests.trySend(request)
+    }
+
+    fun handleExtendRest(additionalSeconds: Long) {
+        _extendRestRequests.trySend(additionalSeconds)
     }
 
     fun openWearWorkout() {

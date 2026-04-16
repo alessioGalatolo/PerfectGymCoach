@@ -64,6 +64,16 @@ class WearWorkoutDataService: BaseGrpcDataService<WorkoutServiceGrpcKt.WorkoutSe
                 return Empty.newBuilder().build()
             }
 
+            override suspend fun addSet(request: Workout.AddSetRequest): Empty {
+                repository.handleAddSet(request)
+                return Empty.newBuilder().build()
+            }
+
+            override suspend fun extendRest(request: Workout.ExtendRestRequest): Empty {
+                repository.handleExtendRest(request.additionalSeconds)
+                return Empty.newBuilder().build()
+            }
+
         }
     }
 

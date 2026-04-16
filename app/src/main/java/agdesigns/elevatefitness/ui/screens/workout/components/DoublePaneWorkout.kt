@@ -118,7 +118,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
@@ -176,7 +176,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
     mediaSwipeState: SwipeToDismissBoxState,
     snackbarHostState: SnackbarHostState,
     scrollState: ScrollState,
-    title: @Composable () -> Unit,
+    title: @Composable (Modifier) -> Unit,
     completeWorkout: () -> Unit,
     completeSet: () -> Unit,
     onClose: () -> Unit,
@@ -204,7 +204,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
 
     val scaffoldNavigator = rememberListDetailPaneScaffoldNavigator(
         scaffoldDirective = largeLandscapeDirective(
-            currentWindowAdaptiveInfo()
+            currentWindowAdaptiveInfoV2()
         )
     )
 
@@ -288,7 +288,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
                             value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)
                         ) {
                             CompositionLocalProvider(
-                                content = title
+                                content = { title(Modifier) }
                             )
                         }
                     }

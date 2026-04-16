@@ -52,13 +52,6 @@ fun SharedTransitionScope.ExercisesByMuscle(
     returnAfterAdding: Boolean = false, // if adding a single exercise to workout, return to workout instead of program
     insertAtPosition: Int? = null,
 ) {
-    val focusManager = LocalFocusManager.current
-    LaunchedEffect(Unit) {
-        // When in Dual pane, the first textfield automatically gets focus (for some reason)
-        // this (tries to) avoid that
-        focusManager.clearFocus()
-    }
-
     // scroll behaviour for top bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         rememberTopAppBarState()

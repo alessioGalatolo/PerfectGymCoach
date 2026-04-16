@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.material3.MaterialTheme
-import com.google.android.horologist.compose.ambient.AmbientAware
 
 // Credits: Horologist library
 @Composable

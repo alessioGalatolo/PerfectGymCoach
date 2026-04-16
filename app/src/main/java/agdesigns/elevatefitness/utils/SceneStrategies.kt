@@ -80,6 +80,7 @@ fun largeLandscapeDirective(
             windowAdaptiveInfo.windowPosture,
             verticalHingePolicy,
         ),
+        shouldAutoFocusCurrentDestination = false
     )
 }
 

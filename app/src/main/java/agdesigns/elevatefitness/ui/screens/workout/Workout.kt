@@ -36,13 +36,14 @@ import agdesigns.elevatefitness.ui.screens.workout.components.DoublePaneWorkout
 import agdesigns.elevatefitness.ui.screens.workout.components.EnterIntensityAndFinishDialog
 import agdesigns.elevatefitness.ui.screens.workout.components.SinglePaneWorkout
 import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -150,7 +151,7 @@ fun SharedTransitionScope.Workout(
         dialogIsOpen = workoutState.requestNotificationAccessDialogOpen,
         toggleDialog = { viewModel.onEvent(WorkoutEvent.ToggleRequestNotificationAccessDialog) },
         openPermissionRequest = {
-            val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
             context.startActivity(intent)
         },
         dontAskAgain = {
@@ -241,15 +242,17 @@ fun SharedTransitionScope.Workout(
         )
     else Modifier
 
-    val title = @Composable { Text(
-        if (previewExercise != null && currentExerciseState.isLoading)
-            previewExercise.name
-        else
-            currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
-        overflow = TextOverflow.Ellipsis,
-        maxLines = 3,
-        modifier = titleModifier  // FIXME: misbehaves
-    ) }
+    val title = @Composable { modifier: Modifier ->
+        Text(
+            if (previewExercise != null && currentExerciseState.isLoading)
+                previewExercise.name
+            else
+                currentExerciseState.exerciseTitle ?: stringResource(R.string.end_of_workout),
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 3,
+            modifier = modifier.then(titleModifier)
+        )
+    }
 
     EnterIntensityAndFinishDialog(
         dialogIsOpen = workoutState.enterIntensityDialogOpen,
@@ -297,7 +300,7 @@ fun SharedTransitionScope.Workout(
         }
     }
     if (pagesContent.exercises.isNotEmpty() || (currentExerciseState.isLoading && previewExercise != null)) {
-        val windowSize = currentWindowAdaptiveInfo().windowSizeClass
+        val windowSize = currentWindowAdaptiveInfoV2().windowSizeClass
         if (windowSize.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)) {
             DoublePaneWorkout(
                 animatedVisibilityScope = animatedVisibilityScope,

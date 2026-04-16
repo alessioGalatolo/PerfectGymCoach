@@ -141,7 +141,11 @@ class ExerciseStatsViewModel @Inject constructor(
             // Summary stats
             val totalSessions = sortedRecords.size
             val personalBestWeight = sortedRecords.maxOfOrNull {
-                maybeKgToLb((it.weights.maxOrNull() ?: 0f) + it.tare, imperialSystem)
+                val weight = maybeKgToLb((it.weights.maxOrNull() ?: 0f), imperialSystem)
+                if (it.equipment == Equipment.DUMBBELL || it.equipment == Equipment.BARBELL)
+                    weight / 2
+                else
+                    weight
             } ?: 0f
             val totalVolume = sortedRecords.sumOf { record ->
                 maybeKgToLb(

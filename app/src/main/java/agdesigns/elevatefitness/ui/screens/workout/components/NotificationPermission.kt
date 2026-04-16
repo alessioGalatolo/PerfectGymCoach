@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -77,18 +79,35 @@ fun NotificationPermission(
                 .fillMaxWidth()
         )
     }
+    val promotedNotificationsIntent = remember {
+        Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+    }
+    // on some devices with android 16+ trying to open this intent results in ActivityNotFoundException
+    val canAskForPromotedNotification = remember {
+        promotedNotificationsIntent.resolveActivity(context.packageManager) != null
+    }
     if (
         !hasPromotedBeenClosed &&
         initialStateIsGranted != true &&
         notificationPermissionState.status.isGranted &&
         !hasPromotedNotificationAccess &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA &&
+        canAskForPromotedNotification
     ) {
         NotificationPermissionCard(
             onGrantClick = {
-                context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS).apply {
+                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                })
+                }
+
+                if (intent.resolveActivity(context.packageManager) != null) {
+                    context.startActivity(intent)
+                } else {
+                    Log.w("NotificationPermission", "No activity found to handle intent for promotion intent")
+                }
+                Unit
             },
             onClose = {
                 hasPromotedBeenClosed = true

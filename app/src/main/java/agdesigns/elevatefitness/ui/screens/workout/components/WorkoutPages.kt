@@ -65,7 +65,12 @@ import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -91,7 +96,7 @@ fun SharedTransitionScope.ExercisePages(
     fabHeight: Dp,
     restCounterProgress: Float?,
     showTitle: Boolean,
-    title: @Composable () -> Unit,
+    title: @Composable (Modifier) -> Unit,
     addSet: () -> Unit,
     updateTare: (Float) -> Unit,
     updateBottomBar: (Int?, Float?) -> Unit,
@@ -127,6 +132,90 @@ fun SharedTransitionScope.ExercisePages(
             stringResource(R.string.exercise_description_not_available)
         )
     }
+
+    var exercisesOverviewSheetOpen by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    if (exercisesOverviewSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { exercisesOverviewSheetOpen = false },
+            sheetState = sheetState
+        ) {
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 8.dp)
+            ) {
+                itemsIndexed(pagesContent.exercises) { index, exercise ->
+                    val setsDone = pagesContent.exerciseSetsDone.getOrElse(index) { 0 }
+                    val selected = index == horizontalPagerState.currentPage
+                    WorkoutOverviewListItem(
+                        name = exercise.name,
+                        imageModel = exercise.image,
+                        setsDone = setsDone,
+                        totalSets = exercise.reps.size,
+                        selected = selected,
+                        isDurationBased = exercise.overriddenDurationBased,
+                        onClick = {
+                            exercisesOverviewSheetOpen = false
+                            scope.launch {
+                                horizontalPagerState.animateScrollToPage(index)
+                            }
+                        }
+                    )
+                }
+                if (workoutState.workoutStarted) {
+                    item {
+                        val selected = horizontalPagerState.currentPage == pagesContent.exercises.size
+                        Card(
+                            onClick = {
+                                exercisesOverviewSheetOpen = false
+                                scope.launch {
+                                    horizontalPagerState.animateScrollToPage(pagesContent.exercises.size)
+                                }
+                            },
+                            colors = if (selected)
+                                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                            else
+                                CardDefaults.cardColors(),
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.DoneAll,
+                                    contentDescription = null,
+                                    tint = if (selected)
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .padding(16.dp)
+                                )
+                                Text(
+                                    stringResource(R.string.end_of_workout),
+                                    modifier = Modifier
+                                        .padding(horizontal = 12.dp)
+                                        .weight(1f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (selected)
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
+                    Spacer(Modifier.navigationBarsPadding())
+                }
+            }
+        }
+    }
+
     Column(
         Modifier.padding(top = 8.dp)
     ) {
@@ -147,9 +236,6 @@ fun SharedTransitionScope.ExercisePages(
                         }
                     },
                     enabled = horizontalPagerState.currentPage > 0,
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .weight(1f, false)
                 ) {
                     Icon(
                         Icons.AutoMirrored.Outlined.ArrowBack,
@@ -160,17 +246,26 @@ fun SharedTransitionScope.ExercisePages(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .wrapContentSize()
-                        .weight(4f, true)
+                        .weight(1f)
+                        .clip(MaterialTheme.shapes.medium)
+                        .clickable { exercisesOverviewSheetOpen = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    // FIXME:
                     ProvideTextStyle(
                         value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)
                     ) {
                         CompositionLocalProvider(
-                            content = title
+                            content = {
+                                title(Modifier.weight(1f))
+                            }
                         )
                     }
+                    Icon(
+                        Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 IconButton(
                     onClick = {
@@ -182,8 +277,6 @@ fun SharedTransitionScope.ExercisePages(
                     },
                     enabled = horizontalPagerState.currentPage < horizontalPagerState.pageCount - 1,
                     modifier = Modifier
-                        .wrapContentSize()
-                        .weight(1f, false)
                 ) {
                     Icon(
                         Icons.AutoMirrored.Outlined.ArrowForward,
@@ -1408,5 +1501,82 @@ fun WorkoutRepsWeightRow(
             text = " $unitString",
             color = textColor
         )
+    }
+}
+
+@Composable
+fun WorkoutOverviewListItem(
+    name: String,
+    imageModel: Any?,
+    selected: Boolean,
+    setsDone: Int,
+    totalSets: Int,
+    isDurationBased: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        colors = if (selected)
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        else
+            CardDefaults.cardColors(),
+        modifier = modifier
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                AsyncImage(
+                    model = imageModel,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(MaterialTheme.shapes.large)
+                )
+                if (selected) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 12.dp)
+                    .weight(1f)
+            ) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (selected)
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    else
+                        MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(6.dp))
+                val progress = if (totalSets > 0) setsDone.toFloat() / totalSets else 0f
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "$setsDone / $totalSets ${if (isDurationBased) stringResource(R.string.exercise_hold) else stringResource(R.string.sets)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (selected)
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }

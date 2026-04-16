@@ -102,6 +102,7 @@ data class WorkoutState(
     val inRestHints: List<InRestHint> = emptyList(),
     val showHintDialog: Boolean = false,
     val nextSetExerciseName: String = "",
+    val isLastSet: Boolean = false,
     val totalCalories: Double? = null,
     val currentHeartRate: Int? = null,
     val maxHeartRate: Int? = null,
@@ -140,6 +141,9 @@ sealed class WorkoutEvent {
 
     data class AcceptModification(val index: Int): WorkoutEvent()
     data class DismissModification(val index: Int): WorkoutEvent()
+
+    data object AddSetToCurrentExercise: WorkoutEvent()
+    data class ExtendRest(val additionalSeconds: Long = 5L): WorkoutEvent()
 }
 
 // effects that should be propagated to the UI
@@ -695,6 +699,47 @@ class WorkoutViewModel
             is WorkoutEvent.DismissOtherAppDialog -> {
                 _state.update { it.copy(showOtherAppExerciseDialog = false) }
             }
+            is WorkoutEvent.AddSetToCurrentExercise -> {
+                val exerciseId = state.value.currentExercise?.workoutExerciseId ?: return
+                viewModelScope.launch {
+                    try {
+                        workoutService.addSet(
+                            Workout.AddSetRequest.newBuilder()
+                                .setWorkoutId(exercisesState.value.workoutId)
+                                .setExerciseId(exerciseId)
+                                .build()
+                        )
+                    } catch (e: StatusException) {
+                        Log.e("WorkoutViewModel", "Error adding set from watch: ${e.message}")
+                        _effects.trySend(WorkoutEffect.NonRetriableError)
+                    }
+                }
+            }
+            is WorkoutEvent.ExtendRest -> {
+                val currentRestTimestamp = state.value.restTimestamp ?: return
+                val newTimestamp = currentRestTimestamp.plusSeconds(event.additionalSeconds)
+                val newRestTotal = (state.value.currentExerciseRest ?: 0L) + event.additionalSeconds
+                _state.update {
+                    it.copy(
+                        restTimestamp = newTimestamp,
+                        currentExerciseRest = newRestTotal
+                    )
+                }
+                val restForVibration = (newTimestamp.toInstant().toEpochMilli() -
+                    ZonedDateTime.now().toInstant().toEpochMilli()) / 1000L - 2L
+                repository.scheduleRestAlarm(restForVibration * 1000L)
+                viewModelScope.launch {
+                    try {
+                        workoutService.extendRest(
+                            Workout.ExtendRestRequest.newBuilder()
+                                .setAdditionalSeconds(event.additionalSeconds)
+                                .build()
+                        )
+                    } catch (e: StatusException) {
+                        Log.e("WorkoutViewModel", "Error extending rest from watch: ${e.message}")
+                    }
+                }
+            }
         }
     }
 
@@ -828,6 +873,7 @@ class WorkoutViewModel
                     tareBarbell = suggestedTare ?: it.tareBarbell,
                     tareIndex = suggestedTareIndex ?: it.tareIndex,
                     nextSetExerciseName = nextSetExerciseName,
+                    isLastSet = currentExercise?.let { setsDone >= it.restCount } ?: false,
                     currentExercise = currentExercise
                 )
             }

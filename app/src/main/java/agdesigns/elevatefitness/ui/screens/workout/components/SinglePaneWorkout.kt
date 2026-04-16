@@ -122,7 +122,7 @@ fun SharedTransitionScope.SinglePaneWorkout(
     mediaSwipeState: SwipeToDismissBoxState,
     snackbarHostState: SnackbarHostState,
     scrollState: ScrollState,
-    title: @Composable () -> Unit,
+    title: @Composable (Modifier) -> Unit,
     completeWorkout: () -> Unit,
     completeSet: () -> Unit,
     onClose: () -> Unit,

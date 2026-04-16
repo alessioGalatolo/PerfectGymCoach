@@ -12,7 +12,6 @@ import agdesigns.elevatefitness.utils.largeLandscapeDirective
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberSupportingPaneSceneStrategy
@@ -28,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.background
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,7 +76,7 @@ fun RootDestinationGraph(startDestination: Any) {
     // whose action it is
     val primaryActionOrigin = remember { mutableStateOf<Any?>(null) }
     val navSuiteType =
-        with(currentWindowAdaptiveInfo()) {
+        with(currentWindowAdaptiveInfoV2()) {
             when {
                 windowSizeClass.minWidthDp == 0 -> NavigationSuiteType.ShortNavigationBarCompact
                 windowSizeClass.minHeightDp == 0 -> NavigationSuiteType.ShortNavigationBarMedium
@@ -88,7 +88,7 @@ fun RootDestinationGraph(startDestination: Any) {
         }
     val innerListDetail = rememberListDetailSceneStrategy<Any>(
         backNavigationBehavior = BackNavigationBehavior.PopUntilContentChange,
-        directive = largeLandscapeDirective(currentWindowAdaptiveInfo())
+        directive = largeLandscapeDirective(currentWindowAdaptiveInfoV2())
     )
     // Only activate the list-detail two-pane layout when a detailPane entry (marked with
     // DETAIL_PANE_METADATA_KEY) is actually in the back stack. Without this guard, any listPane
@@ -100,7 +100,7 @@ fun RootDestinationGraph(startDestination: Any) {
         }
     }
     val supportingPaneSceneStrategy = rememberSupportingPaneSceneStrategy<Any>(
-        directive = largeLandscapeDirective(currentWindowAdaptiveInfo())
+        directive = largeLandscapeDirective(currentWindowAdaptiveInfoV2())
     )
     val refreshContentFlow = remember { MutableSharedFlow<Any>(
         replay = 0,      // Number of values replayed to new subscribers
@@ -220,7 +220,10 @@ fun RootDestinationGraph(startDestination: Any) {
                 modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
                 backStack = destinationsNavigator.backStack,
                 onBack = { destinationsNavigator.navigateUp() },
-                sceneStrategy = supportingPaneSceneStrategy.then(listDetailStrategy),
+                sceneStrategies = listOf(
+                    supportingPaneSceneStrategy,
+                    listDetailStrategy
+                ),
                 entryProvider = entryProvider {
                     bottomBarEntryBuilder(destinationsNavigator, primaryActionOrigin, primaryActionContent, refreshContentFlow)
                     deepScreensEntryBuilder(destinationsNavigator)
@@ -232,6 +235,7 @@ fun RootDestinationGraph(startDestination: Any) {
                     // Then add the view model store decorator
                     rememberViewModelStoreNavEntryDecorator()
                 ),
+                sharedTransitionScope = this,
                 transitionSpec = {
                     fadeIn(MotionScheme.expressive().slowEffectsSpec()) togetherWith
                             ExitTransition.None

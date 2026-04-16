@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,10 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.AmbientMode
 import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
@@ -53,13 +52,9 @@ import androidx.wear.compose.material3.IconButton
 import androidx.wear.compose.material3.IconButtonDefaults
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.OutlinedButton
-import androidx.wear.compose.material3.OutlinedIconButton
 import androidx.wear.compose.material3.ProgressIndicatorDefaults
 import androidx.wear.compose.material3.Text
-import androidx.wear.compose.material3.TextButton
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.compose.ambient.AmbientAware
-import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.compose.rotaryinput.accumulatedBehavior
 import com.google.android.horologist.media.ui.components.ControlButtonLayout
 import com.google.android.horologist.media.ui.screens.player.PlayerScreen
@@ -68,7 +63,7 @@ import com.google.android.horologist.media.ui.screens.player.PlayerScreen
 @Composable
 fun EndWorkoutPage(
     contentPadding: PaddingValues,
-    ambientState: AmbientState,
+    ambientMode: AmbientMode,
     lastIntensity: Float?,
     workoutTime: String?,
     heartRate: Int?,
@@ -107,7 +102,7 @@ fun EndWorkoutPage(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                if (ambientState.isInteractive)
+                                if (ambientMode is AmbientMode.Interactive)
                                     workoutTime // this is "mm:ss"
                                 else
                                     "${workoutTime.split(":").getOrNull(0) ?: "--"}:--",
@@ -122,35 +117,10 @@ fun EndWorkoutPage(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(bottom = 4.dp)
                         ) {
-                            if (heartRate != null) {
-                                val animation = rememberInfiniteTransition()
-                                val size by animation.animateFloat(
-                                    initialValue = 12.dp.value,
-                                    targetValue = 16.dp.value,
-                                    animationSpec = infiniteRepeatable(
-                                        tween(1000),
-                                        RepeatMode.Reverse
-                                    )
-                                )
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.size(16.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Favorite,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(if (ambientState.isInteractive) size.dp else 12.dp),
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                                Text(
-                                    if (ambientState.isInteractive)
-                                        "$heartRate bpm"
-                                    else
-                                        "-- bpm",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
+                            HeartRate(
+                                heartRate,
+                                ambientMode
+                            )
                             if (calories != null) {
                                 Text(
                                     "🔥 ${calories.roundToInt()} kcal",
@@ -267,7 +237,7 @@ fun EndWorkoutPage(
                                     .height(IconButtonDefaults.DefaultButtonSize * 1.2f)
                                     .width(IconButtonDefaults.DefaultButtonSize),
                                 shapes = IconButtonDefaults.animatedShapes(),
-                                colors = if (ambientState.isAmbient)
+                                colors = if (ambientMode is AmbientMode.Ambient)
                                     IconButtonDefaults.outlinedIconButtonColors()
                                 else
                                     IconButtonDefaults.iconButtonColors(
@@ -283,5 +253,46 @@ fun EndWorkoutPage(
                 }
             )
         }
+    }
+}
+
+
+@Composable
+fun HeartRate(
+    heartRate: Int?,
+    ambientMode: AmbientMode,
+) {
+    if (heartRate == null) {
+        return
+    }
+    val animation = rememberInfiniteTransition()
+    val size by animation.animateFloat(
+        initialValue = 12.dp.value,
+        targetValue = 16.dp.value,
+        animationSpec = infiniteRepeatable(
+            tween(1000),
+            RepeatMode.Reverse
+        )
+    )
+    Row {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(16.dp)
+        ) {
+            Icon(
+                Icons.Filled.Favorite,
+                contentDescription = null,
+                modifier = Modifier.size(if (ambientMode is AmbientMode.Interactive) size.dp else 12.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+        Spacer(Modifier.width(4.dp))
+        Text(
+            if (ambientMode is AmbientMode.Interactive)
+                "$heartRate bpm"
+            else
+                "-- bpm",
+            style = MaterialTheme.typography.labelSmall
+        )
     }
 }

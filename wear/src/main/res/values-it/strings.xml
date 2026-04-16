@@ -84,5 +84,7 @@
     <string name="other_app_exercise_confirm">Ferma e inizia</string>
     <string name="hold">Durata</string>
     <string name="close">Chiudi</string>
+    <string name="add_set">Aggiungi serie</string>
+    <string name="extend_rest">Estendi riposo di 5 secondi</string>
 
 </resources>

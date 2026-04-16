@@ -520,6 +520,8 @@ class WorkoutViewModel @Inject constructor(
         observeSetCompletionsFromWear()
         observeWorkoutCompletionsFromWear()
         observeAcceptedModificationsFromWear()
+        observeAddSetFromWear()
+        observeExtendRestFromWear()
 
         /*
           Compute stuff specific to current exercise (should be recomputed if any value changes)
@@ -1297,7 +1299,8 @@ class WorkoutViewModel @Inject constructor(
         // do not propagate ongoing weight across set type boundaries (e.g., warmup -> normal)
         val previousSetType = setTypes?.getOrNull(setsDone - 1) ?: SetType.NORMAL
         val currentSetType = setTypes?.getOrNull(setsDone) ?: SetType.NORMAL
-        val setTypeBoundary = setsDone > 0 && previousSetType != currentSetType
+        // detect set type boundary. Boundary should not count if new type is "suggested set"
+        val setTypeBoundary = setsDone > 0 && previousSetType != currentSetType && currentSetType != SetType.AWESOME
 
         // this is the record of the last record before current workout
         val lastOldRecord = recordsToDisplay.firstOrNull()
@@ -1853,6 +1856,49 @@ class WorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             for (modification in phoneWorkoutRepository.acceptedModifications) {
                 acceptModification(modification)
+            }
+        }
+    }
+
+    private fun observeAddSetFromWear() {
+        viewModelScope.launch {
+            for (request in phoneWorkoutRepository.addSetRequests) {
+                val exercise = pagesContent.value.exercises.find {
+                    it.workoutExerciseId == request.exerciseId
+                }
+                if (exercise != null) {
+                    addSetToExercise(exercise)
+                } else {
+                    Log.e("WorkoutViewModel", "Add set from watch: exercise not found (id=${request.exerciseId})")
+                }
+            }
+        }
+    }
+
+    private fun observeExtendRestFromWear() {
+        viewModelScope.launch {
+            for (additionalSeconds in phoneWorkoutRepository.extendRestRequests) {
+                val currentRestTimestamp = _currentExerciseState.value.restTimestamp ?: continue
+                val newTimestamp = currentRestTimestamp.plusSeconds(additionalSeconds)
+                val newRestTotal = (_currentExerciseState.value.currentExerciseRest ?: 0L) + additionalSeconds
+                _currentExerciseState.update {
+                    it.copy(
+                        restTimestamp = newTimestamp,
+                        currentExerciseRest = newRestTotal
+                    )
+                }
+                try {
+                    if (phoneWorkoutRepository.apiIsAvailable()) {
+                        phoneToWatchService.setRest(
+                            Workout.RestPhone2Watch.newBuilder()
+                                .setRest(newRestTotal)
+                                .setRestTimestamp(newTimestamp.toProtoTimestamp())
+                                .build()
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("WorkoutViewModel", "Failed to send extended rest to watch", e)
+                }
             }
         }
     }
