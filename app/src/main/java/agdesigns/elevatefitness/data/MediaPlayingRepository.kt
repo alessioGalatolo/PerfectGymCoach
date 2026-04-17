@@ -4,7 +4,9 @@ import agdesigns.elevatefitness.shared.MEDIA_IMAGES_PATH
 import agdesigns.elevatefitness.shared.bitmapArrayStore
 import agdesigns.elevatefitness.shared.grpc.Media.MediaPlaying
 import agdesigns.elevatefitness.service.NotificationListener
+import agdesigns.elevatefitness.shared.UrgentWearLocalDataStore
 import agdesigns.elevatefitness.shared.WearBitmapArrayStore
+import agdesigns.elevatefitness.shared.urgentProtoDataStore
 import agdesigns.elevatefitness.utils.notificationAccessFlow
 import android.app.PendingIntent
 import android.content.ComponentName
@@ -74,14 +76,14 @@ class MediaPlayingRepository @Inject constructor(
 ) {
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val wearImagesStoreDeferred = CompletableDeferred<WearBitmapArrayStore>()
-    // FIXME: this should be urgent
-    private val wearMediaStoreDeferred = CompletableDeferred<DataStore<MediaPlaying>>()
+
+    private val wearMediaStoreDeferred = CompletableDeferred<UrgentWearLocalDataStore<MediaPlaying>>()
 
     init {
         secondaryScope.launch {
             if (datalayerHelper.isAvailable()) {
                 wearMediaStoreDeferred.complete(
-                    registry.protoDataStore<MediaPlaying>(
+                    registry.urgentProtoDataStore<MediaPlaying>(
                         coroutineScope = secondaryScope,
                     )
                 )
@@ -143,7 +145,7 @@ class MediaPlayingRepository @Inject constructor(
         secondaryScope.launch {
             if (!datalayerHelper.isAvailable()) return@launch
             nowPlaying.collect { media ->
-                wearMediaStoreDeferred.await().updateData {
+                wearMediaStoreDeferred.await().urgentUpdateData {
                     MediaPlaying.newBuilder()
                         .setTitle(media.title ?: "")
                         .setArtist(media.artist ?: "")

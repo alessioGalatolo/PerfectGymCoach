@@ -6,7 +6,9 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 
-sealed interface TopLevelRoute
+sealed interface Route
+
+sealed interface TopLevelRoute: Route
 
 data class WorkoutDestination (
     val programId: Long,

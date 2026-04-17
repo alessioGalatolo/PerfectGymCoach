@@ -246,6 +246,7 @@ fun SharedTransitionScope.Home(
                 )
             }
             LazyColumn(
+                state = lazyListState,
                 contentPadding = innerPadding
             ) {
                 // Resume workout if available

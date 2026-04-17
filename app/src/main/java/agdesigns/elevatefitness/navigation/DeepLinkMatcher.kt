@@ -5,7 +5,7 @@ import android.net.Uri
 class DeepLinkMatcher(
     val requestUri: Uri
 ) {
-    fun match(): Any? {
+    fun match(): Route? {
         if (requestUri.scheme != "elevatefitness") return null
         if (requestUri.authority == "autoopenworkout") {
             return WorkoutDestination(

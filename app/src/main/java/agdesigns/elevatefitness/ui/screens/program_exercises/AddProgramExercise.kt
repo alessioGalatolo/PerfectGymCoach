@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -26,14 +25,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.ui.screens.program_exercises.components.ProgramExerciseCard
 import android.util.Log
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
@@ -47,14 +44,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import kotlinx.coroutines.delay
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import androidx.compose.ui.draw.shadow
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.allowHardware
-import coil3.request.crossfade
-import coil3.toBitmap
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
@@ -110,9 +100,11 @@ fun SharedTransitionScope.AddProgramExercise(
     If user is coming back from a screen with a transition and tries to go back rapidly
     the old screen will flash. This feels like a bug for compose to solve but until then,
     we disallow going back until the transition is finished
+
+    EDIT: seems to be better with nav3
      */
-    val running = this@AddProgramExercise.isTransitionActive
-    BackHandler(enabled = running) { }
+//    val running = this@AddProgramExercise.isTransitionActive
+//    BackHandler(enabled = running) { }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -163,7 +155,7 @@ fun SharedTransitionScope.AddProgramExercise(
                 },
                 modifier = Modifier.sharedBounds(
                     rememberSharedContentState(
-                        SharedElementGeneralKeys.FAP_TO_VIEW
+                        SharedElementGeneralKeys.FAB_TO_VIEW
                     ),
                     animatedVisibilityScope,
                     boundsTransform = BoundsTransform { _, _ ->

@@ -8,13 +8,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 
 @HiltViewModel(assistedFactory = NavigationViewModel.Factory::class)
 class NavigationViewModel @AssistedInject constructor(
-    @Assisted startDestination: Any
+    @Assisted startDestination: Route
 ) : ViewModel() {
 
     val navigator = DestinationsNavigator(startDestination)
 
     @AssistedFactory
     interface Factory {
-        fun create(startDestination: Any): NavigationViewModel
+        fun create(startDestination: Route): NavigationViewModel
     }
 }

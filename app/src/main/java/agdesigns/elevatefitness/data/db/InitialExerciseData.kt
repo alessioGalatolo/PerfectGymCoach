@@ -5,7 +5,7 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import android.content.Context
 import agdesigns.elevatefitness.shared.Equipment
 
-// TODO: Fix general spelling and capitalisation, missing exercises e.g. planche
+// TODO: Fix general spelling and capitalisation
 val INITIAL_EXERCISE_DATA = listOf(
     /*
     CHEST

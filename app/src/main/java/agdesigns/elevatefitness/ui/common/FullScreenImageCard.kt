@@ -96,7 +96,6 @@ fun SharedTransitionScope.FullScreenImageCard(
         modifier = Modifier
             .background(Color.Transparent)
             .fillMaxSize()
-            // FIXME: should not animate bottom bar
     ){
         image()
 
@@ -105,8 +104,6 @@ fun SharedTransitionScope.FullScreenImageCard(
             containerColor = Color.Transparent,
             snackbarHost = snackbarHost,
             topBar = {
-                // FIXME: low level transition needed because compose likes to hide its functions
-                // TODO: check if new compose exposes something useful for this
                 val transparentColor = MaterialTheme.colorScheme.surface.copy(alpha = 1f)
                 val tonedColor = MaterialTheme.colorScheme.surfaceContainer
                 val backgroundColor = lerp(
@@ -165,9 +162,7 @@ fun SharedTransitionScope.FullScreenImageCard(
                             .verticalScroll(scrollState)
                     ) {
                         // space the same as the image height
-                        Spacer(modifier = Modifier
-                            .height(contentBelowImage)
-                            .zIndex(1f)) // FIXME: necessary?
+                        Spacer(modifier = Modifier.height(contentBelowImage))
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = ReversedCornersShape(cornerRadius),

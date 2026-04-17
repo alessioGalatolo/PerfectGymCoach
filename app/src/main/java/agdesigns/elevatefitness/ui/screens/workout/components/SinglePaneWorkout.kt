@@ -131,9 +131,8 @@ fun SharedTransitionScope.SinglePaneWorkout(
 ) {
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    val context = LocalContext.current
 
-    var fabHeight by remember(mediaState.canAskAccess, mediaState.needsAccess) {
+    var fabHeight by remember(mediaState.canAskAccess, mediaState.needsAccess, mediaControlsDismissed) {
         val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
                 16.dp // fab bottom padding
         val fabVisible = (!mediaState.needsAccess || mediaState.canAskAccess) && !mediaControlsDismissed
@@ -222,7 +221,7 @@ fun SharedTransitionScope.SinglePaneWorkout(
                     ) {
                         Icon(
                             Icons.Default.DoneAll,
-                            stringResource(R.string.finish),
+                            stringResource(R.string.complete_workout),
                         )
                     }
                 }
@@ -398,7 +397,12 @@ fun SharedTransitionScope.SinglePaneWorkout(
                     )
                 )
             },
-            updateTare = { tare -> viewModel.onEvent(WorkoutEvent.UpdateTare(tare)) },
+            updateTare = { barbellType ->
+                viewModel.onEvent(WorkoutEvent.UpdateTare(
+                    barbellType.weight[false]!!,
+                    barbellType
+                ))
+            },
             toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
             addExercise = { exerciseInWorkout, originalSize ->
                 viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
@@ -446,7 +450,8 @@ fun SharedTransitionScope.SinglePaneWorkout(
                         type
                     )
                 )
-            }
+            },
+            finishWorkout = completeWorkout
         )
     }
 }

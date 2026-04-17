@@ -298,7 +298,6 @@
     <string name="no_music_playing">Nessuna musica in riproduzione</string>
     <string name="no_music_playing_info">Riproduci della musica per vederla qui</string>
     <string name="end_of_workout">Fine allenamento</string>
-    <string name="finish">Fine</string>
     <string name="exercise_description_not_available">Descrizione non disponibile</string>
     <string name="increasing_exercise_probability">Aumento della probabilità degli esercizi durante la generazione di nuovi piani…</string>
     <string name="decreasing_exercise_probability">Diminuzione della probabilità degli esercizi durante la generazione di nuovi piani…</string>
@@ -329,11 +328,9 @@
     <string name="exercise_bench_press_name">Panca piana</string>
     <string name="exercise_bench_press_description">Sdraiati su una panca con il bilanciere posizionato sopra il petto. Afferra il bilanciere con una presa prona, leggermente più larga della larghezza delle spalle. Stacca il bilanciere e abbassalo lentamente verso il petto, mantenendo i gomiti vicini al corpo. Spingi il bilanciere di nuovo verso l’alto fino alla posizione iniziale, estendendo completamente le braccia.</string>
 
-    <!-- FIXME: should say "incline" but cannot change at this very moment as we need exact same name for migration -->
     <string name="exercise_incline_bench_press_name">Panca inclinata</string>
     <string name="exercise_incline_bench_press_description">Sdraiati su una panca inclinata (testa sopra i fianchi) con il bilanciere posizionato sopra il petto. Afferra il bilanciere con una presa prona, leggermente più larga della larghezza delle spalle. Stacca il bilanciere e abbassalo lentamente verso il petto, mantenendo i gomiti vicini al corpo. Spingi il bilanciere di nuovo verso l’alto fino alla posizione iniziale, estendendo completamente le braccia.</string>
 
-    <!-- FIXME: same here -->
     <string name="exercise_decline_bench_press_name">Panca declinata</string>
     <string name="exercise_decline_bench_press_description">Sdraiati su una panca declinata (bacino sopra la testa) con il bilanciere posizionato sopra il petto. Afferra il bilanciere con una presa prona, leggermente più larga della larghezza delle spalle. Stacca il bilanciere e abbassalo lentamente verso il petto, mantenendo i gomiti vicini al corpo. Spingi il bilanciere di nuovo verso l’alto fino alla posizione iniziale, estendendo completamente le braccia.</string>
 
@@ -384,7 +381,6 @@
     <string name="exercise_barbell_row_name">Rematore con bilanciere</string>
     <string name="exercise_barbell_row_description">Per eseguire il rematore con bilanciere, posizionati in piedi con i piedi alla larghezza dei fianchi e il bilanciere davanti a te. Piega leggermente le ginocchia e inclina il busto in avanti dai fianchi, mantenendo la schiena dritta e quasi parallela al pavimento. Afferra il bilanciere con presa prona, leggermente più ampia delle spalle. Porta il bilanciere verso le costole inferiori, mantenendo i gomiti vicino al corpo e stringendo le scapole in alto. Riporta lentamente il bilanciere alla posizione iniziale, vicino al corpo durante tutto il movimento. Mantieni il collo neutro e il core attivo per supportare la schiena.</string>
 
-    <!--    FIXME: "T-bar" -->
     <string name="exercise_barbell_tbar_row_name">Rematore T-bar con bilanciere</string>
     <string name="exercise_barbell_tbar_row_description">Per eseguire il rematore T-bar con bilanciere, posizionati sopra il bilanciere con i piedi alla larghezza delle spalle. Afferra la maniglia collegata a un\'estremità del bilanciere e, con le ginocchia leggermente piegate, inclina il busto in avanti finché non è quasi parallelo al pavimento. Mantieni la schiena dritta, tira il bilanciere verso il petto sotto le costole, attivando i muscoli del dorso. Riporta lentamente il bilanciere alla posizione iniziale in modo controllato per completare una ripetizione.</string>
 
@@ -644,7 +640,6 @@
     <string name="exercise_dumbbell_romanian_deadlift_description">Stai con i piedi alla larghezza delle anche, tenendo un manubrio in ciascuna mano. Con le ginocchia leggermente piegate, piegati sui fianchi abbassando i manubri lungo le gambe finché senti tensione nei posteriori. Torna in piedi spingendo i fianchi in avanti.</string>
 
     <!-- Calves -->
-    <!--    FIXME: "calf" -->
     <string name="exercise_barbell_calf_raises_name">Sollevamenti sui polpacci con bilanciere</string>
     <string name="exercise_barbell_calf_raises_desc">Stai in piedi con un bilanciere appoggiato sulla parte alta della schiena, sopra le spalle. Solleva i talloni da terra spingendo con la pianta dei piedi, quindi abbassali lentamente.</string>
 
@@ -898,4 +893,6 @@
     <string name="hr_zone_anaerobic">Anaerobico</string>
     <string name="hr_zone_peak">Massimo</string>
     <string name="n_min">%1$sm</string>
+    <string name="days_ago">" ~ %1$d giorni fa"</string>
+    <string name="bottom_bar_current">" (attuale)"</string>
 </resources>

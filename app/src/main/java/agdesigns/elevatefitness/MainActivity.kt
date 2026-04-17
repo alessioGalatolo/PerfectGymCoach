@@ -17,6 +17,7 @@ import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.navigation.DeepLinkMatcher
 import agdesigns.elevatefitness.navigation.HomeDestination
 import agdesigns.elevatefitness.navigation.RootDestinationGraph
+import agdesigns.elevatefitness.navigation.Route
 import android.net.Uri
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -37,7 +38,7 @@ class MainActivity : ComponentActivity() {
 
         // simple deeplink parsing
         val uri: Uri? = intent.data
-        val startDestination: Any = uri?.let {
+        val startDestination: Route = uri?.let {
             DeepLinkMatcher(it).match()
         } ?: HomeDestination // fallback if intent.uri is null or match is not found
 

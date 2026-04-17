@@ -17,7 +17,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 class InPaneNavigator(
     private val rightPaneStack: SnapshotStateList<Any>,
     private val realNavigator: DestinationsNavigator,
-) : DestinationsNavigator(Unit /* dummy key, unused */) {
+) : DestinationsNavigator(HomeDestination) {
 
     var navigateVersion by mutableIntStateOf(0)
         private set
@@ -29,7 +29,7 @@ class InPaneNavigator(
                 || key is CreateExerciseDialogDestination
                 || key is ExerciseStatsDestination
 
-    override fun navigate(key: Any) {
+    override fun navigate(key: Route) {
         navigateVersion++
         if (isInPaneDestination(key)) {
             rightPaneStack.add(key)

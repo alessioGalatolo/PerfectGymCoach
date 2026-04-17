@@ -2,7 +2,6 @@ package agdesigns.elevatefitness.shared
 
 enum class BarbellType(val barbellResKey: String, val weight: Map<Boolean, Float>){
     // name, weight[false] = kg, true = lbs
-    // FIXME: double check US weights
     EZ_CURL_LIGHT("barbells_light_ez_curl_bar", mapOf(Pair(false, 5f), Pair(true, 15f))),
     EZ_CURL("barbells_ez_curl_bar", mapOf(Pair(false, 10f), Pair(true, 25f))),
     YOUNG_OLYMPIC("barbells_young_s_olympic_bar", mapOf(Pair(false, 10f), Pair(true, 22f))),

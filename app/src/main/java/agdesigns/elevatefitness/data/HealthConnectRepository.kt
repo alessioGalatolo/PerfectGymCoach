@@ -89,7 +89,9 @@ class HealthConnectRepository @Inject constructor(
                     endTime = endTime,
                     endZoneOffset = zoneOffset,
                     energy = Energy.kilocalories(workoutRecord.calories.toDouble()),
-                    metadata = HealthMetadata.manualEntry()
+                    metadata = HealthMetadata.activelyRecorded(
+                        device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
+                    )
                 )
             )
         )

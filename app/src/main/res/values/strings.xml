@@ -297,7 +297,6 @@
     <string name="no_music_playing">No music playing</string>
     <string name="no_music_playing_info">Play some music to see it here</string>
     <string name="end_of_workout">End of workout</string>
-    <string name="finish">Finish</string>
     <string name="exercise_description_not_available">Description not available</string>
     <string name="increasing_exercise_probability">Increasing exercise probability when generating new plans…</string>
     <string name="decreasing_exercise_probability">Decreasing exercise probability when generating new plans…</string>
@@ -328,12 +327,10 @@
     <string name="exercise_bench_press_name">Bench press</string>
     <string name="exercise_bench_press_description">Lie on a bench with the barbell racked above your chest. Grasp the bar with an overhand grip, slightly wider than shoulder-width apart. Unrack the bar and lower it slowly to your chest, keeping your elbows tucked in. Press the bar back up to the starting position, extending your arms fully.</string>
 
-    <!-- FIXME: should say "incline" but cannot change at this very moment as we need exact same name for migration -->
-    <string name="exercise_incline_bench_press_name">Inclined bench press</string>
+    <string name="exercise_incline_bench_press_name">Incline bench press</string>
     <string name="exercise_incline_bench_press_description">Lie on an inclined bench (head above hips) with the barbell racked above your chest. Grasp the bar with an overhand grip, slightly wider than shoulder-width apart. Unrack the bar and lower it slowly to your chest, keeping your elbows tucked in. Press the bar back up to the starting position, extending your arms fully.</string>
 
-    <!-- FIXME: same here -->
-    <string name="exercise_decline_bench_press_name">Declined bench press</string>
+    <string name="exercise_decline_bench_press_name">Decline bench press</string>
     <string name="exercise_decline_bench_press_description">Lie on a declined bench (hips above head) with the barbell racked above your chest. Grasp the bar with an overhand grip, slightly wider than shoulder-width apart. Unrack the bar and lower it slowly to your chest, keeping your elbows tucked in. Press the bar back up to the starting position, extending your arms fully.</string>
 
     <string name="exercise_cable_crossover_name">Cable crossover</string>
@@ -383,8 +380,7 @@
     <string name="exercise_barbell_row_name">Barbell row</string>
     <string name="exercise_barbell_row_description">To perform a barbell row, start by standing with your feet hip-width apart and a barbell placed in front of you. Bend your knees slightly and hinge at the hips to lean forward, keeping your back straight and nearly parallel to the floor. Grip the barbell with both hands using an overhand grip, slightly wider than shoulder-width. Pull the bar towards your lower ribs while keeping your elbows close to your body and squeezing your shoulder blades together at the top of the movement. Lower the bar back to the starting position in a controlled manner, ensuring it remains close to your body throughout the exercise. Keep your head neutral and core engaged to support your back during the movement.</string>
 
-<!--    FIXME: "T-bar" -->
-    <string name="exercise_barbell_tbar_row_name">Barbell t-bar row</string>
+    <string name="exercise_barbell_tbar_row_name">Barbell T-bar row</string>
     <string name="exercise_barbell_tbar_row_description">To perform a barbell T-bar row, start by standing over the bar with feet shoulder-width apart. Grip the handle attached to one end of the barbell, and while keeping your knees slightly bent, lean forward from your hips until your torso is almost parallel to the floor. Maintain a straight back, pull the barbell towards your chest just below your ribs, engaging the middle back muscles. Lower the barbell back to the starting position in a controlled manner to complete one rep.</string>
 
     <string name="exercise_barbell_upright_row_name">Barbell upright row</string>
@@ -516,7 +512,6 @@
     <string name="exercise_dumbbell_scott_curl_description">Sit at a preacher bench with your armpits at the top of the pad, holding a dumbbell in each hand. Curl the dumbbells while keeping your back of the arms against the pad. Lower the weights slowly back to the starting position.</string>
 
     <!-- ================== TRICEPS ================== -->
-<!--    FIXME: "triceps extension" -->
     <string name="exercise_barbell_triceps_extensions_name">Barbell triceps extension</string>
     <string name="exercise_barbell_triceps_extensions_description">Lie on a bench with a barbell held above your chest, arms extended. Slowly lower the barbell behind your head by bending your elbows, keeping your upper arms stationary. Extend your arms back to the starting position.</string>
 
@@ -645,8 +640,7 @@
     <string name="exercise_dumbbell_romanian_deadlift_description">Stand with feet hip-width apart, holding a dumbbell in each hand. With a slight bend in your knees, hinge at your hips to lower the dumbbells along your legs until you feel a stretch in your hamstrings. Return to standing by driving your hips forward.</string>
 
     <!-- Calves -->
-<!--    FIXME: "calf" -->
-    <string name="exercise_barbell_calf_raises_name">Barbell Calf raises</string>
+    <string name="exercise_barbell_calf_raises_name">Barbell calf raises</string>
     <string name="exercise_barbell_calf_raises_desc">Stand with a barbell on your upper back across the shoulders. Raise your heels off the ground by pushing through the balls of your feet, then slowly lower back down.</string>
 
     <string name="exercise_calf_raises_name">Calf raises</string>
@@ -900,6 +894,8 @@
     <string name="hr_zone_anaerobic">Anaerobic</string>
     <string name="hr_zone_peak">Peak</string>
     <string name="n_min">%1$sm</string>
+    <string name="days_ago">" ~ %1$d days ago"</string>
+    <string name="bottom_bar_current">" (current)"</string>
 
 
 </resources>

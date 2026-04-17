@@ -117,9 +117,11 @@ fun SharedTransitionScope.ViewExercises(
     If user is coming back from a screen with a transition and tries to go back rapidly
     the old screen will flash. This feels like a bug for compose to solve but until then,
     we disallow going back until the transition is finished
+
+    EDIT: seems to be better with nav3
      */
-    val running = this@ViewExercises.isTransitionActive
-    BackHandler(enabled = running) { }
+//    val running = this@ViewExercises.isTransitionActive
+//    BackHandler(enabled = running) { }
 
     val toFocus = rememberSaveable { mutableStateOf(focusSearch) }
 
@@ -354,7 +356,6 @@ fun SharedTransitionScope.ViewExercises(
                                                         programId = programId,
                                                         workoutId = workoutId,
                                                         insertAtPosition = insertAtPosition,
-                                                        programName = programName,
                                                         returnAfterAdding = returnAfterAdding,
                                                     )
                                                 )
@@ -412,7 +413,6 @@ fun SharedTransitionScope.ViewExercises(
                                     programId = programId,
                                     workoutId = workoutId,
                                     insertAtPosition = insertAtPosition,
-                                    programName = programName,
                                     returnAfterAdding = returnAfterAdding,
                                 )
                             )

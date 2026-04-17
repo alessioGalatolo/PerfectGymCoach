@@ -34,10 +34,10 @@ data class AddProgramDestination(
 
 data class AddWorkoutPlanDestination(
     val openDialogNow: Boolean = false,
-)
+): Route
 
 
-data object CustomizePlanGenerationDestination
+data object CustomizePlanGenerationDestination: Route
 
 data class AddProgramExerciseDestination(
     val programName: String,
@@ -46,7 +46,7 @@ data class AddProgramExerciseDestination(
 
 data class ExerciseStatsDestination(
     val exerciseId: Long
-)
+): Route
 
 data class ViewExercisesDestination(
     val programId: Long = 0L,
@@ -56,7 +56,7 @@ data class ViewExercisesDestination(
     val focusSearch: Boolean = false,
     val programName: String = "",
     val returnAfterAdding: Boolean = false
-)
+): Route
 
 data class AddExerciseDialogDestination(
     val previewExercise: Exercise,
@@ -64,36 +64,38 @@ data class AddExerciseDialogDestination(
     val workoutId: Long = 0L, // workoutId != 0L we're adding to a ongoing workout (and maybe a program)
     val insertAtPosition: Int? = null,
     val programExerciseId: Long? = null,  // != 0L if we are changing an existing exercise
-    val programName: String = "",
     val returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
     val continueAdding: Boolean = true,
-)
+): Route {
+    companion object {
+        val ADDITION_OUTCOME_KEY = ResultKey<Boolean>("additionOutcome")
+    }
+}
 
 data class CreateExerciseDialogDestination(
     val muscleOrdinal: Int = 0,
     val filterEquipment: Equipment? = null,
-)
+): Route
 
 data class ExercisesByMuscleDestination(
-    val programName: String,
+    val programName: String = "",
     val programId: Long = 0,
     val workoutId: Long = 0,
-    val successfulAddExercise: Boolean = false,
     val returnAfterAdding: Boolean = false,
     val insertAtPosition: Int? = null,
-)
+): Route
 
 data class ViewGeneratedPlanDestination(
     val goalChoice: WorkoutPlanGoal,
     val expertiseLevel: WorkoutPlanDifficulty,
     val workoutSplit: WorkoutPlanSplit,
-)
+): Route
 
-data object ArchivedPlansDestination
+data object ArchivedPlansDestination: Route
 
 data class WorkoutRecapDestination(
     val workoutId: Long
-)
+): Route
 
 // Scene key objects that separate different list-detail flows, preventing the strategy from
 // grouping entries from unrelated flows when multiple top-level stacks are active.
@@ -185,7 +187,6 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 programId = it.programId,
                 workoutId = it.workoutId,
                 programExerciseId = it.programExerciseId,
-                programName = it.programName,
                 returnAfterAdding = it.returnAfterAdding,
                 insertAtPosition = it.insertAtPosition,
                 continueAdding = it.continueAdding
@@ -209,7 +210,6 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 programName = it.programName,
                 programId = it.programId,
                 workoutId = it.workoutId,
-                successfulAddExercise = it.successfulAddExercise,
                 returnAfterAdding = it.returnAfterAdding,
                 insertAtPosition = it.insertAtPosition
             )

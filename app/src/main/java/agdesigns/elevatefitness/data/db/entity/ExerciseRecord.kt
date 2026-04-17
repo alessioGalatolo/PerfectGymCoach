@@ -52,6 +52,8 @@ data class ExerciseRecord(
     val variationResKey: String,
     val rest: List<Int>,
     val tare: Float = 0f, // e.g. barbell weight or bodyweight
+    @ColumnInfo(defaultValue = "")
+    val barbellTypeResKey: String = "",
     @ColumnInfo(defaultValue = "0")
     val overriddenDurationBased: Boolean,
     val setTypes: List<SetType>? = null
@@ -72,6 +74,7 @@ data class ExerciseRecordAndEquipment(
     val reps: List<Int>,
     val weights: List<Float>,
     val tare: Float = 0f,
+    val barbellTypeResKey: String = "",
     val variation: String,
     val variationResKey: String,
     val rest: List<Int>,
@@ -103,6 +106,7 @@ data class ExerciseRecordAndInfo(
     val variationResKey: String,
     val rest: List<Int>,
     val tare: Float = 0f, // e.g. barbell weight or bodyweight
+    val barbellTypeResKey: String = "",
     val name: String,
     val nameResKey: String, // key of the string resource
     val image: Int,

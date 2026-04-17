@@ -37,7 +37,6 @@ data class HomeState(
 )
 
 sealed class HomeEvent {
-    data object ForceSync: HomeEvent()
     data object RetryVersionCheck: HomeEvent()
 }
 
@@ -90,10 +89,6 @@ class HomeViewModel @Inject constructor(
 
     fun onEvent(event: HomeEvent){
         when (event) {
-            // TODO: remove
-            is HomeEvent.ForceSync -> {
-
-            }
             is HomeEvent.RetryVersionCheck -> {
                 checkPhoneAppVersion()
             }

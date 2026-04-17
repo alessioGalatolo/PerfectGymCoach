@@ -17,5 +17,5 @@ enum class SharedElementType {
 }
 
 object SharedElementGeneralKeys {
-    const val FAP_TO_VIEW = "fab2view"
+    const val FAB_TO_VIEW = "fab2view"
 }

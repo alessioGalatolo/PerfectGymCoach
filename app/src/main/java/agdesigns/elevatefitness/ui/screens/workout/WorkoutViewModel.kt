@@ -27,6 +27,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.grpc.WorkoutWearServiceGrpcKt
+import agdesigns.elevatefitness.shared.BarbellType
+import agdesigns.elevatefitness.shared.barbellTypeFromWeight
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.toProtoTimestamp
@@ -126,6 +128,9 @@ data class WorkoutPagesContent(
     @OutOfSyncProperty
     @InternalProperty
     val suggestedTares: List<Float> = emptyList(),
+    @OutOfSyncProperty
+    @InternalProperty
+    val suggestedBarbellTypes: List<BarbellType?> = emptyList(),
     @InternalProperty
     val workoutId: Long = 0L,
     @InternalProperty
@@ -153,9 +158,10 @@ data class WorkoutState(
     val imperialSystem: Boolean = false,
     val lockHorizontalScroll: Boolean = false,
     val autoOpenWear: Boolean? = null, // set as null as we want to wait for the actual first value
-    // TODO: really not happy about this. Belongs to WorkoutPagesContent but it was not to be
-    //  updated directly by the user by the tares are
+    // TODO: really not happy about this. Belongs to WorkoutPagesContent but content there
+    //  should not be updated directly by the user (while the tares are)
     val tares: List<Float> = emptyList(),
+    val selectedBarbells: List<BarbellType?> = emptyList(),
     val canPostPromotedNotifications: Boolean = false,
     val lastWorkoutModifications: List<WorkoutRecord.WorkoutModification> = emptyList()
 )
@@ -218,7 +224,7 @@ sealed class WorkoutEvent{
         val subtract: Boolean
     ): WorkoutEvent()
 
-    data class UpdateTare(val newValue: Float): WorkoutEvent()
+    data class UpdateTare(val newValue: Float, val barbellType: BarbellType): WorkoutEvent()
 
     data class EditSetRecord(
         val reps: Int,
@@ -434,6 +440,9 @@ class WorkoutViewModel @Inject constructor(
                 it.second,
             ) ?: 0f
         }
+        val exercisesBarbellTypes = recordsAndOngoingForAllExercises.map {
+            computeExerciseBarbellType(it.first, it.second)
+        }
         // compute modifications, this is a bit slow
         val newSuggestions = List<ModificationSuggestion?>(exercises.size) { null }.toMutableList()
         val modificationsByProgramExercise = modifications.groupBy { it.sourceProgramExerciseId }
@@ -485,6 +494,7 @@ class WorkoutViewModel @Inject constructor(
             exerciseRepsWeightRows = exerciseRepsWeights,
             exerciseSetsDone = exerciseSetsDone,
             suggestedTares = exercisesTares,
+            suggestedBarbellTypes = exercisesBarbellTypes,
             imperialSystem = imperialSystem,
             workoutId = workoutId,
             ongoingRecords = recordsAndOngoingForAllExercises.map { it.second },
@@ -576,11 +586,18 @@ class WorkoutViewModel @Inject constructor(
             }.collect()
         }
         viewModelScope.launch {
-            pagesContent.map { it.suggestedTares }.distinctUntilChanged().collect {
-                // We only want to use suggestedTare as init
+            combine(
+                pagesContent.map { it.suggestedTares }.distinctUntilChanged(),
+                pagesContent.map { it.suggestedBarbellTypes }.distinctUntilChanged(),
+            ) { tares, barbellTypes -> Pair(tares, barbellTypes) }.distinctUntilChanged().collect { (tares, barbellTypes) ->
+                // We only want to use suggested values as init
                 _workoutState.update { state ->
                     state.copy(
-                        tares = it
+                        tares = tares,
+                        selectedBarbells = tares.mapIndexed { index, tare ->
+                            // prefer stored type; fall back to weight-based lookup for old records
+                            barbellTypes.getOrNull(index) ?: barbellTypeFromWeight(tare)
+                        }
                     )
                 }
             }
@@ -899,7 +916,9 @@ class WorkoutViewModel @Inject constructor(
             is WorkoutEvent.UpdateTare -> {
                 val tares = workoutState.value.tares.toMutableList()
                 tares[_currentPage.value] = event.newValue
-                _workoutState.update { it.copy(tares = tares) }
+                val selectedBarbells = workoutState.value.selectedBarbells.toMutableList()
+                selectedBarbells[_currentPage.value] = event.barbellType
+                _workoutState.update { it.copy(tares = tares, selectedBarbells = selectedBarbells) }
             }
             is WorkoutEvent.UpdateSetType -> {
                 val exercise = pagesContent.value.exercises
@@ -956,6 +975,7 @@ class WorkoutViewModel @Inject constructor(
                             variationResKey = record.variationResKey,
                             rest = record.rest,
                             tare = record.tare,
+                            barbellTypeResKey = record.barbellTypeResKey,
                             overriddenDurationBased = record.overriddenDurationBased,
                             setTypes = record.setTypes
                         )
@@ -997,6 +1017,7 @@ class WorkoutViewModel @Inject constructor(
                                 variationResKey = record.variationResKey,
                                 rest = record.rest,
                                 tare = record.tare,
+                                barbellTypeResKey = record.barbellTypeResKey,
                                 overriddenDurationBased = record.overriddenDurationBased,
                                 setTypes = record.setTypes
                             )
@@ -1426,6 +1447,23 @@ class WorkoutViewModel @Inject constructor(
         return tareCandidate
     }
 
+    fun computeExerciseBarbellType(
+        recordsToDisplay: List<ExerciseRecordAndEquipment>,
+        ongoingRecord: ExerciseRecordAndEquipment?
+    ): BarbellType? {
+        val lastOldRecord = recordsToDisplay.firstOrNull()
+        var typeCandidate: BarbellType? = lastOldRecord?.barbellTypeResKey
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { key -> BarbellType.entries.find { it.barbellResKey == key } }
+        if (ongoingRecord != null) {
+            typeCandidate = ongoingRecord.barbellTypeResKey
+                .takeIf { it.isNotEmpty() }
+                ?.let { key -> BarbellType.entries.find { it.barbellResKey == key } }
+                ?: typeCandidate
+        }
+        return typeCandidate
+    }
+
     private fun startRetrievingExercises() {
         // should not called more than once
         if (retrieveExercisesJob != null) {
@@ -1570,6 +1608,8 @@ class WorkoutViewModel @Inject constructor(
             var oldTare = tare ?: workoutState.value.tares.getOrNull(exerciseIndex) ?: 0f
             val record = pagesContent.value.ongoingRecords.getOrNull(exerciseIndex)
             // when first set completed, we need to create the record
+            val selectedBarbellType = workoutState.value.selectedBarbells.getOrNull(exerciseIndex)
+            val barbellTypeResKey = selectedBarbellType?.barbellResKey ?: ""
             if (record == null) {
                 if (exercise.equipment == Equipment.BODY_WEIGHT)
                     oldTare = preferences.getUserWeight().first()
@@ -1588,6 +1628,7 @@ class WorkoutViewModel @Inject constructor(
                         variationResKey = exercise.variationResKey,
                         rest = listOf(exerciseRest.toInt()),
                         tare = oldTare,
+                        barbellTypeResKey = barbellTypeResKey,
                         overriddenDurationBased = exercise.overriddenDurationBased,
                         setTypes = exercise.setTypes
                     )
@@ -1610,6 +1651,7 @@ class WorkoutViewModel @Inject constructor(
                         variationResKey = record.variationResKey,
                         record.rest.plus(exerciseRest.toInt()),
                         tare = oldTare,  // allow user to change the initial tare, in case they selected wrong one
+                        barbellTypeResKey = barbellTypeResKey,
                         overriddenDurationBased = record.overriddenDurationBased,
                         setTypes = record.setTypes
                     )

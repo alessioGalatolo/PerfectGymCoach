@@ -25,6 +25,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.getVariation
+import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
 import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
@@ -67,13 +68,11 @@ fun SharedTransitionScope.AddExerciseDialog(
     programId: Long = 0L, // programId != 0L means we are adding an exercise to a program (and maybe a current workout)
     workoutId: Long = 0L, // workoutId != 0L we're adding to an ongoing workout (and maybe a program)
     programExerciseId: Long? = null,  // != 0L if we are changing an existing exercise
-    programName: String = "",
     returnAfterAdding: Boolean = false,  // if adding a single exercise to workout, return to workout instead of program
     continueAdding: Boolean = true,  // if true, expects user to continue adding exercise,
     insertAtPosition: Int? = null,
     viewModel: AddExerciseViewModel = hiltViewModel()
 ) {
-    assert(workoutId != 0L || programId != 0L)
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
@@ -206,20 +205,15 @@ fun SharedTransitionScope.AddExerciseDialog(
                                 snackbarHostState.showSnackbar(fillString)
                             }
                         else {
-                            // FIXME:
                             if (continueAdding) {
-                                navigator.navigateUp()
-                                navigator.navigateUp()
-                                navigator.navigateUp()
-                                navigator.navigate(
-                                    ExercisesByMuscleDestination(
-                                        programName = programName,
-                                        programId = programId,
-                                        workoutId = workoutId,
-                                        successfulAddExercise = true,
-                                        returnAfterAdding = returnAfterAdding
-                                    )
+                                navigator.navigateUpToWithResult(
+                                    ExercisesByMuscleDestination(),
+                                    AddExerciseDialogDestination.ADDITION_OUTCOME_KEY,
+                                    result = true,
                                 )
+                                if (returnAfterAdding) {
+                                    navigator.navigateUp()
+                                }
                             } else {
                                 // simply go back
                                 navigator.navigateUp()
@@ -672,7 +666,6 @@ fun SharedTransitionScope.AddExerciseDialog(
                                     }
                                 }
                                 Spacer(Modifier.width(8.dp))
-                                // FIXME: should register when textfield gets focus
                                 TextFieldWithButtons(
                                     prompt = if (state.overriddenDurationBased)
                                         stringResource(R.string.exercise_hold)

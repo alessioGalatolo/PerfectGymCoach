@@ -409,7 +409,6 @@ class Repository @Inject constructor(
 
     suspend fun deleteExerciseRecord(recordId: Long) = db.exerciseRecordDao.delete(recordId)
 
-    // FIXME: bad name
     fun getWorkoutExerciseRecordsAndInfo(workoutId: Long) =
         db.exerciseRecordDao.getByWorkoutWithInfo(workoutId).map {
             it.map { exercise -> resolveResources(exercise) }

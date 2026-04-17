@@ -1,16 +1,21 @@
 package agdesigns.elevatefitness.navigation
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import kotlinx.coroutines.flow.MutableStateFlow
 
-open class DestinationsNavigator(startKey: Any) {
+// used when navigating back with a result
+class ResultKey<T>(val id: String)
+
+open class DestinationsNavigator(startKey: Route) {
+
+    private val _results = mutableMapOf<String, MutableStateFlow<Any?>>()
 
     // Maintain a stack for each top level route
-    private var topLevelStacks : LinkedHashMap<Any, SnapshotStateList<Any>> = linkedMapOf(
+    private var topLevelStacks : LinkedHashMap<Route, SnapshotStateList<Route>> = linkedMapOf(
         startKey to mutableStateListOf(startKey)
     )
 
@@ -27,7 +32,7 @@ open class DestinationsNavigator(startKey: Any) {
             addAll(topLevelStacks.flatMap { it.value })
         }
 
-    private fun addTopLevel(key: Any){
+    private fun addTopLevel(key: Route){
         // If the top level doesn't exist, add it
         if (topLevelStacks[key] == null){
             topLevelStacks[key] = mutableStateListOf(key)
@@ -43,7 +48,7 @@ open class DestinationsNavigator(startKey: Any) {
         updateBackStack()
     }
 
-    open fun navigate(key: Any){
+    open fun navigate(key: Route){
         if (key is TopLevelRoute) {
             addTopLevel(key)
             return
@@ -70,8 +75,44 @@ open class DestinationsNavigator(startKey: Any) {
         addTopLevel(destination)
     }
 
-    fun navigateUpTo(destination: BottomBarDestination) {
-        topLevelStacks.remove(destination)
-        navigate(destination)
+    /**
+     * Goes back in the back stack until the given `destination` is found
+     *
+     * @param override: if true it will override the existing destination with the given one
+     */
+    fun navigateUpTo(destination: Route, override: Boolean = false) {
+        if (destination is TopLevelRoute) {
+            topLevelStacks.remove(destination)
+            navigate(destination)
+            return
+        }
+        var removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
+        while (removedKey != null && removedKey::class != destination::class) {
+            removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
+        }
+        if (removedKey != null && !override) {
+            navigate(removedKey)
+        } else {
+            navigate(destination)
+        }
     }
+
+    fun <T> navigateUpToWithResult(
+        destination: Route,
+        resultKey: ResultKey<T>,
+        result: T,
+        override: Boolean = false
+    ) {
+        _results.getOrPut(resultKey.id) { MutableStateFlow(null) }.value = result
+        navigateUpTo(destination, override)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> observeResult(resultKey: ResultKey<T>): MutableStateFlow<T?> =
+        _results.getOrPut(resultKey.id) { MutableStateFlow(null) } as MutableStateFlow<T?>
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> consumeResult(resultKey: ResultKey<T>): T? =
+        _results.remove(resultKey.id)?.value as T?
+
 }

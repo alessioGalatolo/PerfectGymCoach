@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.shared.BarbellType
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -180,7 +181,8 @@ fun SharedTransitionScope.Workout(
                     maybeLbToKg(
                         tare,
                         workoutState.imperialSystem
-                    )
+                    ),
+                    BarbellType.OTHER
                 )
             )
         }

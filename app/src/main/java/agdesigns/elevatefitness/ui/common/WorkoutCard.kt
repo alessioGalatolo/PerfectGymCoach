@@ -63,7 +63,7 @@ fun WorkoutCard(
             .clip(cardShape)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(), // FIXME: ripple goes out of card, as it fills a box shape
+                indication = ripple(),
                 onClick = {
                     onCardClick(
                         exercises.getOrNull(pagerState.currentPage)
@@ -176,7 +176,6 @@ fun WorkoutCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (exercises.isNotEmpty()) {
-                    // FIXME: doesn't animate when quickstart
                     Button(
                         shapes = ButtonDefaults.shapes(),
                         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,

@@ -61,6 +61,15 @@ fun barbellResFromWeight(
     return barbellResource
 }
 
+fun barbellTypeFromWeight(
+    weight: Float,
+): BarbellType {
+    return BarbellType.entries.find {
+        it.weight[false] == weight ||
+                it.weight[true] == maybeKgToLb(weight, true)
+    } ?: BarbellType.OTHER
+}
+
 fun barbellIndexFromWeight(
     weight: Float,
 ): Int {

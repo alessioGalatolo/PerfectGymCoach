@@ -89,7 +89,7 @@ fun rememberHorizontalLine(extraKey: ExtraStore.Key<Double>, lineText: String): 
         background =
             ShapeComponent(
                 fillColor,
-                MaterialTheme.shapes.extraSmall.copy(bottomStart = CornerSize(0f), bottomEnd = CornerSize(0f))
+                MaterialTheme.shapes.extraSmall.copy(topStart = CornerSize(0f), topEnd = CornerSize(0f))
             ),
     )
     return remember {
@@ -98,7 +98,7 @@ fun rememberHorizontalLine(extraKey: ExtraStore.Key<Double>, lineText: String): 
             line = line,
             labelComponent = labelComponent,
             label = { lineText },
-            verticalLabelPosition = Position.Vertical.Top,
+            verticalLabelPosition = Position.Vertical.Bottom,
         )
     }
 }

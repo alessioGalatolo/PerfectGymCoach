@@ -11,9 +11,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
+import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ViewExercisesDestination
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
@@ -33,9 +32,7 @@ import agdesigns.elevatefitness.utils.plus
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
@@ -48,7 +45,6 @@ fun SharedTransitionScope.ExercisesByMuscle(
     programName: String,
     programId: Long = 0L,
     workoutId: Long = 0L,
-    successfulAddExercise: Boolean = false,  // FIXME: should navigate back with result instead
     returnAfterAdding: Boolean = false, // if adding a single exercise to workout, return to workout instead of program
     insertAtPosition: Int? = null,
 ) {
@@ -61,16 +57,13 @@ fun SharedTransitionScope.ExercisesByMuscle(
         containerColor = MaterialTheme.colorScheme.surface
     )
     val snackbarHostState = remember { SnackbarHostState() }
-    val showSnackbar = rememberSaveable { mutableStateOf(successfulAddExercise) }
     val snackbarText = stringResource(R.string.snackbar_exercise_added)
-    LaunchedEffect(showSnackbar){
-        if (showSnackbar.value){
-            if (!returnAfterAdding) {
-                snackbarHostState.showSnackbar(snackbarText)
-                showSnackbar.value = false
-            } else {
-               navigator.navigateUp()
-            }
+    LaunchedEffect(Unit) {
+        val maybeSuccessfulAdd = navigator.consumeResult(
+            AddExerciseDialogDestination.ADDITION_OUTCOME_KEY
+        )
+        if (maybeSuccessfulAdd == true) {
+            snackbarHostState.showSnackbar(snackbarText)
         }
     }
 
@@ -81,7 +74,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
             .nestedScroll(scrollBehavior.nestedScrollConnection)
             .sharedBounds(
                 rememberSharedContentState(
-                    SharedElementGeneralKeys.FAP_TO_VIEW
+                    SharedElementGeneralKeys.FAB_TO_VIEW
                 ),
                 animatedVisibilityScope
             ),

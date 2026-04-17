@@ -428,14 +428,12 @@ fun SharedTransitionScope.DoublePaneWorkout(
                  },
                     label = "RightPaneContent"
                 ) { topScreen ->
-                    Log.d("DoublePaneWorkout", topScreen.toString())
                     when (topScreen) {
                         is ExercisesByMuscleDestination -> ExercisesByMuscle(
                             animatedVisibilityScope = this@AnimatedContent,
                             navigator = inPaneNavigator,
                             programName = topScreen.programName,
                             workoutId = topScreen.workoutId,
-                            successfulAddExercise = topScreen.successfulAddExercise,
                             returnAfterAdding = true,
                             insertAtPosition = topScreen.insertAtPosition,
                         )
@@ -458,7 +456,6 @@ fun SharedTransitionScope.DoublePaneWorkout(
                             programId = topScreen.programId,
                             workoutId = topScreen.workoutId,
                             programExerciseId = topScreen.programExerciseId,
-                            programName = topScreen.programName,
                             returnAfterAdding = topScreen.returnAfterAdding,
                             insertAtPosition = topScreen.insertAtPosition,
                             continueAdding = topScreen.continueAdding,
@@ -511,7 +508,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                                     ) {
                                                         Icon(
                                                             Icons.Default.DoneAll,
-                                                            stringResource(R.string.finish),
+                                                            stringResource(R.string.complete_workout),
                                                         )
                                                     }
                                                 }
@@ -706,10 +703,11 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                                 )
                                             )
                                         },
-                                        updateTare = { tare ->
+                                        updateTare = { barbellType ->
                                             viewModel.onEvent(
                                                 WorkoutEvent.UpdateTare(
-                                                    tare
+                                                    barbellType.weight[false]!!,
+                                                    barbellType
                                                 )
                                             )
                                         },
@@ -763,7 +761,8 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                                     type
                                                 )
                                             )
-                                        }
+                                        },
+                                        finishWorkout = completeWorkout
                                     )
                                 }
                             }

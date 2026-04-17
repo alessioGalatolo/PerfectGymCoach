@@ -59,10 +59,10 @@ import agdesigns.elevatefitness.shared.barbellResFromWeight
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
+import agdesigns.elevatefitness.ui.common.CompletionCheckmark
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
@@ -73,7 +73,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import kotlin.collections.forEachIndexed
 import kotlin.collections.isNotEmpty
 import kotlin.math.min
@@ -98,7 +100,7 @@ fun SharedTransitionScope.ExercisePages(
     showTitle: Boolean,
     title: @Composable (Modifier) -> Unit,
     addSet: () -> Unit,
-    updateTare: (Float) -> Unit,
+    updateTare: (BarbellType) -> Unit,
     updateBottomBar: (Int?, Float?) -> Unit,
     updateValues: (Int, Float, Int, Int) -> Unit,
     deleteSet: (Int, Int) -> Unit,
@@ -111,7 +113,8 @@ fun SharedTransitionScope.ExercisePages(
     dontRequestOngoingWorkoutNotification: () -> Unit,
     refreshPromotedNotificationAccess: () -> Unit,
     onAcceptSuggestion: (Int) -> Unit,
-    updateSetType: (Int, Int, SetType) -> Unit
+    updateSetType: (Int, Int, SetType) -> Unit,
+    finishWorkout: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -312,6 +315,7 @@ fun SharedTransitionScope.ExercisePages(
                         exerciseRest = previewExercise.rest.getOrNull(0) ?: 0,
                         equipment = Equipment.EVERYTHING,
                         tare = null,
+                        selectedBarbellType = null,
                         isDurationBased = previewExercise.overriddenDurationBased,
                         repsWeightRows = previewExercise.reps.map {
                             SetDisplayRow(
@@ -365,12 +369,23 @@ fun SharedTransitionScope.ExercisePages(
                 ) { page ->
                     if (page == pagesContent.exercises.size) {
                         // page for finishing the workout
+                        val currentWorkoutString = stringResource(R.string.current_workout)
                         WorkoutFinishPage(
                             currentExerciseState.workoutTimeFormatted,
-                            workoutState.workoutId,
                             fabHeight,
                             bottomPadding,
-                            navigator
+                            addExercise = {
+                                addExercise(page - 1, pagesContent.exercises.size)
+                                navigator.navigate(
+                                    ExercisesByMuscleDestination(
+                                        programName = currentWorkoutString,
+                                        workoutId = workoutState.workoutId,
+                                        returnAfterAdding = true,
+                                        insertAtPosition = page
+                                    )
+                                )
+                            },
+                            finishWorkout = finishWorkout
                         )
                     } else {
                         ExercisePage(
@@ -391,6 +406,7 @@ fun SharedTransitionScope.ExercisePages(
                             ],
                             equipment = pagesContent.exercises[page].equipment,
                             tare = workoutState.tares.getOrNull(page),
+                            selectedBarbellType = workoutState.selectedBarbells.getOrNull(page),
                             isDurationBased = pagesContent.exercises[page].overriddenDurationBased,
                             repsWeightRows = pagesContent.exerciseRepsWeightRows[page],
                             setsDone = pagesContent.exerciseSetsDone[page],
@@ -479,6 +495,7 @@ fun ExercisePage(
     exerciseRest: Int,
     equipment: Equipment,
     tare: Float?,
+    selectedBarbellType: BarbellType?,
     isDurationBased: Boolean,
     repsWeightRows: List<SetDisplayRow>,
     setsDone: Int,
@@ -493,7 +510,7 @@ fun ExercisePage(
     settingsMenu: @Composable (() -> Unit),
     addSet: () -> Unit,
     updateRowValues: (Int, Float, Int) -> Unit,
-    updateTare: (Float) -> Unit,
+    updateTare: (BarbellType) -> Unit,
     updateBottomBar: (Int?, Float?) -> Unit,
     toggleOtherEquipment: () -> Unit,
     toggleInfoDialog: () -> Unit,
@@ -572,20 +589,12 @@ fun ExercisePage(
                     enter = slideInVertically() + fadeIn(),
                     exit = slideOutVertically() + fadeOut()
                 ) {
-                    // FIXME: barbellResFromWeight should be computed in ViewModel
-                    val barbellName: String =
-                        stringResource(barbellResFromWeight(tare ?: 0f)) +
-                                " " +
-                                weightAndUnit(tare ?: 0f,
-                                    imperialSystem,
-                                    inParenthesis = true
-                                )
-
                     BarbellSelector(
-                        selectedBarbell = barbellName,
+                        selectedBarbellType = selectedBarbellType,
+                        tare = tare,
                         toggleOtherEquipment = toggleOtherEquipment,
                         useImperialSystem = imperialSystem,
-                        onBarbellSelected = { weight -> updateTare(weight) },
+                        onBarbellSelected = { barbellType -> updateTare(barbellType) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .align(CenterHorizontally)
@@ -904,16 +913,22 @@ fun HistoricRecord(
     Card(modifier.fillMaxWidth()) {
         Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
             val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
+            val daysAgo = remember { ChronoUnit.DAYS.between(record.date, ZonedDateTime.now()) }
             Text(
-                record.date.format(formatter),
+                record.date.format(formatter) + stringResource(R.string.days_ago, daysAgo),
                 style = MaterialTheme.typography.titleMedium,
-                fontStyle = FontStyle.Italic // TODO: add how many days ago
+                fontStyle = FontStyle.Italic
             )
             if (record.equipment == Equipment.BARBELL) {
+                val barbellTypeRes = remember {
+                    record.barbellTypeResKey.takeIf { it.isNotEmpty() }?.let { resKey ->
+                        BarbellType.entries.find { it.barbellResKey == resKey }?.barbellResource
+                    } ?: barbellResFromWeight(record.tare)
+                }
                 Text(
                     stringResource(
                         R.string.barbell_used,
-                        stringResource(barbellResFromWeight(record.tare)),
+                        stringResource(barbellTypeRes),
                         weightAndUnit(record.tare, imperialSystem, true)
                     )
                 )
@@ -986,31 +1001,39 @@ fun HistoricRecord(
 @Composable
 fun WorkoutFinishPage(
     workoutTimeFormatted: String,
-    workoutId: Long,
     fabHeight: Dp,
     bottomPadding: Dp,
-    navigator: DestinationsNavigator
+    addExercise: () -> Unit,
+    finishWorkout: () -> Unit
 ) {
     Column(
-        Modifier
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
-            .padding(top = 8.dp)){
+            .padding(top = 8.dp)
+    ){
         Text(
             stringResource(
                 R.string.total_workout_time,
                 workoutTimeFormatted
             ), style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(32.dp))
+        TextButton(
+            onClick = finishWorkout,
+            modifier = Modifier.padding(16.dp).fillMaxWidth()
+        ) {
+            CompletionCheckmark(
+                modifier = Modifier.size(140.dp)
+            )
+            Text(
+                stringResource(R.string.complete_workout),
+                style = MaterialTheme.typography.headlineLargeEmphasized,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
         Text(stringResource(R.string.workout_completion_tip), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(16.dp))
-        val currentWorkoutString = stringResource(R.string.current_workout)
-        TextButton(onClick = { navigator.navigate(
-            ExercisesByMuscleDestination(
-                programName = currentWorkoutString,
-                workoutId = workoutId,
-            )
-        ) }, modifier = Modifier.align(CenterHorizontally)) {
+        TextButton(onClick = addExercise, modifier = Modifier.align(CenterHorizontally)) {
             Text(stringResource(R.string.add_exercise_to_workout))
         }
         Spacer(Modifier.height(160.dp))
@@ -1120,10 +1143,11 @@ fun ExerciseSettingsMenu(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BarbellSelector(
-    selectedBarbell: String,
+    selectedBarbellType: BarbellType?,
+    tare: Float?,
     toggleOtherEquipment: () -> Unit,
     useImperialSystem: Boolean,
-    onBarbellSelected: (Float) -> Unit,
+    onBarbellSelected: (BarbellType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // NOTE: cannot use ExposedDropdownMenu as it currently opens unreliably
@@ -1168,8 +1192,19 @@ fun BarbellSelector(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
+                    val selectedBarbellDisplayText = when {
+                        selectedBarbellType == null || selectedBarbellType == BarbellType.OTHER ->
+                            stringResource(BarbellType.OTHER.barbellResource) +
+                                    " " + weightAndUnit(tare ?: 0f, useImperialSystem, inParenthesis = true)
+                        else ->
+                            stringResource(selectedBarbellType.barbellResource) +
+                                    " (${selectedBarbellType.weight[useImperialSystem]} ${
+                                        if (useImperialSystem) stringResource(R.string.lb)
+                                        else stringResource(R.string.kg)
+                                    })"
+                    }
                     Text(
-                        text = selectedBarbell,
+                        text = selectedBarbellDisplayText,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium
@@ -1222,11 +1257,7 @@ fun BarbellSelector(
                                     else stringResource(R.string.kg)
                                 })"
                     }
-                    val isSelected = selectedBarbell == optionText ||
-                        (
-                            option == BarbellType.OTHER &&
-                            selectedBarbell.contains(stringResource(option.barbellResource))
-                        )
+                    val isSelected = option == selectedBarbellType
                     val currentItemShape = if (isSelected)
                         MaterialTheme.shapes.extraExtraLarge
                     else
@@ -1254,7 +1285,7 @@ fun BarbellSelector(
                             if (option == BarbellType.OTHER) {
                                 toggleOtherEquipment()
                             } else {
-                                onBarbellSelected(maybeLbToKg(option.weight[useImperialSystem]!!, useImperialSystem))
+                                onBarbellSelected(option)
                             }
                             isExpanded = false
                         },

@@ -55,7 +55,7 @@ data class PrimaryActionContent(
     ExperimentalMaterial3AdaptiveApi::class
 )
 @Composable
-fun RootDestinationGraph(startDestination: Any) {
+fun RootDestinationGraph(startDestination: Route) {
     val state = rememberNavigationSuiteScaffoldState()
     val navigationViewModel = hiltViewModel<NavigationViewModel, NavigationViewModel.Factory>(
         creationCallback = { factory -> factory.create(startDestination) }
@@ -106,6 +106,7 @@ fun RootDestinationGraph(startDestination: Any) {
         replay = 0,      // Number of values replayed to new subscribers
         extraBufferCapacity = 10  // Buffer for slow subscribers
     ) }
+
     NavigationSuiteScaffold(
         state = state,
         navigationSuiteType = navSuiteType,
@@ -118,7 +119,8 @@ fun RootDestinationGraph(startDestination: Any) {
                         if (selected)
                             Icon(
                                 destination.iconSelected,
-                                contentDescription = stringResource(destination.label) + " (current)" // FIXME: locale
+                                contentDescription = stringResource(destination.label) +
+                                        stringResource(R.string.bottom_bar_current)
                             )
                         else
                             Icon(
@@ -130,7 +132,7 @@ fun RootDestinationGraph(startDestination: Any) {
                     selected = selected,
                     onClick = {
                         destinationsNavigator.navigateUpTo(destination)
-                        if (destinationsNavigator.backStack.last() == destination) {
+                        if (destinationsNavigator.backStack.lastOrNull() == destination) {
                             refreshContentFlow.tryEmit(destination)
                         }
                     }

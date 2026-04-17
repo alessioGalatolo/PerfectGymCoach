@@ -49,7 +49,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -97,7 +97,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_5_6,
                     MIGRATION_6_7,
                     MIGRATION_7_8,
-                    MIGRATION_8_9
+                    MIGRATION_8_9,
+                    MIGRATION_9_10
                 )
                     .build()
                     .also { instance = it }
@@ -212,6 +213,14 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
         )
         db.execSQL(
             "ALTER TABLE ExerciseRecord ADD COLUMN setTypes TEXT"
+        )
+    }
+}
+
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE ExerciseRecord ADD COLUMN barbellTypeResKey TEXT NOT NULL DEFAULT ''"
         )
     }
 }
