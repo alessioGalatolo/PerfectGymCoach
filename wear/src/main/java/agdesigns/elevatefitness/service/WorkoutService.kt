@@ -3,8 +3,18 @@ package agdesigns.elevatefitness.service
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.presentation.WearActivity
 import agdesigns.elevatefitness.data.WearRepository
+import agdesigns.elevatefitness.data.datastore.CalibrationDataStore
+import agdesigns.elevatefitness.data.db.dao.ExerciseParamsDao
+import agdesigns.elevatefitness.data.db.entity.toEntity
+import agdesigns.elevatefitness.data.db.entity.toExerciseParams
+import agdesigns.elevatefitness.shared.grpc.Workout
+import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.Manifest
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Binder
 import android.app.Notification
 import android.app.NotificationChannel
@@ -45,26 +55,83 @@ import androidx.health.services.client.startExercise
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.time.Duration
 import javax.inject.Inject
+import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.seconds
 
 @AndroidEntryPoint
 class WorkoutService: LifecycleService() {
-    @Inject lateinit var repository: WearRepository
+    @Inject
+    lateinit var repository: WearRepository
+    @Inject
+    lateinit var exerciseParamsDao: ExerciseParamsDao
+    @Inject
+    lateinit var calibrationDataStore: CalibrationDataStore
     private lateinit var notificationManager: NotificationManager
 
     private lateinit var healthClient: HealthServicesClient
     private lateinit var exerciseClient: ExerciseClient
+
+    private lateinit var sensorManager: SensorManager
+    private var gyroSensor: Sensor? = null
+    private var accelSensor: Sensor? = null
+    private var gravitySensor: Sensor? = null
+
+    private val repAndTempoCounters = mutableMapOf<Long, RepAndTempoCounter>()
+    private val _activeExerciseId = MutableStateFlow<Long?>(null)
+
+    private val accelerationListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            val name = _activeExerciseId.value ?: return
+            repAndTempoCounters[name]?.onLinearAcceleration(
+                event.values,
+                event.timestamp
+            )
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    }
+
+    private val gravityListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            val name = _activeExerciseId.value ?: return
+            repAndTempoCounters[name]?.onGravity(
+                event.values,
+                event.timestamp
+            )
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    }
+
+    private val gyroscopeListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            val name = _activeExerciseId.value ?: return
+            repAndTempoCounters[name]?.onGyroscope(
+                event.values,
+                event.timestamp
+            )
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    }
+
 
     /*
      * Checks whether the bound activity has really gone away (in which case a foreground service
@@ -163,6 +230,11 @@ class WorkoutService: LifecycleService() {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun repCountFlow(): Flow<Int?> = _activeExerciseId.flatMapLatest { id ->
+        repAndTempoCounters[id]?.repCountFlow?.map { it as Int? } ?: flowOf(null)
+    }
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate()")
@@ -170,6 +242,8 @@ class WorkoutService: LifecycleService() {
         exerciseClient = healthClient.exerciseClient
 
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -191,7 +265,14 @@ class WorkoutService: LifecycleService() {
         lifecycleScope.launch {
             // We may have been restarted by the system. Check for an ongoing exercise.
             if (!workoutActive) {
-                exerciseClient.endExercise()
+                try {
+                    exerciseClient.endExercise()
+                } catch (exception: HealthServicesException) {
+                    Log.e(TAG, "Error ending exercise", exception)
+                }
+                sensorManager.unregisterListener(accelerationListener)
+                sensorManager.unregisterListener(gravityListener)
+                sensorManager.unregisterListener(gyroscopeListener)
                 // We have nothing to do, so we can stop.
                 stopSelf()
             }
@@ -240,10 +321,16 @@ class WorkoutService: LifecycleService() {
     fun startWorkout() {
         Log.d(TAG, "startWorkout()")
         workoutActive = true
+
+        accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+        gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
+        gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+
         if (!serviceRunningInForeground) {
             Log.d(TAG, "Posting ongoing activity notification")
 
-            val notification = generateNotification(getString(R.string.workout_notification_started_text))
+            val notification =
+                generateNotification(getString(R.string.workout_notification_started_text))
             val canCollectCalories = canCollectCalories()
             val canCollectHeartBeat = canCollectHeartBeat()
             lifecycleScope.launch {
@@ -278,8 +365,9 @@ class WorkoutService: LifecycleService() {
                         _otherAppInProgress.value = true
                         return@launch
                     }
+
                     OWNED_EXERCISE_IN_PROGRESS -> {
-                        Log.d(TAG, "OWNED_EXERCISE_IN_PROGRESS — ending previous and retrying")
+                        Log.d(TAG, "OWNED_EXERCISE_IN_PROGRESS: will try to end previous and retry")
                         try {
                             exerciseClient.endExercise()
                         } catch (exception: HealthServicesException) {
@@ -287,9 +375,14 @@ class WorkoutService: LifecycleService() {
                         }
                         delay(1.seconds)
                     }
+
                     NO_EXERCISE_IN_PROGRESS -> Log.d(TAG, "NO_EXERCISE_IN_PROGRESS")
                 }
-                prepareAndStartExercise(bestSupportedExercise, canCollectCalories, canCollectHeartBeat)
+                prepareAndStartExercise(
+                    bestSupportedExercise,
+                    canCollectCalories,
+                    canCollectHeartBeat
+                )
             }
 
             startForeground(
@@ -350,13 +443,119 @@ class WorkoutService: LifecycleService() {
         val exerciseType = pendingExerciseType ?: return
         _otherAppInProgress.value = false
         lifecycleScope.launch {
-            prepareAndStartExercise(exerciseType, pendingCanCollectCalories, pendingCanCollectHeartBeat)
+            prepareAndStartExercise(
+                exerciseType,
+                pendingCanCollectCalories,
+                pendingCanCollectHeartBeat
+            )
             pendingExerciseType = null
         }
     }
 
+    suspend fun initSetTracking(
+        exerciseId: Long,
+        wearRepTrackable: Workout.WearRepTrackable,
+        firstPhase: Workout.FirstPhase
+    ) {
+        _activeExerciseId.value?.let { prev ->
+            if (prev != exerciseId) {
+                Log.d(TAG, "Stopping rep tracking for exerciseId $prev")
+                repAndTempoCounters[prev]?.let { counter ->
+                    exerciseParamsDao.upsert(counter.getTunedParameters().toEntity())
+                }
+            }
+        }
+        if (wearRepTrackable == Workout.WearRepTrackable.NOT_TRACKABLE) {
+            _activeExerciseId.value = exerciseId
+            Log.d(TAG, "Exercise is not trackable, won't start rep tracking")
+            return
+        }
+        if (!repAndTempoCounters.containsKey(exerciseId)) {
+            val rotationMovement = wearRepTrackable == Workout.WearRepTrackable.ROTATION_MOVEMENT
+            val savedParams = exerciseParamsDao.getById(exerciseId)
+            val initialParams = savedParams?.toExerciseParams(firstPhase, rotationMovement)
+                ?: RepAndTempoCounter.ExerciseParams(
+                        exerciseId = exerciseId,
+                        firstPhase = firstPhase,
+                        rotationMovement = rotationMovement,
+                )
+            repAndTempoCounters[exerciseId] = RepAndTempoCounter(
+                initialParams,
+                accelOffset = calibrationDataStore.accelNoiseFloor.first()
+            )
+        }
+        _activeExerciseId.value = exerciseId
+        Log.d(TAG, "Started rep tracking for: $exerciseId")
+    }
+
+    fun startSetTracking() {
+        if (accelSensor == null || gravitySensor == null || gyroSensor == null) {
+            Log.d(TAG, "Sensors not available")
+            return
+        }
+        sensorManager.registerListener(accelerationListener, accelSensor, SensorManager.SENSOR_DELAY_GAME)
+        sensorManager.registerListener(gravityListener, gravitySensor, SensorManager.SENSOR_DELAY_GAME)
+        sensorManager.registerListener(gyroscopeListener, gyroSensor, SensorManager.SENSOR_DELAY_GAME)
+    }
+
+    fun stopSetTracking() {
+        sensorManager.unregisterListener(accelerationListener)
+        sensorManager.unregisterListener(gravityListener)
+        sensorManager.unregisterListener(gyroscopeListener)
+    }
+
+    fun setTrackingTruthAndGetResults(exerciseId: Long, groundTruthReps: Int): RepAndTempoCounter.SetResult? {
+        val counter = repAndTempoCounters[exerciseId] ?: return null
+        Log.d(TAG, "Results pre: ${counter.getResults()}")
+        counter.reportActualReps(groundTruthReps)
+        Log.d(TAG, "Results post: ${counter.getResults()}")
+        val results = counter.getResults()
+        repAndTempoCounters[_activeExerciseId.value]?.reset()
+        return results
+    }
+
+    /**
+     * Collect linear acceleration samples while the user is still, then return the
+     * standard deviation as the sensor noise floor. Called once per device lifetime
+     * when tempo/ROM tracking is first enabled.
+     */
+    suspend fun runCalibration(
+        durationMs: Long = 5000L,
+    ): List<Float> {
+        val samplesX = mutableListOf<Float>()
+        val samplesY = mutableListOf<Float>()
+        val samplesZ = mutableListOf<Float>()
+
+        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+            ?: return emptyList()
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                samplesX.add(event.values[0])
+                samplesY.add(event.values[1])
+                samplesZ.add(event.values[2])
+            }
+            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+        }
+        sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+        delay(durationMs)
+        sensorManager.unregisterListener(listener)
+        if (samplesX.size < 2)
+            return emptyList()
+        val meanX = samplesX.average().toFloat()
+        val meanY = samplesY.average().toFloat()
+        val meanZ = samplesZ.average().toFloat()
+
+        Log.d(TAG, "Calibration mean: x = $meanX, y = $meanY, z = $meanZ")
+        return listOf(meanX, meanY, meanZ)
+    }
+
     fun stopWorkout() {
         Log.d(TAG, "stopWorkout()")
+        stopSetTracking()
+        val counters = repAndTempoCounters.values.map { it.getTunedParameters().toEntity() }
+        repAndTempoCounters.clear()
+        lifecycleScope.launch { counters.forEach { exerciseParamsDao.upsert(it) } }
+
         if (serviceRunningInForeground) {
             Log.d(TAG, "Removing ongoing activity notification")
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -500,5 +699,8 @@ class WorkoutService: LifecycleService() {
         private val UNBIND_DELAY = 3.seconds
 
         private const val NOTIFICATION_CHANNEL_ID = "workout_channel_01"
+
+        /** Expected linear-accel noise floor (m/s²) on a well-calibrated device. */
+        private const val REFERENCE_NOISE_FLOOR = 0.05f
     }
 }

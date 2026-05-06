@@ -96,9 +96,14 @@ android {
 }
 
 dependencies {
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
     implementation(project(":shared"))
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.service)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
     implementation(libs.datastore.preferences)
     implementation(libs.accompanist.permissions)
     implementation(libs.health.services)

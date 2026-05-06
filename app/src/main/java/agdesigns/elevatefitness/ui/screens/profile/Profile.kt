@@ -30,12 +30,22 @@ import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries
 import agdesigns.elevatefitness.utils.plus
 import android.os.Build
 import agdesigns.elevatefitness.data.HealthConnectRepository
+import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
+import agdesigns.elevatefitness.shared.SetType
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.background
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
+import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
+import agdesigns.elevatefitness.ui.screens.workout.components.SuggestModificationCard
+import agdesigns.elevatefitness.ui.screens.workout.components.WorkoutRepsWeightRow
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -62,6 +72,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -204,6 +215,24 @@ fun Profile(
                 )
                 PreferencesContent(
                     profileState = state,
+                    snackbarHost = snackbarHostState,
+                    viewModel = viewModel
+                )
+            }
+
+            // Smart Features Section
+            item {
+                Text(
+                    stringResource(R.string.smart_features_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(
+                        bottom = dimensionResource(R.dimen.header_to_content_padding)
+                    )
+                )
+                SmartFeaturesContent(
+                    profileState = state,
+                    snackbarHost = snackbarHostState,
                     viewModel = viewModel
                 )
             }
@@ -236,7 +265,9 @@ fun Profile(
                                 Icon(
                                     painterResource(R.drawable.ic_health_connect_logo),
                                     contentDescription = null,
-                                    modifier = Modifier.size(64.dp).padding(end = 8.dp),
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .padding(end = 8.dp),
                                     tint = Color.Unspecified
                                 )
                                 Column(Modifier.weight(1f)) {
@@ -996,6 +1027,7 @@ fun MeasurementRow(
 @Composable
 fun PreferencesContent(
     profileState: ProfileState,
+    snackbarHost: SnackbarHostState,
     viewModel: ProfileViewModel,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -1006,6 +1038,8 @@ fun PreferencesContent(
             "und",
             stringResource(R.string.system_default)
     ))
+    val noWatchConnectedMessage = stringResource(R.string.requires_connected_watch)
+    val scope = rememberCoroutineScope()
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -1014,7 +1048,13 @@ fun PreferencesContent(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
         ) {
-            subCard {
+            subCard(
+                onClick = {
+                    viewModel.onEvent(ProfileEvent.SwitchImperialSystem(
+                        !profileState.imperialSystem
+                    ))
+                }
+            ) {
                 // Imperial System Switch
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1089,7 +1129,9 @@ fun PreferencesContent(
                     }
                 }
             }
-            subCard {
+            subCard(
+                onClick = { expanded = !expanded }
+            ) {
                 // select language
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1160,7 +1202,13 @@ fun PreferencesContent(
                     }
                 }
             }
-            subCard {
+            subCard(
+                onClick = {
+                    viewModel.onEvent(ProfileEvent.ToggleLockHorizontalScroll(
+                        !profileState.lockHorizontalScroll
+                    ))
+                }
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -1184,7 +1232,21 @@ fun PreferencesContent(
                     )
                 }
             }
-            subCard {
+            subCard(
+                onClick = {
+                    if (profileState.hasConnectedWatch) {
+                        viewModel.onEvent(
+                            ProfileEvent.ToggleAutoOpenWear(
+                                !profileState.autoOpenWear
+                            )
+                        )
+                    } else {
+                        scope.launch {
+                            snackbarHost.showSnackbar(noWatchConnectedMessage)
+                        }
+                    }
+                }
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -1192,13 +1254,17 @@ fun PreferencesContent(
                     Text(
                         stringResource(R.string.auto_open_wearos),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (profileState.hasConnectedWatch)
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(8.dp))
                     Switch(
                         checked = profileState.autoOpenWear,
-                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(it)) }
+                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(it)) },
+                        enabled = profileState.hasConnectedWatch
                     )
                 }
             }
@@ -1290,6 +1356,192 @@ fun IncrementRow(
                     Icon(Icons.Default.Done, stringResource(R.string.done_icon))
                 } else {
                     Icon(Icons.Default.Close, stringResource(R.string.cancel_icon))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SmartFeaturesContent(
+    profileState: ProfileState,
+    snackbarHost: SnackbarHostState,
+    viewModel: ProfileViewModel,
+) {
+    val noWatchConnectedMessage = stringResource(R.string.requires_connected_watch)
+    val noCompatibleWatchMessage = stringResource(R.string.requires_compatible_wearable)
+    val scope = rememberCoroutineScope()
+
+    GroupedCard(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+    ) {
+        subCard(
+            onClick = {
+                viewModel.onEvent(ProfileEvent.ToggleSuggestRepsWeight(
+                    !profileState.suggestRepsWeight
+                ))
+            }
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    stringResource(R.string.suggest_reps_weight),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = profileState.suggestRepsWeight,
+                    onCheckedChange = {
+                        viewModel.onEvent(ProfileEvent.ToggleSuggestRepsWeight(
+                            !profileState.suggestRepsWeight
+                        ))
+                    }
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            WorkoutRepsWeightRow(
+                "8",
+                "25",
+                0,
+                0,
+                totalWarmupSets = 0,
+                projectedReps = if (profileState.suggestRepsWeight) "10" else null,
+                projectedWeight = if (profileState.suggestRepsWeight) "30" else null,
+                toBeDone = true,
+                isDurationBased = false,
+                imperialSystem = profileState.imperialSystem,
+                setType = SetType.NORMAL,
+                updateRowValues = { _, _ -> },
+                deleteSet = {  },
+                updateBottomBar = { _, _ -> },
+                updateSetType = { _ -> },
+            )
+        }
+        subCard(onClick = {
+            viewModel.onEvent(ProfileEvent.ToggleSuggestWorkoutModifications(
+                !profileState.suggestWorkoutModifications
+            ))
+        }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    stringResource(R.string.suggest_workout_modifications),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = profileState.suggestWorkoutModifications,
+                    onCheckedChange = {
+                        viewModel.onEvent(ProfileEvent.ToggleSuggestWorkoutModifications(it))
+                    }
+                )
+            }
+            AnimatedVisibility(
+                profileState.suggestWorkoutModifications,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Spacer(Modifier.height(16.dp))
+                SuggestModificationCard(
+                    isLoading = false,
+                    hasDoneSomeSets = false,
+                    modificationSuggestion = ModificationSuggestion(
+                        type = WorkoutRecord.ModificationType.EXERCISE_SKIPPED,
+                        originalModification = WorkoutRecord.WorkoutModification(
+                            sourceProgramExerciseId = 0L,
+                            sourceExerciseId = 0L,
+                            sourceWorkoutExerciseId = 0L,
+                            targetWorkoutExerciseId = 0L,
+                            targetExerciseId = 0L,
+                            modificationType = WorkoutRecord.ModificationType.EXERCISE_SKIPPED
+                        )
+                    ),
+                    onAcceptSuggestion = { },
+                    disableActions = true
+                )
+            }
+        }
+        subCard(onClick = {
+            if (!profileState.hasConnectedWatch) {
+                scope.launch {
+                    snackbarHost.showSnackbar(noWatchConnectedMessage)
+                }
+            } else {
+                viewModel.onEvent(ProfileEvent.ToggleInRestHints(
+                    !profileState.inRestHints
+                ))
+            }
+        }) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.in_rest_hints_wear),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (profileState.hasConnectedWatch)
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = profileState.inRestHints,
+                        onCheckedChange = {
+                            viewModel.onEvent(ProfileEvent.ToggleInRestHints(it))
+                        },
+                        enabled = profileState.hasConnectedWatch
+                    )
+                }
+            }
+        }
+        subCard(onClick = {
+            if (profileState.wearSupportsTempoRom == true) {
+                viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(
+                    !profileState.tempoRomTracking
+                ))
+            } else {
+                scope.launch {
+                    snackbarHost.showSnackbar(noCompatibleWatchMessage)
+                }
+            }
+        }) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val tempoEnabled = profileState.hasConnectedWatch &&
+                            profileState.wearSupportsTempoRom == true
+                    Text(
+                        stringResource(R.string.tempo_rom_tracking_wear),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (tempoEnabled)
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = profileState.tempoRomTracking,
+                        onCheckedChange = {
+                            viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(it))
+                        },
+                        enabled = tempoEnabled
+                    )
                 }
             }
         }

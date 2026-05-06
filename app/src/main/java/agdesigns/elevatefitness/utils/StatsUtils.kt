@@ -1,10 +1,24 @@
 package agdesigns.elevatefitness.utils
 
+import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.ui.screens.statistics.TimeFrame
 import android.util.Log
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.maybeKgToLb
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsBike
+import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.TwoWheeler
+import androidx.compose.ui.graphics.vector.ImageVector
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -145,4 +159,40 @@ fun oneRepMax(weight: Float, reps: Int, formula: OneRepMaxFormula): Float {
         OneRepMaxFormula.WATHEN -> weight * (100f / (48.8f + 53.8f * exp(-0.075f * reps)))
         OneRepMaxFormula.LANDER -> weight * (100f / (101.3f - 2.67123f * reps))
     }
+}
+
+data class VolumeComparison(
+    val count: Float,
+    val nameResId: Int,
+    val icon: ImageVector
+)
+
+private data class ComparisonObject(val weightKg: Float, val nameResId: Int, val icon: ImageVector)
+
+private val volumeComparisonObjects = listOf(
+    ComparisonObject(4f, R.string.volume_comparison_cat, Icons.Default.Pets),
+    ComparisonObject(10f, R.string.volume_comparison_bicycle, Icons.AutoMirrored.Filled.DirectionsBike),
+    ComparisonObject(70f, R.string.volume_comparison_person, Icons.Default.Person),
+    ComparisonObject(200f, R.string.volume_comparison_motorcycle, Icons.Default.TwoWheeler),
+    ComparisonObject(300f, R.string.volume_comparison_bear, Icons.Default.Pets),
+    ComparisonObject(1_500f, R.string.volume_comparison_car, Icons.Default.DirectionsCar),
+    ComparisonObject(6_000f, R.string.volume_comparison_elephant, Icons.Default.Pets),
+    ComparisonObject(7_500f, R.string.volume_comparison_truck, Icons.Default.LocalShipping),
+    ComparisonObject(12_000f, R.string.volume_comparison_bus, Icons.Default.DirectionsBus),
+    ComparisonObject(50_000f, R.string.volume_comparison_train, Icons.Default.Train),
+    ComparisonObject(80_000f, R.string.volume_comparison_airplane, Icons.Default.Flight),
+    ComparisonObject(2_000_000f, R.string.volume_comparison_shuttle, Icons.Default.RocketLaunch),
+)
+
+fun getVolumeComparison(totalVolume: Double, useImperialSystem: Boolean): VolumeComparison? {
+    if (totalVolume <= 0) return null
+    val volumeKg = if (useImperialSystem) totalVolume / 2.20462 else totalVolume
+    val best = volumeComparisonObjects.sortedByDescending { it.weightKg }
+        .firstOrNull { it.weightKg <= volumeKg }
+        ?: volumeComparisonObjects.minByOrNull { it.weightKg }!!
+    return VolumeComparison(
+        count = (volumeKg / best.weightKg).toFloat(),
+        nameResId = best.nameResId,
+        icon = best.icon
+    )
 }

@@ -25,6 +25,11 @@ service PhoneInfoService {
   rpc versionInfo(google.protobuf.Empty) returns (VersionInfo);
 }
 
+message WearCapabilities {
+  bool tempo_rom_tracking = 1;
+}
+
 service WearInfoService {
   rpc versionInfo(google.protobuf.Empty) returns (VersionInfo);
+  rpc getCapabilities(google.protobuf.Empty) returns (WearCapabilities);
 }

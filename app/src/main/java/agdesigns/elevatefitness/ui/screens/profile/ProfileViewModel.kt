@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.HealthConnectRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
+import agdesigns.elevatefitness.shared.grpc.WearInfoServiceGrpcKt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.Sex
@@ -11,7 +12,11 @@ import agdesigns.elevatefitness.data.db.entity.Theme
 import android.os.Build
 import android.net.Uri
 import android.util.Log
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.datalayer.phone.PhoneDataLayerAppHelper
+import com.google.protobuf.Empty
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.grpc.StatusException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
@@ -38,7 +43,13 @@ data class ProfileState(
     val autoOpenWear: Boolean = false,
     val isHealthConnectAvailable: Boolean = false,
     val hasHealthConnectPermissions: Boolean = false,
-    val hasSomeHealthConnectPermissions: Boolean = false
+    val hasSomeHealthConnectPermissions: Boolean = false,
+    val suggestRepsWeight: Boolean = true,
+    val suggestWorkoutModifications: Boolean = true,
+    val inRestHints: Boolean = true,
+    val tempoRomTracking: Boolean = false,
+    val hasConnectedWatch: Boolean = false,
+    val wearSupportsTempoRom: Boolean? = null,
 )
 
 sealed class ProfileEvent{
@@ -81,14 +92,26 @@ sealed class ProfileEvent{
     data class ImportPreferences(val fileUri: Uri): ProfileEvent()
 
     data object ResetOutcomeMessage: ProfileEvent()
+
     data object RefreshHealthConnectStatus : ProfileEvent()
+
+    data class ToggleSuggestRepsWeight(val newValue: Boolean): ProfileEvent()
+
+    data class ToggleSuggestWorkoutModifications(val newValue: Boolean): ProfileEvent()
+
+    data class ToggleInRestHints(val newValue: Boolean): ProfileEvent()
+
+    data class ToggleTempoRomTracking(val newValue: Boolean): ProfileEvent()
 }
 
+@OptIn(ExperimentalHorologistApi::class)
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
     private val preferences: PreferenceRepository,
-    private val healthConnectRepository: HealthConnectRepository
+    private val healthConnectRepository: HealthConnectRepository,
+    private val phoneDataLayerAppHelper: PhoneDataLayerAppHelper,
+    private val wearInfoService: WearInfoServiceGrpcKt.WearInfoServiceCoroutineStub,
 ): ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
@@ -120,6 +143,10 @@ class ProfileViewModel @Inject constructor(
                 preferences.getLanguage(),
                 preferences.getLockHorizontalScroll(),
                 preferences.getAutoOpenWear(),
+                preferences.getSuggestRepsWeight(),
+                preferences.getSuggestWorkoutModifications(),
+                preferences.getInRestHints(),
+                preferences.getTempoRomTracking(),
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -138,9 +165,31 @@ class ProfileViewModel @Inject constructor(
                         language = values[12] as String?,
                         lockHorizontalScroll = values[13] as Boolean,
                         autoOpenWear = values[14] as Boolean,
+                        suggestRepsWeight = values[15] as Boolean,
+                        suggestWorkoutModifications = values[16] as Boolean,
+                        inRestHints = values[17] as Boolean,
+                        tempoRomTracking = values[18] as Boolean,
                     )
                 }
             }.collect()
+        }
+        viewModelScope.launch {
+            val apiAvailable = phoneDataLayerAppHelper.isAvailable()
+
+            if (apiAvailable) {
+                try {
+                    val hasDevice = phoneDataLayerAppHelper.connectedNodes().isNotEmpty()
+                    _state.update { it.copy(hasConnectedWatch = hasDevice) }
+                    val canTempoRomTrack = wearInfoService.getCapabilities(Empty.getDefaultInstance()).tempoRomTracking
+                    _state.update {
+                        it.copy(
+                            wearSupportsTempoRom = canTempoRomTrack
+                        )
+                    }
+                } catch (e: StatusException) {
+                    Log.w("ProfileViewModel", "Watch capability check failed", e)
+                }
+            }
         }
         viewModelScope.launch {
             checkHealthConnectWeight()
@@ -322,6 +371,26 @@ class ProfileViewModel @Inject constructor(
                                 }
                             }
                     Log.d("ProfileViewModel", "ImportPreferences: $r")
+                }
+            }
+            is ProfileEvent.ToggleSuggestRepsWeight -> {
+                viewModelScope.launch {
+                    preferences.setSuggestRepsWeight(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleSuggestWorkoutModifications -> {
+                viewModelScope.launch {
+                    preferences.setSuggestWorkoutModifications(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleInRestHints -> {
+                viewModelScope.launch {
+                    preferences.setInRestHints(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleTempoRomTracking -> {
+                viewModelScope.launch {
+                    preferences.setTempoRomTracking(event.newValue)
                 }
             }
             is ProfileEvent.ResetOutcomeMessage -> {

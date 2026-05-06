@@ -18,6 +18,8 @@ message WorkoutStaticData {
   bool active_workout = 9;
   float previous_intensity = 10;
   repeated ProtoSuggestedModification suggested_modifications = 11;
+  bool smart_features_in_rest_hints = 12;
+  bool smart_features_tempo_rom_tracking = 13;
 }
 
 message ProtoSuggestedModification {
@@ -40,6 +42,18 @@ message WorkoutDynamicData {
   repeated int32 sets_done = 5;
 }
 
+enum WearRepTrackable {
+  NOT_TRACKABLE = 0;
+  ROTATION_MOVEMENT = 1;
+  SUPPORTED = 2;
+}
+
+enum FirstPhase {
+  AGAINST_GRAVITY = 0;
+  ALONG_GRAVITY = 1;
+  PARALLEL = 2;
+}
+
 message Exercise {
   int64 workout_exercise_id = 1;
   int64 program_exercise_id = 2;
@@ -53,6 +67,9 @@ message Exercise {
   int64 superset_exercise = 10;
   bool is_duration_based = 11;
   repeated string set_types = 12;
+  WearRepTrackable wear_rep_trackable = 13;
+  FirstPhase first_phase = 14;
+  int64 exercise_id = 15;  // only used to link exercise to Tempo/ROM tracking params
 }
 
 message SuggestedRepsWeight {
@@ -68,6 +85,24 @@ message DefaultIncrements {
   float cable = 5;
 }
 
+message ProtoRepMetrics {
+  int32 index = 1;
+  int64 concentric_ms = 2;
+  int64 eccentric_ms = 3;
+  float range_of_motion_m = 4;
+  float peak_velocity = 5;
+}
+
+message ProtoSetTrackingResult {
+  bool data_available = 1;
+  int32 detected_reps = 2;
+  int32 reported_reps = 3;
+  int64 avg_concentric_ms = 4;
+  int64 avg_eccentric_ms = 5;
+  float avg_range_of_motion_m = 6;
+  repeated ProtoRepMetrics reps = 7;
+}
+
 // Set completed from watch to be sent to phone
 message SetCompleted {
   int64 workout_id = 1;
@@ -77,6 +112,7 @@ message SetCompleted {
   float tare = 5;
   int64 rest = 6;
   google.protobuf.Timestamp rest_timestamp = 7;
+  ProtoSetTrackingResult setTracking = 8;
 }
 
 message SetCompletedResponse {

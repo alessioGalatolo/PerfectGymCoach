@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
+import agdesigns.elevatefitness.data.db.entity.TrackingResult
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
@@ -61,16 +62,40 @@ import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
 import agdesigns.elevatefitness.ui.common.CompletionCheckmark
 import agdesigns.elevatefitness.ui.common.GroupedCard
+import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
@@ -298,6 +323,29 @@ fun SharedTransitionScope.ExercisePages(
                 modifier = Modifier.padding(16.dp),
             )
         }
+        val haptic = LocalHapticFeedback.current
+        val restTimeSecs = currentExerciseState.restTimeSecs
+        val restCounterProgress = restCounterProgress
+        // content
+        if (restTimeSecs != null && restCounterProgress != null){
+            AdaptiveCircularTimer(
+                restTimeSecs,
+                restCounterProgress,
+                        Modifier.align(CenterHorizontally)
+            )
+            LaunchedEffect(restTimeSecs) {
+                // do not vibrate on 0L as this will be called multiple times with 0L
+                if (restTimeSecs == 2L || restTimeSecs == 3L) {
+                    haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                } else if (restTimeSecs == 1L) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    delay(1000)
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                }
+            }
+        }
         Box {
             this@Column.AnimatedVisibility(
                 visible = !containerTransitionFinished || currentExerciseState.isLoading,
@@ -325,6 +373,7 @@ fun SharedTransitionScope.ExercisePages(
                             )
                         },
                         setsDone = 0,
+                        trackingResult = null,
                         records = emptyList(),
                         imperialSystem = workoutState.imperialSystem,
                         workoutStarted = false,
@@ -390,6 +439,7 @@ fun SharedTransitionScope.ExercisePages(
                     } else {
                         ExercisePage(
                             isLoading = currentExerciseState.isLoading,
+                            trackingResult = pagesContent.ongoingRecords.getOrNull(page)?.trackingResults?.lastOrNull(),
                             modificationSuggestion = pagesContent.modificationsSuggestions[page],
                             exerciseNote = pagesContent.exercises[page].note,
                             supersetWith = when (pagesContent.exercises[page].supersetExercise) {
@@ -499,6 +549,7 @@ fun ExercisePage(
     isDurationBased: Boolean,
     repsWeightRows: List<SetDisplayRow>,
     setsDone: Int,
+    trackingResult: TrackingResult?,
     records: List<ExerciseRecordAndEquipment>,
     imperialSystem: Boolean,
     workoutStarted: Boolean,
@@ -507,7 +558,7 @@ fun ExercisePage(
     fabHeight: Dp,
     bottomPadding: Dp,
     modificationSuggestion: ModificationSuggestion?,
-    settingsMenu: @Composable (() -> Unit),
+    settingsMenu: @Composable () -> Unit,
     addSet: () -> Unit,
     updateRowValues: (Int, Float, Int) -> Unit,
     updateTare: (BarbellType) -> Unit,
@@ -518,7 +569,6 @@ fun ExercisePage(
     onAcceptSuggestion: () -> Unit,
     updateSetType: (Int, SetType) -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
     Column (Modifier.padding(horizontal = 16.dp)){
         if (exerciseNote.isNotBlank()) {
             Text(text = buildAnnotatedString {
@@ -527,26 +577,6 @@ fun ExercisePage(
                 }
                 append(exerciseNote)
             }, modifier = Modifier.align(CenterHorizontally))
-        }
-        // content
-        if (restTimeSecs != null && restCounterProgress != null){
-            AdaptiveCircularTimer(
-                restTimeSecs,
-                restCounterProgress,
-                Modifier.align(CenterHorizontally)
-            )
-            LaunchedEffect(restTimeSecs) {
-                // do not vibrate on 0L as this will be called multiple times with 0L
-                if (restTimeSecs == 2L || restTimeSecs == 3L) {
-                    haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
-                } else if (restTimeSecs == 1L) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    delay(1000)
-                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                }
-            }
         }
         SuggestModificationCard(
             isLoading = isLoading,
@@ -599,6 +629,10 @@ fun ExercisePage(
                             .fillMaxWidth()
                             .align(CenterHorizontally)
                     )
+                }
+
+                if (trackingResult != null && trackingResult.detectedReps > 0) {
+                    SetTrackingChart(trackingResult)
                 }
 
             }
@@ -817,7 +851,9 @@ fun SuggestModificationCard(
     hasDoneSomeSets: Boolean,
     modificationSuggestion: ModificationSuggestion?,
     onAcceptSuggestion: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // true when used to show the suggestion card in the profile section
+    disableActions: Boolean = false
 ) {
     var notToday by rememberSaveable { mutableStateOf(false) }
     AnimatedVisibility(
@@ -857,7 +893,11 @@ fun SuggestModificationCard(
                     style = MaterialTheme.typography.titleLarge
                 )
                 IconButton(
-                    { notToday = true },
+                    {
+                        if (!disableActions) {
+                            notToday = true
+                        }
+                    },
                     modifier = Modifier.padding(8.dp),
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -892,7 +932,11 @@ fun SuggestModificationCard(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = { notToday = true }) {
+                TextButton(onClick = {
+                    if (!disableActions) {
+                        notToday = true
+                    }
+                }) {
                     Text(text = stringResource(R.string.modification_suggestion_not_this_time))
                 }
                 Button(onClick = onAcceptSuggestion) {
@@ -1020,7 +1064,9 @@ fun WorkoutFinishPage(
             ), style = MaterialTheme.typography.titleLarge)
         TextButton(
             onClick = finishWorkout,
-            modifier = Modifier.padding(16.dp).fillMaxWidth()
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
         ) {
             CompletionCheckmark(
                 modifier = Modifier.size(140.dp)
@@ -1459,78 +1505,79 @@ fun WorkoutRepsWeightRow(
         val textColor =
             if (toBeDone) LocalContentColor.current else MaterialTheme.colorScheme.outline
         val unitString =
-            if (imperialSystem) stringResource(R.string.lb) else stringResource(
-                R.string.kg
-            )
+            if (imperialSystem) stringResource(R.string.lb) else stringResource(R.string.kg)
 
-        // Reps section
-        Text(
-            // FIXME: overflow in other languages
-            text = if (isDurationBased) {
-                stringResource(R.string.exercise_hold) + ": "
+        val autoAwesomeId = "auto_awesome"
+        val inlineContent = mapOf(
+            autoAwesomeId to InlineTextContent(
+                placeholder = Placeholder(16.sp, 16.sp, PlaceholderVerticalAlign.Center)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = textColor
+                )
+            }
+        )
+
+        val annotatedText = buildAnnotatedString {
+            val style = SpanStyle(color = textColor)
+
+            // Reps label
+            withStyle(style) {
+                append(
+                    if (isDurationBased) stringResource(R.string.exercise_hold) + ": "
+                    else stringResource(R.string.reps) + ": "
+                )
+            }
+
+            // Reps value struck through when a projection differs
+            val repsStruck = projectedReps != null && repsInRow != projectedReps
+            withStyle(style.copy(textDecoration = if (repsStruck) TextDecoration.LineThrough else TextDecoration.None)) {
+                append(repsInRow)
+            }
+
+            // Projected reps (icon + value)
+            if (repsStruck) {
+                appendInlineContent(autoAwesomeId)
+                withStyle(style) { append(projectedReps) }
+            }
+
+            // Reps suffix
+            withStyle(style) {
+                append(if (isDurationBased) "s " else " ")
+            }
+
+            // Weight label
+            withStyle(style) {
+                append(stringResource(R.string.weight) + ": ")
+            }
+
+            // Weight value, omitted when loading ("...") and a projection exists
+            if (projectedWeight == null || weightInRow != "...") {
+                val weightStruck = projectedWeight != null && weightInRow != projectedWeight
+                withStyle(style.copy(textDecoration = if (weightStruck) TextDecoration.LineThrough else TextDecoration.None)) {
+                    append(weightInRow)
+                }
+
+                // Projected weight (icon + value)
+                if (weightStruck) {
+                    appendInlineContent(autoAwesomeId)
+                    withStyle(style) { append(projectedWeight) }
+                }
             } else {
-                stringResource(R.string.reps) + ": "
-            },
-            color = textColor
-        )
-        Text(
-            text = repsInRow,
-            color = textColor,
-            textDecoration = if (projectedReps != null && repsInRow != projectedReps) TextDecoration.LineThrough else TextDecoration.None
-        )
-        if (projectedReps != null && repsInRow != projectedReps) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = textColor
-            )
-            Text(
-                text = projectedReps,
-                color = textColor
-            )
-        }
-        if (isDurationBased) {
-            Text(
-                "s ",
-                color = textColor
-            )
-        } else {
-            Text(
-                " ",
-                color = textColor
-            )
+                appendInlineContent(autoAwesomeId)
+                withStyle(style) { append(projectedWeight) }
+            }
+
+            // Unit
+            withStyle(style) { append(" $unitString") }
         }
 
-        // Weight section
         Text(
-            text = stringResource(R.string.weight) + ": ", // " Weight: "
-            color = textColor
-        )
-        if (projectedWeight == null || weightInRow != "...") {
-            Text(
-                text = weightInRow,
-                color = textColor,
-                textDecoration = if (projectedWeight != null && weightInRow != projectedWeight) TextDecoration.LineThrough else TextDecoration.None
-            )
-        }
-        if (projectedWeight != null && weightInRow != projectedWeight) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = textColor
-            )
-            Text(
-                text = projectedWeight,
-                color = textColor
-            )
-        }
-
-        // Unit
-        Text(
-            text = " $unitString",
-            color = textColor
+            text = annotatedText,
+            inlineContent = inlineContent
         )
     }
 }
@@ -1609,5 +1656,102 @@ fun WorkoutOverviewListItem(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SetTrackingChart(
+    result: TrackingResult,
+    baseShape: CornerBasedShape = MaterialTheme.shapes.small,
+    baseColor: Color = MaterialTheme.colorScheme.secondary,
+    thickness: Dp = 25.dp,
+    columnCollectionSpacing: Dp = 4.dp,
+) {
+    val modelProducer = remember { CartesianChartModelProducer() }
+    LaunchedEffect(result) {
+        val romValues = result.repMetrics.map { it.rangeOfMotionM * 100.0 }
+        val durationValues = result.repMetrics.map { (it.concentricMs + it.eccentricMs) }
+        modelProducer.runTransaction {
+            columnSeries { series(romValues) }
+            lineSeries { series(durationValues) }
+        }
+    }
+    val repFormatter = CartesianValueFormatter { _, x, _ -> "R${(x.toInt() + 1)}" }
+    val romFormatter = CartesianValueFormatter { _, y, _ -> "%.1f".format(y) }
+    val durFormatter = CartesianValueFormatter { _, y, _ -> "%.0f".format(y) }
+    Column {
+        Text(
+            stringResource(R.string.last_set_tracking_data),
+            style = MaterialTheme.typography.titleMediumEmphasized,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .padding(bottom = 8.dp)
+                .fillMaxWidth()
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(bottom = 4.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(Modifier
+                    .size(10.dp)
+                    .background(
+                        MaterialTheme.colorScheme.secondary,
+                        MaterialTheme.shapes.extraSmall
+                    ))
+                // TODO: convert cm to in when imperial?
+                Text(stringResource(R.string.rom_cm), style = MaterialTheme.typography.labelSmall)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(Modifier
+                    .size(10.dp)
+                    .background(MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.extraSmall))
+                Text(stringResource(R.string.duration_ms), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberColumnCartesianLayer(
+                    columnProvider = columnProviderWithHighlight(baseShape, baseColor, thickness),
+                    columnCollectionSpacing = columnCollectionSpacing,
+                    verticalAxisPosition = Axis.Position.Vertical.Start
+                ),
+                rememberLineCartesianLayer(
+                    lineProvider = LineCartesianLayer.LineProvider.series(
+                        listOf(
+                            LineCartesianLayer.rememberLine(LineCartesianLayer.LineFill.single(Fill(
+                                MaterialTheme.colorScheme.tertiary
+                            )))
+                        )
+                    ),
+                    verticalAxisPosition = Axis.Position.Vertical.End
+                ),
+                startAxis = VerticalAxis.rememberStart(
+                    line = rememberLineComponent(Fill.Transparent),
+                    tick = rememberLineComponent(Fill.Transparent),
+                    valueFormatter = romFormatter,
+                    itemPlacer = VerticalAxis.ItemPlacer.step(step = { 5.0 })
+                ),
+                endAxis = VerticalAxis.rememberEnd(
+                    line = rememberLineComponent(Fill.Transparent),
+                    tick = rememberLineComponent(Fill.Transparent),
+                    valueFormatter = durFormatter,
+                    guideline = null,
+                    itemPlacer = VerticalAxis.ItemPlacer.step(step = { 5.0 })
+                ),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    tick = rememberLineComponent(Fill.Transparent),
+                    guideline = rememberLineComponent(Fill.Transparent),
+                    valueFormatter = repFormatter,
+                ),
+            ),
+            modelProducer = modelProducer,
+            scrollState = rememberVicoScrollState(false),
+            animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp),
+        )
     }
 }

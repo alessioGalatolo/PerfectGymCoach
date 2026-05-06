@@ -1,8 +1,10 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.data.datastore.CalibrationDataStore
 import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.data.datastore.PermissionStateDataStore
 import agdesigns.elevatefitness.service.WorkoutService
+import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -18,9 +20,11 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -32,51 +36,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.jvm.java
-
-private val _hintAlarmFiredFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-class RestAlarmReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-
-        // Vibrate pattern
-        vibrator.vibrate(
-            VibrationEffect.createWaveform(
-                longArrayOf(0, 200, 800, 200, 800, 200, 800, 200, 1000),
-                -1
-            )
-        )
-    }
-}
-
-
-class HintAlarmReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-
-        // Vibrate pattern
-        vibrator.vibrate(
-            VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK)
-        )
-        _hintAlarmFiredFlow.tryEmit(Unit)
-    }
-}
 
 fun Context.exactAlarmPermissionFlow(): Flow<Boolean> = callbackFlow {
     // Only relevant on Android 12+
@@ -111,24 +76,73 @@ fun Context.exactAlarmPermissionFlow(): Flow<Boolean> = callbackFlow {
 @Singleton
 class WearRepository @Inject constructor(
     val permissionStateDataStore: PermissionStateDataStore,
+    val calibrationDataStore: CalibrationDataStore,
     @param:ApplicationContext private val context: Context
 ) {
-    // WorkoutViewModel needs to register this (very suboptimal)
+    // WorkoutViewModel needs to register this (very suboptimal),
+    // this is used when phone asks for Health data at the end of workout
     var getHealthData: () -> Workout.CompleteWorkout? = { null }
 
-    val hasExactAlarm = context.exactAlarmPermissionFlow()
+    var tempoRomTrackingEnabled = false
+    /* Alarm stuff */
+    private val _hintAlarmFiredFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val hintAlarmFiredFlow: SharedFlow<Unit> = _hintAlarmFiredFlow
+
+    val hasExactAlarm = context.exactAlarmPermissionFlow()
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    private val restAlarmAction = "agdesigns.elevatefitness.REST_ALARM"
+    private val restAlarmReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            // notify sensors so we can collect set data
+            startSetTracking()
+
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+
+            // Vibrate pattern
+            vibrator.vibrate(
+                VibrationEffect.createWaveform(
+                    longArrayOf(0, 200, 800, 200, 800, 200, 800, 200, 1000),
+                    -1
+                )
+            )
+        }
+    }
+
+    private val hintAlarmAction = "agdesigns.elevatefitness.HINT_ALARM"
+    private val hintAlarmReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+
+            // Vibrate pattern
+            vibrator.vibrate(
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK)
+            )
+            _hintAlarmFiredFlow.tryEmit(Unit)
+        }
+    }
 
     fun scheduleHintAlarm(durationMillis: Long = 2000) {
         cancelHintAlarm()
-        val intent = Intent(context, HintAlarmReceiver::class.java)
+        val intent = Intent(hintAlarmAction).setPackage(context.packageName)
         scheduleAlarm(intent, durationMillis)
     }
 
     fun scheduleRestAlarm(durationMillis: Long) {
         cancelRestAlarm()
-        val intent = Intent(context, RestAlarmReceiver::class.java)
+        val intent = Intent(restAlarmAction).setPackage(context.packageName)
         scheduleAlarm(intent, durationMillis)
     }
 
@@ -158,12 +172,12 @@ class WearRepository @Inject constructor(
     }
 
     fun cancelRestAlarm() {
-        val intent = Intent(context, RestAlarmReceiver::class.java)
+        val intent = Intent(restAlarmAction).setPackage(context.packageName)
         cancelAlarm(intent)
     }
 
     fun cancelHintAlarm() {
-        val intent = Intent(context, HintAlarmReceiver::class.java)
+        val intent = Intent(hintAlarmAction).setPackage(context.packageName)
         cancelAlarm(intent)
     }
 
@@ -180,13 +194,82 @@ class WearRepository @Inject constructor(
         }
     }
 
-    // The remaining variables are related to the binding/monitoring/interacting with the
-    // service that gathers all the data to calculate walking points.
-    private var foregroundOnlyServiceBound = false
+    fun registerAlarmReceivers() {
+        val restAlarmFilter = IntentFilter(restAlarmAction)
+        ContextCompat.registerReceiver(
+            context,
+            restAlarmReceiver,
+            restAlarmFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        val hintAlarmFilter = IntentFilter(hintAlarmAction)
+        ContextCompat.registerReceiver(
+            context,
+            hintAlarmReceiver,
+            hintAlarmFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    fun unregisterAlarmReceivers() {
+        try {
+            context.unregisterReceiver(restAlarmReceiver)
+            context.unregisterReceiver(hintAlarmReceiver)
+        } catch (e: IllegalArgumentException) {
+            Log.w("WearRepository", "Error unregistering alarm receivers", e)
+        }
+    }
+
+    /* Stuff for tracking reps / tempo / rom */
+    fun stopSetTracking() {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            service.filterNotNull().first().stopSetTracking()
+        }
+    }
+
+    fun initSetTracking(
+        exerciseId: Long,
+        wearRepTrackable: Workout.WearRepTrackable,
+        firstPhase: Workout.FirstPhase
+    ) {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            service.filterNotNull().first().initSetTracking(exerciseId, wearRepTrackable, firstPhase)
+        }
+    }
+
+    fun startSetTracking() {
+        if (!tempoRomTrackingEnabled) return
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            service.filterNotNull().first().startSetTracking()
+        }
+    }
+
+    fun setTrackingTruthAndGetResults(exerciseId: Long, groundTruthReps: Int): RepAndTempoCounter.SetResult? {
+        return service.value?.setTrackingTruthAndGetResults(exerciseId, groundTruthReps)
+    }
+
+    suspend fun runCalibration(durationMs: Long = 5000L) {
+        val calibrationResult = service.filterNotNull().first().runCalibration(durationMs)
+        if (calibrationResult.size != 3) return
+        calibrationDataStore.saveCalibration(
+            calibrationResult[0],
+            calibrationResult[1],
+            calibrationResult[2]
+        )
+    }
+
     private val _service = MutableStateFlow<WorkoutService?>(null)
     val service: StateFlow<WorkoutService?> = _service
 
-    var foregroundOnlyWalkingWorkoutService: WorkoutService? = null
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val repCountFlow: Flow<Int?> = service.flatMapLatest { svc ->
+        svc?.repCountFlow() ?: flowOf(null)
+    }
+
+    /* Other stuff */
+    private var foregroundOnlyServiceBound = false
+
+    var foregroundOnlyWorkoutService: WorkoutService? = null
         private set
 
     val scrollToExerciseChannel = Channel<Int>()
@@ -201,19 +284,19 @@ class WearRepository @Inject constructor(
     }
 
     fun handleStopWorkout() {
-        foregroundOnlyWalkingWorkoutService?.stopWorkout()
+        foregroundOnlyWorkoutService?.stopWorkout()
     }
 
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             val binder = service as WorkoutService.LocalBinder
-            foregroundOnlyWalkingWorkoutService = binder.workoutService
+            foregroundOnlyWorkoutService = binder.workoutService
             foregroundOnlyServiceBound = true
-            _service.value = foregroundOnlyWalkingWorkoutService
+            _service.value = foregroundOnlyWorkoutService
         }
         override fun onServiceDisconnected(name: ComponentName) {
-            foregroundOnlyWalkingWorkoutService = null
+            foregroundOnlyWorkoutService = null
             foregroundOnlyServiceBound = false
             _service.value = null
         }
@@ -221,13 +304,16 @@ class WearRepository @Inject constructor(
 
     suspend fun startWorkout() {
         service.filterNotNull().first().startWorkout()
+        registerAlarmReceivers()
     }
 
     fun stopWorkout() {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             service.filterNotNull().first().stopWorkout()
         }
+        unregisterAlarmReceivers()
     }
+
     fun bindForegroundOnlyService() {
         val intent = Intent(context, WorkoutService::class.java)
         // If it's a foreground service that must actually run, start it as well:
@@ -250,9 +336,16 @@ class WearRepository @Inject constructor(
         // For Singleton instantiation
         @Volatile private var instance: WearRepository? = null
 
-        fun getInstance(permissionStateDataStore: PermissionStateDataStore, context: Context) =
-            instance ?: synchronized(this) {
-                instance ?: WearRepository(permissionStateDataStore, context).also { instance = it }
-            }
+        fun getInstance(
+            permissionStateDataStore: PermissionStateDataStore,
+            calibrationDataStore: CalibrationDataStore,
+            context: Context
+        ) = instance ?: synchronized(this) {
+            instance ?: WearRepository(
+                permissionStateDataStore,
+                calibrationDataStore,
+                context
+            ).also { instance = it }
+        }
     }
 }

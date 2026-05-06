@@ -12,8 +12,10 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord.WorkoutIntensity
 import agdesigns.elevatefitness.ui.common.BestColumnKey
 import agdesigns.elevatefitness.ui.common.MeanLineKey
+import agdesigns.elevatefitness.utils.VolumeComparison
 import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
+import agdesigns.elevatefitness.utils.getVolumeComparison
 import android.util.Log
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.SetType
@@ -65,7 +67,8 @@ data class StatisticsState(
     val allExerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     val allWorkouts: List<WorkoutRecord> = emptyList(),
     val progressTextRes: Int = R.string.stats_loading_generic,
-    val volumeIndex2Date: Map<Int, String> = emptyMap()
+    val volumeIndex2Date: Map<Int, String> = emptyMap(),
+    val volumeComparison: VolumeComparison? = null
 )
 
 data class ExerciseStats(
@@ -195,14 +198,11 @@ class StatisticsViewModel @Inject constructor(
             // Calculate basic metrics
             _state.update { it.copy(progressTextRes = R.string.stats_loading_computing) }
             val totalWorkouts = workoutsDateFiltered.size
-            val totalVolume = maybeKgToLb(recordsDateFiltered.sumOf {
-                computeVolume(
-                    it.weights,
-                    it.reps,
-                    it.tare,
-                    it.equipment
-                ).toDouble()
-            }, state.value.useImperialSystem)
+            val rawVolumeKg = recordsDateFiltered.sumOf {
+                computeVolume(it.weights, it.reps, it.tare, it.equipment).toDouble()
+            }
+            val totalVolume = maybeKgToLb(rawVolumeKg, state.value.useImperialSystem)
+            val volumeComparison = getVolumeComparison(rawVolumeKg, false)
             val avgDuration = if (workoutsDateFiltered.isNotEmpty()) {
                 workoutsDateFiltered.map { it.durationSeconds }.average().toLong()
             } else 0L
@@ -277,7 +277,8 @@ class StatisticsViewModel @Inject constructor(
                     recentPRs = recentPRs,
                     equipmentUsage = equipmentUsage,
                     progressTextRes = R.string.stats_loading_done,
-                    volumeChartData = volumeProgressions
+                    volumeChartData = volumeProgressions,
+                    volumeComparison = volumeComparison
                 )
             }
             Log.d("StatisticsViewModel", "Statistics computed successfully")
@@ -493,7 +494,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(60, 90),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.WARMUP, SetType.NORMAL)
+                setTypes = listOf(SetType.WARMUP, SetType.NORMAL),
+                trackingResults = List(2) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 2L,
@@ -510,7 +512,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(90),
                 equipment = Equipment.DUMBBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL),
+                trackingResults = List(1) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 3L,
@@ -527,7 +530,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(120),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL),
+                trackingResults = List(1) { null }
             ),
 
             // This month
@@ -546,7 +550,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(90),
                 equipment = Equipment.DUMBBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL),
+                trackingResults = List(1) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 5L,
@@ -563,7 +568,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(90, 120),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.WARMUP, SetType.NORMAL)
+                setTypes = listOf(SetType.WARMUP, SetType.NORMAL),
+                trackingResults = List(2) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 6L,
@@ -580,7 +586,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(60),
                 equipment = Equipment.MACHINE,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.WARMUP)
+                setTypes = listOf(SetType.WARMUP),
+                trackingResults = List(1) { null }
             ),
 
             // Older but still relevant
@@ -599,7 +606,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(90),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL),
+                trackingResults = List(1) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 8L,
@@ -616,7 +624,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(75),
                 equipment = Equipment.DUMBBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL),
+                trackingResults = List(1) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 9L,
@@ -633,7 +642,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(90, 90),
                 equipment = Equipment.CABLES,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL, SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL, SetType.NORMAL),
+                trackingResults = List(2) { null }
             ),
 
             // Variety / Distribution
@@ -652,7 +662,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(150),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL),
+                trackingResults = List(1) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 11L,
@@ -669,7 +680,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(120, 150, 180),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL, SetType.NORMAL, SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL, SetType.NORMAL, SetType.NORMAL),
+                trackingResults = List(3) { null }
             ),
 
             // Edge case: old record
@@ -688,7 +700,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(90),
                 equipment = Equipment.MACHINE,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.NORMAL)
+                setTypes = listOf(SetType.NORMAL),
+                trackingResults = List(1) { null }
             ),
 
             // Invalid edge cases (included for filtering tests)
@@ -707,7 +720,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(90),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf(SetType.DROP_SET)
+                setTypes = listOf(SetType.DROP_SET),
+                trackingResults = List(1) { null }
             ),
             ExerciseRecordAndEquipment(
                 recordId = 14L,
@@ -724,7 +738,8 @@ class StatisticsViewModel @Inject constructor(
                 rest = listOf(),
                 equipment = Equipment.BARBELL,
                 overriddenDurationBased = false,
-                setTypes = listOf()
+                setTypes = listOf(),
+                trackingResults = listOf()
             )
         )
     }

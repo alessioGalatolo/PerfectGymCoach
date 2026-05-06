@@ -73,7 +73,11 @@ data class WorkoutExercise (
     val userDefined: Boolean = false,
     @ColumnInfo(defaultValue = "0")
     val overriddenDurationBased: Boolean,
-    val setTypes: List<SetType>? = null
+    val setTypes: List<SetType>? = null,
+    @ColumnInfo(defaultValue = "NOT_TRACKABLE")
+    val wearRepTrackable: Exercise.WearRepTrackable = Exercise.WearRepTrackable.NOT_TRACKABLE,
+    @ColumnInfo(defaultValue = "AGAINST_GRAVITY")
+    val firstPhase: Exercise.FirstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)
@@ -98,6 +102,9 @@ data class WorkoutExercise (
             .setSupersetExercise(this.supersetExercise ?: 0L)
             .setIsDurationBased(this.overriddenDurationBased)
             .addAllSetTypes(this.setTypes?.map { it.nameResKey } ?: emptyList())
+            .setWearRepTrackable(this.wearRepTrackable.toProto())
+            .setFirstPhase(this.firstPhase.toProto())
+            .setExerciseId(this.extExerciseId)
             .build()
     }
 }

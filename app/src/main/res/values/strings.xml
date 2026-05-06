@@ -766,6 +766,19 @@
     <string name="stats_loading_equipment">Computing equipment usage…</string>
     <string name="stats_loading_done">Done!</string>
     <string name="stats_loading_generic">Loading records…</string>
+    <string name="volume_comparison_text">This is the equivalent of</string>
+    <string name="volume_comparison_cat">house cats</string>
+    <string name="volume_comparison_bicycle">bicycles</string>
+    <string name="volume_comparison_person">adult humans</string>
+    <string name="volume_comparison_motorcycle">motorcycles</string>
+    <string name="volume_comparison_bear">grizzly bears</string>
+    <string name="volume_comparison_car">cars</string>
+    <string name="volume_comparison_elephant">African elephants</string>
+    <string name="volume_comparison_truck">delivery trucks</string>
+    <string name="volume_comparison_bus">school buses</string>
+    <string name="volume_comparison_train">train carriages</string>
+    <string name="volume_comparison_airplane">airplanes</string>
+    <string name="volume_comparison_shuttle">space shuttles</string>
     <string name="what_is_your_name">What\'s your name?</string>
 <!--    Workout Card-->
     <string name="sets">Sets</string>
@@ -859,6 +872,16 @@
     <string name="modification_suggestion_desc_replace">Last time you replaced this exercise with: %1$s</string>
     <string name="modification_suggestion_not_this_time">Not this time</string>
     <string name="modification_suggestion_do_it">Okay!</string>
+
+    <!-- Smart features -->
+    <string name="smart_features_title">Smart features</string>
+    <string name="suggest_reps_weight">Suggest reps and weight in workout</string>
+    <string name="suggest_workout_modifications">Suggest workout modifications based on previous sessions</string>
+    <string name="in_rest_hints_wear">Wearable: guidance between sets on changing weight, reps, etc.</string>
+    <string name="tempo_rom_tracking_wear">Wearable: tempo and ROM tracking for each single set (experimental, only supported exercises)</string>
+    <string name="requires_connected_watch">Requires a connected wearable</string>
+    <string name="requires_compatible_wearable">This feature requires a connected compatible wearable</string>
+
     <string name="exercise_type_hold">Isometric</string>
     <string name="exercise_type_reps">Traditional</string>
     <string name="exercise_type">Exercise type: </string>
@@ -896,6 +919,9 @@
     <string name="n_min">%1$sm</string>
     <string name="days_ago">" ~ %1$d days ago"</string>
     <string name="bottom_bar_current">" (current)"</string>
+    <string name="last_set_tracking_data">Last set tracking data</string>
+    <string name="rom_cm">ROM (cm)</string>
+    <string name="duration_ms">Duration (ms)</string>
 
 
 </resources>

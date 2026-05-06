@@ -1,9 +1,11 @@
 package agdesigns.elevatefitness.presentation.screens.workout
 
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.presentation.screens.workout.components.CalibrationScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.EndWorkoutPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingWorkoutScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.MediaPlayingPage
+import agdesigns.elevatefitness.presentation.screens.workout.components.RepsTempoPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.WorkoutPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +32,7 @@ import androidx.wear.compose.foundation.AmbientMode
 import androidx.wear.compose.foundation.LocalAmbientModeManager
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.pager.HorizontalPager
+import androidx.wear.compose.foundation.pager.VerticalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
@@ -156,12 +159,35 @@ fun Workout(
             terminate()
         }
     }
+    val showCalibrationOverlay = state.needsCalibration || state.calibrationInProgress || state.calibrationComplete
     if (exercisesState.exercises.isNotEmpty()) {
         LaunchedEffect(Unit) {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         }
-        val pagerState = rememberPagerState(initialPage = 1) {
+        val mainPagerState = rememberPagerState(initialPage = 1) {
             if (mediaState.title == null) 2 else 3
+        }
+        val setTrackingPagerState = rememberPagerState {
+            if (exercisesState.tempoRomTrackingEnabled)
+                2
+            else
+                1
+        }
+
+        // hint at user that we have a set tracking page, but only once
+        var hasHintedAtSetTrackingPager by rememberSaveable {
+            mutableStateOf(false)
+        }
+        val isInRest = state.ongoingRestSecs?.let { it > 0L } ?: false
+        LaunchedEffect(isInRest, hasHintedAtSetTrackingPager) {
+            if (!hasHintedAtSetTrackingPager && setTrackingPagerState.pageCount > 1) {
+                if (isInRest) {
+                    delay(2000)
+                    setTrackingPagerState.animateScrollToPage(1, -0.5f)
+                    setTrackingPagerState.animateScrollToPage(0)
+                    hasHintedAtSetTrackingPager = true
+                }
+            }
         }
         val text = OpenOnPhoneDialogDefaults.text
         val style = OpenOnPhoneDialogDefaults.curvedTextStyle
@@ -177,17 +203,17 @@ fun Workout(
             modifier = Modifier.background(Color.Transparent),
             scrollState = listState,
             timeText = {
-                if (pagerState.currentPage != 0) {
+                if (mainPagerState.currentPage != 0) {
                     TimeText()
                 }
             },
         ) { contentPadding ->
             HorizontalPagerScaffold(
-                pagerState = pagerState,
-                pageIndicator = { HorizontalPageIndicator(pagerState = pagerState) },
+                pagerState = mainPagerState,
+                pageIndicator = { HorizontalPageIndicator(pagerState = mainPagerState) },
             ) {
                 HorizontalPager(
-                    pagerState,
+                    mainPagerState,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     when (page) {
@@ -216,40 +242,52 @@ fun Workout(
                             }
                         )
 
-                        1 -> WorkoutPage(
-                            contentPadding,
-                            workoutState = state,
-                            exercisesState = exercisesState,
-                            listState = listState,
-                            ambientMode = ambientMode,
-                            acceptModification = {
-                                viewModel.onEvent(WorkoutEvent.AcceptModification(it))
-                            },
-                            dismissModification = {
-                                viewModel.onEvent(WorkoutEvent.DismissModification(it))
-                            },
-                            resetRest = {
-                                viewModel.onEvent(WorkoutEvent.ResetRest)
-                            },
-                            startRest = {
-                                viewModel.onEvent(WorkoutEvent.StartRest)
-                            },
-                            onNextExercise = {
-                                viewModel.onEvent(WorkoutEvent.NextExercise)
-                            },
-                            onPreviousExercise = {
-                                viewModel.onEvent(WorkoutEvent.PreviousExercise)
-                            },
-                            onDismissHint = {
-                                viewModel.onEvent(WorkoutEvent.DismissHint)
-                            },
-                            onAddSet = {
-                                viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise)
-                            },
-                            onExtendRest = {
-                                viewModel.onEvent(WorkoutEvent.ExtendRest())
-                            },
-                        )
+                        1 -> VerticalPager(
+                            state = setTrackingPagerState,
+                        ) { verticalPage ->
+                            when (verticalPage) {
+                                1 -> RepsTempoPage(
+                                    state,
+                                    setTrackingPagerState,
+                                    setResult = state.lastSetResult
+                                )
+
+                                else -> WorkoutPage(
+                                    contentPadding,
+                                    workoutState = state,
+                                    exercisesState = exercisesState,
+                                    listState = listState,
+                                    ambientMode = ambientMode,
+                                    acceptModification = {
+                                        viewModel.onEvent(WorkoutEvent.AcceptModification(it))
+                                    },
+                                    dismissModification = {
+                                        viewModel.onEvent(WorkoutEvent.DismissModification(it))
+                                    },
+                                    resetRest = {
+                                        viewModel.onEvent(WorkoutEvent.ResetRest)
+                                    },
+                                    startRest = {
+                                        viewModel.onEvent(WorkoutEvent.StartRest)
+                                    },
+                                    onNextExercise = {
+                                        viewModel.onEvent(WorkoutEvent.NextExercise)
+                                    },
+                                    onPreviousExercise = {
+                                        viewModel.onEvent(WorkoutEvent.PreviousExercise)
+                                    },
+                                    onDismissHint = {
+                                        viewModel.onEvent(WorkoutEvent.DismissHint)
+                                    },
+                                    onAddSet = {
+                                        viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise)
+                                    },
+                                    onExtendRest = {
+                                        viewModel.onEvent(WorkoutEvent.ExtendRest())
+                                    },
+                                )
+                            }
+                        }
 
                         2 -> MediaPlayingPage(
                             mediaState,
@@ -273,6 +311,15 @@ fun Workout(
     } else {
         LoadingWorkoutScreen(
             onBack
+        )
+    }
+    if (showCalibrationOverlay) {
+        CalibrationScreen(
+            isCalibrating = state.calibrationInProgress,
+            progress = state.calibrationProgress,
+            isComplete = state.calibrationComplete,
+            onStart = { viewModel.onEvent(WorkoutEvent.StartCalibration) },
+            onDismiss = { viewModel.onEvent(WorkoutEvent.DismissCalibration) },
         )
     }
 }

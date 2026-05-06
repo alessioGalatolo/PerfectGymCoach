@@ -138,7 +138,9 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                     "",
                                 userDefined = state.value.exercise!!.userDefined,
                                 overriddenDurationBased = state.value.overriddenDurationBased,
-                                setTypes = state.value.setTypesArray
+                                setTypes = state.value.setTypesArray,
+                                wearRepTrackable = state.value.exercise!!.wearRepTrackable,
+                                firstPhase = state.value.exercise!!.firstPhase
                             )
                         )
                     }

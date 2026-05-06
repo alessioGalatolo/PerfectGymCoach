@@ -8,7 +8,9 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.SetType
+import agdesigns.elevatefitness.shared.grpc.Workout
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 import java.time.ZonedDateTime
 
 @Parcelize
@@ -56,7 +58,8 @@ data class ExerciseRecord(
     val barbellTypeResKey: String = "",
     @ColumnInfo(defaultValue = "0")
     val overriddenDurationBased: Boolean,
-    val setTypes: List<SetType>? = null
+    val setTypes: List<SetType>? = null,
+    val trackingResults: List<TrackingResult?>,
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
@@ -80,7 +83,8 @@ data class ExerciseRecordAndEquipment(
     val rest: List<Int>,
     val equipment: Equipment,
     val overriddenDurationBased: Boolean,
-    val setTypes: List<SetType>?
+    val setTypes: List<SetType>?,
+    val trackingResults: List<TrackingResult?>,
 ) : Parcelable {
     val variationResource: Int
         get() = getVariation(variationResKey)
@@ -124,3 +128,40 @@ data class ExerciseRecordAndInfo(
         get() = getVariation(variationResKey)
 
 }
+
+@Serializable
+@Parcelize
+data class RepMetric(
+    val index: Int,
+    val concentricMs: Long,
+    val eccentricMs: Long,
+    val rangeOfMotionM: Float,
+    val peakVelocity: Float
+): Parcelable
+
+fun Workout.ProtoRepMetrics.toRepMetric() = RepMetric(
+    index = index,
+    concentricMs = concentricMs,
+    eccentricMs = eccentricMs,
+    rangeOfMotionM = rangeOfMotionM,
+    peakVelocity = peakVelocity
+)
+
+@Serializable
+@Parcelize
+data class TrackingResult(
+    val detectedReps: Int,
+    val avgConcentricMs: Long,
+    val avgEccentricMs: Long,
+    val avgRangeOfMotionM: Float,
+    val repMetrics: List<RepMetric>
+): Parcelable
+
+fun Workout.ProtoSetTrackingResult.toTrackingResult() = if (dataAvailable)
+    TrackingResult(
+        detectedReps = detectedReps,
+        avgConcentricMs = avgConcentricMs,
+        avgEccentricMs = avgEccentricMs,
+        avgRangeOfMotionM = avgRangeOfMotionM,
+        repMetrics = repsList.map { it.toRepMetric() }
+    ) else null

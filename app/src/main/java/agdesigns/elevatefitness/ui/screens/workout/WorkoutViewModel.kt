@@ -16,6 +16,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
+import agdesigns.elevatefitness.data.db.entity.toTrackingResult
 import agdesigns.elevatefitness.service.NotificationService
 import agdesigns.elevatefitness.service.WorkoutNotificationState
 import agdesigns.elevatefitness.utils.computeVolume
@@ -34,7 +35,6 @@ import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.data.WearDataLayerRegistry
 import com.google.protobuf.Empty
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -163,7 +163,9 @@ data class WorkoutState(
     val tares: List<Float> = emptyList(),
     val selectedBarbells: List<BarbellType?> = emptyList(),
     val canPostPromotedNotifications: Boolean = false,
-    val lastWorkoutModifications: List<WorkoutRecord.WorkoutModification> = emptyList()
+    val lastWorkoutModifications: List<WorkoutRecord.WorkoutModification> = emptyList(),
+    val suggestRepsWeight: Boolean = true,
+    val suggestWorkoutModifications: Boolean = true,
 )
 
 sealed class WorkoutEffect {
@@ -283,6 +285,8 @@ class WorkoutViewModel @Inject constructor(
         workoutState.map { it.workoutId }.distinctUntilChanged(),
         workoutState.map { it.tares }.distinctUntilChanged(),
         workoutState.map { it.lastWorkoutModifications }.distinctUntilChanged(),
+        workoutState.map { it.suggestRepsWeight }.distinctUntilChanged(),
+        workoutState.map { it.suggestWorkoutModifications }.distinctUntilChanged(),
     ) { values ->
         /**
          * Glocal stuff for pages, precompute all so that pager can cache stuff
@@ -295,6 +299,8 @@ class WorkoutViewModel @Inject constructor(
         val workoutId = values[3] as Long
         val tares = values[4] as List<Float>
         val modifications = values[5] as List<WorkoutRecord.WorkoutModification>
+        val suggestRepsWeight = values[6] as Boolean
+        val suggestWorkoutModifications = values[7] as Boolean
         val recordsAndOngoingForAllExercises = exercises.mapIndexed { index, exercise ->
             getUpdatedRecords(exercise, records, index, workoutId)
         }
@@ -381,23 +387,25 @@ class WorkoutViewModel @Inject constructor(
                             } else {
                                 "..."
                             }
-                        projectedReps = computeNextRep(
-                            exercise,
-                            allRecords,
-                            (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
-                            setCount
-                        )?.toString()
-                        projectedWeight = computeNextWeight(
-                            recordsToDisplay = allRecords,
-                            ongoingLastWeight = (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
-                            setsDone = setCount,
-                            barbellDiff = barbellDiff,
-                            imperialSystem = imperialSystem,
-                            setTypes = exercise.setTypes,
-                            isUpcomingSet = isUpcomingSet,
-                            isPyramid = isPyramid,
-                            increment = exerciseIncrement
-                        )?.toString()
+                        if (suggestRepsWeight) {
+                            projectedReps = computeNextRep(
+                                exercise,
+                                allRecords,
+                                (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
+                                setCount
+                            )?.toString()
+                            projectedWeight = computeNextWeight(
+                                recordsToDisplay = allRecords,
+                                ongoingLastWeight = (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
+                                setsDone = setCount,
+                                barbellDiff = barbellDiff,
+                                imperialSystem = imperialSystem,
+                                setTypes = exercise.setTypes,
+                                isUpcomingSet = isUpcomingSet,
+                                isPyramid = isPyramid,
+                                increment = exerciseIncrement
+                            )?.toString()
+                        }
                     } else {
                         // if ongoingRecord is null, it should go in the other branch anyway
                         repsInRow =
@@ -445,41 +453,43 @@ class WorkoutViewModel @Inject constructor(
         }
         // compute modifications, this is a bit slow
         val newSuggestions = List<ModificationSuggestion?>(exercises.size) { null }.toMutableList()
-        val modificationsByProgramExercise = modifications.groupBy { it.sourceProgramExerciseId }
-        val modificationsByExercise = modifications.groupBy { it.sourceExerciseId }
-        for (i in exercises.indices) {
-            val exercise = exercises.getOrNull(i)
-            if (exercise == null) {
-                newSuggestions[i] = null
-                continue
-            }
-            if (exercise.extProgramExerciseId != null) {
-                modificationsByProgramExercise[exercise.extProgramExerciseId]
-                    ?.firstOrNull()
-                    ?.let {
-                        val newWorkoutExercise = it.targetWorkoutExerciseId?.let {
-                            repository.getWorkoutExercise(it).first()
-                        }
-                        newSuggestions[i] = ModificationSuggestion(
-                            type = it.modificationType,
-                            originalModification = it,
-                            newWorkoutExercise = newWorkoutExercise
-                        )
-                        continue
-                    }
-            }
-            if (exercise.extProgramExerciseId == null) {
-                modificationsByExercise[exercise.extExerciseId]
-                    ?.firstOrNull()
-                    ?.let {
-                        newSuggestions[i] = ModificationSuggestion(
-                            type = it.modificationType,
-                            originalModification = it,
-                            newWorkoutExercise = it.targetWorkoutExerciseId?.let {
+        if (suggestWorkoutModifications) {
+            val modificationsByProgramExercise = modifications.groupBy { it.sourceProgramExerciseId }
+            val modificationsByExercise = modifications.groupBy { it.sourceExerciseId }
+            for (i in exercises.indices) {
+                val exercise = exercises.getOrNull(i)
+                if (exercise == null) {
+                    newSuggestions[i] = null
+                    continue
+                }
+                if (exercise.extProgramExerciseId != null) {
+                    modificationsByProgramExercise[exercise.extProgramExerciseId]
+                        ?.firstOrNull()
+                        ?.let {
+                            val newWorkoutExercise = it.targetWorkoutExerciseId?.let {
                                 repository.getWorkoutExercise(it).first()
                             }
-                        )
-                    }
+                            newSuggestions[i] = ModificationSuggestion(
+                                type = it.modificationType,
+                                originalModification = it,
+                                newWorkoutExercise = newWorkoutExercise
+                            )
+                            continue
+                        }
+                }
+                if (exercise.extProgramExerciseId == null) {
+                    modificationsByExercise[exercise.extExerciseId]
+                        ?.firstOrNull()
+                        ?.let {
+                            newSuggestions[i] = ModificationSuggestion(
+                                type = it.modificationType,
+                                originalModification = it,
+                                newWorkoutExercise = it.targetWorkoutExerciseId?.let {
+                                    repository.getWorkoutExercise(it).first()
+                                }
+                            )
+                        }
+                }
             }
         }
         _currentExerciseState.update {
@@ -705,7 +715,9 @@ class WorkoutViewModel @Inject constructor(
                                 supersetExercise = it.supersetExercise,
                                 userDefined = it.userDefined,
                                 overriddenDurationBased = it.overriddenDurationBased,
-                                setTypes = it.setTypes
+                                setTypes = it.setTypes,
+                                wearRepTrackable = it.wearRepTrackable,
+                                firstPhase = it.firstPhase,
                             )
                         }
                         // add workout exercises to db
@@ -812,9 +824,9 @@ class WorkoutViewModel @Inject constructor(
                     completeSet(
                         exercise = exercise,
                         exerciseRest = exerciseRest,
+                        restTimestamp = restTimestamp,
                         reps = currentExerciseState.value.repsBottomBar.toInt(),
                         weight = currentExerciseState.value.weightBottomBar.toFloat(),
-                        restTimestamp = restTimestamp
                     )
                     _effects.trySend(
                         WorkoutEffect.AdvancePage(exerciseToScrollTo)
@@ -977,7 +989,8 @@ class WorkoutViewModel @Inject constructor(
                             tare = record.tare,
                             barbellTypeResKey = record.barbellTypeResKey,
                             overriddenDurationBased = record.overriddenDurationBased,
-                            setTypes = record.setTypes
+                            setTypes = record.setTypes,
+                            trackingResults = record.trackingResults
                         )
                     )
                 }
@@ -997,8 +1010,10 @@ class WorkoutViewModel @Inject constructor(
                         Log.e("WorkoutViewModel", "Tried to delete a set that does not exist")
                         return@launch
                     }
+                    val trackingResults = record.trackingResults.toMutableList()
                     reps.removeAt(event.set)
                     weights.removeAt(event.set)
+                    trackingResults.removeAt(event.set)
                     if (reps.isEmpty()) {
                         // delete record instead
                         repository.deleteExerciseRecord(record.recordId)
@@ -1019,7 +1034,8 @@ class WorkoutViewModel @Inject constructor(
                                 tare = record.tare,
                                 barbellTypeResKey = record.barbellTypeResKey,
                                 overriddenDurationBased = record.overriddenDurationBased,
-                                setTypes = record.setTypes
+                                setTypes = record.setTypes,
+                                trackingResults = trackingResults
                             )
                         )
                     }
@@ -1588,7 +1604,8 @@ class WorkoutViewModel @Inject constructor(
         restTimestamp: ZonedDateTime?,
         reps: Int,
         weight: Float,
-        tare: Float? = null
+        tare: Float? = null,
+        trackingResult: Workout.ProtoSetTrackingResult? = null
     ) {
         if (completeSetJob?.isActive == true)
             return
@@ -1630,7 +1647,8 @@ class WorkoutViewModel @Inject constructor(
                         tare = oldTare,
                         barbellTypeResKey = barbellTypeResKey,
                         overriddenDurationBased = exercise.overriddenDurationBased,
-                        setTypes = exercise.setTypes
+                        setTypes = exercise.setTypes,
+                        trackingResults = listOf(trackingResult?.toTrackingResult())
                     )
                 )
             } else {
@@ -1653,7 +1671,8 @@ class WorkoutViewModel @Inject constructor(
                         tare = oldTare,  // allow user to change the initial tare, in case they selected wrong one
                         barbellTypeResKey = barbellTypeResKey,
                         overriddenDurationBased = record.overriddenDurationBased,
-                        setTypes = record.setTypes
+                        setTypes = record.setTypes,
+                        trackingResults = record.trackingResults.plus(trackingResult?.toTrackingResult())
                     )
                 )
             }
@@ -1674,7 +1693,9 @@ class WorkoutViewModel @Inject constructor(
                 workoutState.map { it.incrementMachine }.distinctUntilChanged(),
                 workoutState.map { it.imperialSystem }.distinctUntilChanged(),
                 workoutState.map { it.lastWorkoutIntensity }.distinctUntilChanged(),
-                pagesContent.map { it.modificationsSuggestions }.distinctUntilChanged()
+                pagesContent.map { it.modificationsSuggestions }.distinctUntilChanged(),
+                preferences.getInRestHints().distinctUntilChanged(),
+                preferences.getTempoRomTracking().distinctUntilChanged(),
             ) { values: Array<Any?> ->
                 val workoutId = values[0] as Long
                 val startDate = values[1] as ZonedDateTime?
@@ -1688,6 +1709,8 @@ class WorkoutViewModel @Inject constructor(
                 val imperialSystem = values[9] as Boolean
                 val lastWorkoutIntensity = values[10] as Float?
                 val suggestedModifications = values[11] as List<ModificationSuggestion?>
+                val inRestHintsEnabled = values[12] as Boolean
+                val tempoRomTrackingEnabled = values[13] as Boolean
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
                 try {
@@ -1716,6 +1739,8 @@ class WorkoutViewModel @Inject constructor(
                                         .build()
                                 }
                             )
+                            .setSmartFeaturesInRestHints(inRestHintsEnabled)
+                            .setSmartFeaturesTempoRomTracking(tempoRomTrackingEnabled)
                             .build()
                     }
                 } catch (e: Exception) {
@@ -1860,7 +1885,8 @@ class WorkoutViewModel @Inject constructor(
                         weight = setCompletion.weight,
                         tare = if (setCompletion.tare != 0f)
                         /*maybeLbToKg(*/ setCompletion.tare/*, pagesContent.value.imperialSystem)*/
-                        else null
+                        else null,
+                        trackingResult = if (setCompletion.setTracking.dataAvailable) setCompletion.setTracking else null
                     )
                 } else {
                     Log.d(
@@ -2034,7 +2060,9 @@ class WorkoutViewModel @Inject constructor(
                 preferences.getDontWantNotificationAccess(),
                 preferences.getLockHorizontalScroll(),
                 preferences.getAutoOpenWear(),
-                preferences.getDontWantOngoingWorkoutNotification()
+                preferences.getDontWantOngoingWorkoutNotification(),
+                preferences.getSuggestRepsWeight(),
+                preferences.getSuggestWorkoutModifications(),
             ) { values: Array<Any?> ->
                 _workoutState.update {
                     it.copy(
@@ -2048,7 +2076,9 @@ class WorkoutViewModel @Inject constructor(
                         cantRequestNotificationAccess = values[7] as Boolean,
                         lockHorizontalScroll = values[8] as Boolean,
                         autoOpenWear = values[9] as Boolean,
-                        cantRequestOngoingWorkoutNotification = values[10] as Boolean
+                        cantRequestOngoingWorkoutNotification = values[10] as Boolean,
+                        suggestRepsWeight = values[11] as Boolean,
+                        suggestWorkoutModifications = values[12] as Boolean,
                     )
                 }
             }.collect()

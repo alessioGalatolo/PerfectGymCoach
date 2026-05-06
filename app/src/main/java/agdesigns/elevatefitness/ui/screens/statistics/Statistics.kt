@@ -18,6 +18,7 @@ import agdesigns.elevatefitness.ui.common.WorkoutFrequencyLabelsKey
 import agdesigns.elevatefitness.ui.common.chartColors
 import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
+import agdesigns.elevatefitness.utils.VolumeComparison
 import agdesigns.elevatefitness.utils.getStickyHeader
 import agdesigns.elevatefitness.utils.plus
 import android.util.Log
@@ -211,7 +212,8 @@ fun Statistics(
                         avgCalories = state.avgCalories,
                         currentStreak = state.currentStreak,
                         longestStreak = state.longestStreak,
-                        useImperial = state.useImperialSystem
+                        useImperial = state.useImperialSystem,
+                        volumeComparison = state.volumeComparison
                     )
 
                     if (state.allExerciseRecords.isNotEmpty() || state.allWorkouts.isNotEmpty()) {
@@ -581,7 +583,8 @@ private fun LazyListScope.overviewCards(
     avgCalories: Double,
     currentStreak: Int,
     longestStreak: Int,
-    useImperial: Boolean
+    useImperial: Boolean,
+    volumeComparison: VolumeComparison? = null
 ) {
     item {
         Row(
@@ -590,13 +593,21 @@ private fun LazyListScope.overviewCards(
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // TODO: add comparisons also to workout recap
+            val comparisonSubtitle = volumeComparison?.let {
+                val countStr = if (it.count % 1f < 0.05f) it.count.toInt().toString()
+                               else "%.1f".format(it.count)
+                "${stringResource(R.string.volume_comparison_text)} ≈ $countStr ${stringResource(it.nameResId)}"
+            }
             MetricCard(
                 title = stringResource(R.string.total_volume),
                 value = "${totalVolume.toInt()} ${if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)}",
                 icon = Icons.Default.Scale,
                 iconColor = MaterialTheme.colorScheme.secondary,
                 containerColor = Color(0xFFD0E8FF), // pastel blue
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                subtitle = comparisonSubtitle,
+                subtitleIcon = volumeComparison?.icon
             )
         }
         Spacer(Modifier.height(dimensionResource(R.dimen.close_content_padding)))
@@ -686,10 +697,12 @@ private fun MetricCard(
     containerColor: Color,
     icon: ImageVector,
     iconColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    subtitleIcon: ImageVector? = null
 ) {
     Card(
-        modifier.height(100.dp),
+        modifier.wrapContentHeight(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = containerColor.copy(0.5f)  // alpha fixes bad visibility in dark mode
@@ -697,8 +710,9 @@ private fun MetricCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+                .fillMaxWidth()
+                .padding(16.dp)
+                .heightIn(min = 68.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -718,13 +732,36 @@ private fun MetricCard(
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                // same color as containerColor but darker
-                color = Color.Black.copy(alpha = 0.6f),
-                fontWeight = FontWeight.Bold
-            )
+            Column {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.Black.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.Bold
+                )
+                if (subtitle != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start,
+                    ) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Black.copy(alpha = 0.45f),
+                        )
+                        if (subtitleIcon != null) {
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                imageVector = subtitleIcon,
+                                contentDescription = null,
+                                tint = Color.Black.copy(alpha = 0.45f),
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -87,4 +87,15 @@
     <string name="add_set">Aggiungi serie</string>
     <string name="extend_rest">Estendi riposo di 5 secondi</string>
 
+    <string name="calibration_title">Calbrazione sensori</string>
+    <string name="calibration_description">Per tracciare automaticamente il tempo-ROM delle serie, è necessario una prima calibrazione. Tieni il polso fermo per 5 secondi. Se possibile, appoggiati su una superfice solida per la durata</string>
+    <string name="calibration_start">Calibra</string>
+    <string name="calibration_skip">Salta per adesso</string>
+    <string name="calibration_keep_still">Mantieni la posizione…</string>
+    <string name="calibration_complete">Calibrazione completata!</string>
+    <string name="counted_reps">Ripetizioni contate:</string>
+    <string name="last_set_data">Dati ultima serie:</string>
+    <string name="tracking_not_supported">Tracciamento automatico serie non disponibile per questo esercizio</string>
+    <string name="rom_cm">ROM (cm)</string>
+    <string name="duration_s">Tempo (s)</string>
 </resources>

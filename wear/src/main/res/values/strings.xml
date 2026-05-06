@@ -85,6 +85,18 @@
     <string name="add_set">Add set</string>
     <string name="extend_rest">Extend rest by 5 seconds</string>
 
+    <string name="calibration_title">Sensor calibration</string>
+    <string name="calibration_description">For accurate auto set tracking, a one-time calibration is needed. Keep your wrist still for 5 seconds. If possible, lay on a solid surface for the duration</string>
+    <string name="calibration_start">Calibrate</string>
+    <string name="calibration_skip">Skip for now</string>
+    <string name="calibration_keep_still">Keep still…</string>
+    <string name="calibration_complete">Calibration done!</string>
+    <string name="counted_reps">Counted reps:</string>
+    <string name="last_set_data">Last set data:</string>
+    <string name="tracking_not_supported">Automatic set tracking of this exercise is not supported</string>
+    <string name="rom_cm">ROM (cm)</string>
+    <string name="duration_s">Duration (s)</string>
+
     <!--
     This string is used for square devices and overridden by hello_world in
     values-round/strings.xml for round devices.

@@ -334,7 +334,8 @@ class ExerciseStatsViewModel @Inject constructor(
                         rest = rest,
                         equipment = Equipment.BARBELL,
                         overriddenDurationBased = false,
-                        setTypes = List(reps.size) { SetType.NORMAL }
+                        setTypes = List(reps.size) { SetType.NORMAL },
+                        trackingResults = List(reps.size) { null }
                     )
                 )
 

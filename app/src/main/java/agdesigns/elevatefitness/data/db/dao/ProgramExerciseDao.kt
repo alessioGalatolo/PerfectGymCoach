@@ -31,7 +31,7 @@ interface ProgramExerciseDao {
     @Query("SELECT * FROM programexercise WHERE programExerciseId LIKE :programExerciseId")
     fun getProgramExercise(programExerciseId: Long): Flow<ProgramExercise>
 
-    @Query("SELECT programexercise.*, exercise.image, exercise.imageResKey, exercise.equipment, exercise.name, exercise.nameResKey, exercise.description, exercise.descriptionResKey, exercise.userDefined " +
+    @Query("SELECT programexercise.*, exercise.image, exercise.imageResKey, exercise.equipment, exercise.name, exercise.nameResKey, exercise.description, exercise.descriptionResKey, exercise.userDefined, exercise.wearRepTrackable, exercise.firstPhase " +
             "FROM programexercise " +
             "LEFT JOIN exercise ON programexercise.extExerciseId = exercise.exerciseId " +
             "WHERE programexercise.extProgramId = :programId")
@@ -43,7 +43,7 @@ interface ProgramExerciseDao {
             "WHERE programexercise.extProgramId = :programId")
     fun getProgramExercisesWithExercise(programId: Long): Flow<List<ProgramExerciseWithExercise>>
 
-    @Query("SELECT programexercise.*, exercise.image, exercise.imageResKey, exercise.equipment, exercise.name, exercise.nameResKey, exercise.description, exercise.descriptionResKey, exercise.userDefined " +
+    @Query("SELECT programexercise.*, exercise.image, exercise.imageResKey, exercise.equipment, exercise.name, exercise.nameResKey, exercise.description, exercise.descriptionResKey, exercise.userDefined, exercise.wearRepTrackable, exercise.firstPhase " +
             "FROM programexercise " +
             "LEFT JOIN exercise ON programexercise.extExerciseId = exercise.exerciseId " +
             "WHERE programexercise.extProgramId IN (:programIds) "

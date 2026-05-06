@@ -22,6 +22,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.LocalAmbientModeManager
 import androidx.wear.compose.foundation.rememberAmbientModeManager
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -39,42 +41,44 @@ class WearActivity : ComponentActivity() {
             val activityAmbientModeManager = rememberAmbientModeManager()
             CompositionLocalProvider(LocalAmbientModeManager provides activityAmbientModeManager) {
                 PerfectGymCoachTheme {
-                    val navController = rememberSwipeDismissableNavController()
-                    AppScaffold {
-                        SwipeDismissableNavHost(
-                            navController = navController,
-                            startDestination = "home"
-                        ) {
-                            composable(route = "home") {
-                                Home(
-                                    openWorkoutScreen = {
-                                        navController.navigate("workout")
-                                    }
-                                )
-                            }
-                            composable(
-                                route = "workout",
-                                deepLinks = listOf(NavDeepLink("elevatefitnesswear://startworkout"))
+                    ProvideVicoTheme(rememberM3VicoTheme()) {
+                        val navController = rememberSwipeDismissableNavController()
+                        AppScaffold {
+                            SwipeDismissableNavHost(
+                                navController = navController,
+                                startDestination = "home"
                             ) {
-                                Workout(
-                                    onBack = {
-                                        navController.navigateUp()
-                                    },
-                                    navigateToSelectValues = {
-                                        navController.navigate("select-values")
-                                    },
-                                    terminate = {
-                                        Log.d("WearActivity", "Terminating")
-                                        this@WearActivity.finish()
-                                    }
-                                )
-                            }
-                            composable(route = "select-values") {
-                                val parentEntry = remember(it) {
-                                    navController.getBackStackEntry("workout")
+                                composable(route = "home") {
+                                    Home(
+                                        openWorkoutScreen = {
+                                            navController.navigate("workout")
+                                        }
+                                    )
                                 }
-                                val viewModel: WorkoutViewModel = hiltViewModel(parentEntry)
-                                SelectValuesScreen(navController, viewModel)
+                                composable(
+                                    route = "workout",
+                                    deepLinks = listOf(NavDeepLink("elevatefitnesswear://startworkout"))
+                                ) {
+                                    Workout(
+                                        onBack = {
+                                            navController.navigateUp()
+                                        },
+                                        navigateToSelectValues = {
+                                            navController.navigate("select-values")
+                                        },
+                                        terminate = {
+                                            Log.d("WearActivity", "Terminating")
+                                            this@WearActivity.finish()
+                                        }
+                                    )
+                                }
+                                composable(route = "select-values") {
+                                    val parentEntry = remember(it) {
+                                        navController.getBackStackEntry("workout")
+                                    }
+                                    val viewModel: WorkoutViewModel = hiltViewModel(parentEntry)
+                                    SelectValuesScreen(navController, viewModel)
+                                }
                             }
                         }
                     }

@@ -767,6 +767,19 @@
     <string name="stats_loading_equipment">Calcolo uso attrezzature…</string>
     <string name="stats_loading_done">Fatto!</string>
     <string name="stats_loading_generic">Caricamento record…</string>
+    <string name="volume_comparison_text">Questo è l\'equivalente di</string>
+    <string name="volume_comparison_cat">gatti domestici</string>
+    <string name="volume_comparison_bicycle">biciclette</string>
+    <string name="volume_comparison_person">persone adulte</string>
+    <string name="volume_comparison_motorcycle">moto</string>
+    <string name="volume_comparison_bear">orsi grizzly</string>
+    <string name="volume_comparison_car">automobili</string>
+    <string name="volume_comparison_elephant">elefanti africani</string>
+    <string name="volume_comparison_truck">camion</string>
+    <string name="volume_comparison_bus">autobus scolastici</string>
+    <string name="volume_comparison_train">carrozze ferroviarie</string>
+    <string name="volume_comparison_airplane">aerei</string>
+    <string name="volume_comparison_shuttle">shuttle spaziali</string>
     <string name="what_is_your_name">Come ti chiami?</string>
     <string name="sets">Serie</string>
     <string name="quick_start">Avvio rapido</string>
@@ -859,6 +872,16 @@
     <string name="modification_suggestion_desc_replace">L\'ultima volta hai sostituito questo esercizio con: %1$s</string>
     <string name="modification_suggestion_not_this_time">Non questa volta</string>
     <string name="modification_suggestion_do_it">Okay!</string>
+
+    <!-- Smart features -->
+    <string name="smart_features_title">Funzionalità smart</string>
+    <string name="suggest_reps_weight">Suggerisci ripetizioni e peso negli allenamenti</string>
+    <string name="suggest_workout_modifications">Suggeriscie modifiche all\'allenamento in base alle sessioni precedenti</string>
+    <string name="in_rest_hints_wear">Orologio: guide tra le serie per cambiare peso, ripetizioni, ecc.</string>
+    <string name="tempo_rom_tracking_wear">Orologio: traccia il tempo e ROM per le singole ripetizioni (sperimentale, solo esercizi supportati)</string>
+    <string name="requires_connected_watch">Richiede un orologio connesso</string>
+    <string name="requires_compatible_wearable">Questa funzionalità richede un orologio compatibile</string>
+
     <string name="exercise_type_hold">Isometrico</string>
     <string name="exercise_type_reps">Tradizionale</string>
     <string name="exercise_type">Tipo di esercizio: </string>
@@ -895,4 +918,7 @@
     <string name="n_min">%1$sm</string>
     <string name="days_ago">" ~ %1$d giorni fa"</string>
     <string name="bottom_bar_current">" (attuale)"</string>
+    <string name="last_set_tracking_data">Dati tracciati ultima serie</string>
+    <string name="rom_cm">ROM (cm)</string>
+    <string name="duration_ms">Tempo (ms)</string>
 </resources>

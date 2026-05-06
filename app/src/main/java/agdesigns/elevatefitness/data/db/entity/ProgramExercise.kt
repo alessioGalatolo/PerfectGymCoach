@@ -99,7 +99,9 @@ data class ProgramExerciseAndInfo (
     val equipment: Equipment,
     val userDefined: Boolean,
     val overriddenDurationBased: Boolean,
-    val setTypes: List<SetType>? = null
+    val setTypes: List<SetType>? = null,
+    val wearRepTrackable: Exercise.WearRepTrackable,
+    val firstPhase: Exercise.FirstPhase
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)

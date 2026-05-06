@@ -1,9 +1,11 @@
 package agdesigns.elevatefitness.data.db
 
 import agdesigns.elevatefitness.data.db.entity.Exercise
+import agdesigns.elevatefitness.data.db.entity.TrackingResult
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import androidx.room.TypeConverter
+import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -82,5 +84,15 @@ class Converters {
     @TypeConverter
     fun listIntToListSetType(value: List<Int>): List<SetType> = value.map {
         SetType.entries[it]
+    }
+
+    @TypeConverter
+    fun listTrackingResultsToString(value: List<TrackingResult?>): String {
+        return Json.encodeToString(value)
+    }
+
+    @TypeConverter
+    fun stringToListTrackingResults(value: String): List<TrackingResult?> {
+        return Json.decodeFromString(value)
     }
 }

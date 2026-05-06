@@ -422,7 +422,7 @@ fun WorkoutRecap(
                 item {
                     Text(
                         stringResource(R.string.progression_over_time),
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                         textAlign = TextAlign.Start,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
@@ -745,7 +745,7 @@ fun WorkoutRecap(
                     item {
                         Text(
                             stringResource(R.string.workout_history),
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMediumEmphasized,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)

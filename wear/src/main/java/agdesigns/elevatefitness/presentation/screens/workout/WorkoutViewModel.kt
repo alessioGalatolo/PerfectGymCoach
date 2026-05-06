@@ -22,6 +22,7 @@ import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
+import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.os.Build
 import androidx.annotation.StringRes
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
@@ -42,7 +43,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -72,7 +72,9 @@ data class ExercisesState(
     val imperialSystem: Boolean = false,
     val activeWorkout: Boolean = true,
     val lastIntensity: Float? = null,
-    val suggestedModifications: List<Workout.ProtoSuggestedModification?> = emptyList()
+    val suggestedModifications: List<Workout.ProtoSuggestedModification?> = emptyList(),
+    val inRestHintsEnabled: Boolean = true,
+    val tempoRomTrackingEnabled: Boolean = false,
 )
 
 data class InRestHint(
@@ -111,7 +113,14 @@ data class WorkoutState(
     val heartRateBySecond: Map<Long, Int> = emptyMap(),
     val workoutTime: String? = null,
     val modificationIsDismissed: Map<Workout.ProtoSuggestedModification, Boolean> = emptyMap(),
-    val showOtherAppExerciseDialog: Boolean = false
+    val showOtherAppExerciseDialog: Boolean = false,
+    val autoRepsCount: Int? = null, // null if not available
+    val needsCalibration: Boolean = false,
+    val calibrationInProgress: Boolean = false,
+    val calibrationProgress: Float = 0f,
+    val calibrationComplete: Boolean = false,
+    val calibrationStarted: ZonedDateTime? = null,
+    val lastSetResult: RepAndTempoCounter.SetResult? = null,
 )
 
 sealed class WorkoutEvent {
@@ -144,6 +153,8 @@ sealed class WorkoutEvent {
 
     data object AddSetToCurrentExercise: WorkoutEvent()
     data class ExtendRest(val additionalSeconds: Long = 5L): WorkoutEvent()
+    data object StartCalibration: WorkoutEvent()
+    data object DismissCalibration: WorkoutEvent()
 }
 
 // effects that should be propagated to the UI
@@ -163,6 +174,7 @@ class WorkoutViewModel
     private val mediaService: MediaServiceGrpcKt.MediaServiceCoroutineStub
 ): ViewModel() {
     private var retryJob: Job? = null
+    private var calibrationDismissedThisSession = false
     val exercisesState = combine(
         registry.protoFlow<Workout.WorkoutStaticData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
         registry.protoFlow<Workout.WorkoutDynamicData>(TargetNodeId.PairedPhone).distinctUntilChanged(),
@@ -181,7 +193,9 @@ class WorkoutViewModel
             activeWorkout = staticData.activeWorkout,
             suggestedTare = staticData.suggestedTaresList,
             lastIntensity = if (staticData.previousIntensity == -1f) null else staticData.previousIntensity / 100f,
-            suggestedModifications = staticData.suggestedModificationsList.map { if (!it.hasSuggestion) null else it }
+            suggestedModifications = staticData.suggestedModificationsList.map { if (!it.hasSuggestion) null else it },
+            inRestHintsEnabled = staticData.smartFeaturesInRestHints,
+            tempoRomTrackingEnabled = staticData.smartFeaturesTempoRomTracking,
         )
     }.stateIn(
         viewModelScope,
@@ -219,6 +233,11 @@ class WorkoutViewModel
 
     init {
         viewModelScope.launch {
+            repository.repCountFlow.collect { count ->
+                _state.update { it.copy(autoRepsCount = count) }
+            }
+        }
+        viewModelScope.launch {
             // ensure binding happens
             // wait until the service is available once, then start
             repository.bindForegroundOnlyService()
@@ -239,6 +258,7 @@ class WorkoutViewModel
             // listen for set rest requests from phone
             for (event in repository.setRestChannel) {
                 // TODO: superset case
+                repository.stopSetTracking()
                 _state.update {
                     it.copy(
                         currentExerciseRest = event.rest,
@@ -264,6 +284,7 @@ class WorkoutViewModel
             }
         }
         viewModelScope.launch {
+            // FIXME: do not user service directly
             repository.service
                 .flatMapLatest { it?.exerciseMetricsFlow() ?: flowOf(WorkoutService.ExerciseMetrics()) }
                 .collect {
@@ -292,11 +313,51 @@ class WorkoutViewModel
                 }
         }
         viewModelScope.launch {
+            // FIXME: do not use service directly
             repository.service
                 .flatMapLatest { it?.otherAppInProgress ?: flowOf(false) }
                 .collect { inProgress ->
                     _state.update { it.copy(showOtherAppExerciseDialog = inProgress) }
                 }
+        }
+        viewModelScope.launch {
+            exercisesState.map { it.tempoRomTrackingEnabled }.distinctUntilChanged().collect {
+                repository.tempoRomTrackingEnabled = it
+                if (it) {
+                    repository.startSetTracking()
+                }
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                exercisesState.map { it.exercises }.distinctUntilChanged(),
+                state.map { it.currentExerciseIndex }.distinctUntilChanged(),
+                exercisesState.map { it.tempoRomTrackingEnabled }.distinctUntilChanged(),
+                repository.calibrationDataStore.isCalibrated.distinctUntilChanged()
+            ) { exercises, index, tempoEnabled, calibrated ->
+                Pair(exercises.getOrNull(index), tempoEnabled && calibrated)
+            }
+            .distinctUntilChanged()
+            .collect { (exercise, canTrack) ->
+                if (exercise != null && canTrack) {
+                    repository.initSetTracking(
+                        exercise.exerciseId,
+                        exercise.wearRepTrackable,
+                        exercise.firstPhase
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                exercisesState.map { it.tempoRomTrackingEnabled }.distinctUntilChanged(),
+                repository.calibrationDataStore.isCalibrated.distinctUntilChanged(),
+            ) { enabled, calibrated -> enabled && !calibrated }
+            .collect { needed ->
+                if (needed && !calibrationDismissedThisSession) {
+                    _state.update { it.copy(needsCalibration = true) }
+                }
+            }
         }
         repository.getHealthData = {
             Workout.CompleteWorkout.newBuilder()
@@ -328,6 +389,10 @@ class WorkoutViewModel
             is WorkoutEvent.ResetRest -> {
                 repository.cancelRestAlarm()
                 repository.cancelHintAlarm()
+                if (exercisesState.value.tempoRomTrackingEnabled) {
+                    repository.startSetTracking()
+                }
+
                 viewModelScope.launch {
                     _state.update { it.copy(restTimestamp = ZonedDateTime.now()) }
                 }
@@ -343,6 +408,10 @@ class WorkoutViewModel
                         restTimestamp = null,
                         currentExerciseRest = null,
                     )
+                }
+
+                if (exercisesState.value.tempoRomTrackingEnabled) {
+                    repository.startSetTracking()
                 }
                 repository.cancelRestAlarm()
                 repository.cancelHintAlarm()
@@ -370,86 +439,92 @@ class WorkoutViewModel
             is WorkoutEvent.CompleteSet -> {
                 val currentExercise = exercisesState.value.exercises.getOrNull(
                     state.value.currentExerciseIndex
+                ) ?: return
+                val setTrackingResults = repository.setTrackingTruthAndGetResults(
+                    exerciseId = currentExercise.exerciseId,
+                    groundTruthReps = state.value.currentReps
                 )
-                if (currentExercise != null) {
-                    val shouldAdvancePage =
-                        (exercisesState.value.exercisesSetsDone.getOrNull(
-                            state.value.currentExerciseIndex
-                        )?.plus(1) ?: 0) == currentExercise.restCount
-                    // if part of superset with exercise before, go back
-                    // if part of superset with exercise after, go forward
-                    val prevExercise = exercisesState.value.exercises.getOrNull(
+                _state.update { it.copy(lastSetResult = setTrackingResults) }
+                val protoTrackingResults = setTrackingResults?.toProto() ?: RepAndTempoCounter.SetResult.protoNoResult
+
+                val shouldAdvancePage =
+                    (exercisesState.value.exercisesSetsDone.getOrNull(
+                        state.value.currentExerciseIndex
+                    )?.plus(1) ?: 0) == currentExercise.restCount
+                // if part of superset with exercise before, go back
+                // if part of superset with exercise after, go forward
+                val prevExercise = exercisesState.value.exercises.getOrNull(
+                    state.value.currentExerciseIndex - 1
+                )
+                val nextExercise = exercisesState.value.exercises.getOrNull(
+                    state.value.currentExerciseIndex + 1
+                )
+                val nextSupersetIndex = if (currentExercise.supersetExercise != 0L && currentExercise.supersetExercise == nextExercise?.programExerciseId)
+                    state.value.currentExerciseIndex + 1
+                else if (currentExercise.supersetExercise != 0L && currentExercise.supersetExercise == prevExercise?.programExerciseId) {
+                    if (shouldAdvancePage)
+                        state.value.currentExerciseIndex + 1
+                    else
                         state.value.currentExerciseIndex - 1
-                    )
-                    val nextExercise = exercisesState.value.exercises.getOrNull(
-                        state.value.currentExerciseIndex + 1
-                    )
-                    val nextSupersetIndex = if (currentExercise.supersetExercise != 0L && currentExercise.supersetExercise == nextExercise?.programExerciseId)
-                        state.value.currentExerciseIndex + 1
-                    else if (currentExercise.supersetExercise != 0L && currentExercise.supersetExercise == prevExercise?.programExerciseId) {
-                        if (shouldAdvancePage)
-                            state.value.currentExerciseIndex + 1
-                        else
-                            state.value.currentExerciseIndex - 1
-                    } else null
-                    if (nextSupersetIndex == null) {
-                        if (shouldAdvancePage && exercisesState.value.exercises.size > state.value.currentExerciseIndex + 1) {
-                            _state.update {
-                                it.copy(
-                                    currentExerciseIndex = it.currentExerciseIndex + 1
-                                )
-                            }
-                        }
-                    } else {
+                } else null
+                if (nextSupersetIndex == null) {
+                    if (shouldAdvancePage && exercisesState.value.exercises.size > state.value.currentExerciseIndex + 1) {
                         _state.update {
                             it.copy(
-                                currentExerciseIndex = nextSupersetIndex
+                                currentExerciseIndex = it.currentExerciseIndex + 1
                             )
                         }
                     }
-                    val equipment = Equipment.fromResKey(currentExercise.equipment)
-                    val tare = if (equipment == Equipment.BARBELL)
-                        BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
-                    else 0f
-                    val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
-                    val queuedSetCompleted = Workout.SetCompleted.newBuilder()
-                        .setWorkoutId(exercisesState.value.workoutId)
-                        .setExerciseId(currentExercise.workoutExerciseId)
-                        .setReps(state.value.currentReps)
-                        .setWeight(state.value.currentWeight)
-                        .setTare(tare)
-                        .setRest(state.value.currentExerciseRest ?: 0L)
-                        .setRestTimestamp(protoTimestamp)
-                        .build()
-                    setCompletedQueue.add(queuedSetCompleted)
+                } else {
                     _state.update {
                         it.copy(
-                            settingSetValues = false,
-                            successfullySetValues = true
+                            currentExerciseIndex = nextSupersetIndex
                         )
                     }
-                    viewModelScope.launch {
-                        try {
-                            val result = workoutService.setCompleted(
-                                queuedSetCompleted
-                            )
-                            if (!result.success) {
-                                // Note, this should never happen because
-                                Log.e(
-                                    "WorkoutViewModel",
-                                    "Error completing set with message: ${result.message}"
-                                )
-                                _effects.trySend(WorkoutEffect.RetriableError)
-                                return@launch
-                            }
-                            setCompletedQueue.remove(queuedSetCompleted)
-                        } catch (e: StatusException) {
+                }
+                val equipment = Equipment.fromResKey(currentExercise.equipment)
+                val tare = if (equipment == Equipment.BARBELL)
+                    BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
+                else 0f
+                val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
+                val queuedSetCompleted = Workout.SetCompleted.newBuilder()
+                    .setWorkoutId(exercisesState.value.workoutId)
+                    .setExerciseId(currentExercise.workoutExerciseId)
+                    .setReps(state.value.currentReps)
+                    .setWeight(state.value.currentWeight)
+                    .setTare(tare)
+                    .setRest(state.value.currentExerciseRest ?: 0L)
+                    .setRestTimestamp(protoTimestamp)
+                    .setSetTracking(protoTrackingResults)
+                    .build()
+                setCompletedQueue.add(queuedSetCompleted)
+                _state.update {
+                    it.copy(
+                        settingSetValues = false,
+                        successfullySetValues = true
+                    )
+                }
+                viewModelScope.launch {
+                    try {
+                        val result = workoutService.setCompleted(
+                            queuedSetCompleted
+                        )
+                        if (!result.success) {
+                            // Note, this should never happen because
                             Log.e(
                                 "WorkoutViewModel",
-                                "Error completing set with error: ${e.message}"
+                                "Error completing set with message: ${result.message}"
                             )
                             _effects.trySend(WorkoutEffect.RetriableError)
+                            return@launch
                         }
+                        setCompletedQueue.remove(queuedSetCompleted)
+                    } catch (e: StatusException) {
+                        Log.e(
+                            "WorkoutViewModel",
+                            "Error completing set with error: ${e.message}"
+                        )
+                        _effects.trySend(WorkoutEffect.RetriableError)
                     }
                 }
             }
@@ -463,7 +538,7 @@ class WorkoutViewModel
             }
             is WorkoutEvent.StopActivity -> {
                 viewModelScope.launch {
-                    repository.service.firstOrNull()?.stopWorkout()
+                    repository.stopWorkout()
                 }
             }
             is WorkoutEvent.EndWorkout -> {
@@ -489,12 +564,13 @@ class WorkoutViewModel
                             "Error completing workout with error: ${e.message}"
                         )
                     }
-                    repository.service.firstOrNull()?.stopWorkout()
+                    repository.stopWorkout()
                     repository.cancelRestAlarm()
                     repository.cancelHintAlarm()
                 }
             }
             is WorkoutEvent.StartRest -> {
+                repository.stopSetTracking()
                 _state.update { state ->
                     val currentExercise = exercisesState.value.exercises.getOrNull(
                         state.currentExerciseIndex
@@ -694,7 +770,7 @@ class WorkoutViewModel
                 }
             }
             is WorkoutEvent.ConfirmKillOtherApp -> {
-                repository.foregroundOnlyWalkingWorkoutService?.confirmKillOtherApp()
+                repository.foregroundOnlyWorkoutService?.confirmKillOtherApp()
             }
             is WorkoutEvent.DismissOtherAppDialog -> {
                 _state.update { it.copy(showOtherAppExerciseDialog = false) }
@@ -738,6 +814,36 @@ class WorkoutViewModel
                     } catch (e: StatusException) {
                         Log.e("WorkoutViewModel", "Error extending rest from watch: ${e.message}")
                     }
+                }
+            }
+            is WorkoutEvent.StartCalibration -> {
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(
+                            calibrationInProgress = true,
+                            calibrationProgress = 0f,
+                            calibrationStarted = ZonedDateTime.now()
+                        )
+                    }
+                    repository.runCalibration(5000L)
+                    _state.update {
+                        it.copy(
+                            calibrationInProgress = false,
+                            calibrationProgress = 1f,
+                            calibrationComplete = true,
+                            needsCalibration = false,
+                        )
+                    }
+                }
+            }
+            is WorkoutEvent.DismissCalibration -> {
+                calibrationDismissedThisSession = true
+                _state.update {
+                    it.copy(
+                        needsCalibration = false,
+                        calibrationInProgress = false,
+                        calibrationComplete = false,
+                    )
                 }
             }
         }
@@ -803,11 +909,16 @@ class WorkoutViewModel
                     }
                     "%02d:%02d".format(seconds / 60, seconds % 60)
                 }
+                // if calibration
+                val calibrationProgress = if (it.calibrationInProgress) {
+                    Duration.between(it.calibrationStarted, currentTime).toMillis().toFloat() / 5000f
+                } else it.calibrationProgress
                 it.copy(
                     currentTime = currentTime,
                     ongoingRestSecs = ongoingRestSecs,
                     ongoingRestProgression = ongoingRestProgression,
-                    workoutTime = workoutTime
+                    workoutTime = workoutTime,
+                    calibrationProgress = calibrationProgress
                 )
             }
         }.launchIn(viewModelScope)
@@ -887,7 +998,8 @@ class WorkoutViewModel
             exercisesState.map { it.exercisesSetsDone },
             exercisesState.map { it.suggestedRepsWeight },
             exercisesState.map { it.imperialSystem }.distinctUntilChanged(),
-            exercisesState.map { it.suggestedModifications }.distinctUntilChanged()
+            exercisesState.map { it.suggestedModifications }.distinctUntilChanged(),
+            exercisesState.map { it.inRestHintsEnabled }.distinctUntilChanged(),
         ) { values ->
             val index = values[0] as Int
             val exercises = values[1] as List<Workout.Exercise>
@@ -895,6 +1007,12 @@ class WorkoutViewModel
             val suggestedRepsWeight = values[3] as List<Workout.SuggestedRepsWeight>
             val imperialSystem = values[4] as Boolean
             val modifications = values[5] as List<Workout.ProtoSuggestedModification>
+            val inRestHintsEnabled = values[6] as Boolean
+            if (!inRestHintsEnabled) {
+                _state.update { it.copy(inRestHints = emptyList(), showHintDialog = false) }
+                repository.cancelHintAlarm()
+                return@combine
+            }
 
             // This try catch should be unnecessary but I keep getting Index error for Workout (grpc)
             try {
@@ -918,14 +1036,16 @@ class WorkoutViewModel
 
                 // new: we do not hint next exercise if a suggestion for it says either replace or skip
                 // or suggestion for current says add
-                if (modifications.getOrNull(index)?.type == Workout.ProtoModificationType.EXERCISE_ADDED) {
-                    nextExercise = null
-                }
-                val nextModification = modifications.getOrNull(index + 1)
-                if (nextModification?.type == Workout.ProtoModificationType.EXERCISE_REPLACED ||
-                    nextModification?.type == Workout.ProtoModificationType.EXERCISE_SKIPPED
-                ) {
-                    nextExercise = null
+                if (!isNextSetSameExercise) {
+                    if (modifications.getOrNull(index-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED) {
+                        nextExercise = null
+                    }
+                    val nextModification = modifications.getOrNull(index)
+                    if (nextModification?.type == Workout.ProtoModificationType.EXERCISE_REPLACED ||
+                        nextModification?.type == Workout.ProtoModificationType.EXERCISE_SKIPPED
+                    ) {
+                        nextExercise = null
+                    }
                 }
 
                 val nextExerciseRepsWeight = if (!isNextSetSameExercise) {
@@ -949,7 +1069,7 @@ class WorkoutViewModel
                     isNextSetSameExercise
                     && repsWeight.repsCount > setsDone
                 ) {
-                    currentExercise.getReps(setsDone)
+                    repsWeight.getReps(setsDone).toIntOrNull()
                 } else if (
                     !isNextSetSameExercise &&
                     nextExerciseRepsWeight != null &&
@@ -1017,7 +1137,7 @@ class WorkoutViewModel
                                 )
                             )
                         }
-                    } else {
+                    } else if (isNextSetSameExercise) {
                         // Same exercise
                         val currentWeight = if (setsDone > 0 && repsWeight.weightCount > setsDone) {
                             repsWeight.getWeight(setsDone - 1).toFloatOrNull()

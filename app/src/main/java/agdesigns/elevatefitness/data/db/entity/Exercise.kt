@@ -6,6 +6,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import agdesigns.elevatefitness.shared.Equipment
+import agdesigns.elevatefitness.shared.grpc.Workout
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -35,6 +36,10 @@ data class Exercise(
     val needsMigration: Boolean = false, // this is set when adding an exercise, doesn't need migration
     @ColumnInfo(defaultValue = "0")
     val isDurationBased: Boolean = false, // e.g., plank, planche, etc.
+    @ColumnInfo(defaultValue = "NOT_TRACKABLE")
+    val wearRepTrackable: WearRepTrackable = WearRepTrackable.NOT_TRACKABLE,
+    @ColumnInfo(defaultValue = "AGAINST_GRAVITY")
+    val firstPhase: FirstPhase = FirstPhase.AGAINST_GRAVITY,
 ) : Parcelable {
     // Helper properties for UI
     val nameResource: Int
@@ -92,6 +97,39 @@ data class Exercise(
                 ADVANCED -> R.string.difficulties_advanced
             }
 
+    }
+
+    // Whether reps and tempo can be auto-detected from the Wear OS watch accelerometer.
+    enum class WearRepTrackable {
+        // Rep detection not supported, i.e., wrist does *not* move during exercise (e.g. leg extension)
+        NOT_TRACKABLE,
+        // Wrist moves during exercise but also changes rotation (e.g., machine fly)
+        // This is needed because we use gyro position to filter false positives
+        ROTATION_MOVEMENT,
+        // fully supported
+        SUPPORTED;
+
+        fun toProto(): Workout.WearRepTrackable = when (this) {
+            NOT_TRACKABLE -> Workout.WearRepTrackable.NOT_TRACKABLE
+            ROTATION_MOVEMENT -> Workout.WearRepTrackable.ROTATION_MOVEMENT
+            SUPPORTED -> Workout.WearRepTrackable.SUPPORTED
+        }
+    }
+
+    // This is used to improve the rep/tempo tracking from watch. There are from the watch perspective
+    enum class FirstPhase {
+        // first active phase is against gravity (watch moves away from earth) e.g. crunch, curls.
+        AGAINST_GRAVITY,
+        // first active phase is along gravity (watch moves towards ground) e.g. squats, skull crushers.
+        ALONG_GRAVITY,
+        // whole movement is parallel to the ground e.g., chest press, row.
+        PARALLEL;
+
+        fun toProto(): Workout.FirstPhase = when (this) {
+            AGAINST_GRAVITY -> Workout.FirstPhase.AGAINST_GRAVITY
+            ALONG_GRAVITY -> Workout.FirstPhase.ALONG_GRAVITY
+            PARALLEL -> Workout.FirstPhase.PARALLEL
+        }
     }
 }
 

@@ -253,6 +253,38 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.autoOpenWear] = newValue
     }
 
+    fun getSuggestRepsWeight(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.suggestRepsWeight] ?: true
+    }
+
+    suspend fun setSuggestRepsWeight(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.suggestRepsWeight] = newValue
+    }
+
+    fun getSuggestWorkoutModifications(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.suggestWorkoutModifications] ?: true
+    }
+
+    suspend fun setSuggestWorkoutModifications(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.suggestWorkoutModifications] = newValue
+    }
+
+    fun getInRestHints(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.inRestHints] ?: true
+    }
+
+    suspend fun setInRestHints(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.inRestHints] = newValue
+    }
+
+    fun getTempoRomTracking(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.tempoRomTracking] ?: false
+    }
+
+    suspend fun setTempoRomTracking(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.tempoRomTracking] = newValue
+    }
+
     fun isDismissedPlanChangeReminder(planId: Long): Flow<Boolean> = dataStore.data.map{
         val dismissedPlans = it[PrefKeys.dismissedPlanChangeReminders] ?: ""
         dismissedPlans.split(",").contains(planId.toString())
@@ -290,6 +322,10 @@ internal object PrefKeys {
     val lockHorizontalScroll = booleanPreferencesKey("Lock horizontal scroll")
     val autoOpenWear = booleanPreferencesKey("Auto open wear")
     val dismissedPlanChangeReminders = stringPreferencesKey("Dismissed plan change reminders")
+    val suggestRepsWeight = booleanPreferencesKey("Suggest reps weight")
+    val suggestWorkoutModifications = booleanPreferencesKey("Suggest workout modifications")
+    val inRestHints = booleanPreferencesKey("In rest hints")
+    val tempoRomTracking = booleanPreferencesKey("Tempo rom tracking")
 }
 
 

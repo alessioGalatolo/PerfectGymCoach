@@ -49,7 +49,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -98,7 +98,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_6_7,
                     MIGRATION_7_8,
                     MIGRATION_8_9,
-                    MIGRATION_9_10
+                    MIGRATION_9_10,
+                    MIGRATION_10_11
                 )
                     .build()
                     .also { instance = it }
@@ -225,6 +226,28 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE Exercise ADD COLUMN wearRepTrackable TEXT NOT NULL DEFAULT 'NOT_TRACKABLE'"
+        )
+        db.execSQL(
+            "ALTER TABLE Exercise ADD COLUMN firstPhase TEXT NOT NULL DEFAULT 'CONCENTRIC'"
+        )
+        db.execSQL(
+            "ALTER TABLE WorkoutExercise ADD COLUMN wearRepTrackable TEXT NOT NULL DEFAULT 'NOT_TRACKABLE'"
+        )
+        db.execSQL(
+            "ALTER TABLE WorkoutExercise ADD COLUMN firstPhase TEXT NOT NULL DEFAULT 'CONCENTRIC'"
+        )
+        db.execSQL(
+            "ALTER TABLE ExerciseRecord ADD COLUMN trackingResults TEXT NOT NULL DEFAULT ''"
+        )
+
+
+    }
+}
+
 
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")
@@ -254,6 +277,13 @@ class ExerciseDataMigrator(private val context: Context) {
                 "Found db version $dbVersion, proceeding with migration to v9"
             )
             migrateExercises5To9(db)
+        }
+        if (dbVersion < 11) {
+            Log.d(
+                "ExerciseDataMigrator",
+                "Found db version $dbVersion, proceeding with migration to v11"
+            )
+            migrateExercises9To11(db)
         }
     }
 
@@ -419,6 +449,26 @@ class ExerciseDataMigrator(private val context: Context) {
         }
         context.dataStore.edit {
             it[dbVersionKey] = 9
+        }
+    }
+
+    private suspend fun migrateExercises9To11(db: WorkoutDatabase) {
+        val dao = db.exerciseDao
+        val existing = dao.getAllExercises().first().associateBy { it.nameResKey }
+        INITIAL_EXERCISE_DATA.forEach { new ->
+            val old = existing[new.nameResKey] ?: return@forEach
+            dao.updateExercise(old.copy(wearRepTrackable = new.wearRepTrackable))
+        }
+        context.dataStore.edit {
+            it[dbVersionKey] = 11
+        }
+        val records = db.exerciseRecordDao.getAll()
+        records.forEach {
+            db.exerciseRecordDao.update(
+                it.copy(
+                    trackingResults = List(it.reps.size) { _ -> null }
+                )
+            )
         }
     }
 

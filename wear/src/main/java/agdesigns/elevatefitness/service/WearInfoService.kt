@@ -4,16 +4,14 @@ import agdesigns.elevatefitness.BuildConfig
 import agdesigns.elevatefitness.shared.grpc.Info
 import agdesigns.elevatefitness.shared.grpc.WearInfoServiceGrpcKt
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.util.Log
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.WearDataLayerRegistry
 import com.google.android.horologist.datalayer.grpc.server.BaseGrpcDataService
 import com.google.protobuf.Empty
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 
 @OptIn(ExperimentalHorologistApi::class)
@@ -31,6 +29,17 @@ class WearInfoService: BaseGrpcDataService<WearInfoServiceGrpcKt.WearInfoService
     override fun buildService(): WearInfoServiceGrpcKt.WearInfoServiceCoroutineImplBase {
 
         return object : WearInfoServiceGrpcKt.WearInfoServiceCoroutineImplBase() {
+
+            override suspend fun getCapabilities(request: Empty): Info.WearCapabilities {
+                val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+                val sensors = sensorManager.getSensorList(Sensor.TYPE_ALL)
+                val canTrackTempoRomReps = sensors.any { it.type == Sensor.TYPE_LINEAR_ACCELERATION } &&
+                        sensors.any { it.type == Sensor.TYPE_GRAVITY } &&
+                        sensors.any { it.type == Sensor.TYPE_GYROSCOPE }
+                return Info.WearCapabilities.newBuilder()
+                    .setTempoRomTracking(canTrackTempoRomReps)
+                    .build()
+            }
 
             override suspend fun versionInfo(request: Empty): Info.VersionInfo {
                 Log.d("WearInfoService", "versionInfo called")
