@@ -5,7 +5,7 @@
     <string name="stop_workout_notification_text">Stop workout</string>
     <string name="launch_activity">Open app</string>
     <string name="permissions_explanation_title">Please grant permission(s)</string>
-    <string name="permissions_explanation">This app uses the requested permissions to give you the best experience during your workout, not granting them will cause the app to not work properly.</string>
+    <string name="permissions_explanation">This app uses the permissions for activity recognition and heart rate monitoring. If granted, calories and heart rate will be shown during the workout and in the post-workout summary to give you a better understanding of your workout.</string>
     <string name="show_permission">Launch</string>
     <string name="show_settings">Show settings</string>
     <string name="go_back">Go back</string>

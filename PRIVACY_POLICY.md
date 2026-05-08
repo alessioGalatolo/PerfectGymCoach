@@ -25,13 +25,11 @@ The Wear OS companion app uses the same notification and background permissions 
 - **Exact Alarms** – to schedule the rest timer with precise timing, so the vibration and notification trigger at the right moment.
 - **Heart Rate/Body Sensors** – to track your heart rate during the workout and report it as metric.
 - **Exercise Activity** – to track more accurately the calories you burn during the workout.
-- **Background Health Activity** – to keep monitoring your heart rate even when you briefly switch to another app.
 
 **Health Connect**
 The companion phone app integrates with Health Connect to read and write your health data. The following permissions are requested:
 - **Write Exercise** – to save your completed workout sessions to Health Connect.
 - **Write Active Calories Burned** – to record the active calories burned during a workout session.
-- **Read & Write Weight** – to read your current weight from Health Connect and allow you to update it from within the app.
 
 All health data shared with Health Connect stays on your device and is governed by your Health Connect privacy settings. No health data is transmitted to external servers by this app.
 

@@ -33,8 +33,9 @@ class HealthConnectRepository @Inject constructor(
         val REQUIRED_PERMISSIONS = setOf(
             HealthPermission.getWritePermission(ExerciseSessionRecord::class),
             HealthPermission.getWritePermission(ActiveCaloriesBurnedRecord::class),
-            HealthPermission.getWritePermission(WeightRecord::class),
-            HealthPermission.getReadPermission(WeightRecord::class),
+            // TODO: re-enable and get google's approval
+//            HealthPermission.getWritePermission(WeightRecord::class),
+//            HealthPermission.getReadPermission(WeightRecord::class),
         )
     }
 
@@ -99,44 +100,48 @@ class HealthConnectRepository @Inject constructor(
     }
 
     suspend fun getWeight(): WeightRecord? {
-        return try {
-            if (!isAvailable) {
-                return null
-            }
-            // get last weight recorded
-            val records = healthConnectClient.readRecords(
-                ReadRecordsRequest<WeightRecord>(
-                    TimeRangeFilter.before(LocalDateTime.now()),
-                    ascendingOrder = false,
-                    pageSize = 1
-                )
-            ).records
-            records.getOrNull(0)
-        } catch (e: Exception) {
-            null
-        }
+        return null
+        // TODO: re-enable
+//        return try {
+//            if (!isAvailable) {
+//                return null
+//            }
+//            // get last weight recorded
+//            val records = healthConnectClient.readRecords(
+//                ReadRecordsRequest<WeightRecord>(
+//                    TimeRangeFilter.before(LocalDateTime.now()),
+//                    ascendingOrder = false,
+//                    pageSize = 1
+//                )
+//            ).records
+//            records.getOrNull(0)
+//        } catch (e: Exception) {
+//            null
+//        }
     }
 
     suspend fun writeWeight(weight: Double): Result<Unit> {
-        return try {
-            if (!isAvailable) {
-                return Result.failure(Exception("Health Connect unavailable"))
-            }
-            val now = ZonedDateTime.now()
-            healthConnectClient.insertRecords(
-                listOf(
-                    WeightRecord(
-                        time = now.toInstant(),
-                        zoneOffset = now.offset,
-                        weight = Mass.kilograms(weight),
-                        metadata = HealthMetadata.manualEntry()
-                    )
-                )
-            )
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return Result.success(Unit)
+        // TODO: re-enable
+//        return try {
+//            if (!isAvailable) {
+//                return Result.failure(Exception("Health Connect unavailable"))
+//            }
+//            val now = ZonedDateTime.now()
+//            healthConnectClient.insertRecords(
+//                listOf(
+//                    WeightRecord(
+//                        time = now.toInstant(),
+//                        zoneOffset = now.offset,
+//                        weight = Mass.kilograms(weight),
+//                        metadata = HealthMetadata.manualEntry()
+//                    )
+//                )
+//            )
+//            Result.success(Unit)
+//        } catch (e: Exception) {
+//            Result.failure(e)
+//        }
     }
 
 

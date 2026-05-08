@@ -56,14 +56,6 @@ class HomeViewModel @Inject constructor(
             add(HealthPermissions.READ_HEART_RATE)
         else
             add(Manifest.permission.BODY_SENSORS)
-        if (
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA &&
-            SdkExtensions.getExtensionVersion(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) >= 13
-        )
-            add(HealthPermissions.READ_HEALTH_DATA_IN_BACKGROUND)
-        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(Manifest.permission.BODY_SENSORS_BACKGROUND)
-        }
     }
     val canShowRationales = combine(permissionsNeeded.map { permission ->
         repository.permissionStateDataStore.hasPreviouslyShownRationale(permission)
