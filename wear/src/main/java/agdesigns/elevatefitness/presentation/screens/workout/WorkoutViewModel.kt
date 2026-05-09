@@ -288,7 +288,6 @@ class WorkoutViewModel
             repository.service
                 .flatMapLatest { it?.exerciseMetricsFlow() ?: flowOf(WorkoutService.ExerciseMetrics()) }
                 .collect {
-                    Duration.ofMillis(0L).toMillis()
                     _state.update { state ->
                         val secondsToHR = state.heartRateBySecond.toMutableMap()
                         it.heartRates.forEach {

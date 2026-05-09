@@ -5,7 +5,6 @@ import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.acos
@@ -62,9 +61,9 @@ class RepAndTempoCounter(
         /** Minimum peak |projected acceleration| (m/s²) required to validate a rep. */
         val accelPeakThreshold: Float = 1.20f,
         /** |velocity| (m/s) that marks the start of an active phase. */
-        val velocityEnterThreshold: Float = 0.18f,
+        val velocityEnterThreshold: Float = 0.5f,
         /** |velocity| (m/s) below which the active phase is considered finished. */
-        val velocityExitThreshold: Float = 0.20f,
+        val velocityExitThreshold: Float = 0.6f,
         /** Gyro magnitude (rad/s) above which the watch is considered actively moving. */
         val gyroActiveThreshold: Float = 0.50f,
 
@@ -80,7 +79,7 @@ class RepAndTempoCounter(
         /** EMA factor for gyroscope (0..1). */
         val gyroSmoothingAlpha: Float = 0.35f,
         /** Leaky-integrator time constant (s⁻¹) used to fight accelerometer bias drift. */
-        val velocityLeakPerSec: Float = 2.0f,  // disabled for now because accel should already do this
+        val velocityLeakPerSec: Float = 2.0f,
 
         // Signature / orientation gating
         /** Max angle (rad) between rep-start and rep-end gravity before it's rejected as noise. */
@@ -97,7 +96,19 @@ class RepAndTempoCounter(
         val firstPhaseIsConcentric: Boolean = true,  // TODO
         val firstPhase: Workout.FirstPhase = Workout.FirstPhase.ALONG_GRAVITY,
         // I.e., gyro position *won't* be the same at beginning and end of phase
-        val rotationMovement: Boolean = false
+        val rotationMovement: Boolean = false,
+
+        // Known gravity signatures — learned from previous sets (null = no prior knowledge)
+        val knownGravityStart: List<Float>? = null,
+        val knownGravityMid: List<Float>? = null,
+        val knownGravityEnd: List<Float>? = null,
+        /**
+         * Minimum similarity [0..1] between the phase gravity snapshot and the known signature
+         * for the phase transition to be accepted.
+         */
+        val phaseSignatureSimilarityThreshold: Float = 0.25f,
+        /** EMA blend weight given to the current-set average when updating known signatures. */
+        val signatureBlendAlpha: Float = 0.35f,
     )
 
     data class RepMetrics(
@@ -225,8 +236,10 @@ class RepAndTempoCounter(
     // Horizontal plane state (used when firstPhaseDirection == PARALLEL)
     private val horizVel = FloatArray(3)
     private var horizontalSpeed: Float = 0f
-    private val phaseStartHorizDir = FloatArray(3)
-    private var phaseStartHorizSpeed: Float = 0f
+    private val phaseAxis = FloatArray(3)
+    private var hasPhaseAxis = false
+    private var accumPhaseAxis = false
+    private var signedHorizVel: Float = 0f
 
     /** Mutable in-progress rep. Promoted to [candidates] when PHASE_B closes cleanly. */
     private data class Candidate(
@@ -290,9 +303,11 @@ class RepAndTempoCounter(
         _repCountFlow.value = 0
         horizVel.fill(0f)
         horizontalSpeed = 0f
-        phaseStartHorizSpeed = 0f
         recordedSamples.clear()
         isRecordingSession = true
+        hasPhaseAxis = false
+        accumPhaseAxis = false
+        signedHorizVel = 0f
     }
 
     private fun recordIfActive(type: SensorType, values: FloatArray, timestampNs: Long) {
@@ -308,9 +323,9 @@ class RepAndTempoCounter(
         gravityVec[0] = values[0]
         gravityVec[1] = values[1]
         gravityVec[2] = values[2]
-        primaryAxis[0] = -values[0] / mag
-        primaryAxis[1] = -values[1] / mag
-        primaryAxis[2] = -values[2] / mag
+        primaryAxis[0] = values[0] / mag
+        primaryAxis[1] = values[1] / mag
+        primaryAxis[2] = values[2] / mag
         hasGravity = true
     }
 
@@ -367,13 +382,263 @@ class RepAndTempoCounter(
             horizVel[2] = horizVel[2] * leak + aHz * dt
         }
         horizontalSpeed = sqrt(horizVel[0]*horizVel[0] + horizVel[1]*horizVel[1] + horizVel[2]*horizVel[2])
+        signedHorizVel = if (hasPhaseAxis)
+            horizVel[0] * phaseAxis[0] + horizVel[1] * phaseAxis[1] + horizVel[2] * phaseAxis[2]
+        else 0f
+        if (hasPhaseAxis && accumPhaseAxis && horizontalSpeed > 0.05f) {
+            val invSpd = 1f / horizontalSpeed
+            phaseAxis[0] = phaseAxis[0] * (1f - a) + horizVel[0] * a * invSpd
+            phaseAxis[1] = phaseAxis[1] * (1f - a) + horizVel[1] * a * invSpd
+            phaseAxis[2] = phaseAxis[2] * (1f - a) + horizVel[2] * a * invSpd
+            // Re-normalise to keep it a unit vector despite floating-point drift
+            val mag = sqrt(phaseAxis[0]*phaseAxis[0] + phaseAxis[1]*phaseAxis[1] + phaseAxis[2]*phaseAxis[2])
+            if (mag > 0.01f) { phaseAxis[0] /= mag; phaseAxis[1] /= mag; phaseAxis[2] /= mag }
+        }
         lastAccelNs = timestampNs
         if (dt in 0f..0.5f) {
             velocity = velocity * (1f - params.velocityLeakPerSec * dt) + ap * dt
         }
-
-        advance(ap, dt, timestampNs)
+        // TODO: was ap, now accel is better?
+        val accel = smoothedAccel[0] + smoothedAccel[1] + smoothedAccel[2]
+        advance(accel, dt, timestampNs)
         setEndNs = timestampNs
+    }
+
+
+    /**
+     * Returns true when [current] is similar enough to [known], or when signature gating
+     * is disabled ([ExerciseParams.phaseSignatureSimilarityThreshold] == 0 or known is null).
+     */
+    private fun knownSigOk(current: FloatArray, known: List<Float>?): Boolean {
+        val thr = params.phaseSignatureSimilarityThreshold
+        if (known == null || known.size < 3 || thr <= 0f) return true
+        val knownArr = FloatArray(3) { known[it] }
+        return angleToScore(angleBetween(current, knownArr)) >= thr
+    }
+
+    /** Expected sign of `velocity` for PHASE_A. */
+    private fun expectedPhaseASign(): Int = when (params.firstPhase) {
+        Workout.FirstPhase.AGAINST_GRAVITY -> +1
+        Workout.FirstPhase.ALONG_GRAVITY -> -1
+        else -> +1
+    }
+
+    private fun signedVel(): Float =
+        if (params.firstPhase == Workout.FirstPhase.PARALLEL) signedHorizVel else velocity
+
+    private var lastPrintSecs = 0L
+    private fun directionGateOk(enteringPhaseA: Boolean): Boolean {
+        val expectedSign = expectedPhaseASign() * if (enteringPhaseA) 1 else -1
+        val v = signedVel()
+        if (System.currentTimeMillis() / 1000 > lastPrintSecs) {
+            lastPrintSecs = System.currentTimeMillis() / 1000
+            Log.d("RepAndTempoCounter", "v=$v, expectedSign=$expectedSign")
+        }
+        return v * expectedSign > params.velocityEnterThreshold
+    }
+
+    private fun effectivePhaseSign(enteringPhaseA: Boolean): Int {
+        val s = expectedPhaseASign() * if (enteringPhaseA) 1 else -1
+        // PARALLEL: we don't use the vertical sign; return 0 and let horizontal reversal check take over.
+        return if (s == 0) 0 else s
+    }
+
+    private fun advance(accel: Float, dt: Float, nowNs: Long) {
+        val velAbs = abs(signedVel())
+        val reversalVel = signedVel() * phaseDirectionSign
+
+        val phaseMs: Long = if (phaseStartNs == 0L) 0L else (nowNs - phaseStartNs) / 1_000_000L
+
+        when (phase) {
+            Phase.IDLE -> {
+                if (params.firstPhase == Workout.FirstPhase.PARALLEL) {
+                    val canLatch = horizontalSpeed > params.velocityEnterThreshold
+                    if (canLatch && knownSigOk(gravityVec, params.knownGravityStart)) {
+                        Log.d("RepAndTempoCounter", "Latched with horizontal speed $horizontalSpeed")
+                        // Project current horizontal velocity onto the horizontal plane
+                        // and use its direction as the rep's phase axis.
+                        phaseAxis[0] = horizVel[0] / horizontalSpeed
+                        phaseAxis[1] = horizVel[1] / horizontalSpeed
+                        phaseAxis[2] = horizVel[2] / horizontalSpeed
+                        Log.d("RepAndTempoCounter", "phaseAxis[0]: ${phaseAxis[0]}, phaseAxis[1]: ${phaseAxis[1]}, phaseAxis[2]: ${phaseAxis[2]}")
+                        hasPhaseAxis = true
+                        accumPhaseAxis = true
+                        beginNewRep(nowNs)
+                        startPhase(Phase.PHASE_A, sign = -1, nowNs = nowNs)
+                    }
+                } else if (directionGateOk(enteringPhaseA = true)) {
+                    if (!knownSigOk(gravityVec, params.knownGravityStart)) {
+                        Log.d("RepAndTempoCounter", "IDLE: skip – start gravity mismatch")
+                        return
+                    }
+                    beginNewRep(nowNs)
+                    Log.d("RepAndTempoCounter", "IDLE: begin new rep")
+                    startPhase(Phase.PHASE_A, sign = effectivePhaseSign(enteringPhaseA = true), nowNs = nowNs)
+                }
+            }
+
+            Phase.PHASE_A -> {
+                accumulatePhase(accel, dt)
+                val reversed = reversalVel < -params.velocityEnterThreshold
+                val stopped = velAbs < params.velocityExitThreshold
+                if (phaseMs >= params.minPhaseDurationMs && (stopped || reversed)) {
+                    Log.d("RepAndTempoCounter", "Phase A passed")
+                    val rep = currentRep ?: return
+                    gravityVec.copyInto(rep.gravityMid)
+                    // Non-rotating exercises shouldn't see large orientation drift mid-phase either.
+                    if (!params.rotationMovement) {
+                        val midDrift = angleBetween(rep.gravityStart, rep.gravityMid)
+                        if (midDrift.isFinite() && midDrift > params.maxOrientationDriftRad * 2f) {
+                            Log.d("RepAndTempoCounter", "abandon rep due to rotation drift")
+                            abandonRep()
+                            return
+                        }
+                    }
+                    if (!knownSigOk(rep.gravityMid, params.knownGravityMid)) {
+                        Log.d("RepAndTempoCounter", "abandon rep: mid gravity mismatch")
+                        abandonRep()
+                        return
+                    }
+                    val rom = abs(phaseDisplacement)
+                    if (params.firstPhaseIsConcentric) {
+                        rep.concentricMs = phaseMs
+                        rep.concentricRomM = rom
+                    } else {
+                        rep.eccentricMs = phaseMs
+                        rep.eccentricRomM = rom
+                    }
+                    rep.peakVelocity = max(rep.peakVelocity, phasePeakVelocity)
+                    rep.peakAccel = max(rep.peakAccel, phasePeakAccel)
+                    accumPhaseAxis = false
+                    startPhase(Phase.PAUSE_AB, sign = 0, nowNs = nowNs)
+                } else if (phaseMs > params.maxRepDurationMs) {
+                    Log.d("RepAndTempoCounter", "Phase A: abandon rep due to duration")
+                    abandonRep()
+                }
+            }
+
+            Phase.PAUSE_AB -> {
+                if (directionGateOk(enteringPhaseA = false)) {
+                    Log.d("RepAndTempoCounter", "Pause AB passed")
+                    currentRep?.let {
+                        if (params.firstPhaseIsConcentric) it.pauseTopMs = phaseMs
+                        else it.pauseBottomMs = phaseMs
+                    }
+                    accumPhaseAxis = false
+                    startPhase(Phase.PHASE_B, sign = effectivePhaseSign(enteringPhaseA = false), nowNs = nowNs)
+                } else if (phaseMs > params.maxPauseDurationMs) {
+                    Log.d("RepAndTempoCounter", "Pause AB: abandon rep due to pause")
+                    abandonRep()
+                }
+            }
+
+            Phase.PHASE_B -> {
+                accumulatePhase(accel, dt)
+                val stopped = velAbs < params.velocityExitThreshold
+                val reversed = reversalVel < -params.velocityEnterThreshold
+                if (phaseMs > params.maxRepDurationMs) {
+                    Log.d("RepAndTempoCounter", "Phase B: abandon rep due to duration")
+                    abandonRep()
+                } else if (phaseMs >= params.minPhaseDurationMs && (stopped || reversed)) {
+                    Log.d("RepAndTempoCounter", "Phase B")
+                    val rep = currentRep ?: return
+                    gravityVec.copyInto(rep.gravityEnd)
+                    rep.angularPath = repAngularPath
+                    rep.peakAngularVel = repPeakAngularVel
+
+                    val rom = abs(phaseDisplacement)
+                    if (params.firstPhaseIsConcentric) {
+                        rep.eccentricMs = phaseMs
+                        rep.eccentricRomM = rom
+                    } else {
+                        rep.concentricMs = phaseMs
+                        rep.concentricRomM = rom
+                    }
+                    rep.peakVelocity = max(rep.peakVelocity, phasePeakVelocity)
+                    rep.peakAccel = max(rep.peakAccel, phasePeakAccel)
+
+                    val totalMs = rep.concentricMs + rep.eccentricMs + rep.pauseTopMs
+                    val accelOk = rep.peakAccel >= params.accelPeakThreshold
+                    val durationOk = totalMs in params.minRepDurationMs..params.maxRepDurationMs
+                    // Within-rep orientation gate: the watch must return to approximately
+                    // the same orientation it started the rep in. This alone kills most
+                    // of the pre-set noise (scratches, grip changes, walking to the bar).
+                    val drift = angleBetween(rep.gravityStart, rep.gravityEnd)
+                    // this filters too many true positives, disable for now
+                    val orientationOk = true // drift.isFinite() && drift <= params.maxOrientationDriftRad
+                    val endSigOk = knownSigOk(rep.gravityEnd, params.knownGravityEnd)
+
+                    if (accelOk && durationOk && orientationOk && endSigOk) {
+                        candidates.add(rep)
+                        _repCountFlow.value = candidates.size
+                        Log.d("RepAndTempoCounter", "Reps success: ${candidates.size}")
+                    } else {
+                        Log.d("RepAndTempoCounter", "Reps fail: accel=$accelOk, duration=$durationOk, orientation=$orientationOk, endSig=$endSigOk, drift=$drift")
+                    }
+
+                    currentRep = null
+                    startPhase(Phase.PAUSE_BA, sign = 0, nowNs = nowNs)
+                }
+            }
+
+            Phase.PAUSE_BA -> {
+                if (directionGateOk(enteringPhaseA = true)) {
+                    candidates.lastOrNull()?.let {
+                        if (params.firstPhaseIsConcentric) it.pauseBottomMs = phaseMs
+                        else it.pauseTopMs = phaseMs
+                    }
+                    Log.d("RepAndTempoCounter", "Phase BA: begin new rep")
+                    beginNewRep(nowNs)
+                    startPhase(Phase.PHASE_A, sign = effectivePhaseSign(enteringPhaseA = true), nowNs = nowNs)
+                } else if (phaseMs > params.maxPauseDurationMs) {
+                    phase = Phase.IDLE
+                    velocity = 0f
+                }
+            }
+
+        }
+    }
+
+    private fun beginNewRep(nowNs: Long) {
+        val rep = Candidate(startNs = nowNs)
+        gravityVec.copyInto(rep.gravityStart)
+        currentRep = rep
+        repAngularPath = 0f
+        repPeakAngularVel = 0f
+    }
+
+    private fun startPhase(newPhase: Phase, sign: Int, nowNs: Long) {
+        phase = newPhase
+        phaseStartNs = nowNs
+        phaseDisplacement = 0f
+        phasePeakVelocity = 0f
+        phasePeakAccel = 0f
+        phaseDirectionSign = sign
+
+        // For PARALLEL exercises: flush the horizontal integrator whenever we enter a
+        // pause so stale PHASE_A velocity doesn't block the PHASE_B direction gate.
+        if (newPhase == Phase.PAUSE_AB || newPhase == Phase.PAUSE_BA) {
+            horizVel.fill(0f)
+            horizontalSpeed = 0f
+            signedHorizVel = 0f
+        }
+    }
+
+    private fun accumulatePhase(accel: Float, dt: Float) {
+        val signedSpeed = signedVel()
+        phaseDisplacement += signedSpeed * dt
+        phasePeakVelocity = max(phasePeakVelocity, abs(signedSpeed))
+        phasePeakAccel = max(phasePeakAccel, abs(accel))
+    }
+
+    private fun abandonRep() {
+        currentRep = null
+        velocity = 0f
+        phase = Phase.IDLE
+        horizVel.fill(0f)
+        accumPhaseAxis = false
+        phaseAxis.fill(0f)
+        hasPhaseAxis = false
     }
 
     /**
@@ -389,6 +654,7 @@ class RepAndTempoCounter(
         this.reportedReps = reportedReps
         tailAnchoredSignatureScoring(reportedReps)
         tuneParameters(detected = candidates.size, reported = reportedReps)
+        params = getUpdatedSignatures()
     }
 
     fun getResults(): SetResult {
@@ -440,217 +706,43 @@ class RepAndTempoCounter(
 
     fun getTunedParameters(): ExerciseParams = params
 
-    /** Expected sign of `velocity` for PHASE_A. Zero means "use horizontal signal instead". */
-    private fun expectedPhaseASign(): Int = when (params.firstPhase) {
-        Workout.FirstPhase.AGAINST_GRAVITY -> +1
-        Workout.FirstPhase.ALONG_GRAVITY -> -1
-        Workout.FirstPhase.PARALLEL -> 0
-        else -> 0
-    }
-
-    /** True if the current motion matches the expected direction for entering the given phase. */
-    private fun directionGateOk(enteringPhaseA: Boolean, gyroMag: Float): Boolean {
-//        if (gyroMag <= params.gyroActiveThreshold) {
-//            return false
-//        }
-        val sign = expectedPhaseASign() * if (enteringPhaseA) 1 else -1
-        val thr = params.velocityEnterThreshold
-        return when (sign) {
-            +1 -> velocity > thr
-            -1 -> velocity < -thr
-            else -> horizontalSpeed > thr && horizontalSpeed > abs(velocity) * 1.5f
+    /**
+     * Returns params updated with known gravity signatures blended from the validated reps
+     * of this set.  Call after [reportActualReps] so the selection reflects the user-corrected
+     * count.  New signatures are EMA-blended with [ExerciseParams.signatureBlendAlpha].
+     *
+     * Persist the returned params and pass them as [initialParams] for the next set so that
+     * phase gating improves over time.
+     */
+    fun getUpdatedSignatures(): ExerciseParams {
+        val reported = reportedReps
+        val selected: List<Candidate> = when {
+            reported == null -> candidates.toList()
+            reported == 0    -> return params
+            candidates.size > reported ->
+                candidates.sortedByDescending { it.rankingScore(params.signatureWeight) }
+                    .take(reported).sortedBy { it.startNs }
+            else -> candidates.toList()
         }
-    }
+        if (selected.isEmpty()) return params
 
-    private fun effectivePhaseSign(enteringPhaseA: Boolean): Int {
-        val s = expectedPhaseASign() * if (enteringPhaseA) 1 else -1
-        // PARALLEL: we don't use the vertical sign; return 0 and let horizontal reversal check take over.
-        return if (s == 0) 0 else s
-    }
+        val avgStart = averageDirection(selected.map { it.gravityStart })
+        val avgMid = averageDirection(selected.map { it.gravityMid })
+        val avgEnd = averageDirection(selected.map { it.gravityEnd })
+        val alpha = params.signatureBlendAlpha
 
-    private fun advance(accel: Float, dt: Float, nowNs: Long) {
-        val gyroMag = sqrt(
-            smoothedGyro[0] * smoothedGyro[0] +
-                    smoothedGyro[1] * smoothedGyro[1] +
-                    smoothedGyro[2] * smoothedGyro[2]
+        fun blend(current: FloatArray, known: List<Float>?): List<Float> {
+            if (known == null || known.size < 3) return current.toList()
+            val b = FloatArray(3) { i -> alpha * current[i] + (1f - alpha) * known[i] }
+            val mag = sqrt(b[0] * b[0] + b[1] * b[1] + b[2] * b[2])
+            return if (mag > 1e-6f) b.map { it / mag } else b.toList()
+        }
+
+        return params.copy(
+            knownGravityStart = blend(avgStart, params.knownGravityStart),
+            knownGravityMid = blend(avgMid, params.knownGravityMid),
+            knownGravityEnd = blend(avgEnd, params.knownGravityEnd),
         )
-        val velAbs: Float
-        val reversalVel: Float  // signed magnitude along the phase-start direction
-        if (params.firstPhase == Workout.FirstPhase.PARALLEL) {
-            velAbs = horizontalSpeed
-            reversalVel = if (phaseStartHorizSpeed > 0f)
-                horizVel[0] * phaseStartHorizDir[0] +
-                        horizVel[1] * phaseStartHorizDir[1] +
-                        horizVel[2] * phaseStartHorizDir[2]
-            else horizontalSpeed
-        } else {
-            velAbs = abs(velocity)
-            reversalVel = velocity * phaseDirectionSign  // positive while moving in-phase, negative after reversal
-        }
-
-        val phaseMs: Long = if (phaseStartNs == 0L) 0L else (nowNs - phaseStartNs) / 1_000_000L
-
-        when (phase) {
-            Phase.IDLE -> {
-                if (directionGateOk(enteringPhaseA = true, gyroMag = gyroMag)) {
-                    beginNewRep(nowNs)
-                    Log.d("RepAndTempoCounter", "IDLE: begin new rep")
-                    startPhase(Phase.PHASE_A, sign = effectivePhaseSign(enteringPhaseA = true), nowNs = nowNs)
-                }
-            }
-
-            Phase.PHASE_A -> {
-                accumulatePhase(accel, dt)
-                val reversed = reversalVel < -params.velocityEnterThreshold
-                val stopped = velAbs < params.velocityExitThreshold
-                if (phaseMs >= params.minPhaseDurationMs && (stopped || reversed)) {
-                    Log.d("RepAndTempoCounter", "Phase A passed")
-                    val rep = currentRep ?: return
-                    gravityVec.copyInto(rep.gravityMid)
-                    // Non-rotating exercises shouldn't see large orientation drift mid-phase either.
-                    if (!params.rotationMovement) {
-                        val midDrift = angleBetween(rep.gravityStart, rep.gravityMid)
-                        if (midDrift.isFinite() && midDrift > params.maxOrientationDriftRad * 2f) {
-                            Log.d("RepAndTempoCounter", "abandon rep due to rotation drift")
-                            abandonRep()
-                            return
-                        }
-                    }
-                    val rom = abs(phaseDisplacement)
-                    if (params.firstPhaseIsConcentric) {
-                        rep.concentricMs = phaseMs
-                        rep.concentricRomM = rom
-                    } else {
-                        rep.eccentricMs = phaseMs
-                        rep.eccentricRomM = rom
-                    }
-                    rep.peakVelocity = max(rep.peakVelocity, phasePeakVelocity)
-                    rep.peakAccel = max(rep.peakAccel, phasePeakAccel)
-                    startPhase(Phase.PAUSE_AB, sign = 0, nowNs = nowNs)
-                } else if (phaseMs > params.maxRepDurationMs) {
-                    Log.d("RepAndTempoCounter", "Phase A: abandon rep due to duration")
-                    abandonRep()
-                }
-            }
-
-            Phase.PAUSE_AB -> {
-                if (directionGateOk(enteringPhaseA = false, gyroMag = gyroMag)) {
-                    Log.d("RepAndTempoCounter", "Phase AB passed")
-                    currentRep?.let {
-                        if (params.firstPhaseIsConcentric) it.pauseTopMs = phaseMs
-                        else it.pauseBottomMs = phaseMs
-                    }
-                    startPhase(Phase.PHASE_B, sign = effectivePhaseSign(enteringPhaseA = false), nowNs = nowNs)
-                } else if (phaseMs > params.maxPauseDurationMs) {
-                    Log.d("RepAndTempoCounter", "Phase AB: abandon rep due to pause")
-                    abandonRep()
-                }
-            }
-
-            Phase.PHASE_B -> {
-                accumulatePhase(accel, dt)
-                val stopped = velAbs < params.velocityExitThreshold
-                if (phaseMs >= params.minPhaseDurationMs && stopped) {
-                    Log.d("RepAndTempoCounter", "Phase B")
-                    val rep = currentRep ?: return
-                    gravityVec.copyInto(rep.gravityEnd)
-                    rep.angularPath = repAngularPath
-                    rep.peakAngularVel = repPeakAngularVel
-
-                    val rom = abs(phaseDisplacement)
-                    if (params.firstPhaseIsConcentric) {
-                        rep.eccentricMs = phaseMs
-                        rep.eccentricRomM = rom
-                    } else {
-                        rep.concentricMs = phaseMs
-                        rep.concentricRomM = rom
-                    }
-                    rep.peakVelocity = max(rep.peakVelocity, phasePeakVelocity)
-                    rep.peakAccel = max(rep.peakAccel, phasePeakAccel)
-
-                    val totalMs = rep.concentricMs + rep.eccentricMs + rep.pauseTopMs
-                    val accelOk = rep.peakAccel >= params.accelPeakThreshold
-                    val durationOk = totalMs in params.minRepDurationMs..params.maxRepDurationMs
-                    // Within-rep orientation gate: the watch must return to approximately
-                    // the same orientation it started the rep in. This alone kills most
-                    // of the pre-set noise (scratches, grip changes, walking to the bar).
-                    val drift = angleBetween(rep.gravityStart, rep.gravityEnd)
-                    // this filters too many true positives, disable for now
-                    val orientationOk = true // drift.isFinite() && drift <= params.maxOrientationDriftRad
-
-                    if (accelOk && durationOk && orientationOk) {
-                        candidates.add(rep)
-                        _repCountFlow.value = candidates.size
-                        Log.d("RepAndTempoCounter", "Reps success: ${candidates.size}")
-                    } else {
-                        Log.d("RepAndTempoCounter", "Reps fail: $accelOk, $durationOk, $orientationOk, drift was $drift")
-                    }
-
-                    currentRep = null
-                    startPhase(Phase.PAUSE_BA, sign = 0, nowNs = nowNs)
-                } else if (phaseMs > params.maxRepDurationMs) {
-                    Log.d("RepAndTempoCounter", "Phase B: abandon rep due to duration")
-                    abandonRep()
-                }
-            }
-
-            Phase.PAUSE_BA -> {
-                if (directionGateOk(enteringPhaseA = true, gyroMag = gyroMag)) {
-                    candidates.lastOrNull()?.let {
-                        if (params.firstPhaseIsConcentric) it.pauseBottomMs = phaseMs
-                        else it.pauseTopMs = phaseMs
-                    }
-                    Log.d("RepAndTempoCounter", "Phase BA: begin new rep")
-                    beginNewRep(nowNs)
-                    startPhase(Phase.PHASE_A, sign = effectivePhaseSign(enteringPhaseA = true), nowNs = nowNs)
-                } else if (phaseMs > params.maxPauseDurationMs) {
-                    phase = Phase.IDLE
-                    velocity = 0f
-                }
-            }
-
-        }
-    }
-
-    private fun beginNewRep(nowNs: Long) {
-        val rep = Candidate(startNs = nowNs)
-        gravityVec.copyInto(rep.gravityStart)
-        currentRep = rep
-        repAngularPath = 0f
-        repPeakAngularVel = 0f
-    }
-
-    private fun startPhase(newPhase: Phase, sign: Int, nowNs: Long) {
-        phase = newPhase
-        phaseStartNs = nowNs
-        phaseDisplacement = 0f
-        phasePeakVelocity = 0f
-        phasePeakAccel = 0f
-        phaseDirectionSign = sign
-
-        if (params.firstPhase == Workout.FirstPhase.PARALLEL && horizontalSpeed > 1e-4f) {
-            phaseStartHorizDir[0] = horizVel[0] / horizontalSpeed
-            phaseStartHorizDir[1] = horizVel[1] / horizontalSpeed
-            phaseStartHorizDir[2] = horizVel[2] / horizontalSpeed
-            phaseStartHorizSpeed = horizontalSpeed
-        } else {
-            phaseStartHorizSpeed = 0f
-        }
-    }
-
-    private fun accumulatePhase(accel: Float, dt: Float) {
-        val signedSpeed = if (params.firstPhase == Workout.FirstPhase.PARALLEL) horizontalSpeed
-        else velocity
-        phaseDisplacement += signedSpeed * dt
-        phasePeakVelocity = max(phasePeakVelocity, abs(signedSpeed))
-        phasePeakAccel = max(phasePeakAccel, abs(accel))
-    }
-
-    private fun abandonRep() {
-        currentRep = null
-        velocity = 0f
-        phase = Phase.IDLE
-        horizVel.fill(0f)
     }
 
     /**
@@ -763,6 +855,11 @@ class RepAndTempoCounter(
         velocityEnterThreshold = (params.velocityEnterThreshold / sensitivity).coerceIn(0.05f,  2.00f),
         velocityExitThreshold = (params.velocityExitThreshold * sensitivity).coerceIn(0.02f,  1.00f),
         gyroActiveThreshold = (params.gyroActiveThreshold / sensitivity).coerceIn(0.10f,  3.00f),
+        // Higher sensitivity → lower similarity bar (easier for reps to pass the phase gate).
+        phaseSignatureSimilarityThreshold =
+            if (params.phaseSignatureSimilarityThreshold > 0f)
+                (params.phaseSignatureSimilarityThreshold / sensitivity).coerceIn(0f, 1f)
+            else 0f,
     )
 
     /**

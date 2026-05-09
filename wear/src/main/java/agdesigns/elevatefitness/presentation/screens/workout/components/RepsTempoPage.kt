@@ -152,7 +152,7 @@ fun PaceChart(result: RepAndTempoCounter.SetResult) {
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(result) {
         val romValues = result.reps.map { it.rangeOfMotionM * 100.0 }
-        val durationValues = result.reps.map { (it.concentricMs + it.eccentricMs) / 1000 }
+        val durationValues = result.reps.map { (it.concentricMs + it.eccentricMs) }
         modelProducer.runTransaction {
             columnSeries { series(romValues) }
             lineSeries { series(durationValues) }
@@ -160,7 +160,7 @@ fun PaceChart(result: RepAndTempoCounter.SetResult) {
     }
     val repFormatter = CartesianValueFormatter { _, x, _ -> "R${(x.toInt() + 1)}" }
     val romFormatter = CartesianValueFormatter { _, y, _ -> "${"%.0f".format(y)}" }
-    val durFormatter = CartesianValueFormatter { _, y, _ -> "${"%.1f".format(y)}" }
+    val durFormatter = CartesianValueFormatter { _, y, _ -> "${"%.1f".format(y / 1000)}" }
     Column(Modifier.fillMaxRectangle()) {
 //        Text(
 //            "Last set tracking",
@@ -172,7 +172,11 @@ fun PaceChart(result: RepAndTempoCounter.SetResult) {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(bottom = 4.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f)
+            ) {
                 Box(Modifier
                     .size(10.dp)
                     .background(
@@ -181,7 +185,11 @@ fun PaceChart(result: RepAndTempoCounter.SetResult) {
                     ))
                 Text(stringResource(R.string.rom_cm))//, style = MaterialTheme.typography.labelSmall)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f)
+            ) {
                 Box(Modifier
                     .size(10.dp)
                     .background(MaterialTheme.colorScheme.tertiary, MaterialTheme.shapes.extraSmall))

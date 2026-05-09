@@ -22,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.LocalAmbientModeManager
 import androidx.wear.compose.foundation.rememberAmbientModeManager
+import androidx.wear.compose.material3.MaterialTheme
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import javax.inject.Inject
@@ -41,7 +42,13 @@ class WearActivity : ComponentActivity() {
             val activityAmbientModeManager = rememberAmbientModeManager()
             CompositionLocalProvider(LocalAmbientModeManager provides activityAmbientModeManager) {
                 PerfectGymCoachTheme {
-                    ProvideVicoTheme(rememberM3VicoTheme()) {
+                    ProvideVicoTheme(
+                        rememberM3VicoTheme(
+                            columnCartesianLayerColors = MaterialTheme.colorScheme.run { listOf(primary, secondary, tertiary) },
+                            lineColor = MaterialTheme.colorScheme.outline,
+                            textColor = MaterialTheme.colorScheme.onBackground,
+                        )
+                    ) {
                         val navController = rememberSwipeDismissableNavController()
                         AppScaffold {
                             SwipeDismissableNavHost(
