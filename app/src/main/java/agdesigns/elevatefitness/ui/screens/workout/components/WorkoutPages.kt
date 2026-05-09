@@ -1677,9 +1677,11 @@ private fun SetTrackingChart(
             lineSeries { series(durationValues) }
         }
     }
+    val cmString = stringResource(R.string.centimeters_short)
+    val msString = stringResource(R.string.milliseconds_short)
     val repFormatter = CartesianValueFormatter { _, x, _ -> "R${(x.toInt() + 1)}" }
-    val romFormatter = CartesianValueFormatter { _, y, _ -> "%.1f".format(y) }
-    val durFormatter = CartesianValueFormatter { _, y, _ -> "%.0f".format(y) }
+    val romFormatter = CartesianValueFormatter { _, y, _ -> "${"%.0f".format(y)}$cmString" }
+    val durFormatter = CartesianValueFormatter { _, y, _ -> "${"%.0f".format(y)}$msString" }
     Column {
         Text(
             stringResource(R.string.last_set_tracking_data),

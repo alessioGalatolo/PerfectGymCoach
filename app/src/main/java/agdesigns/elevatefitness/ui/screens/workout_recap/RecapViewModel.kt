@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 enum class HealthConnectExportStatus {
@@ -47,6 +48,7 @@ data class RecapState(
     val maxHR: Double = 0.0,
     val minHR: Double = 0.0,
     val hrChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
+    val secondsToExercise: Map<Int, ExerciseRecordAndInfo> = emptyMap(),
     val imperialSystem: Boolean = false,
     val index2date: Map<Int, ZonedDateTime> = emptyMap(),
     val isHealthConnectAvailable: Boolean = false,
@@ -201,6 +203,7 @@ class RecapViewModel @Inject constructor(
                                     var maxHR = 0.0
                                     var minHR = 0.0
                                     var hasHRData = false
+                                    var secondsToExercise: MutableMap<Int, ExerciseRecordAndInfo> = mutableMapOf()
                                     if (workoutRecord.heartRates != null) {
                                         val hrMax = workoutRecord.heartRates.max()
                                         val hrMin = workoutRecord.heartRates.min()
@@ -209,16 +212,35 @@ class RecapViewModel @Inject constructor(
                                         minHR = (hrMin - (hrMin % 10)).toDouble()
                                         state.value.hrChartProducer.runTransaction {
                                             lineSeries {
-                                                // heartRates can be a lot. Use max 100, samples equally spaced
-                                                val finalSize = minOf(workoutRecord.heartRates.size, 50000)
-                                                val samplingStep = maxOf(1, (workoutRecord.heartRates.size.toFloat() / finalSize.toFloat()).toInt())
-                                                val newList = workoutRecord.heartRates.slice(
-                                                    0 until workoutRecord.heartRates.size step samplingStep
-                                                )
                                                 series(
-                                                    newList.indices.toList(),
-                                                    newList
+                                                    workoutRecord.heartRates.indices.toList(),
+                                                    workoutRecord.heartRates
                                                 )
+                                            }
+                                        }
+                                        val workoutStart = workoutRecord.startDate
+                                        if (workoutStart != null) {
+                                            var recordsIndex = 0
+                                            var currentRecord = sortedDistinctExercises.getOrNull(0)
+                                            var nextOffsetSeconds = sortedDistinctExercises.getOrNull(1)?.date?.let {
+                                                ChronoUnit.SECONDS.between(
+                                                    workoutStart,
+                                                    it
+                                                )
+                                            }
+                                            for (second in workoutRecord.heartRates.indices) {
+                                                if (nextOffsetSeconds != null && second >= nextOffsetSeconds) {
+                                                    currentRecord = sortedDistinctExercises.getOrNull(++recordsIndex)
+                                                    nextOffsetSeconds = sortedDistinctExercises.getOrNull(recordsIndex + 1)?.date?.let {
+                                                        ChronoUnit.SECONDS.between(
+                                                            workoutStart,
+                                                            it
+                                                        )
+                                                    }
+                                                }
+                                                if (currentRecord == null)
+                                                    break
+                                                secondsToExercise[second] = currentRecord
                                             }
                                         }
                                     }
@@ -253,7 +275,8 @@ class RecapViewModel @Inject constructor(
                                             index2date = index2date,
                                             hasHRData = hasHRData,
                                             maxHR = maxHR,
-                                            minHR = minHR
+                                            minHR = minHR,
+                                            secondsToExercise = secondsToExercise
                                         )
                                     }
 

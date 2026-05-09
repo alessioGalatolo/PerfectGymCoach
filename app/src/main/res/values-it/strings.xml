@@ -921,4 +921,6 @@
     <string name="last_set_tracking_data">Dati tracciati ultima serie</string>
     <string name="rom_cm">ROM (cm)</string>
     <string name="duration_ms">Tempo (ms)</string>
+    <string name="centimeters_short">cm</string>
+    <string name="milliseconds_short">ms</string>
 </resources>

@@ -16,7 +16,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -40,6 +39,7 @@ import agdesigns.elevatefitness.ui.common.highlightSeriesKey
 import agdesigns.elevatefitness.ui.common.lineProviderWithHighlight
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.health.connect.client.PermissionController
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
@@ -72,6 +73,7 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.common.LegendItem
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
+import com.patrykandpatrick.vico.compose.cartesian.decoration.Decoration
 import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalBox
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
@@ -81,11 +83,21 @@ import com.patrykandpatrick.vico.compose.cartesian.marker.LineCartesianLayerMark
 import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.Position
+import com.patrykandpatrick.vico.compose.common.component.LineComponent
 import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.unit.sp
+import com.patrykandpatrick.vico.compose.cartesian.CartesianMeasuringContext
+import com.patrykandpatrick.vico.compose.cartesian.Zoom
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayerDimensions
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import kotlinx.coroutines.delay
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
@@ -399,6 +411,36 @@ fun WorkoutRecap(
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
                             )
+                            val initialZoom = 0f
+                            val targetZoom = 0.05f
+                            val zoomState = rememberVicoZoomState(initialZoom = Zoom.fixed(initialZoom))
+                            val scrollState = rememberVicoScrollState(
+                                scrollEnabled = true,
+                                initialScroll = Scroll.Absolute.Start
+                            )
+                            // Show to the user that this chart can be zoom-ed in
+                            LaunchedEffect(Unit) {
+                                val delayMs = 250
+                                val easing = FastOutSlowInEasing
+                                val durationMs = 800
+
+                                delay(delayMs.toLong())
+
+                                val startTime = System.currentTimeMillis()
+                                while (true) {
+                                    val elapsed = System.currentTimeMillis() - startTime
+                                    val fraction = (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
+                                    val easedFraction = easing.transform(fraction)
+
+                                    // Interpolate from initialZoom down to 1f (Zoom.Content equivalent)
+                                    val currentZoom = initialZoom + (targetZoom - initialZoom) * easedFraction
+                                    zoomState.zoom(Zoom.fixed(currentZoom))
+                                    scrollState.scroll(Scroll.Absolute.Start)
+
+                                    if (fraction >= 1f) break
+                                    delay(16L) // ~60fps
+                                }
+                            }
                             CartesianChartHost(
                                 chart = rememberCartesianChart(
                                     cartesianLayer,
@@ -408,13 +450,32 @@ fun WorkoutRecap(
                                             VerticalAxis.ItemPlacer.step(step = { 20.0 })
                                         }
                                     ),
+                                    bottomAxis = HorizontalAxis.rememberBottom(
+                                        valueFormatter = CartesianValueFormatter { _, value, _ ->
+                                            // put exercise names
+                                            state.secondsToExercise[value.toInt()]?.name ?: "."
+                                        },
+                                        label = rememberAxisLabelComponent(
+                                            TextStyle(vicoTheme.textColor, 8.sp, textAlign = TextAlign.Center),
+                                            lineCount = 2
+                                        ),
+                                        itemPlacer = remember {
+                                            FilteredHorizontalAxisItemPlacer(
+                                                allowedXValues =
+                                                    state.secondsToExercise.toList().groupBy {
+                                                        it.second
+                                                    }.map {
+                                                        it.value.minOf { it.first }.toDouble()
+                                                    }
+                                            )
+                                        }
+                                    )
                                 ),
                                 modelProducer = state.hrChartProducer,
                                 modifier = Modifier.padding(8.dp),
-                                scrollState = rememberVicoScrollState(
-                                    scrollEnabled = false,
-                                    initialScroll = Scroll.Absolute.End
-                                ),
+                                scrollState = scrollState,
+                                zoomState = zoomState,
+                                animateIn = false
                             )
                         }
                     }
@@ -969,4 +1030,72 @@ private fun HrZoneCard(
             }
         }
     }
+}
+
+/**
+ * A [HorizontalAxis.ItemPlacer] that only renders labels, ticks, and guidelines
+ * at X values present in [allowedXValues].
+ *
+ * @param allowedXValues The X values at which axis items should appear.
+ */
+class FilteredHorizontalAxisItemPlacer(
+    allowedXValues: List<Double>,
+) : HorizontalAxis.ItemPlacer {
+
+    private val sortedXValues: List<Double> = allowedXValues
+        .distinct()
+        .sorted()
+
+    override fun getShiftExtremeLines(context: CartesianDrawingContext): Boolean = true
+
+    override fun getFirstLabelValue(
+        context: CartesianMeasuringContext,
+        maxLabelWidth: Float,
+    ): Double? = sortedXValues.firstOrNull()
+
+    override fun getLastLabelValue(
+        context: CartesianMeasuringContext,
+        maxLabelWidth: Float,
+    ): Double? = sortedXValues.lastOrNull()
+
+    override fun getLabelValues(
+        context: CartesianDrawingContext,
+        visibleXRange: ClosedFloatingPointRange<Double>,
+        fullXRange: ClosedFloatingPointRange<Double>,
+        maxLabelWidth: Float,
+    ): List<Double> = sortedXValues.filter { it in visibleXRange }
+
+    override fun getWidthMeasurementLabelValues(
+        context: CartesianMeasuringContext,
+        layerDimensions: CartesianLayerDimensions,
+        fullXRange: ClosedFloatingPointRange<Double>,
+    ): List<Double> = sortedXValues
+
+    override fun getHeightMeasurementLabelValues(
+        context: CartesianMeasuringContext,
+        layerDimensions: CartesianLayerDimensions,
+        fullXRange: ClosedFloatingPointRange<Double>,
+        maxLabelWidth: Float,
+    ): List<Double> = listOfNotNull(sortedXValues.firstOrNull())
+
+    override fun getLineValues(
+        context: CartesianDrawingContext,
+        visibleXRange: ClosedFloatingPointRange<Double>,
+        fullXRange: ClosedFloatingPointRange<Double>,
+        maxLabelWidth: Float,
+    ): List<Double>? = null
+
+    override fun getStartLayerMargin(
+        context: CartesianMeasuringContext,
+        layerDimensions: CartesianLayerDimensions,
+        tickThickness: Float,
+        maxLabelWidth: Float,
+    ): Float = 0f
+
+    override fun getEndLayerMargin(
+        context: CartesianMeasuringContext,
+        layerDimensions: CartesianLayerDimensions,
+        tickThickness: Float,
+        maxLabelWidth: Float,
+    ): Float = 0f
 }
