@@ -141,6 +141,7 @@ fun SharedTransitionScope.AddExerciseDialog(
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
 
     Scaffold (
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical),
         modifier = Modifier.sharedBounds(
             rememberSharedContentState(
                 SharedElementKey(
@@ -158,6 +159,7 @@ fun SharedTransitionScope.AddExerciseDialog(
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.navigationBarsPadding()) },
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets.statusBars.only(WindowInsetsSides.Top),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer

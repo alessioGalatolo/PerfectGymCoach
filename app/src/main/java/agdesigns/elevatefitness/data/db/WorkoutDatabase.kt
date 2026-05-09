@@ -232,13 +232,13 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
             "ALTER TABLE Exercise ADD COLUMN wearRepTrackable TEXT NOT NULL DEFAULT 'NOT_TRACKABLE'"
         )
         db.execSQL(
-            "ALTER TABLE Exercise ADD COLUMN firstPhase TEXT NOT NULL DEFAULT 'CONCENTRIC'"
+            "ALTER TABLE Exercise ADD COLUMN firstPhase TEXT NOT NULL DEFAULT 'AGAINST_GRAVITY'"
         )
         db.execSQL(
             "ALTER TABLE WorkoutExercise ADD COLUMN wearRepTrackable TEXT NOT NULL DEFAULT 'NOT_TRACKABLE'"
         )
         db.execSQL(
-            "ALTER TABLE WorkoutExercise ADD COLUMN firstPhase TEXT NOT NULL DEFAULT 'CONCENTRIC'"
+            "ALTER TABLE WorkoutExercise ADD COLUMN firstPhase TEXT NOT NULL DEFAULT 'AGAINST_GRAVITY'"
         )
         db.execSQL(
             "ALTER TABLE ExerciseRecord ADD COLUMN trackingResults TEXT NOT NULL DEFAULT ''"

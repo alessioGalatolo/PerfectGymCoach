@@ -54,6 +54,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -157,7 +158,9 @@ fun Statistics(
         ) {
             // Time Frame Selector
             Box(
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth()
+                    .padding(start = innerPadding.calculateStartPadding(LocalLayoutDirection.current))
+                    .padding(end = innerPadding.calculateEndPadding(LocalLayoutDirection.current)),
                 contentAlignment = Alignment.Center
             ) {
                 TimeFrameSelector(

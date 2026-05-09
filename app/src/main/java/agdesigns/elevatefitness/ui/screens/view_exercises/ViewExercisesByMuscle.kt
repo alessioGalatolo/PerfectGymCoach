@@ -69,6 +69,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
 
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -81,6 +82,7 @@ fun SharedTransitionScope.ExercisesByMuscle(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LargeTopAppBar(
+                windowInsets = WindowInsets.statusBars.only(WindowInsetsSides.Top),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer

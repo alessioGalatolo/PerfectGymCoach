@@ -93,6 +93,7 @@ class Converters {
 
     @TypeConverter
     fun stringToListTrackingResults(value: String): List<TrackingResult?> {
+        if (value.isBlank()) return emptyList()
         return Json.decodeFromString(value)
     }
 }

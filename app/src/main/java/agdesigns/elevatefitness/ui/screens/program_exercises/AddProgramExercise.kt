@@ -105,11 +105,16 @@ fun SharedTransitionScope.AddProgramExercise(
      */
 //    val running = this@AddProgramExercise.isTransitionActive
 //    BackHandler(enabled = running) { }
+    // FIXME: when in landscape in a phone with e.g., this screen on the right, there is too big of
+    //  a padding on the left. This can be fixed with the windowInsets settings commented bellow
+    //  however, this will make the screen go below navigation bars when on the left
     Scaffold(
+//        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
+//                windowInsets = WindowInsets.statusBars.only(WindowInsetsSides.Top),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer

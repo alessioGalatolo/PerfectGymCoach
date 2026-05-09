@@ -72,6 +72,7 @@ fun CreateExerciseDialog(
     scrollBehavior.state.contentOffset = scrollBehavior.state.heightOffsetLimit
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = {
             SnackbarHost(
@@ -81,6 +82,7 @@ fun CreateExerciseDialog(
         },
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets.statusBars.only(WindowInsetsSides.Top),
                 title = {
                     Row {
                         Text(

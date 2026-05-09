@@ -150,12 +150,15 @@ fun WorkoutRecap(
     ){
         val listState = rememberLazyListState()
         val records = state.olderRecords
-        Scaffold(topBar = {
+        Scaffold(
+            contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical),
+            topBar = {
             TopAppBar (
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                 ),
+                windowInsets = WindowInsets.statusBars.only(WindowInsetsSides.Top),
                 title = {
                     Text(stringResource(R.string.workout_recap))
                 },
