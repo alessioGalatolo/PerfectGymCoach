@@ -53,7 +53,12 @@ open class DestinationsNavigator(startKey: Route) {
             addTopLevel(key)
             return
         }
-        topLevelStacks[topLevelKey]?.add(key)
+        val stack = topLevelStacks[topLevelKey] ?: return
+        if (stack.lastOrNull()?.let { it::class == key::class } == true) {
+            stack[stack.lastIndex] = key
+        } else {
+            stack.add(key)
+        }
         updateBackStack()
     }
 

@@ -6,7 +6,8 @@ This is an open-source Android app developed by Alessio Galatolo. The source cod
 
 ### Data collected by the app
 
-I hereby state, to the best of my knowledge and belief, that I have not programmed this app to collect any personally identifiable information. All data (app preferences, name, age, etc.) is stored locally in your device only, and can be simply erased by clearing the app's data or uninstalling it. No analytics software is present in the app either.
+All data (app preferences, name, age, workout history, etc.) is stored locally on your device only, and can be erased by clearing the app's data or uninstalling it. No personally identifiable information is intentionally collected or transmitted.
+The app uses **Firebase Crashlytics** for crash reporting. If the app crashes, anonymised diagnostic data (such as device model, OS version, app version, and a stack trace) is sent to Google's Firebase servers to help diagnose and fix issues. This data does not include your workout data or any health information.
 
 ### Explanation of permissions requested in the app
 

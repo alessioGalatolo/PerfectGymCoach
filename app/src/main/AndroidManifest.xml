@@ -17,6 +17,7 @@
     <!-- Keep alive   -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
 
     <!-- Required for Health Connect package visibility on Android 11+ -->
     <queries>
@@ -36,6 +37,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ElevateFitness"
         tools:targetApi="33">
+
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+
         <service android:name=".service.NotificationListener"
             android:exported="false"
             android:label="Enable media controls"

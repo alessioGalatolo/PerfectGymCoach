@@ -43,8 +43,8 @@ android {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 26
         targetSdk = 36
-        versionCode = 24
-        versionName = "0.0.9"
+        versionCode = 29
+        versionName = "0.1.0b"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
