@@ -141,7 +141,57 @@
                     android:scheme="elevatefitness"
                     android:host="workout" />
             </intent-filter>
+
+            <!-- Handle opening proprietary files -->
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="file"
+                    android:mimeType="application/vnd.agdesigns.elevatefitness" />
+                <data
+                    android:scheme="content"
+                    android:mimeType="application/vnd.agdesigns.elevatefitness" />
+            </intent-filter>
+
+            <!-- Also match by extension as fallback -->
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:pathPattern=".*\\.elfit"
+                    android:mimeType="*/*" />
+            </intent-filter>
+
+            <!-- Catch generic MIME types for files (needed for many apps)-->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="content" android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

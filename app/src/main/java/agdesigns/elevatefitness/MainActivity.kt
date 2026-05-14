@@ -1,30 +1,34 @@
 package agdesigns.elevatefitness
 
+import agdesigns.elevatefitness.data.ELEVATE_FITNESS_SHARE_EXTENSION
+import agdesigns.elevatefitness.data.ELEVATE_FITNESS_SHARE_MIME_TYPE
 import agdesigns.elevatefitness.data.PreferenceRepository
+import agdesigns.elevatefitness.data.SharableElement
+import agdesigns.elevatefitness.navigation.ReceivePlanDestination
+import android.provider.OpenableColumns
 import agdesigns.elevatefitness.ui.theme.ElevateFitnessTheme
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.ui.platform.ComposeView
-import androidx.core.view.WindowCompat
-import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.navigation.DeepLinkMatcher
 import agdesigns.elevatefitness.navigation.HomeDestination
 import agdesigns.elevatefitness.navigation.RootDestinationGraph
 import agdesigns.elevatefitness.navigation.Route
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.platform.LocalView
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -36,11 +40,51 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Handle incoming file imports
+        val sharedElement: SharableElement? = run {
+            val action = intent.action ?: return@run null
+            if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return@run null
+
+            val fileUri: Uri = (when (action) {
+                Intent.ACTION_VIEW -> intent.data
+                else -> @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            }) ?: return@run null
+
+            // Accept if MIME type matches, or if the file's display name / URI path ends with .efplan
+            val mimeTypeOk = intent.type == ELEVATE_FITNESS_SHARE_MIME_TYPE
+            val displayName: String? = runCatching {
+                contentResolver.query(
+                    fileUri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+                )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+            }.getOrNull()
+            val nameOk = displayName?.endsWith(ELEVATE_FITNESS_SHARE_EXTENSION, ignoreCase = true) == true
+                || fileUri.path?.endsWith(ELEVATE_FITNESS_SHARE_EXTENSION, ignoreCase = true) == true
+
+            if (!mimeTypeOk && !nameOk) {
+                Toast.makeText(this, getString(R.string.invalid_file_type), Toast.LENGTH_SHORT).show()
+                finish()
+                return@run null
+            }
+            runCatching {
+                val json = contentResolver.openInputStream(fileUri)?.bufferedReader()?.readText()
+                    ?: return@run null
+                Json.decodeFromString<SharableElement>(json)
+            }.getOrNull()
+        }
+
         // simple deeplink parsing
         val uri: Uri? = intent.data
-        val startDestination: Route = uri?.let {
-            DeepLinkMatcher(it).match()
-        } ?: HomeDestination // fallback if intent.uri is null or match is not found
+        val startDestination: Route = when {
+            sharedElement != null -> {
+                when (sharedElement.type) {
+                    SharableElement.Type.WORKOUT_PLAN -> {
+                        ReceivePlanDestination(sharedElement.element)
+                    }
+                    // other sharable types...
+                }
+            }
+            else -> uri?.let { DeepLinkMatcher(it).match() } ?: HomeDestination
+        }
 
         // Call enableEdgeToEdge() BEFORE setContent, with a default style.
         enableEdgeToEdge()

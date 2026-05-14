@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.data.db.entity
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal.Companion.getGoalResource
+import android.content.Context
 import android.os.Parcelable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -117,6 +118,37 @@ fun getPlanDisplayName(name: String): String {
             copies,
             baseName
         )
+    } else {
+        name
+    }
+}
+
+fun getPlanDisplayName(name: String, context: Context): String {
+    return if (name.startsWith(GENERATED_PLAN_PREFIX)) {
+        val noPrefix = name.removePrefix(GENERATED_PLAN_PREFIX)
+        val parts = noPrefix.split("/****/")
+        val millis = parts[2].toLong()
+        val date = ZonedDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault())
+        val formatter = DateTimeFormatter.ofPattern("d MMM (yyyy)")
+        val goal = context.getString(getGoalResource(parts[1]))
+        val goalFormatted = goal.lowercase().replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
+        }
+        val baseName = goalFormatted + " - " + date.format(formatter)
+        if (parts.size > 3) {
+            context.getString(
+                R.string.copy_of_plan_name,
+                parts[3].replace("copy", "").length,
+                baseName
+            )
+        } else {
+            baseName
+        }
+    } else if (name.contains("/****/copy")) {
+        val parts = name.split("/****/")
+        val baseName = parts[0]
+        val copies = parts[1].replace("copy", "").length
+        context.getString(R.string.copy_of_plan_name, copies, baseName)
     } else {
         name
     }

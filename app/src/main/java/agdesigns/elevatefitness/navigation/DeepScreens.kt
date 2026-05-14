@@ -10,6 +10,7 @@ import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.screens.add_exercise.AddExerciseDialog
 import agdesigns.elevatefitness.ui.screens.create_exercise.CreateExerciseDialog
 import agdesigns.elevatefitness.ui.screens.plans.AddWorkoutPlan
+import agdesigns.elevatefitness.ui.screens.plans.ReceivePlanScreen
 import agdesigns.elevatefitness.ui.screens.plans.ArchivedPlans
 import agdesigns.elevatefitness.ui.screens.plans.CustomizePlanGeneration
 import agdesigns.elevatefitness.ui.screens.plans.ViewGeneratedPlan
@@ -92,6 +93,10 @@ data class ViewGeneratedPlanDestination(
 ): Route
 
 data object ArchivedPlansDestination: Route
+
+data class ReceivePlanDestination(
+    val sharedText: String
+): Route
 
 data class WorkoutRecapDestination(
     val workoutId: Long
@@ -225,6 +230,12 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
         entry<ArchivedPlansDestination>(metadata = SlideTransition) {
             ArchivedPlans(
                 navigator = navigator
+            )
+        }
+        entry<ReceivePlanDestination>(metadata = SlideTransition) {
+            ReceivePlanScreen(
+                navigator = navigator,
+                sharedText = it.sharedText
             )
         }
         entry<WorkoutRecapDestination>(

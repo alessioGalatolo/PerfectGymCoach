@@ -29,15 +29,22 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -212,91 +219,103 @@ fun SharedTransitionScope.ProgramExerciseCard(
                                 .wrapContentSize()
                                 .align(TopRight)
                         ) {
-                            IconButton(onClick = { menuExpanded = true }) {
-                                Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.morevert_icon_options),
-                                    tint = if (brightImage.value) Color.Black else Color.White
-                                )
+                            TooltipBox(
+                                positionProvider =
+                                    TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+                                tooltip = { PlainTooltip { Text(stringResource(R.string.morevert_icon_options)) } },
+                                state = rememberTooltipState(),
+                            ) {
+                                IconButton(onClick = { menuExpanded = true }) {
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = stringResource(R.string.morevert_icon_options),
+                                        tint = if (brightImage.value) Color.Black else Color.White
+                                    )
+                                }
                             }
-                            DropdownMenu(
+                            DropdownMenuPopup(
                                 expanded = menuExpanded,
                                 onDismissRequest = { menuExpanded = false }
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.move_up)) },
-                                    onClick = {
-                                        moveUp()
-                                        menuExpanded = false
-                                    },
-                                    enabled = canMoveUp,
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Outlined.ArrowUpward,
-                                            contentDescription = stringResource(R.string.move_up)
-                                        )
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.move_down)) },
-                                    onClick = {
-                                        moveDown()
-                                        menuExpanded = false
-                                    },
-                                    enabled = canMoveDown,
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Outlined.ArrowDownward,
-                                            contentDescription = stringResource(R.string.move_down)
-                                        )
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.edit)) },
-                                    onClick = {
-                                        navigator.navigate(
-                                            AddExerciseDialogDestination(
-                                                previewExercise = exercise!!,
-                                                programId = programExercise.extProgramId,
-                                                programExerciseId = programExercise.programExerciseId,
-                                                continueAdding = false
+                                DropdownMenuGroup(
+                                    shapes = MenuDefaults.groupShape(0, 1),
+                                    interactionSource = remember { MutableInteractionSource() },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.move_up)) },
+                                        onClick = {
+                                            moveUp()
+                                            menuExpanded = false
+                                        },
+                                        enabled = canMoveUp,
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.ArrowUpward,
+                                                contentDescription = stringResource(R.string.move_up)
                                             )
-                                        )
-                                        menuExpanded = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Outlined.Edit,
-                                            contentDescription = stringResource(R.string.edit)
-                                        )
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.duplicate)) },
-                                    onClick = {
-                                        duplicateExercise()
-                                        menuExpanded = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.ContentCopy,
-                                            contentDescription = null // FIXME
-                                        )
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.remove)) },
-                                    onClick = {
-                                        deleteExercise()
-                                        menuExpanded = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Outlined.Delete,
-                                            contentDescription = stringResource(R.string.delete)
-                                        )
-                                    }
-                                )
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.move_down)) },
+                                        onClick = {
+                                            moveDown()
+                                            menuExpanded = false
+                                        },
+                                        enabled = canMoveDown,
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.ArrowDownward,
+                                                contentDescription = stringResource(R.string.move_down)
+                                            )
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.edit)) },
+                                        onClick = {
+                                            navigator.navigate(
+                                                AddExerciseDialogDestination(
+                                                    previewExercise = exercise!!,
+                                                    programId = programExercise.extProgramId,
+                                                    programExerciseId = programExercise.programExerciseId,
+                                                    continueAdding = false
+                                                )
+                                            )
+                                            menuExpanded = false
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.Edit,
+                                                contentDescription = stringResource(R.string.edit)
+                                            )
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.duplicate)) },
+                                        onClick = {
+                                            duplicateExercise()
+                                            menuExpanded = false
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.ContentCopy,
+                                                contentDescription = null // FIXME
+                                            )
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.remove)) },
+                                        onClick = {
+                                            deleteExercise()
+                                            menuExpanded = false
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.Delete,
+                                                contentDescription = stringResource(R.string.delete)
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

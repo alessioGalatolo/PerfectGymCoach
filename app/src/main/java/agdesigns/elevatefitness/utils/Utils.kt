@@ -1,8 +1,11 @@
 package agdesigns.elevatefitness.utils
 
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.ELEVATE_FITNESS_SHARE_EXTENSION
+import agdesigns.elevatefitness.data.ELEVATE_FITNESS_SHARE_MIME_TYPE
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.database.ContentObserver
 import android.net.Uri
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.FileProvider
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -22,6 +26,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
+import java.io.File
 import java.io.IOException
 import java.util.Locale
 
@@ -154,3 +159,26 @@ fun getStickyHeader(
     return Pair(titleText, (highestVisibleId ?: lastVisibleKey))
 }
 
+
+fun launchShareIntent(context: Context, text: String, title: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+    }
+    context.startActivity(Intent.createChooser(sendIntent, title))
+}
+
+fun launchFileShareIntent(context: Context, fileName: String, json: String, title: String) {
+    val safeName = fileName.replace(Regex("[^a-zA-Z0-9_\\- ]"), "").trim().take(50)
+    val cacheDir = File(context.cacheDir, "shared_plans").apply { mkdirs() }
+    val file = File(cacheDir, "$safeName$ELEVATE_FITNESS_SHARE_EXTENSION")
+    file.writeText(json)
+    val uri: Uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = ELEVATE_FITNESS_SHARE_MIME_TYPE
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(sendIntent, title))
+}

@@ -37,7 +37,9 @@ data class AddExerciseState(
     val isLoading: Boolean = true,
     val insertAtPosition: Int? = null,
     // this gets set to exercise.isDurationBased but can be overridden by user
-    val overriddenDurationBased: Boolean = false
+    val overriddenDurationBased: Boolean = false,
+    // used to conditionally show a "confirm exit" dialog
+    val somethingHasChanged: Boolean = false
 )
 
 sealed class AddExerciseEvent{
@@ -76,6 +78,27 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
     val state: StateFlow<AddExerciseState> = _state.asStateFlow()
 
     private var getDataJob: Job? = null
+
+    init {
+        // watch for "somethingHasChanged"
+        viewModelScope.launch {
+            state.collect { state ->
+                if (state.programExercise != null) {
+                    _state.update {
+                        it.copy(
+                            somethingHasChanged = state.programExercise.note != it.note ||
+                                    (state.programExercise.variationResKey != it.variationResKey && !(it.variationResKey == "no_variation" && state.programExercise.variationResKey.isEmpty())) ||
+                                    state.programExercise.reps.map{ it.toUInt() } != it.repsArray ||
+                                    state.programExercise.rest.map{ it.toUInt() } != it.restArray ||
+                                    state.programExercise.setTypes != it.setTypesArray ||
+                                    state.programExercise.overriddenDurationBased != it.overriddenDurationBased
+
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun onEvent(event: AddExerciseEvent): Boolean {
         when (event) {
@@ -306,7 +329,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                         exerciseNumber = programExercise.orderInProgram,
                         note = programExercise.note,
                         // FIXME: once we allow custom variations, should also pass variation
-                        variationResKey = programExercise.variationResKey,
+                        variationResKey = programExercise.variationResKey.ifEmpty { "no_variation" },
                         repsArray = programExercise.reps.map { it.toUInt() },
                         restArray = programExercise.rest.map { it.toUInt() },
                         setTypesArray = programExercise.setTypes

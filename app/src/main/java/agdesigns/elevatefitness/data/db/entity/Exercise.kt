@@ -12,7 +12,8 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 @Entity
 data class Exercise(
-    @PrimaryKey(autoGenerate = true) val exerciseId: Long = 0L,
+    @PrimaryKey(autoGenerate = true)
+    val exerciseId: Long = 0L,
     val name: String,
     @ColumnInfo(defaultValue = "")
     val nameResKey: String, // key of the string resource

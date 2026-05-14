@@ -62,7 +62,6 @@ fun History(
         )
     } else {
         Scaffold { innerPadding ->
-
             LazyColumn(
                 contentPadding = innerPadding,
                 state = listState,

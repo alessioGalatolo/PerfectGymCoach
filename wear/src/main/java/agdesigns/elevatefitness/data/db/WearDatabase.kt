@@ -5,7 +5,7 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseParamsEntity
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-@Database(entities = [ExerciseParamsEntity::class], version = 1, exportSchema = false)
+@Database(entities = [ExerciseParamsEntity::class], version = 1, exportSchema = true)
 abstract class WearDatabase : RoomDatabase() {
     abstract fun exerciseParamsDao(): ExerciseParamsDao
 }

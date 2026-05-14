@@ -62,7 +62,6 @@ fun WorkoutCalendarCards(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
-                .statusBarsPadding()
         ) {
             // Section header with improved styling
             Row(

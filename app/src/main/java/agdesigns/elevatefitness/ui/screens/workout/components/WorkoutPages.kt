@@ -62,16 +62,20 @@ import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
 import agdesigns.elevatefitness.ui.common.CompletionCheckmark
 import agdesigns.elevatefitness.ui.common.GroupedCard
+import agdesigns.elevatefitness.ui.common.IconAndLabel
+import agdesigns.elevatefitness.ui.common.IconsWithOverflow
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.Placeholder
@@ -377,8 +381,6 @@ fun SharedTransitionScope.ExercisePages(
                         records = emptyList(),
                         imperialSystem = workoutState.imperialSystem,
                         workoutStarted = false,
-                        restTimeSecs = null,
-                        restCounterProgress = null,
                         fabHeight = fabHeight,
                         bottomPadding = bottomPadding,
                         modificationSuggestion = null,
@@ -463,8 +465,6 @@ fun SharedTransitionScope.ExercisePages(
                             records = pagesContent.exerciseRecords[page],
                             imperialSystem = workoutState.imperialSystem,
                             workoutStarted = workoutState.workoutStarted,
-                            restTimeSecs = currentExerciseState.restTimeSecs,
-                            restCounterProgress = restCounterProgress,
                             fabHeight = fabHeight,
                             bottomPadding = bottomPadding,
                             settingsMenu = {
@@ -553,8 +553,6 @@ fun ExercisePage(
     records: List<ExerciseRecordAndEquipment>,
     imperialSystem: Boolean,
     workoutStarted: Boolean,
-    restTimeSecs: Long?,
-    restCounterProgress: Float?,
     fabHeight: Dp,
     bottomPadding: Dp,
     modificationSuggestion: ModificationSuggestion?,
@@ -1091,6 +1089,7 @@ fun WorkoutFinishPage(
 }
 
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExerciseSettingsMenu(
     changeExercise: () -> Unit,
@@ -1100,92 +1099,49 @@ fun ExerciseSettingsMenu(
     mediaControlsDismissed: Boolean,
     showMediaControls: () -> Unit
 ) {
-    Box(
-        modifier = Modifier.wrapContentSize()
-    ) {
-        var expanded by remember { mutableStateOf(false) }
-
-        IconButton(onClick = { expanded = true }) {
-            Icon(
-                Icons.Default.MoreVert,
-                contentDescription = stringResource(R.string.morevert_icon_options)
+    IconsWithOverflow(
+        maxVisibleItems = 0,
+        contents = buildList {
+            add(
+                IconAndLabel(
+                    icon = Icons.Outlined.Edit,
+                    label = stringResource(R.string.replace_exercise),
+                    onClick = changeExercise
+                )
             )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.replace_exercise)) },
-                onClick = {
-                    expanded = false
-                    changeExercise()
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Edit,
-                        contentDescription = stringResource(R.string.replace_exercise)
-                    )
-                }
+            add(
+                IconAndLabel(
+                    icon = Icons.Outlined.Delete,
+                    label = stringResource(R.string.skip_exercise_this_workout_only),
+                    onClick = removeExercise
+                )
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.skip_exercise_this_workout_only)) },
-                onClick = {
-                    expanded = false
-                    removeExercise()
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Delete,
-                        contentDescription = stringResource(R.string.skip_exercise_this_workout_only)
-                    )
-                }
+            add(
+                IconAndLabel(
+                    icon = Icons.Outlined.Add,
+                    label = stringResource(R.string.add_another_exercise),
+                    onClick = addExercise
+                )
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.add_another_exercise)) },
-                onClick = {
-                    expanded = false
-                    addExercise()
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Add,
-                        contentDescription = stringResource(R.string.add_another_exercise)
-                    )
-                }
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.view_exercise_history_and_stats)) },
-                onClick = {
-                    expanded = false
-                    viewStatistics()
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Timeline,
-                        contentDescription = stringResource(R.string.view_exercise_history_and_stats)
-                    )
-                }
+            add(
+                IconAndLabel(
+                    icon = Icons.Outlined.Timeline,
+                    label = stringResource(R.string.view_exercise_history_and_stats),
+                    onClick = viewStatistics
+                )
             )
             if (mediaControlsDismissed) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.show_media_controls)) },
-                    onClick = {
-                        expanded = false
-                        showMediaControls()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.PlayArrow,
-                            contentDescription = stringResource(R.string.show_media_controls)
-                        )
-                    }
+                add(
+                    IconAndLabel(
+                        icon = Icons.Outlined.PlayArrow,
+                        label = stringResource(R.string.show_media_controls),
+                        onClick = showMediaControls
+                    )
                 )
             }
         }
-    }
+    )
 }
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BarbellSelector(
@@ -1196,101 +1152,54 @@ fun BarbellSelector(
     onBarbellSelected: (BarbellType) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // NOTE: cannot use ExposedDropdownMenu as it currently opens unreliably
-    var isExpanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
 
-    Column(modifier = modifier
-        .padding(vertical = 8.dp)
-        .clip(MaterialTheme.shapes.small)
-        .background(
-            MaterialTheme.colorScheme.surfaceContainerHigh,
-            MaterialTheme.shapes.small
-        )
+    val selectedDisplayText = when {
+        selectedBarbellType == null || selectedBarbellType == BarbellType.OTHER ->
+            stringResource(BarbellType.OTHER.barbellResource) +
+                    " " + weightAndUnit(tare ?: 0f, useImperialSystem, inParenthesis = true)
+        else ->
+            stringResource(selectedBarbellType.barbellResource) +
+                    " (${selectedBarbellType.weight[useImperialSystem]} ${
+                        if (useImperialSystem) stringResource(R.string.lb)
+                        else stringResource(R.string.kg)
+                    })"
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = modifier
     ) {
-        Card(
-            onClick = { isExpanded = !isExpanded },
-            modifier = Modifier
-                .fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-            shape = MaterialTheme.shapes.small,
-            border = BorderStroke(
-                width = 2.dp,
-                color = if (isExpanded)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.barbell),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    val selectedBarbellDisplayText = when {
-                        selectedBarbellType == null || selectedBarbellType == BarbellType.OTHER ->
-                            stringResource(BarbellType.OTHER.barbellResource) +
-                                    " " + weightAndUnit(tare ?: 0f, useImperialSystem, inParenthesis = true)
-                        else ->
-                            stringResource(selectedBarbellType.barbellResource) +
-                                    " (${selectedBarbellType.weight[useImperialSystem]} ${
-                                        if (useImperialSystem) stringResource(R.string.lb)
-                                        else stringResource(R.string.kg)
-                                    })"
-                    }
-                    Text(
-                        text = selectedBarbellDisplayText,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
-                    )
+        OutlinedTextField(
+            readOnly = true,
+            value = selectedDisplayText,
+            onValueChange = {},
+            label = { Text(stringResource(R.string.barbell)) },
+            trailingIcon = {
+                Row(verticalAlignment = CenterVertically) {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 }
+            },
+            singleLine = true,
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
+        )
 
-                ExposedDropdownMenuDefaults.TrailingIcon(
-                    expanded = isExpanded
-                )
-            }
-        }
-
-        // Animated options list
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = expandVertically(
-                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
-            ) + fadeIn(),
-            exit = shrinkVertically(
-                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
-            ) + fadeOut()
+        DropdownMenuPopup(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.exposedDropdownSize()
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        RoundedCornerShape(16.dp)
-                    ),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+            DropdownMenuGroup(
+                shapes = MenuDefaults.groupShape(0, 1),
+                interactionSource = remember { MutableInteractionSource() }
             ) {
                 BarbellType.entries.forEachIndexed { index, option ->
-                    val defaultShape: RoundedCornerShape = when (CardDefaults.shape) {
-                        is RoundedCornerShape -> CardDefaults.shape as RoundedCornerShape
-                        else -> RoundedCornerShape(16.dp) // fallback
-                    }
-                    // the corner radius between items
-                    val defaultOtherCorner: Dp = 4.dp
                     val optionText = if (option == BarbellType.OTHER) {
                         stringResource(
                             R.string.barbell_custom_value,
@@ -1304,28 +1213,22 @@ fun BarbellSelector(
                                 })"
                     }
                     val isSelected = option == selectedBarbellType
-                    val currentItemShape = if (isSelected)
-                        MaterialTheme.shapes.extraExtraLarge
-                    else
-                        when (index) {
-                            0 -> defaultShape.copy(
-                                bottomStart = CornerSize(defaultOtherCorner),
-                                bottomEnd = CornerSize(defaultOtherCorner)
-                            )
-                            BarbellType.entries.lastIndex -> defaultShape.copy(
-                                topStart = CornerSize(defaultOtherCorner),
-                                topEnd = CornerSize(defaultOtherCorner),
-                            )
 
-                            else -> RoundedCornerShape(
-                                topStart = defaultOtherCorner,
-                                topEnd = defaultOtherCorner,
-                                bottomStart = defaultOtherCorner,
-                                bottomEnd = defaultOtherCorner
+                    DropdownMenuItem(
+                        text = { Text(optionText) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = if (option == BarbellType.OTHER)
+                                    Icons.Rounded.Edit
+                                else
+                                    Icons.Rounded.FitnessCenter,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
                             )
-                        }
-
-                    Card(
+                        },
+                        trailingIcon = if (isSelected) {
+                            { Icon(Icons.Default.CheckCircle, contentDescription = null) }
+                        } else null,
                         onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                             if (option == BarbellType.OTHER) {
@@ -1333,67 +1236,12 @@ fun BarbellSelector(
                             } else {
                                 onBarbellSelected(option)
                             }
-                            isExpanded = false
+                            expanded = false
                         },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected)
-                                MaterialTheme.colorScheme.inverseSurface
-                            else
-                                MaterialTheme.colorScheme.surface
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        shape = currentItemShape
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                // Icon for barbell types
-                                Icon(
-                                    imageVector = if (option == BarbellType.OTHER)
-                                        Icons.Rounded.Edit
-                                    else
-                                        Icons.Rounded.FitnessCenter,
-                                    contentDescription = null,
-                                    tint = if (isSelected)
-                                        MaterialTheme.colorScheme.inverseOnSurface
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Text(
-                                    text = optionText,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = if (isSelected)
-                                        MaterialTheme.colorScheme.inverseOnSurface
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                                )
-                            }
-
-                            // Selection indicator
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.inversePrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
+                        selected = isSelected,
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                        shapes = MenuDefaults.itemShapes()
+                    )
                 }
             }
         }
@@ -1401,6 +1249,7 @@ fun BarbellSelector(
 }
 
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun WorkoutRepsWeightRow(
     repsInRow: String,
@@ -1483,22 +1332,34 @@ fun WorkoutRepsWeightRow(
                 }
             }
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SetType.visibleEntries.forEach { type ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(type.displayRes)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = type.icon,
-                            contentDescription = null
-                        )
-                    },
-                    enabled = type != SetType.WARMUP || totalWarmupSets >= setCount,
-                    onClick = {
-                        updateSetType(type)
-                        expanded = false
-                    },
-                )
+        DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuGroup(
+                shapes = MenuDefaults.groupShape(0, 1),
+                interactionSource = remember { MutableInteractionSource() },
+            ) {
+                SetType.visibleEntries.forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(type.displayRes)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = type.icon,
+                                contentDescription = null
+                            )
+                        },
+                        enabled = type != SetType.WARMUP || totalWarmupSets >= setCount,
+                        onClick = {
+                            updateSetType(type)
+                            expanded = false
+                        },
+                        selected = type == setType,
+                        trailingIcon = if (type == setType) {
+                            {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null)
+                            }
+                        } else null,
+                        shapes = MenuDefaults.itemShapes()
+                    )
+                }
             }
         }
         Spacer(Modifier.width(8.dp))

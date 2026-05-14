@@ -8,6 +8,8 @@ import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.WorkoutDestination
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
+import agdesigns.elevatefitness.ui.common.IconAndLabel
+import agdesigns.elevatefitness.ui.common.IconsWithOverflow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -29,6 +31,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
@@ -36,8 +39,6 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -58,9 +59,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -240,7 +239,7 @@ fun LazyItemScope.ProgramCard(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.End,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().padding(start = 8.dp)
                             ) {
                                 if (onRename == null && onDelete == null) {
                                     IconButton(onClick = {
@@ -257,95 +256,64 @@ fun LazyItemScope.ProgramCard(
                                         )
                                     }
                                 } else {
-                                    IconButton(onClick = {
-                                        navigator.navigate(
-                                            WorkoutDestination(
-                                                programId = program.programId
-                                            )
-                                        )
-                                    }) {
-                                        Icon(
-                                            Icons.Outlined.PlayCircle,
-                                            stringResource(R.string.start_workout)
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier.wrapContentSize()
-                                    ) {
-                                        IconButton(onClick = { expanded = true }) {
-                                            Icon(
-                                                Icons.Default.MoreVert,
-                                                contentDescription = stringResource(R.string.morevert_icon_options),
-                                            )
-                                        }
-                                        DropdownMenu(
-                                            expanded = expanded,
-                                            onDismissRequest = { expanded = false }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.edit)) },
-                                                onClick = {
-                                                    navigator.navigate(
-                                                        AddProgramExerciseDestination(
-                                                            programName = program.name,
-                                                            programId = program.programId
-                                                        )
-                                                    )
-                                                    expanded = false
-                                                },
-                                                leadingIcon = {
-                                                    Icon(
-                                                        Icons.Outlined.Edit,
-                                                        contentDescription = stringResource(R.string.edit_icon_program)
-                                                    )
-                                                })
-                                            if (onRename != null) {
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(R.string.rename)) },
+                                    IconsWithOverflow(
+                                        contents = buildList {
+                                            add(
+                                                IconAndLabel(
+                                                    Icons.Default.PlayCircle,
+                                                    stringResource(R.string.start_workout),
                                                     onClick = {
-                                                        onRename()
-                                                        expanded = false
-                                                    },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            Icons.Outlined.DriveFileRenameOutline,
-                                                            contentDescription = stringResource(R.string.rename_icon_program)
+                                                        navigator.navigate(
+                                                            WorkoutDestination(
+                                                                programId = program.programId
+                                                            )
                                                         )
                                                     }
+                                                )
+                                            )
+                                            add(
+                                                IconAndLabel(
+                                                    Icons.Outlined.Edit,
+                                                    stringResource(R.string.edit),
+                                                    onClick = {
+                                                        navigator.navigate(
+                                                            AddProgramExerciseDestination(
+                                                                programName = program.name,
+                                                                programId = program.programId
+                                                            )
+                                                        )
+                                                    }
+                                                )
+                                            )
+                                            if (onRename != null) {
+                                                add(
+                                                    IconAndLabel(
+                                                        Icons.Outlined.DriveFileRenameOutline,
+                                                        stringResource(R.string.rename),
+                                                        onRename
+                                                    )
                                                 )
                                             }
                                             if (onDuplicate != null) {
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(R.string.duplicate)) },
-                                                    onClick = {
-                                                        onDuplicate()
-                                                        expanded = false
-                                                    },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            Icons.Default.ContentCopy,
-                                                            contentDescription = null // TODO
-                                                        )
-                                                    }
+                                                add(
+                                                    IconAndLabel(
+                                                        Icons.Default.ContentCopy,
+                                                        stringResource(R.string.duplicate),
+                                                        onDuplicate
+                                                    )
                                                 )
                                             }
                                             if (onDelete != null) {
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(R.string.delete)) },
-                                                    onClick = {
-                                                        onDelete()
-                                                        expanded = false
-                                                    },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            Icons.Outlined.Delete,
-                                                            contentDescription = stringResource(R.string.delete_icon_program)
-                                                        )
-                                                    }
+                                                add(
+                                                    IconAndLabel(
+                                                        Icons.Outlined.Delete,
+                                                        stringResource(R.string.delete),
+                                                        onDelete
+                                                    )
                                                 )
                                             }
                                         }
-                                    }
+                                    )
                                 }
                             }
                         }

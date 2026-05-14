@@ -58,8 +58,13 @@ data class PrimaryActionContent(
 fun RootDestinationGraph(startDestination: Route) {
     val state = rememberNavigationSuiteScaffoldState()
     val navigationViewModel = hiltViewModel<NavigationViewModel, NavigationViewModel.Factory>(
-        creationCallback = { factory -> factory.create(startDestination) }
+        creationCallback = { factory -> factory.create(HomeDestination) }
     )
+
+    LaunchedEffect(startDestination) {
+        navigationViewModel.navigator.navigate(startDestination)
+    }
+
     val destinationsNavigator = navigationViewModel.navigator
     // history is the only bottom bar route which is allowed to be in a pane,
     // if it happens remove the nav bar

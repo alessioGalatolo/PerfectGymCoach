@@ -23,10 +23,12 @@ import agdesigns.elevatefitness.ui.screens.workout.components.HistoricRecord
 import agdesigns.elevatefitness.utils.OneRepMaxFormula
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
@@ -324,23 +326,44 @@ fun ExerciseStats(
                                             true
                                         )
                                     )
-                                    ExposedDropdownMenu(
+                                    DropdownMenuPopup(
                                         expanded = expanded,
-                                        onDismissRequest = { expanded = false }) {
-                                        OneRepMaxFormula.entries.forEach { option ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text(
-                                                        option.displayName,
-                                                        style = MaterialTheme.typography.bodyLarge
-                                                    )
-                                                },
-                                                onClick = {
-                                                    expanded = false
-                                                    viewModel.onEvent(ChangeOneRepMaxFormula(option))
-                                                },
-                                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                                            )
+                                        onDismissRequest = { expanded = false },
+                                        modifier = Modifier.exposedDropdownSize()
+                                    ) {
+                                        DropdownMenuGroup(
+                                            shapes = MenuDefaults.groupShape(0, 1),
+                                            interactionSource = remember { MutableInteractionSource() },
+                                        ) {
+                                            OneRepMaxFormula.entries.forEach { option ->
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            option.displayName,
+                                                            style = MaterialTheme.typography.bodyLarge
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        expanded = false
+                                                        viewModel.onEvent(
+                                                            ChangeOneRepMaxFormula(
+                                                                option
+                                                            )
+                                                        )
+                                                    },
+                                                    trailingIcon = if (state.oneRepMaxFormula == option) {
+                                                        {
+                                                            Icon(
+                                                                Icons.Default.CheckCircle,
+                                                                null
+                                                            )
+                                                        }
+                                                    } else null,
+                                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                                    selected = state.oneRepMaxFormula == option,
+                                                    shapes = MenuDefaults.itemShapes(),
+                                                )
+                                            }
                                         }
                                     }
                                 }

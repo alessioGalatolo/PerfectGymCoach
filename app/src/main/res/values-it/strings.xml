@@ -923,4 +923,24 @@
     <string name="duration_ms">Tempo (ms)</string>
     <string name="centimeters_short">cm</string>
     <string name="milliseconds_short">ms</string>
+
+
+    <string name="share_plan">Condividi</string>
+    <string name="share_plan_format_title">Condividi come…</string>
+    <string name="share_plan_human_readable">Testo semplice</string>
+    <string name="share_plan_human_readable_desc">Leggibile da chiunque</string>
+    <string name="share_plan_for_app">Per utenti di Elevate Fitness</string>
+    <string name="share_plan_for_app_desc">Condividi un file che può essere importato direttamente nell\'app</string>
+    <string name="share_plan_chooser_title">Condividi piano di allenamento</string>
+    <string name="share_plan_from_app">Condiviso da Elevate Fitness</string>
+    <string name="receive_plan_title">Importa piano di allenamento</string>
+    <string name="receive_plan_programs">%1$d programmi</string>
+    <string name="receive_plan_exercises">%1$d esercizi</string>
+    <string name="receive_plan_import">Importa piano</string>
+    <string name="receive_plan_imported">Piano importato!</string>
+    <string name="receive_plan_error">Impossibile leggere il piano condiviso</string>
+    <string name="receive_plan_day">Giorno %1$d</string>
+    <string name="sets_x_reps">%1$d serie × %2$d ripetizioni</string>
+    <string name="rest_seconds">Riposo: %1$ds</string>
+    <string name="invalid_file_type">Formato file invalido</string>
 </resources>

@@ -1,49 +1,10 @@
 package agdesigns.elevatefitness.ui.screens.plans
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
+import agdesigns.elevatefitness.data.SharableElement
+import agdesigns.elevatefitness.data.SharedWorkoutPlanModel
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
@@ -51,24 +12,79 @@ import agdesigns.elevatefitness.navigation.AddProgramDestination
 import agdesigns.elevatefitness.navigation.ArchivedPlansDestination
 import agdesigns.elevatefitness.navigation.CustomizePlanGenerationDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
+import agdesigns.elevatefitness.ui.common.GroupedCard
+import agdesigns.elevatefitness.ui.common.IconAndLabel
+import agdesigns.elevatefitness.ui.common.IconsWithOverflow
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
-import androidx.compose.foundation.layout.Arrangement
+import agdesigns.elevatefitness.utils.launchFileShareIntent
+import agdesigns.elevatefitness.utils.launchShareIntent
+import android.content.Context
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFloatingActionButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.FixedScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.time.ZonedDateTime
 import kotlin.math.abs
 
@@ -122,6 +138,99 @@ fun AddWorkoutPlan(
     val cantSwipeErrorString = stringResource(R.string.archive_plan_swipe_error)
     val scope = rememberCoroutineScope()
     val openDialog = rememberSaveable { mutableStateOf(openDialogNow) }
+    val context = LocalContext.current
+    var planToShare by rememberSaveable { mutableStateOf<Long?>(null) }
+    val shareBottomSheetState = rememberModalBottomSheetState()
+
+    if (planToShare != null) {
+        val planId = planToShare!!
+        val chooserTitle = stringResource(R.string.share_plan_chooser_title)
+        ModalBottomSheet(
+            onDismissRequest = { planToShare = null },
+            sheetState = shareBottomSheetState
+        ) {
+            Text(
+                text = stringResource(R.string.share_plan_format_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)
+            )
+            GroupedCard(
+                modifier = Modifier.padding(horizontal = 4.dp).padding(bottom = 4.dp)
+            ) {
+                subCard(onClick = {
+                    planToShare = null
+                    scope.launch {
+                        val data = viewModel.getFullPlanData(planId)
+                        val text = buildHumanReadableText(data, context)
+                        launchShareIntent(context, text, chooserTitle)
+                    }
+                }) {
+                    Row(
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Article,
+                            contentDescription = null,
+                            modifier = Modifier.padding(8.dp).size(IconButtonDefaults.mediumIconSize)
+                        )
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Text(
+                                stringResource(R.string.share_plan_human_readable),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                stringResource(R.string.share_plan_human_readable_desc),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+                subCard(onClick = {
+                    planToShare = null
+                    scope.launch {
+                        val data = viewModel.getFullPlanData(planId)
+                        val sharableData = SharableElement(
+                            type = SharableElement.Type.WORKOUT_PLAN,
+                            Json.encodeToString(data)
+                        )
+                        val json = Json.encodeToString(sharableData)
+                        launchFileShareIntent(
+                            context,
+                            getPlanDisplayName(data.planName, context),
+                            json,
+                            chooserTitle
+                        )
+                    }
+                }) {
+                    Row(
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            rememberAsyncImagePainter(R.mipmap.ic_launcher_monochrome),
+                            null,
+                            colorFilter = ColorFilter.tint(LocalContentColor.current),
+                            contentScale = FixedScale(0.4f),
+                            modifier = Modifier.padding(8.dp).size(IconButtonDefaults.mediumIconSize)
+
+                        )
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Text(
+                                stringResource(R.string.share_plan_for_app),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                stringResource(R.string.share_plan_for_app_desc),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
     LaunchedEffect(openDialog.value) {
         if (openDialog.value) {
             awaitFrame()
@@ -236,6 +345,7 @@ fun AddWorkoutPlan(
                             swipeToDismissBoxState = swipeToDismissBoxState,
                             showCantSwipeError = {
                                 scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
                                     snackbarHostState.showSnackbar(
                                         cantSwipeErrorString
                                     )
@@ -244,6 +354,7 @@ fun AddWorkoutPlan(
                             onSwipe = {
                                 viewModel.onEvent(PlansEvent.ArchivePlan(plan.planId))
                                 scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
                                     val snackbarResult = snackbarHostState.showSnackbar(
                                         planArchivedString,
                                         actionLabel = undoString,
@@ -268,50 +379,46 @@ fun AddWorkoutPlan(
                             onPrimaryAction = {
                                 viewModel.onEvent(PlansEvent.SetCurrentPlan(plan.planId))
                                 scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
                                     snackbarHostState.showSnackbar(planSetAsCurrentString)
                                 }
                             },
-                            trailingActions = listOf({ close ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.rename)) },
+                            trailingActions = listOf(
+                                IconAndLabel(
+                                    Icons.Default.DriveFileRenameOutline,
+                                    stringResource(R.string.rename),
                                     onClick = {
                                         viewModel.onEvent(PlansEvent.ToggleChangeNameDialog(plan.planId))
-                                        close()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Edit, contentDescription = null)
                                     }
-                                )
-                            }, { close ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.duplicate)) },
+                                ),
+                                IconAndLabel(
+                                    Icons.Default.Share,
+                                    stringResource(R.string.share_plan),
+                                    onClick = {
+                                        planToShare = plan.planId
+                                    }
+                                ),
+                                IconAndLabel(
+                                    Icons.Default.ContentCopy,
+                                    stringResource(R.string.duplicate),
                                     onClick = {
                                         scope.launch {
-                                            close()
                                             viewModel.onEvent(PlansEvent.DuplicatePlan(plan.planId))
                                         }
-                                    },
-                                    enabled = true,
-                                    leadingIcon = {
-                                        Icon(Icons.Default.ContentCopy, contentDescription = null)
                                     }
-                                )
-                            }, { close ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.archive_plan_action)) },
-                                    onClick = {
-                                        scope.launch {
-                                            close()
-                                            swipeToDismissBoxState.dismiss(SwipeToDismissBoxValue.StartToEnd)
-                                            viewModel.onEvent(PlansEvent.ArchivePlan(plan.planId))
-                                        }
-                                    },
-                                    enabled = false,
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Archive, contentDescription = null)
-                                    }
-                                )
-                            })
+                                ),
+                                // TODO: re-add but disable action
+//                                IconAndLabel(
+//                                    Icons.Default.Archive,
+//                                    stringResource(R.string.archive_plan_action),
+//                                    onClick = {
+//                                        scope.launch {
+//                                            swipeToDismissBoxState.dismiss(SwipeToDismissBoxValue.StartToEnd)
+//                                            viewModel.onEvent(PlansEvent.ArchivePlan(plan.planId))
+//                                        }
+//                                    }
+//                                )
+                            )
                         )
                     }
                 }
@@ -365,6 +472,7 @@ fun AddWorkoutPlan(
                         swipeToDismissBoxState = swipeToDismissBoxState,
                         showCantSwipeError = {
                             scope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
                                 snackbarHostState.showSnackbar(
                                     cantSwipeErrorString
                                 )
@@ -373,6 +481,7 @@ fun AddWorkoutPlan(
                         onSwipe = {
                             viewModel.onEvent(PlansEvent.ArchivePlan(plan.first.planId))
                             scope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
                                 val snackbarResult = snackbarHostState.showSnackbar(
                                     planArchivedString,
                                     actionLabel = undoString,
@@ -399,55 +508,50 @@ fun AddWorkoutPlan(
                         onPrimaryAction = {
                             viewModel.onEvent(PlansEvent.SetCurrentPlan(plan.first.planId))
                             scope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
                                 snackbarHostState.showSnackbar(planSetAsCurrentString)
                             }
                         },
-                        trailingActions = listOf({ close ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.rename)) },
+                        trailingActions = listOf(
+                            IconAndLabel(
+                                Icons.Default.DriveFileRenameOutline,
+                                stringResource(R.string.rename),
                                 onClick = {
                                     viewModel.onEvent(PlansEvent.ToggleChangeNameDialog(plan.first.planId))
-                                    close()
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Edit, contentDescription = null)
                                 }
-                            )
-                        }, { close ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.duplicate)) },
+                            ),
+                            IconAndLabel(
+                                Icons.Default.Share,
+                                stringResource(R.string.share_plan),
+                                onClick = {
+                                    planToShare = plan.first.planId
+                                }
+                            ),
+                            IconAndLabel(
+                                Icons.Default.ContentCopy,
+                                stringResource(R.string.duplicate),
                                 onClick = {
                                     scope.launch {
-                                        close()
                                         viewModel.onEvent(PlansEvent.DuplicatePlan(plan.first.planId))
                                     }
-                                },
-                                enabled = true,
-                                leadingIcon = {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = null)
                                 }
-                            )
-                        }, { close ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.archive_plan_action)) },
+                            ),
+                            IconAndLabel(
+                                Icons.Default.Archive,
+                                stringResource(R.string.archive_plan_action),
                                 onClick = {
                                     scope.launch {
-                                        close()
                                         swipeToDismissBoxState.dismiss(SwipeToDismissBoxValue.StartToEnd)
                                         viewModel.onEvent(PlansEvent.ArchivePlan(plan.first.planId))
                                     }
-                                },
-                                enabled = true,
-                                leadingIcon = {
-                                    Icon(Icons.Default.Archive, contentDescription = null)
                                 }
                             )
-                        })
+                        )
                     )
                 }
                 if (state.archivedPlans.isNotEmpty()) {
                     item(key = "archivedPlans") {
-                        if (state.workoutPlanMapPrograms.size <= 1) {
+                        if (state.workoutPlanMapPrograms.isEmpty()) {
                             Column (Modifier.fillMaxWidth()){
                                 Text(
                                     stringResource(R.string.other_plans),
@@ -467,7 +571,7 @@ fun AddWorkoutPlan(
                                 )
                             )
                         }
-                        // Archived chat card
+                        // Archived card
                         Card(
                             modifier = Modifier
                                 .padding(
@@ -523,7 +627,7 @@ fun LazyItemScope.PlanCard(
     primaryActionDescription: String? = null,
     onPrimaryAction: (() -> Unit) = {},
     modifier: Modifier = Modifier,
-    trailingActions: List<(@Composable ColumnScope.(() -> Unit) -> Unit)> = emptyList()
+    trailingActions: List<IconAndLabel> = emptyList(),
 ) {
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
@@ -628,6 +732,7 @@ fun LazyItemScope.PlanCard(
             }
         }
     ) {
+        // TODO: use GroupedCard instead
         val cardShape = when (secondaryCardPosition) {
             CardPositionInGroup.FIRST -> MaterialTheme.shapes.extraLarge.copy(
                 bottomEnd = MaterialTheme.shapes.extraSmall.bottomEnd,
@@ -695,30 +800,10 @@ fun LazyItemScope.PlanCard(
                     // placeholder so that more vert box is always on the right
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                 }
-
                 if (trailingActions.isNotEmpty()) {
-                    var showDropdown by remember { mutableStateOf(false) }
-                    Box {
-                        IconButton(
-                            onClick = { showDropdown = true }
-                        ) {
-                            Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = stringResource(R.string.morevert_icon_options)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showDropdown,
-                            onDismissRequest = { showDropdown = false }
-                        ) {
-                            trailingActions.forEach {
-                                it({
-                                    showDropdown = false
-                                })
-                            }
-                        }
-                    }
+                    IconsWithOverflow(
+                        contents = trailingActions,
+                    )
                 }
             }
         }
@@ -744,4 +829,58 @@ fun ColumnScope.GeneratePlanButton(navigator: DestinationsNavigator){
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text(stringResource(R.string.generate_a_new_plan))
     }
+}
+
+fun buildHumanReadableText(data: SharedWorkoutPlanModel, context: Context): String {
+    val sb = StringBuilder()
+    sb.appendLine(getPlanDisplayName(data.planName, context))
+    sb.appendLine()
+    data.programs.sortedBy { it.orderInWorkoutPlan }.forEachIndexed { index, program ->
+        val programName = getProgramDisplayName(program.name, context)
+        sb.appendLine(context.getString(R.string.receive_plan_day, index + 1) + " - $programName")
+        program.exercises.sortedBy { it.orderInProgram }.forEachIndexed { exIdx, exercise ->
+            val name = exercise.localizedName
+
+            val maybeSupersetName = if (exercise.supersetExerciseName != null) {
+                " (${context.getString(R.string.part_of_superset)}${exercise.supersetExerciseName})"
+            } else ""
+            // Collapse consecutive sets with identical (type, reps, rest) into a single group
+            data class SetGroup(val type: SetType, val reps: Int, val rest: Int?, val count: Int)
+
+            val groups = mutableListOf<SetGroup>()
+            exercise.reps.forEachIndexed { idx, reps ->
+                val type = exercise.setTypes?.getOrNull(idx) ?: SetType.NORMAL
+                val rest = exercise.rest.getOrNull(idx)
+                val last = groups.lastOrNull()
+                if (last != null && last.type == type && last.reps == reps && last.rest == rest) {
+                    groups[groups.lastIndex] = last.copy(count = last.count + 1)
+                } else {
+                    groups += SetGroup(type, reps, rest, 1)
+                }
+            }
+
+            val advancedTypes = exercise.setTypes?.any { it != SetType.NORMAL } ?: false
+            val repsRestStr = groups.joinToString("") { group ->
+                buildString {
+                    append("\n       • ")
+                    if (advancedTypes) {
+                        append(context.getString(group.type.displayRes))
+                        append(": ")
+                    }
+                    if (group.count > 1) append("${group.count}x")
+                    append(group.reps)
+                    if (exercise.overriddenDurationBased) {
+                        append(" (${context.getString(R.string.exercise_hold)})")
+                    }
+                    group.rest?.let { append(" | ${context.getString(R.string.rest_seconds, it)}") }
+                }
+            }
+
+            sb.appendLine("  ${exIdx+1}. $name$maybeSupersetName: $repsRestStr")
+            if (exercise.note.isNotBlank()) sb.appendLine("    (${exercise.note})")
+        }
+        sb.appendLine()
+    }
+    sb.appendLine(context.getString(R.string.share_plan_from_app))
+    return sb.toString().trimEnd()
 }

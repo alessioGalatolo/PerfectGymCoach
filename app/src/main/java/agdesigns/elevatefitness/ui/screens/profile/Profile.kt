@@ -46,6 +46,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -1166,31 +1167,54 @@ fun PreferencesContent(
                                     true
                                 )
                             )
-                            ExposedDropdownMenu(
+                            DropdownMenuPopup(
                                 expanded = expanded,
-                                onDismissRequest = { expanded = false }) {
-                                locales.forEach { locale ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                locale.value,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                        },
-                                        onClick = {
-                                            expanded = false
-                                            if (locale.key != "und") {
-                                                viewModel.onEvent(
-                                                    ProfileEvent.ChangeLanguage(
-                                                        locale.key
-                                                    )
+                                onDismissRequest = { expanded = false },
+                                modifier = Modifier.exposedDropdownSize()
+                            ) {
+                                DropdownMenuGroup(
+                                    shapes = MenuDefaults.groupShape(0, 1),
+                                    interactionSource = remember { MutableInteractionSource() },
+                                ) {
+                                    locales.forEach { locale ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    locale.value,
+                                                    style = MaterialTheme.typography.bodyLarge
                                                 )
-                                            } else {
-                                                viewModel.onEvent(ProfileEvent.ChangeLanguage(null))
-                                            }
-                                        },
-                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                                    )
+                                            },
+                                            onClick = {
+                                                expanded = false
+                                                if (locale.key != "und") {
+                                                    viewModel.onEvent(
+                                                        ProfileEvent.ChangeLanguage(
+                                                            locale.key
+                                                        )
+                                                    )
+                                                } else {
+                                                    viewModel.onEvent(
+                                                        ProfileEvent.ChangeLanguage(
+                                                            null
+                                                        )
+                                                    )
+                                                }
+                                            },
+                                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                            trailingIcon = if (
+                                                    locale.key == profileState.language || (locale.key == "und" && profileState.language == null)
+                                                ) {
+                                                {
+                                                    Icon(
+                                                        Icons.Default.CheckCircle,
+                                                        null
+                                                    )
+                                                }
+                                            } else null,
+                                            selected = locale.key == profileState.language || (locale.key == "und" && profileState.language == null),
+                                            shapes = MenuDefaults.itemShapes(),
+                                        )
+                                    }
                                 }
                             }
                         }

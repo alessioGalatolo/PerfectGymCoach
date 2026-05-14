@@ -1,6 +1,7 @@
 package agdesigns.elevatefitness.ui.screens.plans
 
 import agdesigns.elevatefitness.data.PreferenceRepository
+import agdesigns.elevatefitness.data.SharedWorkoutPlanModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
@@ -137,5 +138,8 @@ class PlansViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun getFullPlanData(planId: Long): SharedWorkoutPlanModel =
+        repository.getFullPlanData(planId)
 
 }

@@ -925,5 +925,25 @@
     <string name="centimeters_short">cm</string>
     <string name="milliseconds_short">ms</string>
 
+    <!-- Share plan -->
+    <string name="share_plan">Share</string>
+    <string name="share_plan_format_title">Share as…</string>
+    <string name="share_plan_human_readable">Plain text</string>
+    <string name="share_plan_human_readable_desc">Readable by anyone</string>
+    <string name="share_plan_for_app">For Elevate Fitness users</string>
+    <string name="share_plan_for_app_desc">Share a file that can be imported directly into the app</string>
+    <string name="share_plan_chooser_title">Share workout plan</string>
+    <string name="share_plan_from_app">Shared from Elevate Fitness</string>
+    <string name="receive_plan_title">Import Workout Plan</string>
+    <string name="receive_plan_programs">%1$d program(s)</string>
+    <string name="receive_plan_exercises">%1$d exercise(s)</string>
+    <string name="receive_plan_import">Import Plan</string>
+    <string name="receive_plan_imported">Plan imported!</string>
+    <string name="receive_plan_error">Unable to read shared plan</string>
+    <string name="receive_plan_day">Day %1$d</string>
+    <string name="sets_x_reps">%1$d sets × %2$d reps</string>
+    <string name="rest_seconds">Rest: %1$ds</string>
+    <string name="invalid_file_type">Invalid file type</string>
+
 
 </resources>

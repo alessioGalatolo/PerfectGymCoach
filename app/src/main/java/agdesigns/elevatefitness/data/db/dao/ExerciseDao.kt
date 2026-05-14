@@ -24,11 +24,17 @@ interface ExerciseDao {
         "WHERE exerciseId LIKE :exerciseId")
     fun getExercise(exerciseId: Long): Flow<Exercise>
 
+    @Query("SELECT * FROM exercise WHERE nameResKey = :nameResKey LIMIT 1")
+    suspend fun getExerciseByNameResKey(nameResKey: String): Exercise?
+
+    @Query("SELECT * FROM exercise WHERE name = :name LIMIT 1")
+    suspend fun getExerciseByName(name: String): Exercise?
+
     @Query("SELECT * FROM exercise")
     fun getAllExercises(): Flow<List<Exercise>>
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun insert(exercise: Exercise)
+    suspend fun insert(exercise: Exercise): Long
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     fun insertAll(exercises: List<Exercise>)

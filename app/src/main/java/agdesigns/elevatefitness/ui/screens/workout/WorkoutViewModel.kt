@@ -1128,7 +1128,7 @@ class WorkoutViewModel @Inject constructor(
                         }
                         .first() // Get the first non-null emission (meaning the condition is met)
                         .let { newEx ->
-                            // Now that the condition is met, perform your repository operations
+                            // Now that the condition is met, perform repository operations
                             repository.deleteWorkoutExercise(
                                 pagesContent.value.exercises[event.exerciseInWorkout].workoutExerciseId
                             )

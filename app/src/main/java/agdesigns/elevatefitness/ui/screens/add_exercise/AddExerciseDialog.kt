@@ -40,10 +40,12 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
@@ -96,27 +98,10 @@ fun SharedTransitionScope.AddExerciseDialog(
             state.exercise!!
     }
 
-    var somethingHasChanged by remember { mutableStateOf(false) }
-    LaunchedEffect(
-        state.programExercise,
-        state.note,
-        state.variationResKey,
-        state.repsArray,
-        state.restArray,
-        state.advancedSets
-    ) {
-        if (state.programExercise != null) {
-            somethingHasChanged = state.programExercise!!.note != state.note ||
-                    state.programExercise!!.variationResKey != state.variationResKey ||
-                    state.programExercise!!.reps.map{ it.toUInt() } != state.repsArray ||
-                    state.programExercise!!.rest.map{ it.toUInt() } != state.restArray
-        }
-    }
-
     // used to animate dialog alpha for predictive back
     var discardChangesDialogProgress by rememberSaveable { mutableFloatStateOf(0f) }
     PredictiveBackHandler(
-        enabled = somethingHasChanged && discardChangesDialogProgress < 0.5f
+        enabled = state.somethingHasChanged && discardChangesDialogProgress < 0.5f
     ) { backFlow ->
         try {
             backFlow.collect { back ->
@@ -281,11 +266,11 @@ fun SharedTransitionScope.AddExerciseDialog(
                                 .padding(dimensionResource(R.dimen.screen_edge_padding)),
                             verticalAlignment = CenterVertically
                         ) {
-                            val expanded = rememberSaveable { mutableStateOf(false) }
+                            var expanded by remember { mutableStateOf(false) }
                             ExposedDropdownMenuBox(
-                                expanded = expanded.value,
+                                expanded = expanded,
                                 onExpandedChange = {
-                                    expanded.value = !expanded.value
+                                    expanded = !expanded
                                 }
                             ) {
                                 OutlinedTextField(
@@ -306,7 +291,7 @@ fun SharedTransitionScope.AddExerciseDialog(
                                     label = { Text(stringResource(R.string.variation)) },
                                     trailingIcon = {
                                         Row (verticalAlignment = CenterVertically){
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value)
+                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                                         }
                                     },
                                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
@@ -317,26 +302,51 @@ fun SharedTransitionScope.AddExerciseDialog(
                                             true
                                         )
                                 )
-                                ExposedDropdownMenu(
-                                    expanded = expanded.value,
-                                    onDismissRequest = { expanded.value = false },
+
+                                DropdownMenuPopup(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false },
+                                    modifier = Modifier.exposedDropdownSize()
                                 ) {
-                                    // TODO: add "add variation" to create a variation of the exercise
-                                    exercise.variationsResKeys.plus("no_variation")
-                                        .forEach { selectionOption ->
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(getVariation(selectionOption))) },
-                                                onClick = {
-                                                    viewModel.onEvent(
-                                                        AddExerciseEvent.UpdateVariationResKey(
-                                                            selectionOption
+                                    DropdownMenuGroup(
+                                        shapes = MenuDefaults.groupShape(0, 1),
+                                        interactionSource = remember { MutableInteractionSource() },
+                                    ) {
+                                        // TODO: add "add variation" to create a variation of the exercise
+                                        exercise.variationsResKeys.plus("no_variation")
+                                            .forEach { selectionOption ->
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(
+                                                                getVariation(
+                                                                    selectionOption
+                                                                )
+                                                            )
                                                         )
-                                                    )
-                                                    expanded.value = false
-                                                },
-                                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                            )
-                                        }
+                                                    },
+                                                    onClick = {
+                                                        viewModel.onEvent(
+                                                            AddExerciseEvent.UpdateVariationResKey(
+                                                                selectionOption
+                                                            )
+                                                        )
+                                                        expanded = false
+                                                    },
+                                                    trailingIcon = if (selectionOption == state.variationResKey) {
+                                                        {
+                                                            Icon(
+                                                                Icons.Default.CheckCircle,
+                                                                null
+                                                            )
+                                                        }
+                                                    } else null,
+                                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                                    selected = selectionOption == state.variationResKey,
+                                                    shapes = MenuDefaults.itemShapes()
+                                                )
+                                            }
+                                    }
                                 }
                             }
                         }
@@ -636,34 +646,47 @@ fun SharedTransitionScope.AddExerciseDialog(
                                             Text(stringResource(currentSetType.displayRes).first().uppercase())
                                         }
                                     }
-                                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                        SetType.visibleEntries.forEach { type ->
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(type.displayRes)) },
-                                                leadingIcon = {
-                                                    Icon(
-                                                        type.icon,
-                                                        stringResource(type.displayRes)
-                                                    )
-                                                },
-                                                onClick = {
-                                                    val outcome = viewModel.onEvent(
-                                                        AddExerciseEvent.UpdateSetTypeAtIndex(
-                                                            type,
-                                                            index
+                                    DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                        DropdownMenuGroup(
+                                            shapes = MenuDefaults.groupShape(0, 1),
+                                            interactionSource = remember { MutableInteractionSource() },
+                                        ) {
+                                            SetType.visibleEntries.forEach { type ->
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(type.displayRes)) },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            type.icon,
+                                                            stringResource(type.displayRes)
                                                         )
-                                                    )
-                                                    expanded = false
-                                                    if (!outcome) {
-                                                        scope.launch {
-                                                            haptics.performHapticFeedback(
-                                                                HapticFeedbackType.Reject
+                                                    },
+                                                    trailingIcon = if (type == currentSetType) {{
+                                                        Icon(
+                                                            Icons.Default.CheckCircle,
+                                                            null
+                                                        )
+                                                    }} else null,
+                                                    onClick = {
+                                                        val outcome = viewModel.onEvent(
+                                                            AddExerciseEvent.UpdateSetTypeAtIndex(
+                                                                type,
+                                                                index
                                                             )
+                                                        )
+                                                        expanded = false
+                                                        if (!outcome) {
+                                                            scope.launch {
+                                                                haptics.performHapticFeedback(
+                                                                    HapticFeedbackType.Reject
+                                                                )
+                                                            }
                                                         }
-                                                    }
-                                                },
-                                                enabled = type != SetType.WARMUP || previousWereWarmups
-                                            )
+                                                    },
+                                                    enabled = type != SetType.WARMUP || previousWereWarmups,
+                                                    selected = type == currentSetType,
+                                                    shapes = MenuDefaults.itemShapes()
+                                                )
+                                            }
                                         }
                                     }
                                 }

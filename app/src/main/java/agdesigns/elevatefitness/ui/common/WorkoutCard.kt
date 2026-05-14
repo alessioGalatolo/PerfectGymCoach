@@ -49,8 +49,8 @@ fun WorkoutCard(
     exerciseModifier: Modifier = Modifier,
     cardShape: Shape = MaterialTheme.shapes.medium,
     cardElevation: Dp = 1.dp,
-    onDelete: (() -> Unit)? = null,
-    onRename: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,  // FIXME: this is always null
+    onRename: (() -> Unit)? = null,  // FIXME: this is always null
 ){
     val haptic = LocalHapticFeedback.current
     var expanded by remember { mutableStateOf(false) }

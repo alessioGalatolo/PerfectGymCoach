@@ -32,12 +32,10 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordHealthId
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import agdesigns.elevatefitness.data.db.entity.getDuplicatePlanName
-import android.content.Intent
+import agdesigns.elevatefitness.shared.Equipment
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.annotation.DrawableRes
-import androidx.core.net.toUri
-import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.wearable.Asset
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -615,6 +613,133 @@ class Repository @Inject constructor(
             bitmap.compress(Bitmap.CompressFormat.JPEG, 50, byteStream)
             Asset.createFromBytes(byteStream.toByteArray())
         }
+    }
+
+    /*
+     * Plan sharing / importing
+     */
+    suspend fun getFullPlanData(planId: Long): SharedWorkoutPlanModel {
+        val plan = getPlan(planId).first() ?: throw IllegalArgumentException("Plan not found")
+        val programs = getPrograms(planId).first()
+        val missingExercises = mutableListOf<Exercise>()
+        val sharedPrograms = programs.map { program ->
+            val exercises = getProgramExercisesAndInfo(program.programId).first()
+            val sharedExercises = exercises.map { exercise ->
+                if (exercise.userDefined) {
+                    missingExercises.add(getExercise(exercise.extExerciseId).first())
+                }
+                SharedExerciseModel(
+                    nameResKey = exercise.nameResKey,
+                    localizedName = exercise.name,
+                    reps = exercise.reps,
+                    rest = exercise.rest,
+                    note = exercise.note,
+                    variationResKey = exercise.variationResKey,
+                    orderInProgram = exercise.orderInProgram,
+                    overriddenDurationBased = exercise.overriddenDurationBased,
+                    setTypes = exercise.setTypes,
+                    supersetExerciseNameResKey = exercise.supersetExercise?.let {
+                        exercises.find { ex -> ex.programExerciseId == it }?.nameResKey
+                    },
+                    supersetExerciseName = exercise.supersetExercise?.let {
+                        exercises.find { ex -> ex.programExerciseId == it }?.name
+                    }
+                )
+            }
+            SharedProgramModel(
+                name = program.name,
+                orderInWorkoutPlan = program.orderInWorkoutPlan,
+                exercises = sharedExercises
+            )
+        }
+        return SharedWorkoutPlanModel(
+            planName = plan.name,
+            programs = sharedPrograms,
+            missingExercises = missingExercises.map {
+                it.toSharedBaseExercise()
+            }
+        )
+    }
+
+    suspend fun importSharedPlan(sharedPlan: SharedWorkoutPlanModel): Long {
+        val nameToMissingExercise = sharedPlan.missingExercises.associateBy { it.name }
+        val newPlanId = addPlan(WorkoutPlan(name = sharedPlan.planName, creationDate = ZonedDateTime.now()))
+        for (program in sharedPlan.programs.sortedBy { it.orderInWorkoutPlan }) {
+            val newProgramId = addProgram(
+                WorkoutProgram(extPlanId = newPlanId, orderInWorkoutPlan = program.orderInWorkoutPlan, name = program.name)
+            )
+            val programExercises = mutableListOf<ProgramExerciseAndInfo>()
+            for (exercise in program.exercises.sortedBy { it.orderInProgram }) {
+                val exerciseId = resolveOrCreateExercise(exercise, nameToMissingExercise) ?: continue
+                val programExercise = ProgramExercise(
+                    extProgramId = newProgramId,
+                    extExerciseId = exerciseId,
+                    orderInProgram = exercise.orderInProgram,
+                    reps = exercise.reps,
+                    rest = exercise.rest,
+                    note = exercise.note,
+                    variationResKey = exercise.variationResKey,
+                    overriddenDurationBased = exercise.overriddenDurationBased,
+                    setTypes = exercise.setTypes,
+                )
+                val programExerciseId = addProgramExercise(
+                    programExercise
+                )
+                programExercises.add(ProgramExerciseAndInfo(
+                    programExerciseId = programExerciseId,
+                    extProgramId = 0L,
+                    extExerciseId = exerciseId,
+                    orderInProgram = 0,
+                    name = exercise.localizedName,
+                    nameResKey = exercise.nameResKey,
+                    description = "",
+                    descriptionResKey = "",
+                    reps = emptyList(),
+                    rest = emptyList(),
+                    note = "",
+                    variation = "",
+                    variationResKey = "",
+                    image = 0,
+                    imageResKey = "",
+                    equipment = Equipment.EVERYTHING,
+                    userDefined = false,
+                    overriddenDurationBased = false,
+                    wearRepTrackable = Exercise.WearRepTrackable.NOT_TRACKABLE,
+                    firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
+                ))
+            }
+            // after creating all the program exercises, we check for supersets
+            program.exercises.forEachIndexed { idx, exercise ->
+                if (exercise.supersetExerciseNameResKey == null && exercise.supersetExerciseName == null)
+                    return@forEachIndexed
+                val programExercise = programExercises.getOrNull(idx) ?: return@forEachIndexed
+                val supersetExercise = programExercises.find {
+                    it.nameResKey == exercise.supersetExerciseNameResKey || it.name == exercise.supersetExerciseName
+                }
+                if (supersetExercise != null) {
+                    updateExerciseSuperset(
+                        listOf(
+                            UpdateExerciseSuperset(
+                                programExercise.programExerciseId,
+                                supersetExercise.programExerciseId
+                            )
+                        )
+                    )
+                }
+            }
+        }
+        return newPlanId
+    }
+
+    private suspend fun resolveOrCreateExercise(
+        shared: SharedExerciseModel,
+        nameToMissingExercise: Map<String, SharedBaseExercise>
+    ): Long? {
+        val existing = db.exerciseDao.getExerciseByNameResKey(shared.nameResKey)
+        if (existing != null) return existing.exerciseId
+
+        val missingExercise = nameToMissingExercise[shared.localizedName] ?: return null
+        return addExercise(missingExercise.toExercise())
     }
 
     companion object {
