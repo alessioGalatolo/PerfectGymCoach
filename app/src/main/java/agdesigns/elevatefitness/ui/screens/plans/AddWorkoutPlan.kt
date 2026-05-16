@@ -83,6 +83,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.time.ZonedDateTime
@@ -632,16 +633,17 @@ fun LazyItemScope.PlanCard(
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val positionalThresholdFun = SwipeToDismissBoxDefaults.positionalThreshold
+    val positionalThreshold = if (canBeSwiped) {
+        positionalThresholdFun
+    } else { it ->
+        positionalThresholdFun(it * 3)
+    }
     // NOTE: we need these two keys otherwise when undoing archivePlan, the state would be recycled
     val dismissState = swipeToDismissBoxState
         ?: remember(plan.planId, plan.archived) {
          SwipeToDismissBoxState(
             initialValue = SwipeToDismissBoxValue.Settled,
-            positionalThreshold = if (canBeSwiped) {
-                positionalThresholdFun
-            } else { it ->
-                positionalThresholdFun(it * 3)
-            }
+            positionalThreshold = positionalThreshold
         )
     }
     val density = LocalDensity.current
@@ -654,13 +656,23 @@ fun LazyItemScope.PlanCard(
             }
         }
     }
+    LaunchedEffect(dismissState) {
+        snapshotFlow { dismissState.targetValue }
+            .distinctUntilChanged()
+            .collect {
+                if (it != SwipeToDismissBoxValue.Settled && canBeSwiped) {
+                    haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                }
+            }
+    }
+
     SwipeToDismissBox(
         modifier = modifier.animateItem(),
         state = dismissState,
         onDismiss = { direction ->
             if (direction != SwipeToDismissBoxValue.Settled) {
                 if (canBeSwiped) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                     onSwipe(plan.planId)
                 } else {
                     scope.launch {

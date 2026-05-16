@@ -40,8 +40,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // check if we're being opened from launcher shortcut with a valid uri
+
+        // simple deeplink parsing, null if invalid or no uri
+        val intentDeeplink = intent.data?.let { DeepLinkMatcher(it).match() }
+
         // Handle incoming file imports
         val sharedElement: SharableElement? = run {
+            if (intentDeeplink != null) return@run null
             val action = intent.action ?: return@run null
             if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return@run null
 
@@ -72,8 +78,6 @@ class MainActivity : ComponentActivity() {
             }.getOrNull()
         }
 
-        // simple deeplink parsing
-        val uri: Uri? = intent.data
         val startDestination: Route = when {
             sharedElement != null -> {
                 when (sharedElement.type) {
@@ -83,7 +87,7 @@ class MainActivity : ComponentActivity() {
                     // other sharable types...
                 }
             }
-            else -> uri?.let { DeepLinkMatcher(it).match() } ?: HomeDestination
+            else -> intentDeeplink ?: HomeDestination
         }
 
         // Call enableEdgeToEdge() BEFORE setContent, with a default style.

@@ -23,23 +23,18 @@ import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
-import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.ui.screens.workout.CurrentExerciseState
 import agdesigns.elevatefitness.ui.screens.workout.WorkoutPagesContent
 import agdesigns.elevatefitness.ui.screens.workout.WorkoutState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.runtime.getValue
@@ -64,9 +59,11 @@ import agdesigns.elevatefitness.ui.common.CompletionCheckmark
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.IconAndLabel
 import agdesigns.elevatefitness.ui.common.IconsWithOverflow
+import agdesigns.elevatefitness.ui.common.UpdateWeightDialog
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
 import agdesigns.elevatefitness.ui.screens.workout.SetDisplayRow
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -76,6 +73,7 @@ import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.Placeholder
@@ -143,7 +141,8 @@ fun SharedTransitionScope.ExercisePages(
     refreshPromotedNotificationAccess: () -> Unit,
     onAcceptSuggestion: (Int) -> Unit,
     updateSetType: (Int, Int, SetType) -> Unit,
-    finishWorkout: () -> Unit
+    finishWorkout: () -> Unit,
+    updateUserWeight: (Float) -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -292,10 +291,14 @@ fun SharedTransitionScope.ExercisePages(
                             }
                         )
                     }
+                    val animatedRotation by animateFloatAsState(if (exercisesOverviewSheetOpen) 180f else 0f)
                     Icon(
                         Icons.Default.ExpandMore,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .animateContentSize()
+                            .rotate(animatedRotation),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -384,6 +387,7 @@ fun SharedTransitionScope.ExercisePages(
                         fabHeight = fabHeight,
                         bottomPadding = bottomPadding,
                         modificationSuggestion = null,
+                        lastBodyweightUpdate = ZonedDateTime.now(),
                         settingsMenu = {
                             ExerciseSettingsMenu(
                                 {},
@@ -401,7 +405,8 @@ fun SharedTransitionScope.ExercisePages(
                         toggleInfoDialog = {},
                         deleteSet = {},
                         onAcceptSuggestion = {},
-                        updateSetType = { _, _ -> }
+                        updateSetType = { _, _ -> },
+                        updateUserWeight = { _ -> }
                     )
                 }
             }
@@ -420,21 +425,12 @@ fun SharedTransitionScope.ExercisePages(
                 ) { page ->
                     if (page == pagesContent.exercises.size) {
                         // page for finishing the workout
-                        val currentWorkoutString = stringResource(R.string.current_workout)
                         WorkoutFinishPage(
                             currentExerciseState.workoutTimeFormatted,
                             fabHeight,
                             bottomPadding,
                             addExercise = {
                                 addExercise(page - 1, pagesContent.exercises.size)
-                                navigator.navigate(
-                                    ExercisesByMuscleDestination(
-                                        programName = currentWorkoutString,
-                                        workoutId = workoutState.workoutId,
-                                        returnAfterAdding = true,
-                                        insertAtPosition = page
-                                    )
-                                )
                             },
                             finishWorkout = finishWorkout
                         )
@@ -467,32 +463,17 @@ fun SharedTransitionScope.ExercisePages(
                             workoutStarted = workoutState.workoutStarted,
                             fabHeight = fabHeight,
                             bottomPadding = bottomPadding,
+                            lastBodyweightUpdate = workoutState.lastBodyweightUpdate,
                             settingsMenu = {
-                                val currentWorkoutString = stringResource(R.string.current_workout)
                                 ExerciseSettingsMenu(
                                     changeExercise = {
                                         changeExercise(page, pagesContent.exercises.size)
-                                        navigator.navigate(
-                                            ExercisesByMuscleDestination(
-                                                programName = currentWorkoutString,
-                                                workoutId = workoutState.workoutId,
-                                                returnAfterAdding = true
-                                            )
-                                        )
                                     },
                                     removeExercise = {
                                         removeExercise(page)
                                     },
                                     addExercise = {
                                         addExercise(page, pagesContent.exercises.size)
-                                        navigator.navigate(
-                                            ExercisesByMuscleDestination(
-                                                programName = currentWorkoutString,
-                                                workoutId = workoutState.workoutId,
-                                                returnAfterAdding = true,
-                                                insertAtPosition = page+1
-                                            )
-                                        )
                                     },
                                     viewStatistics = {
                                         navigator.navigate(
@@ -528,7 +509,8 @@ fun SharedTransitionScope.ExercisePages(
                                     setCount,
                                     setType
                                 )
-                            }
+                            },
+                            updateUserWeight = updateUserWeight
                         )
                     }
                 }
@@ -555,6 +537,7 @@ fun ExercisePage(
     workoutStarted: Boolean,
     fabHeight: Dp,
     bottomPadding: Dp,
+    lastBodyweightUpdate: ZonedDateTime,
     modificationSuggestion: ModificationSuggestion?,
     settingsMenu: @Composable () -> Unit,
     addSet: () -> Unit,
@@ -565,7 +548,8 @@ fun ExercisePage(
     toggleInfoDialog: () -> Unit,
     deleteSet: (Int) -> Unit,
     onAcceptSuggestion: () -> Unit,
-    updateSetType: (Int, SetType) -> Unit
+    updateSetType: (Int, SetType) -> Unit,
+    updateUserWeight: (Float) -> Unit
 ) {
     Column (Modifier.padding(horizontal = 16.dp)){
         if (exerciseNote.isNotBlank()) {
@@ -576,12 +560,20 @@ fun ExercisePage(
                 append(exerciseNote)
             }, modifier = Modifier.align(CenterHorizontally))
         }
+        // TODO: show max 1 suggestion at a time (i.e., among modifications, weight update,
+        //  enable ongoing notifications, etc...)
         SuggestModificationCard(
             isLoading = isLoading,
             hasDoneSomeSets = setsDone > 0,
             modificationSuggestion = modificationSuggestion,
             onAcceptSuggestion = onAcceptSuggestion,
             modifier = Modifier.padding(vertical = 8.dp)
+        )
+        SuggestBodyweightUpdate(
+            isLoading = isLoading,
+            equipment = equipment,
+            lastBodyweightUpdate = lastBodyweightUpdate,
+            updateUserWeight = updateUserWeight
         )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -938,6 +930,99 @@ fun SuggestModificationCard(
                     Text(text = stringResource(R.string.modification_suggestion_not_this_time))
                 }
                 Button(onClick = onAcceptSuggestion) {
+                    Text(text = stringResource(R.string.modification_suggestion_do_it))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SuggestBodyweightUpdate(
+    isLoading: Boolean,
+    equipment: Equipment,
+    lastBodyweightUpdate: ZonedDateTime,
+    modifier: Modifier = Modifier,
+    updateUserWeight: (Float) -> Unit,
+) {
+    var notToday by rememberSaveable { mutableStateOf(false) }
+    var showUpdateWeightDialog by remember { mutableStateOf(false) }
+
+    UpdateWeightDialog(
+        prompt = stringResource(R.string.new_weight),
+        dialogueIsOpen = showUpdateWeightDialog,
+        toggleDialog = { showUpdateWeightDialog = !showUpdateWeightDialog },
+        updateWeight = updateUserWeight
+    )
+    val MAX_DAYS_WITHOUT_UPDATE = 30L
+    AnimatedVisibility(
+        equipment == Equipment.BODY_WEIGHT &&
+                !notToday &&
+                !isLoading &&
+                lastBodyweightUpdate.isBefore(ZonedDateTime.now().minusDays(MAX_DAYS_WITHOUT_UPDATE)),
+        enter = slideInVertically(
+            animationSpec = MaterialTheme.motionScheme.slowSpatialSpec()
+        ) + fadeIn(
+            animationSpec = MaterialTheme.motionScheme.slowEffectsSpec()
+        ),
+        exit = slideOutVertically(
+            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+        ) + fadeOut(
+            animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+        )
+    ) {
+        Card(
+            modifier = modifier,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.update_body_weight),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .weight(1f),
+                    style = MaterialTheme.typography.titleLarge
+                )
+                IconButton({
+                        notToday = true
+                    },
+                    modifier = Modifier.padding(8.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close_icon)
+                    )
+                }
+            }
+            Text(
+                text = stringResource(
+                    R.string.update_bodyweight_desc,
+                    MAX_DAYS_WITHOUT_UPDATE
+                ),
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = {
+                    notToday = true
+                }) {
+                    Text(text = stringResource(R.string.modification_suggestion_not_this_time))
+                }
+                Button(onClick = {
+                    showUpdateWeightDialog = true
+                }) {
                     Text(text = stringResource(R.string.modification_suggestion_do_it))
                 }
             }

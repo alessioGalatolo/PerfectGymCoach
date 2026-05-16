@@ -12,7 +12,6 @@
     <string name="fill_every_field">Please fill every field correctly in order to save</string>
     <string name="empty_history">You currently don\'t have any workout records. Complete a workout to see it here!</string>
     <string name="no_analytics">This is where your analytics will be once you have completed more than one workout from the same program!</string>
-    <string name="note_empty_workout">Note: adding an exercise with the plus button will only add it to the current workout and not the future ones. If you want otherwise use the edit button instead.</string>
 
     <!-- # Dialogs strings  -->
 
@@ -944,6 +943,11 @@
     <string name="sets_x_reps">%1$d sets × %2$d reps</string>
     <string name="rest_seconds">Rest: %1$ds</string>
     <string name="invalid_file_type">Invalid file type</string>
+
+    <string name="seconds_unit">s</string>
+    <string name="update_body_weight">Update body weight?</string>
+    <string name="update_bodyweight_desc">You are doing a bodyweight exercise but haven\'t updated your weight in the app for more than %1$d days. Having an updated weight makes for a more accurate volume calculation.</string>
+    <string name="new_weight">new weight</string>
 
 
 </resources>

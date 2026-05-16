@@ -183,7 +183,7 @@ fun EndWorkoutPage(
                 .rotaryScrollable(  // TODO: what about devices without rotary?
                     accumulatedBehavior { value ->
                         val delta = if (value > 0) 1 else -1
-                        workoutIntensity += (delta * 5) / 100f
+                        workoutIntensity += (delta * 2.5f) / 100f
                         // clip workoutIntensity to 0..1
                         if (workoutIntensity in 0f..1f) {
                             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)

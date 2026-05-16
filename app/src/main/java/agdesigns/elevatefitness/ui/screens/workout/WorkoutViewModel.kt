@@ -166,6 +166,7 @@ data class WorkoutState(
     val lastWorkoutModifications: List<WorkoutRecord.WorkoutModification> = emptyList(),
     val suggestRepsWeight: Boolean = true,
     val suggestWorkoutModifications: Boolean = true,
+    val lastBodyweightUpdate: ZonedDateTime = ZonedDateTime.now()
 )
 
 sealed class WorkoutEffect {
@@ -243,6 +244,8 @@ sealed class WorkoutEvent{
     data class UpdateCurrentPage(val currentPage: Int) : WorkoutEvent()
 
     data object RefreshHasPromptedNotificationsAccess: WorkoutEvent()
+
+    data class UpdateUserWeight(val weight: Float): WorkoutEvent()
 }
 
 @OptIn(InternalProperty::class, OutOfSyncProperty::class, ExperimentalHorologistApi::class)
@@ -396,7 +399,7 @@ class WorkoutViewModel @Inject constructor(
                             )?.toString()
                             projectedWeight = computeNextWeight(
                                 recordsToDisplay = allRecords,
-                                ongoingLastWeight = (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
+                                ongoingRecordWeightPreviousSet = (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
                                 setsDone = setCount,
                                 barbellDiff = barbellDiff,
                                 imperialSystem = imperialSystem,
@@ -1201,6 +1204,11 @@ class WorkoutViewModel @Inject constructor(
                     }
                 }
             }
+            is WorkoutEvent.UpdateUserWeight -> {
+                viewModelScope.launch {
+                    preferences.setUserWeight(event.weight)
+                }
+            }
         }
     }
 
@@ -1312,7 +1320,7 @@ class WorkoutViewModel @Inject constructor(
 
     private fun computeNextWeight(
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
-        ongoingLastWeight: Float?,
+        ongoingRecordWeightPreviousSet: Float?,
         setsDone: Int,
         barbellDiff: Float,
         imperialSystem: Boolean,
@@ -1330,7 +1338,8 @@ class WorkoutViewModel @Inject constructor(
          1a. If equals to the same set from last record, take from last record
          2. Otherwise, check whether the weight also changed between sets in last record (e.g., pyramid)
          2a. If not, keep weight from previous set
-         3. Otherwise, take last record increased/decreased by same amount as previous set
+         (not used rn)
+         ~3. Otherwise, take last record increased/decreased by same amount as previous set~
          */
 
         // do not propagate ongoing weight across set type boundaries (e.g., warmup -> normal)
@@ -1345,9 +1354,8 @@ class WorkoutViewModel @Inject constructor(
         var weightCandidate: Float?
         var oldRecordWeightCurrentSet: Float? = null
         var oldRecordWeightPreviousSet: Float? = null
-        var ongoingRecordWeightPreviousSet: Float? = null
         var avgOldRecordWeight: Float? = null
-        // for the weight, try to copy from last old record
+        // try to copy from last old record
         if (lastOldRecord != null) {
             oldRecordWeightCurrentSet = lastOldRecord.weights.getOrNull(setsDone)?.let {
                 maybeKgToLb(
@@ -1361,10 +1369,15 @@ class WorkoutViewModel @Inject constructor(
                     imperialSystem
                 )
             }
-            if (currentSetType == SetType.NORMAL && !isPyramid) {
-                lastOldRecord.weights.zip(
-                    lastOldRecord.setTypes ?: List(lastOldRecord.weights.size) { SetType.NORMAL }
-                ).filter { it.second == SetType.NORMAL }.map { it.first }.average().let {
+            val relevantOldRecords = lastOldRecord.weights.zip(
+                lastOldRecord.setTypes ?: List(lastOldRecord.weights.size) { SetType.NORMAL }
+            ).filter { it.second == SetType.NORMAL }.map { it.first }
+            if (
+                (currentSetType == SetType.NORMAL || currentSetType == SetType.AWESOME) &&
+                !isPyramid &&
+                relevantOldRecords.isNotEmpty()
+            ) {
+                relevantOldRecords.average().let {
                     avgOldRecordWeight = it.toFloat()
                     // now round it to the nearest increment
                     if (avgOldRecordWeight % increment != 0f) {
@@ -1373,13 +1386,14 @@ class WorkoutViewModel @Inject constructor(
                 }
             }
         }
-        if (ongoingLastWeight != null) {
-            ongoingRecordWeightPreviousSet = ongoingLastWeight
-        }
         if (setsDone == 0 || setTypeBoundary) {
             weightCandidate = avgOldRecordWeight ?: oldRecordWeightCurrentSet
         } else if (ongoingRecordWeightPreviousSet != null) {
-            weightCandidate = ongoingRecordWeightPreviousSet
+            if (ongoingRecordWeightPreviousSet == oldRecordWeightPreviousSet) {
+                weightCandidate = oldRecordWeightCurrentSet
+            } else {
+                weightCandidate = ongoingRecordWeightPreviousSet
+            }
         } else {
             weightCandidate = avgOldRecordWeight ?: oldRecordWeightCurrentSet
         }
@@ -1627,9 +1641,9 @@ class WorkoutViewModel @Inject constructor(
             // when first set completed, we need to create the record
             val selectedBarbellType = workoutState.value.selectedBarbells.getOrNull(exerciseIndex)
             val barbellTypeResKey = selectedBarbellType?.barbellResKey ?: ""
+            if (exercise.equipment == Equipment.BODY_WEIGHT)
+                oldTare = preferences.getUserWeight().first()
             if (record == null) {
-                if (exercise.equipment == Equipment.BODY_WEIGHT)
-                    oldTare = preferences.getUserWeight().first()
                 repository.addExerciseRecord(
                     ExerciseRecord(
                         extWorkoutId = workoutState.value.workoutId,
@@ -2063,6 +2077,7 @@ class WorkoutViewModel @Inject constructor(
                 preferences.getDontWantOngoingWorkoutNotification(),
                 preferences.getSuggestRepsWeight(),
                 preferences.getSuggestWorkoutModifications(),
+                preferences.getWeightRecordDate(),
             ) { values: Array<Any?> ->
                 _workoutState.update {
                     it.copy(
@@ -2079,6 +2094,7 @@ class WorkoutViewModel @Inject constructor(
                         cantRequestOngoingWorkoutNotification = values[10] as Boolean,
                         suggestRepsWeight = values[11] as Boolean,
                         suggestWorkoutModifications = values[12] as Boolean,
+                        lastBodyweightUpdate = values[13] as ZonedDateTime
                     )
                 }
             }.collect()

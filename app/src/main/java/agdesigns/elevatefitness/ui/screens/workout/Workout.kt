@@ -503,14 +503,7 @@ fun SharedTransitionScope.Workout(
                 R.string.empty_exercises,
                 R.string.workout_empty_exercises,
                 modifier = Modifier.padding(innerPadding)
-            ) {
-                Text(
-                    stringResource(R.string.note_empty_workout),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(40.dp)  // big padding to avoid being under fab
-                )
-            }
+            )
         }
     } else {
         // couldn't init workout, have a scaffold to show error then go back

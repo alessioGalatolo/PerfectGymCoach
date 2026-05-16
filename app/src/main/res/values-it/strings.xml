@@ -13,7 +13,6 @@
     <string name="fill_every_field">Compila correttamente tutti i campi per poter salvare</string>
     <string name="empty_history">Al momento non hai completato allenamenti. Completa un allenamento per vederlo qui!</string>
     <string name="no_analytics">Qui troverai le tue analisi una volta che avrai completato più di un allenamento dallo stesso programma!</string>
-    <string name="note_empty_workout">Nota: aggiungere un esercizio con il pulsante + lo aggiungerà solo all\'allenamento corrente e non ai futuri. Se vuoi diversamente usa invece il pulsante modifica.</string>
 
     <!-- # Dialogs strings  -->
 
@@ -877,7 +876,7 @@
     <string name="smart_features_title">Funzionalità smart</string>
     <string name="suggest_reps_weight">Suggerisci ripetizioni e peso negli allenamenti</string>
     <string name="suggest_workout_modifications">Suggeriscie modifiche all\'allenamento in base alle sessioni precedenti</string>
-    <string name="in_rest_hints_wear">Orologio: guide tra le serie per cambiare peso, ripetizioni, ecc.</string>
+    <string name="in_rest_hints_wear">Orologio: guida tra le serie per cambiare peso, ripetizioni, ecc.</string>
     <string name="tempo_rom_tracking_wear">Orologio: traccia il tempo e ROM per le singole ripetizioni (sperimentale, solo esercizi supportati)</string>
     <string name="requires_connected_watch">Richiede un orologio connesso</string>
     <string name="requires_compatible_wearable">Questa funzionalità richede un orologio compatibile</string>
@@ -943,4 +942,9 @@
     <string name="sets_x_reps">%1$d serie × %2$d ripetizioni</string>
     <string name="rest_seconds">Riposo: %1$ds</string>
     <string name="invalid_file_type">Formato file invalido</string>
+
+    <string name="seconds_unit">s</string>
+    <string name="update_body_weight">Aggiorna peso corporeo?</string>
+    <string name="update_bodyweight_desc">Stai facendo un esercizio a corpo libero ma non hai aggiornato il tuo peso nell\'app per più di %1$d giorni. Avere un peso aggiornato aiuta ad avere un calcolo del volume più accurato.</string>
+    <string name="new_weight">nuovo peso</string>
 </resources>

@@ -107,11 +107,8 @@ fun WorkoutPage(
             currentRestSeconds = workoutState.ongoingRestSecs ?: 0L,
             nextSetExerciseName = workoutState.nextSetExerciseName,
             ambientMode = ambientMode,
-            hints = workoutState.inRestHints,
-            showHintDialog = workoutState.showHintDialog,
             isLastSet = workoutState.isLastSet,
             skipRest = resetRest,
-            onDismissHint = onDismissHint,
             onAddSet = onAddSet,
             onExtendRest = onExtendRest,
         )

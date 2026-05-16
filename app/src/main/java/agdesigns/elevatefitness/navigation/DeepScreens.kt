@@ -132,6 +132,7 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
             // Which I prefer in this case
         ) + mapOf(DETAIL_PANE_METADATA_KEY to true)) {
             AddProgram(
+                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = navigator,
                 planId = it.planId,
                 openDialogNow = it.openDialogNow

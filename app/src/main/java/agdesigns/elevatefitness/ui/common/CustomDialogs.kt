@@ -140,6 +140,85 @@ fun InsertNameDialog(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun UpdateWeightDialog(
+    prompt: String,
+    dialogueIsOpen: Boolean,
+    toggleDialog: () -> Unit,
+    updateWeight: (Float) -> Unit,
+) {
+    // alert dialogue to enter the workout plan/program name
+    val textFieldState = rememberTextFieldState()
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(dialogueIsOpen) {
+        if (dialogueIsOpen) {
+            awaitFrame()
+            awaitFrame()
+            awaitFrame()
+            awaitFrame()
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+    val saveAndClose = {
+        val newWeight = textFieldState.text.toString().toFloatOrNull()
+        if (newWeight != null) {
+            updateWeight(newWeight)
+            textFieldState.clearText()
+            toggleDialog()
+        }
+    }
+    if (dialogueIsOpen) {
+        AlertDialog(
+            onDismissRequest = {
+                // Dismiss the dialog when the user clicks outside the dialog or on the back
+                // button. If you want to disable that functionality, simply use an empty
+                // onDismissRequest.
+                toggleDialog()
+            },
+            title = {
+                Text(text = stringResource(R.string.enter_name_for, prompt.lowercase()))
+            },
+            text = {
+                TextField(
+                    state = textFieldState,
+                    isError = textFieldState.text.toString().toFloatOrNull() == null,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done,
+                        showKeyboardOnFocus = true
+                    ),
+                    onKeyboardAction = KeyboardActionHandler {
+                        saveAndClose()
+                    },
+                    modifier = Modifier.focusRequester(focusRequester)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = textFieldState.text.toString().toFloatOrNull() != null,
+                    onClick = {
+                        saveAndClose()
+                    }
+                ) {
+                    Text(stringResource(R.string.dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        toggleDialog()
+                    }
+                ) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
+            }
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

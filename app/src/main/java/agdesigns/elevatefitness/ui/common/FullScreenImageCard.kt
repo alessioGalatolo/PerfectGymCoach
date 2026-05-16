@@ -54,17 +54,20 @@ fun SharedTransitionScope.FullScreenImageCard(
     val cornerRadius = cardShape.topStart
 
     val localDensity = LocalDensity.current
-    val statusBarsHeight = WindowInsets.Companion.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBarsHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val contentBelowImage = max(
-        0.dp, imageHeight - statusBarsHeight - TopAppBarDefaults.MediumAppBarCollapsedHeight
+        0.dp, imageHeight - statusBarsHeight - TopAppBarDefaults.TopAppBarExpandedHeight
     )
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
         rememberTopAppBarState()
     )
     val s = scrollBehavior.state
     val belowImageFloat = with(localDensity) { contentBelowImage.toPx() }
-    val transition by remember { derivedStateOf {
-            1 - ((s.heightOffsetLimit + scrollState.value - belowImageFloat).coerceIn(
+    // without this, the topappbar becomes opaque when content goes under it
+    // but this will create a weird effect for the image corners which are above the content
+    val cornersOffset = with(localDensity) { 20.dp.toPx() }
+    val transition by remember(belowImageFloat) { derivedStateOf {
+            1 - ((s.heightOffsetLimit + scrollState.value - belowImageFloat + cornersOffset).coerceIn(
             minimumValue = s.heightOffsetLimit,
             maximumValue = 0f
         ) / s.heightOffsetLimit) }

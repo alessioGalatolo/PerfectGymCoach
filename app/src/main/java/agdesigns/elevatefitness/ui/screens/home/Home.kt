@@ -367,7 +367,22 @@ fun SharedTransitionScope.Home(
                                 boundsTransform = { _, _ ->
                                     MotionScheme.expressive().slowSpatialSpec()
                                 }
-                            )
+                            ),
+                        trailingIcons = {
+                            IconButton(onClick = {
+                                navigator.navigate(
+                                    AddProgramExerciseDestination(
+                                        programName = currentProgram.name,
+                                        programId = currentProgram.programId
+                                    )
+                                )
+                            }) {
+                                Icon(
+                                    Icons.Outlined.Edit,
+                                    stringResource(R.string.edit_icon_program)
+                                )
+                            }
+                        }
                     )
                 }
                 item {

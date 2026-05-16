@@ -68,7 +68,8 @@ data class StatisticsState(
     val allWorkouts: List<WorkoutRecord> = emptyList(),
     val progressTextRes: Int = R.string.stats_loading_generic,
     val volumeIndex2Date: Map<Int, String> = emptyMap(),
-    val volumeComparison: VolumeComparison? = null
+    val volumeComparison: VolumeComparison? = null,
+    val nonEmptyWorkouts: Boolean = false
 )
 
 data class ExerciseStats(
@@ -278,7 +279,8 @@ class StatisticsViewModel @Inject constructor(
                     equipmentUsage = equipmentUsage,
                     progressTextRes = R.string.stats_loading_done,
                     volumeChartData = volumeProgressions,
-                    volumeComparison = volumeComparison
+                    volumeComparison = volumeComparison,
+                    nonEmptyWorkouts = nonEmptyWorkouts.isNotEmpty()
                 )
             }
             Log.d("StatisticsViewModel", "Statistics computed successfully")

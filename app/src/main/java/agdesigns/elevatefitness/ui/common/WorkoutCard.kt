@@ -28,6 +28,7 @@ import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.navigation.WorkoutDestination
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -47,48 +48,40 @@ fun WorkoutCard(
     cardModifier: Modifier = Modifier,
     imageModifier: Modifier = Modifier,
     exerciseModifier: Modifier = Modifier,
+    showCompact: Boolean = false,
     cardShape: Shape = MaterialTheme.shapes.medium,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     cardElevation: Dp = 1.dp,
-    onDelete: (() -> Unit)? = null,  // FIXME: this is always null
-    onRename: (() -> Unit)? = null,  // FIXME: this is always null
+    trailingIcons: @Composable () -> Unit = {},
 ){
-    val haptic = LocalHapticFeedback.current
-    var expanded by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(pageCount = { exercises.size })
     ElevatedCard(
+        interactionSource = interactionSource,
+        onClick = {
+            onCardClick(
+                exercises.getOrNull(pagerState.currentPage)
+            )
+        },
         shape = cardShape,
         modifier = cardModifier
             .fillMaxWidth()
-            .shadow(cardElevation, cardShape)
-            .clip(cardShape)
-            .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(),
-                onClick = {
-                    onCardClick(
-                        exercises.getOrNull(pagerState.currentPage)
-                    )
-                },
-                onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    expanded = true
-                }
-            )
-    )
-    {
+    ) {
         Column {
-            if (exercises.isNotEmpty()) {
+            AnimatedVisibility(
+                exercises.isNotEmpty() && !showCompact
+            ) {
                 Box(
                     Modifier.wrapContentHeight(Alignment.Top),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    val roundedCornersShape = cardShape
                     HorizontalPager(state = pagerState,
-                        modifier = Modifier.graphicsLayer {
-                            shape = roundedCornersShape
-                            clip = true
-                        }
-                        .then(imageModifier)) { page ->
+                        modifier = Modifier
+                            .graphicsLayer {
+                                shape = cardShape
+                                clip = true
+                            }
+                            .then(imageModifier)
+                    ) { page ->
                         Box (Modifier.fillMaxWidth()) {
                             AsyncImage(
                                 model = exercises[page].image,
@@ -118,189 +111,96 @@ fun WorkoutCard(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            exercises.forEachIndexed { index, it ->
-                // breaks if more than one exercise has the same name
-                val modifier = if (index == pagerState.currentPage)
-                    exerciseModifier
-                else Modifier
-                val variation = if (it.variation.isNotBlank()) " (${it.variation})" else ""
-                val exerciseText = it.name + variation
-                Text(text = exerciseText,
-                    // exerciseModifier needs to go after because we're adding padding
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .then(modifier))
-                Text(text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(stringResource(R.string.sets))
-                        append(": ")
-                    }
-                    append(it.reps.size.toString())
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(" • ")
-                        if (it.overriddenDurationBased) {
-                            append(stringResource(R.string.exercise_hold))
-                            append(" (s)")
-                        } else
-                            append(stringResource(R.string.reps))
-                        append(": ")
-                    }
-                    if (it.reps.all { rep -> rep == it.reps[0] })
-                        append(it.reps[0].toString())
-                    else
-                        append(it.reps.joinToString(", "))
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(" • ")
-                        append(stringResource(R.string.rest))
-                        append(": ")
-                    }
-                    if (it.rest.all { rest -> rest == it.rest[0] })
-                        append(it.rest[0].toString() + "s")
-                    else
-                        append(it.rest.joinToString("s, ") + "s")
-                    if (it.note.isNotBlank()) {
-                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                            append(" • ")
-                            append(stringResource(R.string.note))
-                        }
-                        append(it.note)
-                    }
-                },
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 8.dp))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row (
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+            AnimatedVisibility(
+                !showCompact
             ) {
-                if (exercises.isNotEmpty()) {
-                    Button(
-                        shapes = ButtonDefaults.shapes(),
-                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-                        onClick = {
-                            navigator.navigate(
-                                WorkoutDestination(
-                                    programId = program.programId,
-                                    quickStart = true,
-                                    previewExercise = exercises.getOrNull(pagerState.currentPage)
-                                )
-                            )
-                        },
-                        modifier = Modifier
-                            .padding(8.dp)
-                    ) {
-                        Icon(Icons.Default.RocketLaunch, stringResource(R.string.quick_start_icon))
-                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                        Text(stringResource(R.string.quick_start))
+                Column {
+                    exercises.forEachIndexed { index, it ->
+                        // breaks if more than one exercise has the same name
+                        val modifier = if (index == pagerState.currentPage)
+                            exerciseModifier
+                        else Modifier
+                        val variation = if (it.variation.isNotBlank()) " (${it.variation})" else ""
+                        val exerciseText = it.name + variation
+                        Text(
+                            text = exerciseText,
+                            // exerciseModifier needs to go after because we're adding padding
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .then(modifier)
+                        )
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                    append(stringResource(R.string.sets))
+                                    append(": ")
+                                }
+                                append(it.reps.size.toString())
+                                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                    append(" • ")
+                                    if (it.overriddenDurationBased) {
+                                        append(stringResource(R.string.exercise_hold))
+                                        append(" (${stringResource(R.string.seconds_unit)})")
+                                    } else
+                                        append(stringResource(R.string.reps))
+                                    append(": ")
+                                }
+                                if (it.reps.all { rep -> rep == it.reps[0] })
+                                    append(it.reps[0].toString())
+                                else
+                                    append(it.reps.joinToString(", "))
+                                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                    append(" • ")
+                                    append(stringResource(R.string.rest))
+                                    append(": ")
+                                }
+                                if (it.rest.all { rest -> rest == it.rest[0] })
+                                    append(it.rest[0].toString() + stringResource(R.string.seconds_unit))
+                                else
+                                    append(it.rest.joinToString("${stringResource(R.string.seconds_unit)}, ") + stringResource(R.string.seconds_unit))
+                                if (it.note.isNotBlank()) {
+                                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                                        append(" • ")
+                                        append(stringResource(R.string.note))
+                                    }
+                                    append(it.note)
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
                     }
-                }
-                Row (
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth()
-                ){
-                    if (onRename == null && onDelete == null){
-                        IconButton(onClick = {
-                            navigator.navigate(
-                                AddProgramExerciseDestination(
-                                    programName = program.name,
-                                    programId = program.programId
-                                )
-                            )
-                        }) {
-                            Icon(Icons.Outlined.Edit, stringResource(R.string.edit_icon_program))
-                        }
-                    } else {
-                        IconButton(onClick = {
-                            navigator.navigate(
-                                WorkoutDestination(
-                                    programId = program.programId
-                                )
-                            )
-                        }) {
-                            Icon(Icons.Outlined.PlayCircle, stringResource(R.string.start_workout))
-                        }
-                        Box(
-                            modifier = Modifier.wrapContentSize()
-                        ) {
-                            IconButton(onClick = { expanded = true }) {
-                                Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.morevert_icon_options),
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (exercises.isNotEmpty()) {
+                            Button(
+                                shapes = ButtonDefaults.shapes(),
+                                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                                onClick = {
+                                    navigator.navigate(
+                                        WorkoutDestination(
+                                            programId = program.programId,
+                                            quickStart = true,
+                                            previewExercise = exercises.getOrNull(pagerState.currentPage)
+                                        )
+                                    )
+                                },
+                                modifier = Modifier
+                                    .padding(8.dp)
                             ) {
-//                                DropdownMenuItem(
-//                                    text = { Text("Start workout") },
-//                                    onClick = {
-//                                        navigator.navigate(
-//                                            WorkoutDestination(
-//                                                programId = program.programId
-//                                            ),
-//                                            onlyIfResumed = true
-//                                        )
-//                                        expanded = false
-//                                    },
-//                                    leadingIcon = {
-//                                        Icon(
-//                                            Icons.Outlined.PlayCircle,
-//                                            contentDescription = null
-//                                        )
-//                                    })
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.edit)) },
-                                    onClick = {
-                                        navigator.navigate(
-                                            AddProgramExerciseDestination(
-                                                programName = program.name,
-                                                programId = program.programId
-                                            )
-                                        )
-                                        expanded = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Outlined.Edit,
-                                            contentDescription = stringResource(R.string.edit_icon_program)
-                                        )
-                                    })
-                                if (onRename != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.rename)) },
-                                        onClick = {
-                                            onRename()
-                                            expanded = false
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Outlined.DriveFileRenameOutline,
-                                                contentDescription = stringResource(R.string.rename_icon_program)
-                                            )
-                                        }
-                                    )
-                                }
-                                if (onDelete != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.delete)) },
-                                        onClick = {
-                                            onDelete()
-                                            expanded = false
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Outlined.Delete,
-                                                contentDescription = stringResource(R.string.delete_icon_program)
-                                            )
-                                        }
-                                    )
-                                }
+                                Icon(
+                                    Icons.Default.RocketLaunch,
+                                    stringResource(R.string.quick_start_icon)
+                                )
+                                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                                Text(stringResource(R.string.quick_start))
                             }
                         }
+                        trailingIcons()
                     }
                 }
             }

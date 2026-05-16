@@ -15,7 +15,6 @@ import agdesigns.elevatefitness.navigation.HomeDestination
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.lazyGroupedCard
-import agdesigns.elevatefitness.ui.screens.programs.components.ProgramCard
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,7 +42,6 @@ fun ReceivePlanScreen(
     viewModel: ReceivePlanViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(sharedText) {
         viewModel.parseSharedText(sharedText)

@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.FullScreenImageCard
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.MediaPlayingState
@@ -357,6 +358,7 @@ fun SharedTransitionScope.SinglePaneWorkout(
             }
         }
 
+        val currentWorkoutString = stringResource(R.string.current_workout)
         ExercisePages(
             navigator = navigator,
             horizontalPagerState = pagerState,
@@ -406,16 +408,29 @@ fun SharedTransitionScope.SinglePaneWorkout(
             toggleOtherEquipment = { viewModel.onEvent(WorkoutEvent.ToggleOtherEquipmentDialog) },
             addExercise = { exerciseInWorkout, originalSize ->
                 viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
+                navigator.navigate(
+                    ExercisesByMuscleDestination(
+                        programName = currentWorkoutString,
+                        workoutId = workoutState.workoutId,
+                        returnAfterAdding = true,
+                        insertAtPosition = exerciseInWorkout+1
+                    )
+                )
             },
             changeExercise = { exerciseInWorkout, originalSize ->
-                scope.launch {
-                    viewModel.onEvent(
-                        WorkoutEvent.ReplaceExercise(
-                            exerciseInWorkout,
-                            originalSize
-                        )
+                viewModel.onEvent(
+                    WorkoutEvent.ReplaceExercise(
+                        exerciseInWorkout,
+                        originalSize
                     )
-                }
+                )
+                navigator.navigate(
+                    ExercisesByMuscleDestination(
+                        programName = currentWorkoutString,
+                        workoutId = workoutState.workoutId,
+                        returnAfterAdding = true
+                    )
+                )
             },
             removeExercise = { viewModel.onEvent(WorkoutEvent.RemoveExercise(it)) },
             mediaControlsDismissed = !mediaState.canAskAccess || mediaControlsDismissed,
@@ -451,7 +466,14 @@ fun SharedTransitionScope.SinglePaneWorkout(
                     )
                 )
             },
-            finishWorkout = completeWorkout
+            finishWorkout = completeWorkout,
+            updateUserWeight = {
+                viewModel.onEvent(
+                    WorkoutEvent.UpdateUserWeight(
+                        it
+                    )
+                )
+            }
         )
     }
 }

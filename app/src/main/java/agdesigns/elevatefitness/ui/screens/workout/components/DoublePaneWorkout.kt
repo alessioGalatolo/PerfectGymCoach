@@ -664,6 +664,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                         .verticalScroll(scrollState)
                                 ) {
                                     Spacer(Modifier.height(innerPadding.calculateTopPadding()))
+                                    val currentWorkoutString = stringResource(R.string.current_workout)
                                     ExercisePages(
                                         navigator = inPaneNavigator,
                                         horizontalPagerState = pagerState,
@@ -716,16 +717,29 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                         },
                                         addExercise = { exerciseInWorkout, originalSize ->
                                             viewModel.onEvent(WorkoutEvent.AddExercise(exerciseInWorkout, originalSize))
+                                            navigator.navigate(
+                                                ExercisesByMuscleDestination(
+                                                    programName = currentWorkoutString,
+                                                    workoutId = workoutState.workoutId,
+                                                    returnAfterAdding = true,
+                                                    insertAtPosition = exerciseInWorkout+1
+                                                )
+                                            )
                                         },
                                         changeExercise = { exerciseInWorkout, originalSize ->
-                                            scope.launch {
-                                                viewModel.onEvent(
-                                                    WorkoutEvent.ReplaceExercise(
-                                                        exerciseInWorkout,
-                                                        originalSize
-                                                    )
+                                            viewModel.onEvent(
+                                                WorkoutEvent.ReplaceExercise(
+                                                    exerciseInWorkout,
+                                                    originalSize
                                                 )
-                                            }
+                                            )
+                                            navigator.navigate(
+                                                ExercisesByMuscleDestination(
+                                                    programName = currentWorkoutString,
+                                                    workoutId = workoutState.workoutId,
+                                                    returnAfterAdding = true
+                                                )
+                                            )
                                         },
                                         removeExercise = {
                                             viewModel.onEvent(
@@ -762,7 +776,14 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                                 )
                                             )
                                         },
-                                        finishWorkout = completeWorkout
+                                        finishWorkout = completeWorkout,
+                                        updateUserWeight = {
+                                            viewModel.onEvent(
+                                                WorkoutEvent.UpdateUserWeight(
+                                                    it
+                                                )
+                                            )
+                                        }
                                     )
                                 }
                             }

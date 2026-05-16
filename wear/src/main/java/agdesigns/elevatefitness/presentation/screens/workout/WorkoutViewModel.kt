@@ -278,8 +278,13 @@ class WorkoutViewModel
         }
         viewModelScope.launch {
             repository.hintAlarmFiredFlow.collect {
-                if (_state.value.inRestHints.isNotEmpty()) {
-                    _state.update { it.copy(showHintDialog = true) }
+                if (
+                    _state.value.inRestHints.isNotEmpty() &&
+                    _state.value.ongoingRestSecs?.let { it > 0L } == true
+                ) {
+                    _state.update {
+                        it.copy(showHintDialog = true)
+                    }
                 }
             }
         }
@@ -592,7 +597,10 @@ class WorkoutViewModel
                     val nextExercise = exercisesState.value.exercises.getOrNull(
                         state.currentExerciseIndex + 1
                     )
-                    if (nextExercise != null && currentExercise.supersetExercise == nextExercise.programExerciseId) {
+                    if (nextExercise != null &&
+                        currentExercise.supersetExercise == nextExercise.programExerciseId &&
+                        currentExercise.supersetExercise != 0L
+                    ) {
                         // if superset with exercise after, we should move to next page and not start rest
                         // vibrate now to hint user to start next exercise
                         repository.scheduleRestAlarm(0L)
@@ -600,7 +608,8 @@ class WorkoutViewModel
                             restTimestamp = null,
                             settingSetValues = true,
                             currentExerciseRest = null,
-                            successfullySetValues = false
+                            successfullySetValues = false,
+                            showHintDialog = false,
                         )
                     } else {
                         repository.scheduleRestAlarm((rest.toLong() - 2L) * 1000L)
@@ -613,6 +622,7 @@ class WorkoutViewModel
                             settingSetValues = true,
                             successfullySetValues = false,
                             currentExerciseRest = rest.toLong(),
+                            showHintDialog = false,
                         )
                     }
                 }

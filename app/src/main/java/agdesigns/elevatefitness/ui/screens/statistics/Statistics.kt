@@ -153,14 +153,14 @@ fun Statistics(
         Column (
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = innerPadding.calculateTopPadding()),
+                .padding(top = innerPadding.calculateTopPadding())
+                .padding(start = innerPadding.calculateStartPadding(LocalLayoutDirection.current))
+                .padding(end = innerPadding.calculateEndPadding(LocalLayoutDirection.current)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Time Frame Selector
             Box(
-                Modifier.fillMaxWidth()
-                    .padding(start = innerPadding.calculateStartPadding(LocalLayoutDirection.current))
-                    .padding(end = innerPadding.calculateEndPadding(LocalLayoutDirection.current)),
+                Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 TimeFrameSelector(
@@ -190,7 +190,7 @@ fun Statistics(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp) + WindowInsets.navigationBars.asPaddingValues(),
+                    contentPadding = PaddingValues(bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Overview Cards
@@ -219,7 +219,7 @@ fun Statistics(
                         volumeComparison = state.volumeComparison
                     )
 
-                    if (state.allExerciseRecords.isNotEmpty() || state.allWorkouts.isNotEmpty()) {
+                    if (state.nonEmptyWorkouts) {
                         // Volume Progress Chart
                         item(stickyHeaders2Id[headers[2]]) {
                             Text(

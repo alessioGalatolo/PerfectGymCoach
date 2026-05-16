@@ -48,18 +48,11 @@ import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddBox
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreTime
 import androidx.compose.material.icons.filled.PlusOne
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.wear.compose.foundation.AmbientMode
-import androidx.wear.compose.material3.AlertDialog
-import androidx.wear.compose.material3.AlertDialogDefaults
-import androidx.wear.compose.material3.Icon
-import androidx.wear.compose.material.ButtonDefaults
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.media.ui.components.controls.MediaButton
 import com.google.android.horologist.media.ui.components.controls.MediaButtonDefaults
@@ -73,10 +66,7 @@ fun RestScreen(
     currentRestSeconds: Long,
     nextSetExerciseName: String,
     ambientMode: AmbientMode,
-    hints: List<InRestHint>,
-    showHintDialog: Boolean,
     isLastSet: Boolean,
-    onDismissHint: () -> Unit,
     skipRest: () -> Unit,
     onAddSet: () -> Unit,
     onExtendRest: () -> Unit,
@@ -104,10 +94,7 @@ fun RestScreen(
         nextSetExerciseName = nextSetExerciseName,
         currentRestSeconds = currentRestSeconds,
         ambientMode = ambientMode,
-        hints = hints,
-        showHintDialog = showHintDialog,
         isLastSet = isLastSet,
-        onDismissHint = onDismissHint,
         skipRest = skipRest,
         onAddSet = onAddSet,
         onExtendRest = onExtendRest,
@@ -129,10 +116,7 @@ fun Rest(
     nextSetExerciseName: String,
     currentRestSeconds: Long,
     ambientMode: AmbientMode,
-    hints: List<InRestHint>,
-    showHintDialog: Boolean,
     isLastSet: Boolean,
-    onDismissHint: () -> Unit,
     skipRest: () -> Unit,
     onAddSet: () -> Unit,
     onExtendRest: () -> Unit,
@@ -144,39 +128,6 @@ fun Rest(
     val middleSize = if (LocalConfiguration.current.isLargeScreen) 88.dp else 72.dp
     val haptics = LocalHapticFeedback.current
 
-    val hint = hints.firstOrNull()
-
-    // Show dialog only if there's rest time and we have a helpful message
-    AlertDialog(
-        visible = hint != null && showHintDialog && currentRestSeconds > 0 && hints.isNotEmpty(),
-        onDismissRequest = { onDismissHint() },
-        icon = {
-
-        },
-        title = {
-            if (hint != null) {
-                Text(stringResource(hint.titleResId))
-            }
-        },
-        text = {
-            if (hint != null) {
-                Text(
-                    stringResource(hint.descResId, *hint.descVarArgs.toTypedArray())
-                )
-            }
-        },
-        edgeButton = {
-            AlertDialogDefaults.EdgeButton(
-                onClick = { onDismissHint() }
-            ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = stringResource(R.string.done_icon)
-                )
-            }
-
-        }
-    )
 
     PlayerScreen(
         mediaDisplay = {
@@ -207,7 +158,8 @@ fun Rest(
                         colors = if (ambientMode is AmbientMode.Interactive)
                             MediaButtonDefaults.mediaButtonDefaultColors
                         else
-                            ButtonDefaults.outlinedButtonColors(
+                            // TODO: transition away from this
+                            androidx.wear.compose.material.ButtonDefaults.outlinedButtonColors(
                                 contentColor = MaterialTheme.colorScheme.onSurface
                             ),
                     )
@@ -288,7 +240,8 @@ fun Rest(
                     colors = if (ambientMode is AmbientMode.Interactive)
                         MediaButtonDefaults.mediaButtonDefaultColors
                     else
-                        ButtonDefaults.outlinedButtonColors(
+                        // TODO: transition away from this
+                        androidx.wear.compose.material.ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                 )

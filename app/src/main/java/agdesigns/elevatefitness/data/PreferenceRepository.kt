@@ -55,8 +55,11 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.userWeight] ?: 60f
     }
 
-    suspend fun setUserWeight(newWeight: Float) = dataStore.edit {
-        it[PrefKeys.userWeight] = newWeight
+    suspend fun setUserWeight(newWeight: Float) {
+        setWeightRecordDate(ZonedDateTime.now())
+        dataStore.edit {
+            it[PrefKeys.userWeight] = newWeight
+        }
     }
 
     fun getWeightRecordDate(): Flow<ZonedDateTime> = dataStore.data.map{

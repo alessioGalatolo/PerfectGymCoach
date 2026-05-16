@@ -10,6 +10,7 @@ import agdesigns.elevatefitness.presentation.screens.workout.components.WorkoutP
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import androidx.wear.compose.foundation.pager.VerticalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
+import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ConfirmationDialogDefaults
 import androidx.wear.compose.material3.FailureConfirmationDialog
 import androidx.wear.compose.material3.HorizontalPageIndicator
@@ -198,6 +200,47 @@ fun Workout(
             visible = openOnPhone,
             onDismissRequest = { openOnPhone = false },
             curvedText = { openOnPhoneDialogCurvedText(text = text, style = style) }
+        )
+
+        val hint = state.inRestHints.firstOrNull()
+
+        AlertDialog(
+            visible = state.showHintDialog && hint != null,
+            onDismissRequest = {
+                viewModel.onEvent(WorkoutEvent.DismissHint)
+            },
+            icon = {
+
+            },
+            title = {
+                if (hint != null) {
+                    Text(stringResource(hint.titleResId))
+                }
+            },
+            text = {
+                if (hint != null) {
+                    Text(
+                        stringResource(hint.descResId, *hint.descVarArgs.toTypedArray())
+                    )
+                }
+            },
+            edgeButton = {
+                AlertDialogDefaults.EdgeButton(
+                    colors = if (ambientMode is AmbientMode.Interactive)
+                        ButtonDefaults.buttonColors()
+                    else
+                        ButtonDefaults.outlinedButtonColors(),
+                    onClick = {
+                        viewModel.onEvent(WorkoutEvent.DismissHint)
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = stringResource(R.string.done_icon)
+                    )
+                }
+
+            }
         )
         ScreenScaffold(
             modifier = Modifier.background(Color.Transparent),

@@ -28,24 +28,35 @@ import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.WorkoutDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
+import agdesigns.elevatefitness.ui.common.IconAndLabel
+import agdesigns.elevatefitness.ui.common.IconsWithOverflow
 import agdesigns.elevatefitness.ui.common.InsertNameDialog
+import agdesigns.elevatefitness.ui.common.SharedElementKey
+import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.common.WorkoutCard
-import agdesigns.elevatefitness.ui.screens.programs.components.ProgramCard
-import android.util.Log
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlinx.coroutines.android.awaitFrame
+import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
-fun AddProgram(
+fun SharedTransitionScope.AddProgram(
+    animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     planId: Long,
     openDialogNow: Boolean = false,
@@ -104,9 +115,11 @@ fun AddProgram(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
-                title = { Text(
-                    getPlanDisplayName(state.planName)
-                ) },
+                title = {
+                    Text(
+                        getPlanDisplayName(state.planName)
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = { navigator.navigateUp() },
@@ -146,7 +159,7 @@ fun AddProgram(
                 )
             } else {
                 // if you have some programs
-                val isDragging = remember { mutableStateOf(false) }
+                var isDragging by remember { mutableStateOf(false) }
                 val listState = rememberLazyListState()
                 val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
                     val toIndex = state.programs.find { it.programId == to.key }!!.orderInWorkoutPlan
@@ -210,34 +223,142 @@ fun AddProgram(
                                     )
                                 }
                             }
-                            ProgramCard(
-                                navigator = navigator,
-                                reorderableState = reorderableState,
-                                isDragging = isDragging,
-                                program = programEntry,
-                                exercises = state.exercisesAndInfo[programEntry.programId]
-                                    ?: emptyList(),
-                                onCardClick = {
-                                    navigator.navigate(
-                                        AddProgramExerciseDestination(
-                                            programName = programEntry.name,
-                                            programId = programEntry.programId
+                            val interactionSource = remember { MutableInteractionSource() }
+                            ReorderableItem(reorderableState, key = programEntry.programId) {
+                                WorkoutCard(
+                                    navigator = navigator,
+                                    showCompact = isDragging,
+                                    program = programEntry,
+                                    exercises = state.exercisesAndInfo[programEntry.programId]
+                                        ?: emptyList(),
+                                    onCardClick = {
+                                        navigator.navigate(
+                                            AddProgramExerciseDestination(
+                                                programName = programEntry.name,
+                                                programId = programEntry.programId
+                                            )
                                         )
-                                    )
-                                }, onRename = {
-                                    viewModel.onEvent(
-                                        ProgramsEvent.ToggleChangeNameDialog(
-                                            programEntry.programId
+                                    },
+                                    interactionSource = interactionSource,
+                                    cardModifier = Modifier
+                                        .longPressDraggableHandle(
+                                            onDragStarted = {
+                                                isDragging = true
+                                                haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                            },
+                                            onDragStopped = {
+                                                isDragging = false
+                                                haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                            },
+                                            interactionSource = interactionSource
                                         )
-                                    )
-                                }, onDelete = {
-                                    viewModel.onEvent(ProgramsEvent.DeleteProgram(programEntry.programId))
-                                },
-                                onDuplicate = {
-                                    viewModel.onEvent(ProgramsEvent.DuplicateProgram(programEntry.programId))
-                                },
-                                modifier = Modifier.padding(end = 16.dp)
-                            )
+                                        .padding(end = 16.dp)
+                                        .sharedBounds(
+                                            sharedContentState = rememberSharedContentState(
+                                                SharedElementKey(
+                                                    "Workout",
+                                                    SharedElementType.Bounds,
+                                                    idLong = programEntry.programId
+                                                )
+                                            ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            boundsTransform = { _, _ ->
+                                                MotionScheme.expressive().slowSpatialSpec()
+                                            }
+                                        ),
+                                    imageModifier = Modifier
+                                        .sharedBounds(
+                                            sharedContentState =
+                                                rememberSharedContentState(
+                                                    SharedElementKey(
+                                                        "Workout",
+                                                        SharedElementType.Image,
+                                                        idLong = programEntry.programId
+                                                    )
+                                                ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.medium),
+                                            boundsTransform = { _, _ ->
+                                                MotionScheme.expressive().slowSpatialSpec()
+                                            }
+                                        )
+                                        .graphicsLayer(
+                                            shape = MaterialTheme.shapes.medium,
+                                            clip = true
+                                        ),
+                                    exerciseModifier = Modifier
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState(
+                                                SharedElementKey(
+                                                    "Workout",
+                                                    SharedElementType.Title,
+                                                    idLong = programEntry.programId
+                                                )
+                                            ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            boundsTransform = { _, _ ->
+                                                MotionScheme.expressive().slowSpatialSpec()
+                                            }
+                                        ),
+                                    trailingIcons = {
+                                        IconsWithOverflow(
+                                            contents = listOf(
+                                                IconAndLabel(
+                                                    Icons.Default.PlayCircle,
+                                                    stringResource(R.string.start_workout),
+                                                    onClick = {
+                                                        navigator.navigate(
+                                                            WorkoutDestination(
+                                                                programId = programEntry.programId,
+                                                                previewExercise = state.exercisesAndInfo[programEntry.programId]?.firstOrNull()
+                                                            )
+                                                        )
+                                                    }
+                                                ),
+                                                IconAndLabel(
+                                                    Icons.Outlined.Edit,
+                                                    stringResource(R.string.edit),
+                                                    onClick = {
+                                                        navigator.navigate(
+                                                            AddProgramExerciseDestination(
+                                                                programName = programEntry.name,
+                                                                programId = programEntry.programId
+                                                            )
+                                                        )
+                                                    }
+                                                ),
+                                                IconAndLabel(
+                                                    Icons.Outlined.DriveFileRenameOutline,
+                                                    stringResource(R.string.rename),
+
+                                                ) {
+                                                    viewModel.onEvent(
+                                                        ProgramsEvent.ToggleChangeNameDialog(
+                                                            programEntry.programId
+                                                        )
+                                                    )
+                                                },
+                                                IconAndLabel(
+                                                    Icons.Default.ContentCopy,
+                                                    stringResource(R.string.duplicate),
+                                                ) {
+                                                    viewModel.onEvent(
+                                                        ProgramsEvent.DuplicateProgram(
+                                                            programEntry.programId
+                                                        )
+                                                    )
+                                                },
+                                                IconAndLabel(
+                                                    Icons.Outlined.Delete,
+                                                    stringResource(R.string.delete),
+                                                ) {
+                                                    viewModel.onEvent(ProgramsEvent.DeleteProgram(programEntry.programId))
+                                                }
+                                            )
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                     item{
