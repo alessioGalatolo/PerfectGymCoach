@@ -93,12 +93,18 @@ class RecapViewModel @Inject constructor(
             combine(
                 state.map { it.workoutRecord }.distinctUntilChanged(),
                 state.map { it.hasHealthConnectPermissions }.distinctUntilChanged(),
-                state.map { it.programName }.distinctUntilChanged()
-            ) { record, hasPermissions, programName ->
+                state.map { it.programName }.distinctUntilChanged(),
+                state.map { it.exerciseRecords }.distinctUntilChanged()
+            ) { record, hasPermissions, programName, exerciseRecords ->
+                if (record == null) return@combine
+                if (!hasPermissions) return@combine
+                if (programName.isEmpty()) return@combine
+                if (exerciseRecords.isEmpty()) return@combine
                 tryExportToHealthConnect(
                     record,
                     hasPermissions,
-                    programName
+                    programName,
+                    exerciseRecords
                 )
             }.collect()
         }
@@ -290,7 +296,8 @@ class RecapViewModel @Inject constructor(
                 tryExportToHealthConnect(
                     state.value.workoutRecord,
                     state.value.hasHealthConnectPermissions,
-                    state.value.programName
+                    state.value.programName,
+                    state.value.exerciseRecords
                 )
             }
             is RecapEvent.RefreshHealthConnectPermissions -> {
@@ -303,7 +310,12 @@ class RecapViewModel @Inject constructor(
         }
     }
 
-    private fun tryExportToHealthConnect(record: WorkoutRecord?, hasPermissions: Boolean, programName: String) {
+    private fun tryExportToHealthConnect(
+        record: WorkoutRecord?,
+        hasPermissions: Boolean,
+        programName: String,
+        exerciseRecords: List<ExerciseRecordAndInfo>
+    ) {
         viewModelScope.launch {
             if (record == null) return@launch
             if (!hasPermissions) return@launch
@@ -313,7 +325,11 @@ class RecapViewModel @Inject constructor(
             }
             if (programName.isEmpty()) return@launch
             _state.update { it.copy(healthConnectExportStatus = HealthConnectExportStatus.EXPORTING) }
-            val healthRecordId = healthConnectRepository.writeWorkout(record, programName)
+            val healthRecordId = healthConnectRepository.writeWorkout(
+                record,
+                programName,
+                exerciseRecords
+            )
             _state.update {
                 it.copy(
                     healthConnectExportStatus = if (healthRecordId != null)

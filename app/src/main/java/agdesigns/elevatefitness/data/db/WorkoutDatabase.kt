@@ -49,7 +49,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -99,7 +99,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_7_8,
                     MIGRATION_8_9,
                     MIGRATION_9_10,
-                    MIGRATION_10_11
+                    MIGRATION_10_11,
+                    MIGRATION_11_12
                 )
                     .build()
                     .also { instance = it }
@@ -248,6 +249,14 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
     }
 }
 
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE Exercise ADD COLUMN healthExerciseSegmentType INTEGER NOT NULL DEFAULT 38"
+        )
+    }
+}
+
 
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")
@@ -284,6 +293,13 @@ class ExerciseDataMigrator(private val context: Context) {
                 "Found db version $dbVersion, proceeding with migration to v11"
             )
             migrateExercises9To11(db)
+        }
+        if (dbVersion < 12) {
+            Log.d(
+                "ExerciseDataMigrator",
+                "Found db version $dbVersion, proceeding with migration to v12"
+            )
+            migrateExercises11To12(db)
         }
     }
 
@@ -470,6 +486,25 @@ class ExerciseDataMigrator(private val context: Context) {
                 )
             )
         }
+    }
+
+    private suspend fun migrateExercises11To12(db: WorkoutDatabase) {
+        val dao = db.exerciseDao
+        val existing = dao.getAllExercises().first().associateBy { it.nameResKey }
+        INITIAL_EXERCISE_DATA.forEach { new ->
+            val old = existing[new.nameResKey] ?: return@forEach
+            dao.updateExercise(
+                old.copy(
+                    healthExerciseSegmentType = new.healthExerciseSegmentType,
+                    // forgot to update this in the previous migration
+                    firstPhase = new.firstPhase
+                )
+            )
+        }
+        context.dataStore.edit {
+            it[dbVersionKey] = 12
+        }
+
     }
 
 }

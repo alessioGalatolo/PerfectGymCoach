@@ -1,29 +1,26 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
 import android.content.Context
 import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.readRecord
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
+import androidx.health.connect.client.records.ExerciseSegment
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.Record
-import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.metadata.Device
-import androidx.health.connect.client.request.ReadRecordsRequest
-import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.records.metadata.Metadata as HealthMetadata
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZonedDateTime
+import java.time.Duration
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.max
 
 @Singleton
 class HealthConnectRepository @Inject constructor(
@@ -63,7 +60,11 @@ class HealthConnectRepository @Inject constructor(
     }
 
 
-    suspend fun writeWorkout(workoutRecord: WorkoutRecord, programName: String): String? {
+    suspend fun writeWorkout(
+        workoutRecord: WorkoutRecord,
+        programName: String,
+        exerciseRecords: List<ExerciseRecordAndInfo>
+    ): String? {
         if (!isAvailable || workoutRecord.startDate == null) {
             return null
         }
@@ -71,32 +72,69 @@ class HealthConnectRepository @Inject constructor(
         val startTime = workoutRecord.startDate.toInstant()
         val endTime = startTime.plusSeconds(workoutRecord.durationSeconds)
         val zoneOffset = workoutRecord.startDate.offset
-        val results = healthConnectClient.insertRecords(
-            listOf<Record>(
-                ExerciseSessionRecord(
-                    startTime = startTime,
-                    startZoneOffset = zoneOffset,
-                    endTime = endTime,
-                    endZoneOffset = zoneOffset,
-                    exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING,
-                    title = getProgramDisplayName(programName, context),
-                    metadata = HealthMetadata.activelyRecorded(
-                        device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
-                    )
-                ),
-                ActiveCaloriesBurnedRecord(
-                    startTime = startTime,
-                    startZoneOffset = zoneOffset,
-                    endTime = endTime,
-                    endZoneOffset = zoneOffset,
-                    energy = Energy.kilocalories(workoutRecord.calories.toDouble()),
-                    metadata = HealthMetadata.activelyRecorded(
-                        device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
+        try {
+            val results = healthConnectClient.insertRecords(
+                listOf<Record>(
+                    ExerciseSessionRecord(
+                        startTime = startTime,
+                        startZoneOffset = zoneOffset,
+                        endTime = endTime,
+                        endZoneOffset = zoneOffset,
+                        exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING,
+                        title = getProgramDisplayName(programName, context),
+                        metadata = HealthMetadata.activelyRecorded(
+                            device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
+                        ),
+                        segments = buildList {
+                            // we start by reversing, this is because to get start/end of the segment
+                            // (relative to a single set) by splitting time between current and following
+                            // exercise based on sets done
+                            var lastExEndTime = endTime
+                            exerciseRecords.sortedByDescending { it.date }.forEach { record ->
+                                if (record.reps.isEmpty()) return@forEach
+                                val startTime = record.date.toInstant()
+                                val endTime = lastExEndTime
+                                val totalTimeMillis =
+                                    Duration.between(startTime, endTime).toMillis()
+                                val millisPerSet = totalTimeMillis / record.reps.size
+                                val recordSegments = record.reps.indices.map { index ->
+                                    val segmentStartTime =
+                                        startTime.plusMillis(index * millisPerSet)
+                                    val segmentEndTime = segmentStartTime.plusMillis(millisPerSet)
+                                    ExerciseSegment(
+                                        startTime = segmentStartTime,
+                                        endTime = segmentEndTime,
+                                        segmentType = record.healthExerciseSegmentType,
+                                        repetitions = record.reps[index],
+                                        weight = record.weights.getOrNull(index)?.let {
+                                            // this needs to be non-negative but we allow that
+                                            Mass.kilograms(max(0.0, it.toDouble()))
+                                        },
+                                        setIndex = index
+                                    )
+                                }
+                                addAll(recordSegments.asReversed())
+                                lastExEndTime = startTime
+                            }
+                        }.asReversed()
+                    ),
+                    ActiveCaloriesBurnedRecord(
+                        startTime = startTime,
+                        startZoneOffset = zoneOffset,
+                        endTime = endTime,
+                        endZoneOffset = zoneOffset,
+                        energy = Energy.kilocalories(workoutRecord.calories.toDouble()),
+                        metadata = HealthMetadata.activelyRecorded(
+                            device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
+                        )
                     )
                 )
             )
-        )
-        return results.recordIdsList.getOrNull(0)
+            return results.recordIdsList.getOrNull(0)
+        } catch (e: Exception) {
+            Log.e("HealthConnectRepository", "Error writing workout to Health Connect", e)
+            return null
+        }
     }
 
     suspend fun getWeight(): WeightRecord? {

@@ -118,7 +118,8 @@ data class ExerciseRecordAndInfo(
     val userDefined: Boolean = false,
     val equipment: Equipment,
     val overriddenDurationBased: Boolean,
-    val setTypes: List<SetType>?
+    val setTypes: List<SetType>?,
+    val healthExerciseSegmentType: Int,
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)

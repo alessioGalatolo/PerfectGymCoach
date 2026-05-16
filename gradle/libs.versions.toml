@@ -28,7 +28,7 @@ wearable_play_services = "19.0.0"
 wear_remote_interactions = "1.2.0"
 wear_ongoing = "1.1.0"  # ongoing activity
 kotlin_coroutines_play_services = "1.10.2"
-health = "1.1.0-rc01"
+health = "1.1.0-rc02"
 # compose wear os
 wear_compose = "1.6.1"  # v1.7.0 alpha contains gesture support but doesn't work yet
 wear_compose_material3 = "1.6.1"
@@ -38,7 +38,7 @@ horologist = "0.8.3-alpha"
 # other
 palette = "1.0.0"
 android_shapes = "1.1.0"
-health_connect = "1.1.0"
+health_connect = "1.2.0-alpha04"
 # plots
 graphs = "1.2.5"
 vico = "3.0.3"  # v3.1.0 contains pie charts, todo migrate

@@ -7,6 +7,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.grpc.Workout
+import androidx.health.connect.client.records.ExerciseSegment.Companion.EXERCISE_SEGMENT_TYPE_OTHER_WORKOUT
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -41,6 +42,8 @@ data class Exercise(
     val wearRepTrackable: WearRepTrackable = WearRepTrackable.NOT_TRACKABLE,
     @ColumnInfo(defaultValue = "AGAINST_GRAVITY")
     val firstPhase: FirstPhase = FirstPhase.AGAINST_GRAVITY,
+    @ColumnInfo(defaultValue = "38")
+    val healthExerciseSegmentType: Int = EXERCISE_SEGMENT_TYPE_OTHER_WORKOUT
 ) : Parcelable {
     // Helper properties for UI
     val nameResource: Int
