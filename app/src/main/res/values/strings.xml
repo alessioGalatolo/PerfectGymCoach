@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">ElevateFitness</string>
+    <string name="app_name" translatable="false">Elevate Fitness</string>
     <string name="home">Home</string>
     <string name="history">History</string>
     <string name="statistics">Statistics</string>
@@ -146,7 +146,7 @@
     <string name="empty_no_programs">No programs in plan!</string>
     <string name="empty_home_program">The workout plan you have selected as current has no programs (single day schedule) inside</string>
     <string name="i_more_exercises">+%1$s more exercises</string>
-    <string name="change_workout_plan">Change workout plan</string>
+    <string name="change_workout_plan">Manage plans</string>
     <string name="change_programs">Change programs</string>
     <!-- Add/view workout plan -->
     <string name="current_plan">Current plan</string>
@@ -157,7 +157,7 @@
     <string name="archived_plans_title">Archived plans</string>
     <string name="plan_archived">Plan archived</string>
     <string name="undo">Undo</string>
-    <string name="generate_a_new_plan">Generate a new plan (beta)</string>
+    <string name="generate_a_new_plan">Generate a new plan</string>
     <!-- Plan change reminder -->
     <string name="time_to_change_plan">Time to change your plan!</string>
     <string name="plan_change_reason_cycles">You\'ve completed this plan %1$d times. Consider switching to a new plan for continued progress.</string>
@@ -173,9 +173,22 @@
     <string name="goal_i_image">%1$s image</string>
     <string name="goal_i_not_available">%1$s. Not currently available.</string>
     <string name="what_is_your_expertise_level">What is your expertise level?</string>
-    <string name="how_many_times_per_week_do_you_want_to_exercise">How many times per week do you want to exercise?</string>
+    <string name="how_many_times_per_week_do_you_want_to_exercise">How do you want to split your muscle groups?</string>
+    <string name="exclude_exercises_title">Exclude exercises</string>
+    <string name="exclude_exercises_subtitle">These exercises won\'t be included in the generated plan</string>
+    <string name="search_exercises_to_exclude">Search exercises to exclude…</string>
+    <string name="no_exercises_found">No exercises found</string>
+    <string name="exclude_all_n_results">Exclude all %d results</string>
+    <string name="clear_all_excluded">Clear all</string>
+    <string name="n_exercises_excluded">%d exercises excluded</string>
+    <string name="no_exercises_excluded">No exercises excluded</string>
     <!-- Generating plan waiting screen-->
     <string name="generating_plan_waiting_text">Generating a plan just for you…</string>
+    <string name="generating_plan_waiting_text1">Gathering data from your previous workouts…</string>
+    <string name="generating_plan_waiting_text2">Defining muscle splits…</string>
+    <string name="generating_plan_waiting_text3">Arranging days split…</string>
+    <string name="generating_plan_waiting_text4">Getting exercises for your strength…</string>
+    <string name="generating_plan_waiting_text5">Finalising the plan…</string>
     <!-- Profile -->
     <string name="personal_information_title">Personal Information</string>
     <string name="physical_measurements_title">Physical Measurements</string>
@@ -738,15 +751,31 @@
     <string name="goals_endurance">Endurance</string>
     <string name="goals_cardio">Cardio</string>
     <string name="goals_error">Goal not found</string>
-    <string name="plan_diff_guess">You should know my level</string>
-    <string name="plan_diff_beginner">Beginner: just starting out</string>
-    <string name="plan_diff_intermediate">Intermediate: feel confident to try some more advanced exercises</string>
-    <string name="plan_diff_advanced">Advanced: you got this👌</string>
-    <string name="splits_fullbody">Full-body routine: 1+ days a week</string>
-    <string name="splits_bro">Pull/Push/Legs: 3 days a week</string>
-    <string name="splits_upper_lower">Upper/Lower body split: 2+ days a week</string>
-    <string name="splits_gainz">1 Muscle group per day: 5 days a week</string>
+    <string name="plan_diff_guess">Your level will be computed based on your previous workouts</string>
+    <string name="plan_diff_beginner">Just starting out</string>
+    <string name="plan_diff_intermediate">You feel confident to try some more advanced exercises</string>
+    <string name="plan_diff_advanced">You got this 👌</string>
+    <string name="plan_diff_auto_short">Auto</string>
+    <string name="plan_diff_beginner_short">Beginner</string>
+    <string name="plan_diff_intermediate_short">Intermediate</string>
+    <string name="plan_diff_advanced_short">Advanced</string>
+    <string name="splits_fullbody">1+ days a week</string>
+    <string name="splits_bro">3 days a week</string>
+    <string name="splits_upper_lower">2+ days a week</string>
+    <string name="splits_gainz">5 days a week</string>
     <string name="splits_auto">Surprise me</string>
+    <string name="splits_fullbody_short">Full body</string>
+    <string name="splits_bro_short">Push/Pull/Legs</string>
+    <string name="splits_upper_lower_short">Upper/Lower</string>
+    <string name="splits_gainz_short">One per day</string>
+    <string name="splits_custom">Choose your own</string>
+    <string name="splits_custom_short">Custom</string>
+    <string name="custom_split_editor_title">Custom split</string>
+    <string name="custom_split_add_day">Add day</string>
+    <string name="custom_split_day">Day %1$d</string>
+    <string name="custom_split_not_configured">Tap to configure</string>
+    <string name="custom_split_n_days">%1$d days configured</string>
+    <string name="custom_split_invalid">Some days in your custom split are invalid</string>
     <string name="intensities_high">High intensity (...)</string>
     <string name="intensities_medium">Normal intensity (...)</string>
     <string name="intensities_low">Low intensity (...)</string>

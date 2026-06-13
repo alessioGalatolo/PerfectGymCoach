@@ -45,6 +45,11 @@ object SelectableCardDefaults {
         shape = MaterialTheme.shapes.medium,
         pressedShape = MaterialTheme.shapes.extraLarge,
     )
+
+    @Composable
+    fun shape(pressed: Boolean): CornerBasedShape = if (pressed)
+        MaterialTheme.shapes.extraLarge
+    else MaterialTheme.shapes.medium
 }
 
 @ExperimentalMaterial3ExpressiveApi

@@ -120,6 +120,7 @@ data class ExerciseRecordAndInfo(
     val overriddenDurationBased: Boolean,
     val setTypes: List<SetType>?,
     val healthExerciseSegmentType: Int,
+    val primaryMuscle: Exercise.Muscle
 ) : Parcelable {
     val nameResource: Int
         get() = getNameDescriptionResource(nameResKey)

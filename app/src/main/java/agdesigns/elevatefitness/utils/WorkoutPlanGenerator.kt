@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.Exercise.Muscle
+import agdesigns.elevatefitness.data.db.entity.Exercise.MuscleRegion.Companion.MUSCLE_TO_ZONES
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
@@ -14,6 +15,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getGeneratedPlanName
 import agdesigns.elevatefitness.data.db.entity.getGeneratedProgramName
+import agdesigns.elevatefitness.data.db.entity.getPlanGoal
 import android.util.Log
 import agdesigns.elevatefitness.shared.Equipment
 import kotlinx.coroutines.flow.first
@@ -25,7 +27,7 @@ import kotlin.random.Random
 
 
 // Extension function for Collection
-fun <T> Collection<T>.weightedRandom(weights: List<Double>): T {
+fun <T> Collection<T>.weightedRandom(weights: List<Double>, random: Random = Random.Default): T {
     if (this.size != weights.size) {
         throw IllegalArgumentException("Items and weights must be of the same size")
     }
@@ -36,7 +38,7 @@ fun <T> Collection<T>.weightedRandom(weights: List<Double>): T {
     val clipped = weights.map { w -> if (w.isFinite() && w > 0.0) w else 0.0 }
     val sum = clipped.sum()
     if (sum <= 0.0) {
-        return items.random()
+        return items.random(random)
     }
 
     var cumulative = 0.0
@@ -44,7 +46,7 @@ fun <T> Collection<T>.weightedRandom(weights: List<Double>): T {
         cumulative += clipped[idx] / sum
         cumulative
     }
-    val r = Random.nextDouble()
+    val r = random.nextDouble()
     for (i in cumulativeWeights.indices) {
         if (r <= cumulativeWeights[i]) return items[i]
     }
@@ -55,7 +57,7 @@ fun <T> Collection<T>.weightedRandom(weights: List<Double>): T {
 fun getRepsAndRest(goal: WorkoutPlanGoal): Pair<IntProgression, IntProgression> {
     return when (goal) {
         WorkoutPlanGoal.STRENGTH -> (6..10 step 2) to (90..150 step 30)  // iso/accessory strength
-        WorkoutPlanGoal.HYPERTROPHY -> (8..12 step 1) to (60..90 step 15)
+        WorkoutPlanGoal.HYPERTROPHY -> (8..12 step 2) to (60..90 step 15)
         WorkoutPlanGoal.ENDURANCE -> (12..20 step 2) to (45..90 step 15)
         WorkoutPlanGoal.CARDIO -> (15..25 step 5) to (0..0)
     }
@@ -91,16 +93,16 @@ fun getMuscleSplit(workoutSplit: WorkoutPlanSplit, goal: WorkoutPlanGoal): List<
                 )
             }
         }
-        WorkoutPlanSplit.BRO -> listOf(
+        WorkoutPlanSplit.PPL -> listOf(
             listOf(Muscle.CHEST, Muscle.SHOULDERS, Muscle.TRICEPS),
-            listOf(Muscle.BACK, Muscle.BICEPS, Muscle.ABS),  // I'd prefer to put it in legs but then it's too long
+            listOf(Muscle.BACK, Muscle.BICEPS, Muscle.ABS),
             listOf(Muscle.QUADRICEPS, Muscle.HAMSTRINGS, Muscle.GLUTES, Muscle.CALVES)
         )
         WorkoutPlanSplit.UPPER_LOWER -> listOf(
             listOf(Muscle.CHEST, Muscle.BACK, Muscle.SHOULDERS, Muscle.TRICEPS, Muscle.BICEPS),
-            listOf(Muscle.QUADRICEPS, Muscle.HAMSTRINGS, Muscle.GLUTES, Muscle.CALVES, Muscle.ABS)
+            listOf(Muscle.QUADRICEPS, Muscle.HAMSTRINGS, Muscle.GLUTES, Muscle.CALVES, Muscle.ABS),
         )
-        WorkoutPlanSplit.GAINZ -> listOf(
+        WorkoutPlanSplit.BRO -> listOf(
             listOf(Muscle.CHEST),
             listOf(Muscle.BACK),
             listOf(Muscle.SHOULDERS, Muscle.ABS),
@@ -109,6 +111,7 @@ fun getMuscleSplit(workoutSplit: WorkoutPlanSplit, goal: WorkoutPlanGoal): List<
             listOf(Muscle.HAMSTRINGS, Muscle.GLUTES)
         )
         WorkoutPlanSplit.AUTO -> throw IllegalArgumentException("AUTO split should have been resolved already")
+        WorkoutPlanSplit.CUSTOM -> throw IllegalArgumentException("CUSTOM split must be provided via customMuscleDays")
     }
 }
 
@@ -124,7 +127,7 @@ fun shouldPairForSuperset(
     if (muscle1 == null || muscle2 == null) return false
 
     // Only allow on splits that typically support density work
-    if (split !in listOf(WorkoutPlanSplit.BRO, WorkoutPlanSplit.UPPER_LOWER, WorkoutPlanSplit.GAINZ)) return false
+    if (split !in listOf(WorkoutPlanSplit.PPL, WorkoutPlanSplit.UPPER_LOWER, WorkoutPlanSplit.BRO, WorkoutPlanSplit.CUSTOM)) return false
 
     // Same-muscle small accessory pairing allowed optionally (laterals + rear delts; curls + hammer curls)
     if (isSameMuscleOkay) {
@@ -152,22 +155,31 @@ fun isMajorMover(muscle: Muscle): Boolean {
         Muscle.CHEST,
         Muscle.BACK,
         Muscle.SHOULDERS,
-        Muscle.QUADRICEPS -> true
+        Muscle.QUADRICEPS,
+        Muscle.HAMSTRINGS -> true
         else -> false
     }
 }
 
-fun isFreeWeight(equipment: Equipment): Boolean {
-    return when (equipment) {
+fun isFreeWeight(exercise: Exercise, expertise: WorkoutPlanDifficulty): Boolean {
+    return when (exercise.equipment) {
         Equipment.BARBELL,
-        Equipment.DUMBBELL,
-        Equipment.BODY_WEIGHT -> true
+        Equipment.DUMBBELL -> true
+        // allow difficult bodyweight for non-beginners e.g., pullup but exclude easier bodyweight e.g., pushup
+        // for beginners allow all
+        Equipment.BODY_WEIGHT if (
+                exercise.difficulty != Exercise.ExerciseDifficulty.BEGINNER
+                        || expertise == WorkoutPlanDifficulty.BEGINNER
+            ) -> true
+        Equipment.MACHINE if expertise == WorkoutPlanDifficulty.BEGINNER -> true // allow machines for beginners
         else -> false
     }
 }
 
-fun exerciseIsCompound(exercise: Exercise): Boolean {
-    if (!isFreeWeight(exercise.equipment))
+fun exerciseIsCompound(exercise: Exercise, expertise: WorkoutPlanDifficulty): Boolean {
+    if (expertise == WorkoutPlanDifficulty.BEGINNER && exercise.difficulty != Exercise.ExerciseDifficulty.BEGINNER)
+        return false
+    if (!isFreeWeight(exercise, expertise))
         return false
     if (!isMajorMover(exercise.primaryMuscle))
         return false
@@ -176,38 +188,11 @@ fun exerciseIsCompound(exercise: Exercise): Boolean {
     return false
 }
 
-// Enhanced muscle selection logic for full-body workouts
-fun selectFullBodyExercises(
-    muscle: Muscle,
-    dayIndex: Int,
-    goal: WorkoutPlanGoal,
-    exercisePool: List<Exercise>
-): List<Exercise> {
-    // Prioritize compound movements that work multiple muscles efficiently
-    val compounds = exercisePool.filter { exerciseIsCompound(it)  }
-    val isolation = exercisePool.filter { !exerciseIsCompound(it) }
-
-    return when (goal) {
-        WorkoutPlanGoal.STRENGTH -> {
-            // Prioritize heavy compounds, minimal isolation
-            compounds.take(1) + isolation.take(0)
-        }
-        WorkoutPlanGoal.HYPERTROPHY -> {
-            // Mix of compound and isolation for volume
-            compounds.take(1) + isolation.take(1)
-        }
-        else -> {
-            // Endurance/cardio: lighter compounds, some isolation
-            compounds.take(1) + isolation.take(if (dayIndex % 2 == 0) 1 else 0)
-        }
-    }
-}
-
 /**
  * Evidence-based plan generator:
  * - Ensures ~2x/week frequency for muscles on hypertrophy/strength (duplicating BRO as PPLx2 pattern).
  * - Uses weekly hard-set targets by goal x difficulty.
- * - Prioritises compounds, caps per-session sets per muscle, assigns reps/rest by goal.
+ * - Prioritises compounds, assigns reps/rest by goal.
  * - Deprioritises recently used exercises.
  * - Supersets only non-competing accessories.
  */
@@ -216,10 +201,10 @@ suspend fun generatePlan(
     preferences: PreferenceRepository,
     goalChoice: WorkoutPlanGoal,
     expertiseLevel: WorkoutPlanDifficulty,
-    workoutSplit: WorkoutPlanSplit
+    workoutSplit: WorkoutPlanSplit,
+    excludedExerciseIds: Set<Long> = emptySet(),
+    customMuscleDays: List<List<Muscle>> = emptyList()
 ): Long {
-    // TODO: ideally it might also take into consideration profile values e.g. sex, age, weight, etc.
-    // TODO: manipulate probabilities -> decrease prob of selected exs. and increase prob of older ones
     // TODO: add set types
     val now = ZonedDateTime.now()
     val seededRandom = Random(now.toInstant().toEpochMilli())
@@ -229,7 +214,11 @@ suspend fun generatePlan(
     val resolvedSplit = resolveSplit(goalChoice, resolvedDifficulty, workoutSplit)
 
     // Base split → day → muscles
-    val muscleDays = getMuscleSplit(resolvedSplit, goalChoice)
+    val muscleDays = if (resolvedSplit == WorkoutPlanSplit.CUSTOM && customMuscleDays.isNotEmpty()) {
+        customMuscleDays
+    } else {
+        getMuscleSplit(resolvedSplit, goalChoice)
+    }
 
     // ---------- Fetch exercise pools ----------
     // Build map muscle -> mutable list of exercises
@@ -241,9 +230,15 @@ suspend fun generatePlan(
         val filtered = when (resolvedDifficulty) {
             WorkoutPlanDifficulty.BEGINNER -> pool.filter { it.difficulty != Exercise.ExerciseDifficulty.ADVANCED }
             else -> pool
-        }.toMutableList()
+        }.filter {
+            it.exerciseId !in excludedExerciseIds &&
+            (!it.suggestOnlyIfPerformed || repository.getExerciseRecords(it.exerciseId).first().isNotEmpty())
+        }
+         .toMutableList()
         muscle2Exercises[m] = filtered
     }
+    // exercises that have been used in the plan. If needed they can be reused
+    val usedExercisesByMuscle = muscle2Exercises.mapValues { _ -> mutableListOf<Exercise>() }
 
     // ---------- Deprioritise exercises used in current plan ----------
     preferences.getCurrentPlan().first()?.let { currentPlanId ->
@@ -267,7 +262,62 @@ suspend fun generatePlan(
     )
 
     // ---------- Volume targets ----------
-    val weeklyTargetSets = targetWeeklySetsByMuscle(goalChoice, resolvedDifficulty, allMuscles)
+    // maybe get muscleTarget based on previous workouts
+    var weeklyTargetSets = preferences.getCurrentPlan().first()?.let { currentPlan ->
+        if (expertiseLevel != WorkoutPlanDifficulty.AUTO) {
+            return@let null
+        }
+        // get previous plan stats
+        val currentPlanGoal = repository.getPlan(currentPlan).first()?.name?.let {
+            getPlanGoal(it)
+        }
+        val programToMuscleToSets = mutableMapOf<Long, Map<Muscle, Int>>()
+        repository.getPrograms(currentPlan).first()
+            .forEach {
+                val totalMuscleToSets = mutableMapOf<Muscle, Int>()
+                var size = 0
+                repository.getWorkoutRecordsByProgram(it.programId).first().map { workoutRecord ->
+                    repository.getWorkoutExerciseRecordsAndInfo(workoutRecord.workoutId).first().forEach {
+                        if (it.primaryMuscle in totalMuscleToSets) {
+                            totalMuscleToSets[it.primaryMuscle] = totalMuscleToSets[it.primaryMuscle]!! + it.reps.size
+                        } else {
+                            totalMuscleToSets[it.primaryMuscle] = it.reps.size
+                        }
+                    }
+                    size++
+                }
+                if (size > 0) {
+                    programToMuscleToSets[it.programId] =
+                        totalMuscleToSets.mapValues { it.value / size }
+                }
+            }
+        val muscleToSets = programToMuscleToSets.values.reduce { acc, map ->
+            map.mapValues { (muscle, sets) ->
+                (acc[muscle] ?: 0) + sets
+            }
+        }
+        // adjust based on new goal
+        when (currentPlanGoal) {
+            null, goalChoice -> muscleToSets
+            WorkoutPlanGoal.HYPERTROPHY if goalChoice == WorkoutPlanGoal.STRENGTH -> {
+                // strength typically has slightly lower volume than hypertrophy, so reduce sets by 20%
+                muscleToSets.mapValues { (muscle, sets) ->
+                    floor(sets * 0.8).toInt()
+                }
+            }
+            WorkoutPlanGoal.STRENGTH if goalChoice == WorkoutPlanGoal.HYPERTROPHY -> {
+                // hypertrophy typically has slightly higher volume than strength, so increase sets by 20%
+                muscleToSets.mapValues { (muscle, sets) ->
+                    floor(sets * 1.2).toInt()
+                }
+            }
+            else -> null
+        }
+    } ?: targetWeeklySetsByMuscle(goalChoice, resolvedDifficulty, allMuscles)
+    if (resolvedSplit == WorkoutPlanSplit.UPPER_LOWER) {
+        // For upper/lower, we have 4 sessions but want to keep the same weekly volume, so halve the sets per session
+        weeklyTargetSets = weeklyTargetSets.mapValues { (_, sets) -> sets / 2 }
+    }
 
     // Track used exercises across plan to diversify accessories; allow compounds to repeat
     val usedAccessoryIds = mutableSetOf<Long>()
@@ -299,27 +349,42 @@ suspend fun generatePlan(
         }
         var sanityCheckTotalTime = 0.0
 
+        val warmMuscles = mutableSetOf<Muscle>()
+        var isFirstExercise = true
         musclesOrdered.forEach { muscle ->
+            var nextSetIsWarmup = muscle !in warmMuscles
+            val muscleZones = MUSCLE_TO_ZONES.getValue(muscle)
             val weekly = weeklyTargetSets[muscle] ?: 0
             if (weekly <= 0) return@forEach
             val times = max(appearances.getValue(muscle), 1)
-            var setsThisSession = floor(weekly.toDouble() / times).toInt()
+            val setsThisSession = floor(weekly.toDouble() / times).toInt()
 
-            // Per-session caps by muscle size
-//            setsThisSession = min(setsThisSession, if (isMajorMover(muscle)) perSessionSetCapMajor else perSessionSetCapMinor)
             if (setsThisSession <= 0) return@forEach
 
             val pool = muscle2Exercises[muscle].orEmpty()
-            if (pool.isEmpty()) return@forEach
+            if (pool.isEmpty()) {
+                // re-add used exercises
+                muscle2Exercises[muscle]?.addAll(usedExercisesByMuscle[muscle].orEmpty())
+                usedExercisesByMuscle[muscle]?.clear()
+                if (muscle2Exercises[muscle].orEmpty().isEmpty()) {
+                    return@forEach
+                }
+            }
 
-            // Split sets between compounds and accessories
-            val compounds = pool.filter { exerciseIsCompound(it) }
-            val accessories = pool.filter { !exerciseIsCompound(it) }
+            // get exercises by zone and
+            // split sets between compounds and accessories
+            val compounds = muscleZones.associateWith { zone ->
+                pool.filter { it.muscleRegion == zone && exerciseIsCompound(it, resolvedDifficulty) }
+            }
+            val accessories = muscleZones.associateWith { zone ->
+                pool.filter { it.muscleRegion == zone && !exerciseIsCompound(it, resolvedDifficulty) }
+            }
+            val zonesCovered = muscleZones.toMutableList()
 
             // Decide how many compound exercises
             val wantCompounds = when {
                 goalChoice == WorkoutPlanGoal.STRENGTH && isMajorMover(muscle) -> min(2, compounds.size)
-                isMajorMover(muscle) && resolvedDifficulty != WorkoutPlanDifficulty.BEGINNER -> min(1, compounds.size)
+                isMajorMover(muscle) -> min(1, compounds.size)
                 else -> 0
             }
 
@@ -330,67 +395,94 @@ suspend fun generatePlan(
                     compounds,
                     count = wantCompounds,
                     avoid = emptySet(), // allow repeats across days for compounds
-                    seededRandom = seededRandom
+                    seededRandom = seededRandom,
+                    zones = zonesCovered
                 )
 
-                // FIXME: this is assuming one compound only
-                val minCompoundSets = 4 * wantCompounds
-                var candidateCompoundSets = minCompoundSets
-                if (goalChoice == WorkoutPlanGoal.STRENGTH || resolvedDifficulty > WorkoutPlanDifficulty.BEGINNER) {
-                    candidateCompoundSets++ // even if we have two compounds we only add one more set
-                }
-                if (setsThisSession - candidateCompoundSets <= 1){
-                    // don't leave an exercise with just one set
-                    candidateCompoundSets = setsThisSession
-                }
-                accessorySets -= candidateCompoundSets
-                val setsPerCompound = splitSets(candidateCompoundSets, chosenCompounds.size, minPer = 3, maxPer = 6)
-
-                chosenCompounds.forEachIndexed { idx, ex ->
-                    val (repsEachSet, restEachSet) = prescribeCompound(goalChoice)
-                    val repsList = MutableList(setsPerCompound[idx]) { repsEachSet }
-                    val restList = MutableList(setsPerCompound[idx]) { restEachSet }
-                    repository.addProgramExercise(
-                        ProgramExercise(
-                            extProgramId = programId,
-                            extExerciseId = ex.exerciseId,
-                            orderInProgram = orderInProgram++,
-                            reps = repsList,
-                            rest = restList,
-                            variation = "",
-                            variationResKey = "",
-                            overriddenDurationBased = ex.isDurationBased,
-                            // for compound, have the first warmup set
-                            setTypes = List(repsList.size) {
-                                if (it == 0)
-                                    SetType.WARMUP
-                                else
-                                    SetType.NORMAL
-                            }
-                        )
+                if (chosenCompounds.isNotEmpty()) {
+                    val minCompoundSets = 4 * wantCompounds
+                    var candidateCompoundSets = minCompoundSets
+                    if (goalChoice == WorkoutPlanGoal.STRENGTH || resolvedDifficulty > WorkoutPlanDifficulty.BEGINNER) {
+                        candidateCompoundSets++ // even if we have two compounds we only add one more set
+                    }
+                    candidateCompoundSets = candidateCompoundSets.coerceAtMost(setsThisSession)
+                    if (setsThisSession - candidateCompoundSets <= 1) {
+                        // don't leave an exercise with just one set
+                        candidateCompoundSets = setsThisSession
+                    }
+                    accessorySets -= candidateCompoundSets
+                    val setsPerCompound = splitSets(
+                        candidateCompoundSets,
+                        chosenCompounds.size,
+                        minPer = 3,
+                        maxPer = 6
                     )
-                    // add rest time plus 2 seconds per rep
-                    sanityCheckTotalTime += restList.sum() + 2.0 * repsList.sum()
+                    chosenCompounds.forEachIndexed { idx, ex ->
+                        val (repsEachSet, restEachSet) = prescribeCompound(
+                            goalChoice,
+                            resolvedDifficulty,
+                            isPrimary = isFirstExercise
+                        )
+                        val repsList = MutableList(setsPerCompound[idx]) { repsEachSet }
+                        val restList = MutableList(setsPerCompound[idx]) { restEachSet }
+                        warmMuscles.add(ex.primaryMuscle)
+                        warmMuscles.addAll(ex.secondaryMuscles)
+                        repository.addProgramExercise(
+                            ProgramExercise(
+                                extProgramId = programId,
+                                extExerciseId = ex.exerciseId,
+                                orderInProgram = orderInProgram++,
+                                reps = repsList,
+                                rest = restList,
+                                variation = "",
+                                variationResKey = "",
+                                overriddenDurationBased = ex.isDurationBased,
+                                // for compound, have the first warmup set
+                                setTypes = List(repsList.size) {
+                                    if (
+                                        nextSetIsWarmup &&
+                                        (it == 0 || (repsList.size > 5 && it == 1))
+                                    )
+                                        SetType.WARMUP
+                                    else
+                                        SetType.NORMAL
+                                }
+                            )
+                        )
+                        isFirstExercise = false
+                        // we have now warmed up the muscle
+                        nextSetIsWarmup = false
+                        // add rest time plus 2 seconds per rep
+                        sanityCheckTotalTime += restList.sum() + 2.0 * repsList.sum()
+                        muscle2Exercises[muscle]?.remove(ex)
+                        usedExercisesByMuscle[muscle]?.add(ex)
+                    }
                 }
             }
 
             // --- Add accessories ---
             if (accessorySets > 0 && accessories.isNotEmpty()) {
                 // Spread across 1–3 accessories
-                val accessoryExerciseCount = min(when {
-                    accessorySets <= 4 -> 1
-                    accessorySets <= 6 -> 2
-                    else -> 3
-                }, accessories.size)
+                val minSetsPerExercise = when (goalChoice) {
+                    WorkoutPlanGoal.STRENGTH -> 3
+                    WorkoutPlanGoal.HYPERTROPHY -> 3
+                    WorkoutPlanGoal.ENDURANCE -> 2
+                    WorkoutPlanGoal.CARDIO -> 2
+                }
+                val accessoryExerciseCount = min(
+                    accessorySets.floorDiv(minSetsPerExercise),
+                    accessories.flatMap { it.value }.size
+                )
 
                 val chosenAccessories = chooseExercisesWeighted(
                     accessories,
                     count = accessoryExerciseCount,
                     avoid = usedAccessoryIds, // diversify across the week
-                    seededRandom = seededRandom
+                    seededRandom = seededRandom,
+                    zones = zonesCovered
                 )
 
-                val setsPerAccessory = splitSets(accessorySets, chosenAccessories.size, minPer = 2, maxPer = 5)
+                val setsPerAccessory = splitSets(accessorySets, chosenAccessories.size, minPer = 3, maxPer = 5)
 
                 chosenAccessories.forEachIndexed { idx, ex ->
                     val reps = sampleFromProgression(accessoryRepRange, seededRandom)
@@ -398,6 +490,9 @@ suspend fun generatePlan(
                     val repsList = MutableList(setsPerAccessory[idx]) { reps }
                     val restList = MutableList(setsPerAccessory[idx]) { rest }
                     val setTypes = MutableList(setsPerAccessory[idx]) { SetType.NORMAL }
+                    // only add to warm muscles if done in compound
+//                    warmMuscles.add(ex.primaryMuscle)
+//                    warmMuscles.addAll(ex.secondaryMuscles)
 
                     // wait adding program exercise to check if it should be in superset
                     var programExercise = ProgramExercise(
@@ -409,8 +504,17 @@ suspend fun generatePlan(
                         variation = "",
                         variationResKey = "",
                         overriddenDurationBased = ex.isDurationBased,
-                        setTypes = setTypes
+                        setTypes = repsList.map {
+                            if (nextSetIsWarmup && it == 0)
+                                SetType.WARMUP
+                            else
+                                SetType.NORMAL
+                        }
                     )
+                    isFirstExercise = false
+                    muscle2Exercises[muscle]?.remove(ex)
+                    usedExercisesByMuscle[muscle]?.add(ex)
+                    nextSetIsWarmup = false
                     sanityCheckTotalTime += restList.sum() + 2.0 * repsList.sum()
 
                     // Try to make a superset with the previous accessory if valid
@@ -484,9 +588,9 @@ private fun targetWeeklySetsByMuscle(
     // Baselines
     val (majorBase, minorBase) = when (goal) {
         WorkoutPlanGoal.HYPERTROPHY -> when (difficulty) {
-            WorkoutPlanDifficulty.BEGINNER -> 10 to 8
-            WorkoutPlanDifficulty.INTERMEDIATE, WorkoutPlanDifficulty.AUTO -> 14 to 10
-            WorkoutPlanDifficulty.ADVANCED -> 16 to 12
+            WorkoutPlanDifficulty.BEGINNER -> 10 to 6
+            WorkoutPlanDifficulty.INTERMEDIATE, WorkoutPlanDifficulty.AUTO -> 12 to 8
+            WorkoutPlanDifficulty.ADVANCED -> 14 to 10
         }
         WorkoutPlanGoal.STRENGTH -> when (difficulty) {
             WorkoutPlanDifficulty.BEGINNER -> 8 to 6
@@ -500,29 +604,50 @@ private fun targetWeeklySetsByMuscle(
     val majors = setOf(
         Muscle.CHEST,
         Muscle.BACK,
-        Muscle.QUADRICEPS,
-        Muscle.HAMSTRINGS
+        // Do include legs as major movers, because we split legs into smaller muscles, having them
+        // here will yield too many sets for legs.
+//        Muscle.QUADRICEPS,
+//        Muscle.HAMSTRINGS
+    )
+    // calves and abs should do less
+    val minorsLess = setOf(
+        Muscle.ABS,
+        Muscle.CALVES
     )
 
     val map = mutableMapOf<Muscle, Int>()
     muscles.forEach { m ->
         val isMajor = m in majors
-        val base = if (isMajor) majorBase else minorBase
+        val base = if (isMajor)
+            majorBase
+        else if (minorsLess.contains(m))
+            (minorBase / 2).coerceAtLeast(3)
+        else
+            minorBase
         map[m] = base
     }
     return map
 }
 
 // Compound prescription per set by goal (for big lifts)
-private fun prescribeCompound(goal: WorkoutPlanGoal): Pair<Int, Int> {
-    return when (goal) {
+private fun prescribeCompound(
+    goal: WorkoutPlanGoal,
+    expertise: WorkoutPlanDifficulty,
+    isPrimary: Boolean
+): Pair<Int, Int> {
+    // pair assuming it's primary
+    val primaryPair = when (goal) {
         WorkoutPlanGoal.STRENGTH -> {
             // 3–5 reps primary strength work, long rest
             3 to 210 // seconds; caller repeats for set count
         }
         WorkoutPlanGoal.HYPERTROPHY -> {
             // 5–8 reps compounds, moderate rest
-            6 to 150
+            when (expertise) {
+                WorkoutPlanDifficulty.BEGINNER -> 8 to 90
+                WorkoutPlanDifficulty.INTERMEDIATE, WorkoutPlanDifficulty.AUTO -> 6 to 120
+                WorkoutPlanDifficulty.ADVANCED -> 4 to 150
+            }
         }
         WorkoutPlanGoal.ENDURANCE -> {
             // keep compounds lighter, more reps but still controlled
@@ -532,6 +657,9 @@ private fun prescribeCompound(goal: WorkoutPlanGoal): Pair<Int, Int> {
             8 to 90
         }
     }
+    if (isPrimary) return primaryPair
+    // for secondary compounds, add reps to maintain intensity but increase volume
+    return primaryPair.first + 2 to primaryPair.second
 }
 
 private fun resolveDifficulty(d: WorkoutPlanDifficulty): WorkoutPlanDifficulty {
@@ -547,10 +675,11 @@ private fun resolveSplit(
     difficulty: WorkoutPlanDifficulty,
     requested: WorkoutPlanSplit
 ): WorkoutPlanSplit {
-    if (requested != WorkoutPlanSplit.AUTO) return requested
+    if (requested != WorkoutPlanSplit.AUTO && requested != WorkoutPlanSplit.CUSTOM) return requested
+    if (requested == WorkoutPlanSplit.CUSTOM) return requested
     return when (goal) {
         WorkoutPlanGoal.STRENGTH -> if (difficulty == WorkoutPlanDifficulty.BEGINNER) WorkoutPlanSplit.FULL_BODY else WorkoutPlanSplit.UPPER_LOWER
-        WorkoutPlanGoal.HYPERTROPHY -> if (difficulty == WorkoutPlanDifficulty.BEGINNER) WorkoutPlanSplit.UPPER_LOWER else if (difficulty == WorkoutPlanDifficulty.INTERMEDIATE) WorkoutPlanSplit.BRO else WorkoutPlanSplit.GAINZ
+        WorkoutPlanGoal.HYPERTROPHY -> if (difficulty == WorkoutPlanDifficulty.BEGINNER) WorkoutPlanSplit.UPPER_LOWER else if (difficulty == WorkoutPlanDifficulty.INTERMEDIATE) WorkoutPlanSplit.PPL else WorkoutPlanSplit.BRO
         WorkoutPlanGoal.ENDURANCE, WorkoutPlanGoal.CARDIO -> WorkoutPlanSplit.FULL_BODY
     }
 }
@@ -562,21 +691,47 @@ private fun countOccurrences(days: List<List<Muscle>>): Map<Muscle, Int> {
 }
 
 private fun chooseExercisesWeighted(
-    pool: List<Exercise>,
+    pool: Map<Exercise.MuscleRegion, List<Exercise>>,
     count: Int,
     avoid: Set<Long>,
-    seededRandom: Random
+    seededRandom: Random,
+    zones: MutableList<Exercise.MuscleRegion>
 ): List<Exercise> {
     if (pool.isEmpty() || count <= 0) return emptyList()
-    val mutable = pool.toMutableList()
+    val mutable = pool.mapValues { it.value.toMutableList() }
     val chosen = mutableListOf<Exercise>()
+    var zoneIndex = 0
+
     repeat(count) {
-        val candidates = mutable.filter { it.exerciseId !in avoid }
-        val pickFrom = candidates.ifEmpty { mutable }
-        val picked = pickFrom.weightedRandom(pickFrom.map { it.probability })
-        chosen += picked
-        mutable.remove(picked)
-        if (mutable.isEmpty()) return@repeat
+        if (zones.isEmpty()) {
+            zones.add(Exercise.MuscleRegion.PRIMARY)
+        }
+
+        // Try every remaining zone once before giving up on this slot
+        var tried = 0
+        while (tried < zones.size) {
+            val idx = zoneIndex % zones.size
+            val zone = zones[idx]
+            val candidates = mutable[zone]
+                ?.filter { it.exerciseId !in avoid }
+                ?: emptyList()
+
+            if (candidates.isNotEmpty()) {
+                val picked = candidates.weightedRandom(
+                    candidates.map { it.probability }, seededRandom
+                )
+                chosen += picked
+                mutable[zone]?.remove(picked)
+                // Advance so the next pick starts on the following zone
+                zoneIndex = idx + 1
+                return@repeat
+            } else {
+                // Zone truly exhausted — remove it; the next zone slides into idx
+                zones.removeAt(idx)
+                tried++
+            }
+        }
+        // Every zone is exhausted; nothing left to pick
     }
     return chosen
 }

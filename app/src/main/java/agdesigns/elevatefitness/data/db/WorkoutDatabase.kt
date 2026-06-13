@@ -49,7 +49,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -100,7 +100,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_8_9,
                     MIGRATION_9_10,
                     MIGRATION_10_11,
-                    MIGRATION_11_12
+                    MIGRATION_11_12,
+                    MIGRATION_12_13
                 )
                     .build()
                     .also { instance = it }
@@ -257,6 +258,17 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
     }
 }
 
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE Exercise ADD COLUMN muscleRegion TEXT NOT NULL DEFAULT 'PRIMARY'"
+        )
+        db.execSQL(
+            "ALTER TABLE Exercise ADD COLUMN suggestOnlyIfPerformed INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
+
 
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")
@@ -300,6 +312,13 @@ class ExerciseDataMigrator(private val context: Context) {
                 "Found db version $dbVersion, proceeding with migration to v12"
             )
             migrateExercises11To12(db)
+        }
+        if (dbVersion < 13) {
+            Log.d(
+                "ExerciseDataMigrator",
+                "Found db version $dbVersion, proceeding with migration to v13"
+            )
+            migrateExercises12To13(db)
         }
     }
 
@@ -475,9 +494,6 @@ class ExerciseDataMigrator(private val context: Context) {
             val old = existing[new.nameResKey] ?: return@forEach
             dao.updateExercise(old.copy(wearRepTrackable = new.wearRepTrackable))
         }
-        context.dataStore.edit {
-            it[dbVersionKey] = 11
-        }
         val records = db.exerciseRecordDao.getAll()
         records.forEach {
             db.exerciseRecordDao.update(
@@ -485,6 +501,9 @@ class ExerciseDataMigrator(private val context: Context) {
                     trackingResults = List(it.reps.size) { _ -> null }
                 )
             )
+        }
+        context.dataStore.edit {
+            it[dbVersionKey] = 11
         }
     }
 
@@ -504,7 +523,22 @@ class ExerciseDataMigrator(private val context: Context) {
         context.dataStore.edit {
             it[dbVersionKey] = 12
         }
+    }
 
+    private suspend fun migrateExercises12To13(db: WorkoutDatabase) {
+        val dao = db.exerciseDao
+        val existing = dao.getAllExercises().first().associateBy { it.nameResKey }
+        INITIAL_EXERCISE_DATA.forEach { new ->
+            val old = existing[new.nameResKey] ?: return@forEach
+            dao.updateExercise(
+                new.copy(
+                    exerciseId = old.exerciseId
+                )
+            )
+        }
+        context.dataStore.edit {
+            it[dbVersionKey] = 13
+        }
     }
 
 }

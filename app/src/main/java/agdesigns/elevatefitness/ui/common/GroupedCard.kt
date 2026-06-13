@@ -1,11 +1,13 @@
 package agdesigns.elevatefitness.ui.common
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,9 +20,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.ReorderableLazyListState
 
 class GroupedCardScope {
     internal val items = mutableListOf<Pair<@Composable () -> Unit, () -> Unit>>()
@@ -90,6 +96,8 @@ class LazyGroupedCardScope {
     internal data class SubcardDetails(
         val content: @Composable () -> Unit,
         val onClick: (() -> Unit)? = null,
+        val key: Any? = null,
+        val reorderableLazyListState: ReorderableLazyListState? = null,
         val modifier: Modifier = Modifier
     )
 
@@ -102,6 +110,24 @@ class LazyGroupedCardScope {
     ) {
         subcards.add(
             SubcardDetails(
+                content = content,
+                onClick = onClick,
+                modifier = modifier
+            )
+        )
+    }
+
+    fun reorderableSubCard(
+        key: Any,
+        reorderableLazyListState: ReorderableLazyListState,
+        onClick: (() -> Unit),
+        modifier: Modifier = Modifier,
+        content: @Composable () -> Unit,
+    ) {
+        subcards.add(
+            SubcardDetails(
+                key = key,
+                reorderableLazyListState = reorderableLazyListState,
                 content = content,
                 onClick = onClick,
                 modifier = modifier
@@ -121,7 +147,8 @@ fun LazyListScope.lazyGroupedCard(
     val lastIndex = subcards.lastIndex
 
     subcards.forEachIndexed { index, subcardDetails ->
-        item {
+        item(key = subcardDetails.key) {
+            val haptics = LocalHapticFeedback.current
             val defaultShape: RoundedCornerShape = when (CardDefaults.shape) {
                 is RoundedCornerShape -> CardDefaults.shape as RoundedCornerShape
                 else -> RoundedCornerShape(16.dp)
@@ -140,49 +167,92 @@ fun LazyListScope.lazyGroupedCard(
                 )
                 else -> RoundedCornerShape(defaultOtherCorner)
             }
-
-            // if no onClick, we can use the normal card that allows clickable in modifier
-            if (subcardDetails.onClick != null) {
-                Card(
-                    modifier = subcardDetails.modifier
-                        .fillMaxWidth()
-                        .animateItem(
-                            fadeInSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-                            fadeOutSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-                            placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
-                        ),
-                    shape = currentItemShape,
-                    colors = colors ?: CardDefaults.cardColors(),
-                    onClick = subcardDetails.onClick
+            if (subcardDetails.reorderableLazyListState != null && subcardDetails.key != null) {
+                val interactionSource = remember { MutableInteractionSource() }
+                ReorderableItem(
+                    subcardDetails.reorderableLazyListState,
+                    key = subcardDetails.key,
                 ) {
-                    Column(Modifier.padding(innerCardPadding)) {
-                        subcardDetails.content()
-                    }
+                    InnerCard(
+                        subcardDetails = subcardDetails,
+                        currentItemShape = currentItemShape,
+                        colors = colors,
+                        innerCardPadding = innerCardPadding,
+                        interactionSource = interactionSource,
+                        modifier = Modifier.longPressDraggableHandle(
+                            interactionSource = interactionSource,
+                            onDragStarted = {
+                                haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                            },
+                            onDragStopped = {
+                                haptics.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                            },
+                        )
+                    )
                 }
             } else {
-                Card(
-                    modifier = subcardDetails.modifier
-                        .fillMaxWidth()
-                        .animateItem(
-                            fadeInSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-                            fadeOutSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-                            placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
-                        ),
-                    shape = currentItemShape,
-                    colors = colors ?: CardDefaults.cardColors(),
-                ) {
-                    Column(Modifier.padding(innerCardPadding)) {
-                        subcardDetails.content()
-                    }
-                }
+                InnerCard(
+                    subcardDetails = subcardDetails,
+                    currentItemShape = currentItemShape,
+                    colors = colors,
+                    innerCardPadding = innerCardPadding
+                )
             }
-
             if (index != lastIndex) {
                 Spacer(modifier = Modifier.height(2.dp))
             }
         }
     }
 }
+
+@Composable
+private fun LazyItemScope.InnerCard(
+    subcardDetails: LazyGroupedCardScope.SubcardDetails,
+    currentItemShape: RoundedCornerShape,
+    colors: CardColors?,
+    innerCardPadding: Dp,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    modifier: Modifier = Modifier
+) {
+    // if no onClick, we can use the normal card that allows clickable in modifier
+    if (subcardDetails.onClick != null) {
+        Card(
+            modifier = subcardDetails.modifier
+                .then(modifier)
+                .fillMaxWidth()
+                .animateItem(
+                    fadeInSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                    fadeOutSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                    placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                ),
+            shape = currentItemShape,
+            colors = colors ?: CardDefaults.cardColors(),
+            onClick = subcardDetails.onClick,
+            interactionSource = interactionSource
+        ) {
+            Column(Modifier.padding(innerCardPadding)) {
+                subcardDetails.content()
+            }
+        }
+    } else {
+        Card(
+            modifier = subcardDetails.modifier
+                .fillMaxWidth()
+                .animateItem(
+                    fadeInSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                    fadeOutSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                    placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                ),
+            shape = currentItemShape,
+            colors = colors ?: CardDefaults.cardColors(),
+        ) {
+            Column(Modifier.padding(innerCardPadding)) {
+                subcardDetails.content()
+            }
+        }
+    }
+}
+
 
 // ---- Previews ----
 

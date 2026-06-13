@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.ui.screens.plans
 import agdesigns.elevatefitness.data.PreferenceRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlan
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
@@ -31,7 +32,9 @@ sealed class GeneratePlanEvent{
     data class GeneratePlan(
         val goalChoice: WorkoutPlanGoal,
         val expertiseLevel: WorkoutPlanDifficulty,
-        val workoutSplit: WorkoutPlanSplit
+        val workoutSplit: WorkoutPlanSplit,
+        val excludedExerciseIds: Set<Long> = emptySet(),
+        val customMuscleDays: List<List<Exercise.Muscle>> = emptyList()
     ): GeneratePlanEvent()
 
 }
@@ -86,9 +89,11 @@ class GeneratePlanViewModel @Inject constructor(
                             preferences,
                             event.goalChoice,
                             event.expertiseLevel,
-                            event.workoutSplit
+                            event.workoutSplit,
+                            event.excludedExerciseIds,
+                            event.customMuscleDays
                         )
-                        preferences.setCurrentPlan(planId, true)  // FIXME: I don't remember why I would need override
+                        preferences.setCurrentPlanIfNone(planId, true)
 
                         _state.update { it.copy(
                             generatedPlan = repository.getPlan(planId).first()

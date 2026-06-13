@@ -43,7 +43,13 @@ data class Exercise(
     @ColumnInfo(defaultValue = "AGAINST_GRAVITY")
     val firstPhase: FirstPhase = FirstPhase.AGAINST_GRAVITY,
     @ColumnInfo(defaultValue = "38")
-    val healthExerciseSegmentType: Int = EXERCISE_SEGMENT_TYPE_OTHER_WORKOUT
+    val healthExerciseSegmentType: Int = EXERCISE_SEGMENT_TYPE_OTHER_WORKOUT,
+    @ColumnInfo(defaultValue = "PRIMARY")
+    val muscleRegion: MuscleRegion = MuscleRegion.PRIMARY,
+    // exercises that set this to true will only be included in plan generation if already performed,
+    // e.g., planche
+    @ColumnInfo(defaultValue = "false")
+    val suggestOnlyIfPerformed: Boolean = false,
 ) : Parcelable {
     // Helper properties for UI
     val nameResource: Int
@@ -133,6 +139,41 @@ data class Exercise(
             AGAINST_GRAVITY -> Workout.FirstPhase.AGAINST_GRAVITY
             ALONG_GRAVITY -> Workout.FirstPhase.ALONG_GRAVITY
             PARALLEL -> Workout.FirstPhase.PARALLEL
+        }
+    }
+
+    // used to aid in automatic plan generation
+    enum class MuscleRegion {
+        PRIMARY,
+        SECONDARY_ZONE_1,
+        SECONDARY_ZONE_2,
+        SECONDARY_ZONE_3;
+
+        companion object {
+            // abs
+            val ABS = PRIMARY
+            val OBLIQUES = SECONDARY_ZONE_1
+            val LOWER_ABS = SECONDARY_ZONE_2
+            val DEEP_CORE = SECONDARY_ZONE_3
+            // back
+            val LATS = PRIMARY
+            val UPPER_BACK = SECONDARY_ZONE_1
+            val LOWER_BACK = SECONDARY_ZONE_2
+            // chest
+            val MID_CHEST = PRIMARY
+            val LOWER_CHEST = SECONDARY_ZONE_1
+            val UPPER_CHEST = SECONDARY_ZONE_2
+            // shoulder
+            val SHOULDERS = PRIMARY
+            val LATERAL_DELT = SECONDARY_ZONE_1
+            val REAR_DELT = SECONDARY_ZONE_2
+
+            val MUSCLE_TO_ZONES = mapOf(
+                Muscle.ABS to listOf(ABS, OBLIQUES, LOWER_ABS, DEEP_CORE),
+                Muscle.BACK to listOf(LATS, UPPER_BACK, LOWER_BACK),
+                Muscle.CHEST to listOf(MID_CHEST, LOWER_CHEST, UPPER_CHEST),
+                Muscle.SHOULDERS to listOf(SHOULDERS, LATERAL_DELT, REAR_DELT)
+            ).withDefault { listOf(PRIMARY) }
         }
     }
 }

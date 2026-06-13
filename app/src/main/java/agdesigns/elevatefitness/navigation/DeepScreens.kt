@@ -12,7 +12,10 @@ import agdesigns.elevatefitness.ui.screens.create_exercise.CreateExerciseDialog
 import agdesigns.elevatefitness.ui.screens.plans.AddWorkoutPlan
 import agdesigns.elevatefitness.ui.screens.plans.ReceivePlanScreen
 import agdesigns.elevatefitness.ui.screens.plans.ArchivedPlans
+import agdesigns.elevatefitness.ui.screens.plans.CustomSplitEditorScreen
 import agdesigns.elevatefitness.ui.screens.plans.CustomizePlanGeneration
+import agdesigns.elevatefitness.ui.screens.plans.CustomizePlanViewModel
+import agdesigns.elevatefitness.ui.screens.plans.ExcludeExercisesScreen
 import agdesigns.elevatefitness.ui.screens.plans.ViewGeneratedPlan
 import agdesigns.elevatefitness.ui.screens.program_exercises.AddProgramExercise
 import agdesigns.elevatefitness.ui.screens.programs.AddProgram
@@ -39,6 +42,14 @@ data class AddWorkoutPlanDestination(
 
 
 data object CustomizePlanGenerationDestination: Route
+
+data class CustomSplitEditorDestination(
+    val viewModel: CustomizePlanViewModel
+): Route
+
+data class ExcludeExercisesDestination(
+    val excludedIds: List<Long> = emptyList()
+): Route
 
 data class AddProgramExerciseDestination(
     val programName: String,
@@ -90,6 +101,8 @@ data class ViewGeneratedPlanDestination(
     val goalChoice: WorkoutPlanGoal,
     val expertiseLevel: WorkoutPlanDifficulty,
     val workoutSplit: WorkoutPlanSplit,
+    val excludedExerciseIds: List<Long> = emptyList(),
+    val customMuscleDays: List<List<Int>> = emptyList(),
 ): Route
 
 data object ArchivedPlansDestination: Route
@@ -147,6 +160,18 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
         entry<CustomizePlanGenerationDestination>(metadata = FullscreenDialogTransition) {
             CustomizePlanGeneration(
                 navigator = navigator
+            )
+        }
+        entry<ExcludeExercisesDestination>(metadata = FullscreenDialogTransition) {
+            ExcludeExercisesScreen(
+                navigator = navigator,
+                excludedIds = it.excludedIds
+            )
+        }
+        entry<CustomSplitEditorDestination>(metadata = FullscreenDialogTransition) {
+            CustomSplitEditorScreen(
+                navigator = navigator,
+                viewModel = it.viewModel
             )
         }
         entry<AddProgramExerciseDestination>(
@@ -225,7 +250,9 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
                 navigator = navigator,
                 goalChoice = it.goalChoice,
                 expertiseLevel = it.expertiseLevel,
-                workoutSplit = it.workoutSplit
+                workoutSplit = it.workoutSplit,
+                excludedExerciseIds = it.excludedExerciseIds,
+                customMuscleDays = it.customMuscleDays
             )
         }
         entry<ArchivedPlansDestination>(metadata = SlideTransition) {

@@ -41,7 +41,7 @@ class PreferenceRepository @Inject constructor(
      */
     fun getCurrentPlan(): Flow<Long?> = dataStore.data.map{ it[PrefKeys.currentPlan] }
 
-    suspend fun setCurrentPlan(planId: Long, overrideValue: Boolean){
+    suspend fun setCurrentPlanIfNone(planId: Long, overrideValue: Boolean){
         dataStore.edit {
             if (it[PrefKeys.currentPlan] == null || overrideValue){
                 it[PrefKeys.currentPlan] = planId
@@ -288,6 +288,21 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.tempoRomTracking] = newValue
     }
 
+    fun getExcludedPlanExercises(): Flow<Set<Long>> = dataStore.data.map {
+        val raw = it[PrefKeys.excludedPlanExercises] ?: ""
+        raw.split(",").mapNotNull { s -> s.toLongOrNull() }.toSet()
+    }
+
+    suspend fun setExcludedPlanExercises(ids: Set<Long>) = dataStore.edit {
+        it[PrefKeys.excludedPlanExercises] = ids.joinToString(",")
+    }
+
+    suspend fun addExcludedPlanExercise(id: Long) = dataStore.edit {
+        val current = it[PrefKeys.excludedPlanExercises] ?: ""
+        val ids = current.split(",").filter { it.isNotBlank() }.toMutableSet()
+        ids.add(id.toString())
+    }
+
     fun isDismissedPlanChangeReminder(planId: Long): Flow<Boolean> = dataStore.data.map{
         val dismissedPlans = it[PrefKeys.dismissedPlanChangeReminders] ?: ""
         dismissedPlans.split(",").contains(planId.toString())
@@ -325,6 +340,7 @@ internal object PrefKeys {
     val lockHorizontalScroll = booleanPreferencesKey("Lock horizontal scroll")
     val autoOpenWear = booleanPreferencesKey("Auto open wear")
     val dismissedPlanChangeReminders = stringPreferencesKey("Dismissed plan change reminders")
+    val excludedPlanExercises = stringPreferencesKey("Plan generation excluded exercises")
     val suggestRepsWeight = booleanPreferencesKey("Suggest reps weight")
     val suggestWorkoutModifications = booleanPreferencesKey("Suggest workout modifications")
     val inRestHints = booleanPreferencesKey("In rest hints")

@@ -121,7 +121,7 @@ class HomeViewModel @Inject constructor(
                     if (plans.isNotEmpty()) {
                         val lastPlan = plans.minByOrNull { it.creationDate }
                         if (lastPlan != null) {
-                            preferences.setCurrentPlan(lastPlan.planId, overrideValue = false)
+                            preferences.setCurrentPlanIfNone(lastPlan.planId, overrideValue = false)
                         }
                     }
                 }

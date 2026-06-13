@@ -182,48 +182,71 @@ fun SharedTransitionScope.FullScreenImageCard(
     }
 }
 
-class ReversedCornersShape(private val cornerSize: CornerSize): BaseReversedCornersShape {
+enum class ReversedCorner { TopStart, TopEnd, BottomStart, BottomEnd }
+
+class ReversedCornersShape(
+    private val cornerSize: CornerSize,
+    private val corners: Set<ReversedCorner> = setOf(ReversedCorner.TopStart, ReversedCorner.TopEnd)
+) : BaseReversedCornersShape {
     override fun createOutline(
         size: Size,
         layoutDirection: LayoutDirection,
         density: Density
     ): Outline {
         return Outline.Generic(
-            // Draw your custom path here
-            path = reverseRoundedCorners(size = size, radius = cornerSize.toPx(size, density))
+            path = reverseRoundedCorners(size = size, radius = cornerSize.toPx(size, density), corners = corners)
         )
     }
 }
 
 interface BaseReversedCornersShape : Shape {
 
-    fun reverseRoundedCorners(size: Size, radius: Float): Path {
+    fun reverseRoundedCorners(
+        size: Size,
+        radius: Float,
+        corners: Set<ReversedCorner> = setOf(ReversedCorner.TopStart, ReversedCorner.TopEnd)
+    ): Path {
         return Path().apply {
             val rect = size.toRect()
             addRect(rect)
             val outerCornerDiameter = radius * 2
             val cornerSize = Size(outerCornerDiameter, outerCornerDiameter)
-            val cornerOffset = Offset(0f, -outerCornerDiameter)
-            val cornerYOffset = Offset(-outerCornerDiameter, -outerCornerDiameter)
-            addArc(
-                Rect(
-                    offset = rect.topLeft + cornerOffset,
-                    size = cornerSize
-                ),
-                startAngleDegrees = 90f,
-                sweepAngleDegrees = 90f,
-            )
-            lineTo(rect.topLeft.x, rect.topLeft.y)
 
-            addArc(
-                Rect(
-                    offset = rect.topRight + cornerYOffset,
-                    size = cornerSize
-                ),
-                startAngleDegrees = 90f,
-                sweepAngleDegrees = -90f,
-            )
-            lineTo(rect.topRight.x, rect.topRight.y)
+            if (ReversedCorner.TopStart in corners) {
+                addArc(
+                    Rect(offset = rect.topLeft + Offset(0f, -outerCornerDiameter), size = cornerSize),
+                    startAngleDegrees = 90f,
+                    sweepAngleDegrees = 90f,
+                )
+                lineTo(rect.topLeft.x, rect.topLeft.y)
+            }
+
+            if (ReversedCorner.TopEnd in corners) {
+                addArc(
+                    Rect(offset = rect.topRight + Offset(-outerCornerDiameter, -outerCornerDiameter), size = cornerSize),
+                    startAngleDegrees = 90f,
+                    sweepAngleDegrees = -90f,
+                )
+                lineTo(rect.topRight.x, rect.topRight.y)
+            }
+
+            if (ReversedCorner.BottomStart in corners) {
+                addArc(
+                    Rect(offset = rect.bottomLeft, size = cornerSize),
+                    startAngleDegrees = 270f,
+                    sweepAngleDegrees = -90f,
+                )
+                lineTo(rect.bottomLeft.x, rect.bottomLeft.y)
+            }
+
+            if (ReversedCorner.BottomEnd in corners) {
+                addArc(
+                    Rect(offset = rect.bottomRight + Offset(-outerCornerDiameter, 0f), size = cornerSize),
+                    startAngleDegrees = 270f,
+                    sweepAngleDegrees = 90f,
+                )
+                lineTo(rect.bottomRight.x, rect.bottomRight.y)
+            }
         }
     }
 }

@@ -154,6 +154,19 @@ fun getPlanDisplayName(name: String, context: Context): String {
     }
 }
 
+fun getPlanGoal(name: String): WorkoutPlanGoal? =
+    if (name.startsWith(GENERATED_PLAN_PREFIX)) {
+        val noPrefix = name.removePrefix(GENERATED_PLAN_PREFIX)
+        val parts = noPrefix.split("/****/")
+        when (parts[1]) {
+            "goals_hypertrophy" -> WorkoutPlanGoal.HYPERTROPHY
+            "goals_strength" -> WorkoutPlanGoal.STRENGTH
+            "goals_endurance" -> WorkoutPlanGoal.ENDURANCE
+            "goals_cardio" -> WorkoutPlanGoal.CARDIO
+            else -> null
+        }
+    } else null
+
 fun getDuplicatePlanName(name: String): String {
     // we want internally store whether a plan is a copy. It will be rendered by getPlanDisplayName
     // we also keep track of copies of copies: /****/copy||||| where "|" represents one copy
@@ -187,18 +200,20 @@ enum class WorkoutPlanDifficulty(val expertiseResKey: String) {
 }
 
 enum class WorkoutPlanSplit(val splitResKey: String) {
+    AUTO("splits_auto"),
     FULL_BODY("splits_fullbody"),
-    BRO("splits_bro"),
+    PPL("splits_bro"),
     UPPER_LOWER("splits_upper_lower"),
-    GAINZ("splits_gainz"),
-    AUTO("splits_auto");
+    BRO("splits_gainz"),
+    CUSTOM("splits_custom");
 
     val splitResource: Int
         get() = when (this) {
             FULL_BODY -> R.string.splits_fullbody
-            BRO -> R.string.splits_bro
+            PPL -> R.string.splits_bro
             UPPER_LOWER -> R.string.splits_upper_lower
-            GAINZ -> R.string.splits_gainz
+            BRO -> R.string.splits_gainz
             AUTO -> R.string.splits_auto
+            CUSTOM -> R.string.splits_custom
         }
 }

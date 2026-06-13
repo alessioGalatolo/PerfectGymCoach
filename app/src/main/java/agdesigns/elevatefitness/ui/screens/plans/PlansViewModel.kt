@@ -94,7 +94,7 @@ class PlansViewModel @Inject constructor(
         when (event) {
             is PlansEvent.AddPlan -> {
                 viewModelScope.launch {
-                    preferences.setCurrentPlan(repository.addPlan(event.workoutPlan), overrideValue = false)
+                    preferences.setCurrentPlanIfNone(repository.addPlan(event.workoutPlan), overrideValue = false)
                 }
             }
             is PlansEvent.TogglePlanDialogue -> {
@@ -110,7 +110,7 @@ class PlansViewModel @Inject constructor(
             }
             is PlansEvent.SetCurrentPlan -> {
                 viewModelScope.launch{
-                    preferences.setCurrentPlan(event.planId, overrideValue = true)
+                    preferences.setCurrentPlanIfNone(event.planId, overrideValue = true)
                 }
             }
 

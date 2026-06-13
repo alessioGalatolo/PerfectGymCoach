@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">ElevateFitness</string>
     <string name="home">Home</string>
     <string name="history">Storico</string>
     <string name="statistics">Statistiche</string>
@@ -147,7 +146,7 @@
     <string name="empty_no_programs">Nessun programma nel piano!</string>
     <string name="empty_home_program">Il piano di allenamento che hai selezionato come attuale non ha programmi (giorni di allenamento) al suo interno</string>
     <string name="i_more_exercises">+ altri %1$s esercizi</string>
-    <string name="change_workout_plan">Cambia piano di allenamento</string>
+    <string name="change_workout_plan">Cambia allenamento</string>
     <string name="change_programs">Cambia programmi</string>
     <!-- Add/view workout plan -->
     <string name="current_plan">Piano attuale</string>
@@ -174,9 +173,22 @@
     <string name="goal_i_image">Immagine %1$s</string>
     <string name="goal_i_not_available">%1$s. Non disponibile al momento.</string>
     <string name="what_is_your_expertise_level">Qual è il tuo livello di esperienza?</string>
-    <string name="how_many_times_per_week_do_you_want_to_exercise">Quante volte a settimana vuoi allenarti?</string>
+    <string name="how_many_times_per_week_do_you_want_to_exercise">Come vuoi dividere i tuoi gruppi muscolari?</string>
+    <string name="exclude_exercises_title">Escludi esercizi</string>
+    <string name="exclude_exercises_subtitle">Questi esercizi non verranno inclusi nel piano generato</string>
+    <string name="search_exercises_to_exclude">Cerca esercizi da escludere…</string>
+    <string name="no_exercises_found">Nessun esercizio trovato</string>
+    <string name="exclude_all_n_results">Escludi tutti i %d risultati</string>
+    <string name="clear_all_excluded">Rimuovi tutto</string>
+    <string name="n_exercises_excluded">%d esercizi esclusi</string>
+    <string name="no_exercises_excluded">Nessun esercizio escluso</string>
     <!-- Generating plan waiting screen-->
-    <string name="generating_plan_waiting_text">Generazione di un piano personalizzato in corso…</string>
+    <string name="generating_plan_waiting_text">Generazione di un piano personalizzato…</string>
+    <string name="generating_plan_waiting_text1">Raccogliendo dati dai tuoi allenamenti precedenti…</string>
+    <string name="generating_plan_waiting_text2">Definendo divisione grouppi muscolari…</string>
+    <string name="generating_plan_waiting_text3">Suddividendo nei vari giorni…</string>
+    <string name="generating_plan_waiting_text4">Ottenendo gli esercizi per il tuo livello di forza…</string>
+    <string name="generating_plan_waiting_text5">Finalizzando il piano…</string>
     <!-- Profile -->
     <string name="personal_information_title">Informazioni personali</string>
     <string name="physical_measurements_title">Misure fisiche</string>
@@ -739,15 +751,31 @@
     <string name="goals_endurance">Resistenza</string>
     <string name="goals_cardio">Cardio</string>
     <string name="goals_error">Obiettivo sconosciuto</string>
-    <string name="plan_diff_guess">Dovresti conoscere il mio livello</string>
-    <string name="plan_diff_beginner">Principiante: appena iniziato</string>
-    <string name="plan_diff_intermediate">Intermedio: mi sento pronto a provare esercizi più avanzati</string>
-    <string name="plan_diff_advanced">Avanzato: facciamo tutto 👌</string>
-    <string name="splits_fullbody">Routine total body: 1+ volte a settimana</string>
-    <string name="splits_bro">Pull/Push/Gambe: 3 volte a settimana</string>
-    <string name="splits_upper_lower">Split parte alta/bassa: 2+ volte a settimana</string>
-    <string name="splits_gainz">1 gruppo muscolare al giorno: 5 volte a settimana</string>
+    <string name="plan_diff_guess">Il tuo livello sarà calcolato in base ai tuoi allenamenti passati</string>
+    <string name="plan_diff_beginner">Appena iniziato</string>
+    <string name="plan_diff_intermediate">Mi sento pronto a provare esercizi più avanzati</string>
+    <string name="plan_diff_advanced">Facciamo tutto 👌</string>
+    <string name="plan_diff_auto_short">Auto</string>
+    <string name="plan_diff_beginner_short">Principiante</string>
+    <string name="plan_diff_intermediate_short">Intermedio</string>
+    <string name="plan_diff_advanced_short">Avanzato</string>
+    <string name="splits_fullbody">1+ volte a settimana</string>
+    <string name="splits_bro">3 volte a settimana</string>
+    <string name="splits_upper_lower">2+ volte a settimana</string>
+    <string name="splits_gainz">5 volte a settimana</string>
     <string name="splits_auto">Sorprendimi</string>
+    <string name="splits_fullbody_short">Total body</string>
+    <string name="splits_bro_short">Push/Pull/Gambe</string>
+    <string name="splits_upper_lower_short">Parte alta/bassa</string>
+    <string name="splits_gainz_short">Un gruppo muscolare al giorno</string>
+    <string name="splits_custom">Scegli te</string>
+    <string name="splits_custom_short">Personalizzato</string>
+    <string name="custom_split_editor_title">Divisione personalizzata</string>
+    <string name="custom_split_add_day">Aggiungi giornata</string>
+    <string name="custom_split_day">Giorno %1$d</string>
+    <string name="custom_split_not_configured">Tappa per configurare</string>
+    <string name="custom_split_n_days">%1$d giorni configurati</string>
+    <string name="custom_split_invalid">Alcuni giorni nella tua divisione non sono validi</string>
     <string name="intensities_high">Alta intensità (...)</string>
     <string name="intensities_medium">Intensità normale (...)</string>
     <string name="intensities_low">Bassa intensità (...)</string>
@@ -888,7 +916,6 @@
 
     <!-- Health Connect integration -->
     <string name="integrations_title">Integrazioni</string>
-    <string name="health_connect_title" translatable="false">Health Connect</string>
     <string name="health_connect_info">Collegati per esportare automaticamente i tuoi allenamenti</string>
     <string name="health_connect_connected">Collegato: gli allenamenti saranno esportati automaticamente</string>
     <string name="health_connect_problems">Problema nella connessione! Ri-controlla i permessi</string>

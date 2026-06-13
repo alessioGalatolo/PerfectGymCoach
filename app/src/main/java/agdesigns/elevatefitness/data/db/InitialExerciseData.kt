@@ -45,6 +45,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_BENCH_PRESS,
+        muscleRegion = Exercise.MuscleRegion.MID_CHEST,
     ),
     Exercise(
         name = "",
@@ -58,6 +59,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_BENCH_PRESS,
+        muscleRegion = Exercise.MuscleRegion.UPPER_CHEST,
     ),
     Exercise(
         name = "",
@@ -71,6 +73,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_BENCH_PRESS,
+        muscleRegion = Exercise.MuscleRegion.LOWER_CHEST,
     ),
     // Cables chest
     Exercise(
@@ -82,6 +85,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_cable_crossover_description",
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.PARALLEL,
+        muscleRegion = Exercise.MuscleRegion.MID_CHEST,
     ),
     // Bodyweight chest
     Exercise(
@@ -93,6 +97,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "chest_dip",
         descriptionResKey = "exercise_chest_dip_description",
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.LOWER_CHEST,
     ),
     Exercise(
         name = "",
@@ -100,6 +105,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.CHEST,
         secondaryMuscles = listOf(Exercise.Muscle.TRICEPS, Exercise.Muscle.SHOULDERS),
+        difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         imageResKey = "push_up",
         descriptionResKey = "exercise_push_up_description",
         variationsResKeys = listOf(
@@ -109,6 +115,7 @@ val INITIAL_EXERCISE_DATA = listOf(
             "exercise_variation_pushup_single_arm",
         ),
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.MID_CHEST,
     ),
     // Machine chest
     Exercise(
@@ -122,6 +129,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_chest_press_description",
         firstPhase = Exercise.FirstPhase.PARALLEL,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.MID_CHEST,
     ),
     Exercise(
         name = "",
@@ -134,6 +142,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_machine_fly_description",
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.PARALLEL,
+        muscleRegion = Exercise.MuscleRegion.UPPER_CHEST,
     ),
     // Dumbbell chest
     Exercise(
@@ -152,6 +161,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         ),
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.MID_CHEST,
     ),
     Exercise(
         name = "",
@@ -168,6 +178,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         ),
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.MID_CHEST,
     ),
     Exercise(
         name = "",
@@ -179,6 +190,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_pullover_description",
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.UPPER_CHEST,
     ),
 
     /*
@@ -196,6 +208,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_DEADLIFT,
+        muscleRegion = Exercise.MuscleRegion.LOWER_BACK,
     ),
     Exercise(
         name = "",
@@ -208,6 +221,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_DEADLIFT,
+        muscleRegion = Exercise.MuscleRegion.LOWER_BACK,
     ),
     Exercise(
         name = "",
@@ -219,6 +233,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_barbell_shrug_description",
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.UPPER_BACK,
     ),
     Exercise(
         name = "",
@@ -230,28 +245,19 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_barbell_row_description",
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
         nameResKey = "exercise_barbell_tbar_row_name",
         equipment = Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.QUADRICEPS, Exercise.Muscle.ABS),
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.ABS),
         imageResKey = "barbell_tbar",
         descriptionResKey = "exercise_barbell_tbar_row_description",
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
-    ),
-    Exercise(
-        name = "",
-        nameResKey = "exercise_barbell_upright_row_name",
-        equipment = Equipment.BARBELL,
-        primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.SHOULDERS),
-        imageResKey = "generic_barbell",
-        descriptionResKey = "exercise_barbell_upright_row_description",
-        firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
-        wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
 
     // Cables back
@@ -266,6 +272,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_cable_row_description",
         firstPhase = Exercise.FirstPhase.PARALLEL,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
@@ -277,17 +284,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_cable_pullover_description",
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
-    ),
-    Exercise(
-        name = "",
-        nameResKey = "exercise_cable_upright_row_name",
-        equipment = Equipment.CABLES,
-        primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
-        imageResKey = "generic_cable",
-        descriptionResKey = "exercise_cable_upright_row_description",
-        firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
-        wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
 
     // Bodyweight back
@@ -307,24 +304,29 @@ val INITIAL_EXERCISE_DATA = listOf(
         ),
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_PULL_UP,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
         nameResKey = "exercise_wide_grip_pullup_name",
         equipment = Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        secondaryMuscles = listOf(
+            Exercise.Muscle.BICEPS,
+            Exercise.Muscle.SHOULDERS
+        ),
         imageResKey = "wide_pull_up",
         descriptionResKey = "exercise_wide_grip_pullup_description",
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_PULL_UP,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
         nameResKey = "exercise_chinup_name",
         equipment = Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.BICEPS),
+        secondaryMuscles = listOf(Exercise.Muscle.BICEPS, Exercise.Muscle.SHOULDERS),
         imageResKey = "chin_up",
         descriptionResKey = "exercise_chinup_description",
         variationsResKeys = listOf(
@@ -332,6 +334,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         ),
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_PULL_UP,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
@@ -349,6 +352,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_muscleup_description",
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
+        muscleRegion = Exercise.MuscleRegion.LATS,
+        suggestOnlyIfPerformed = true,
     ),
     Exercise(
         name = "",
@@ -361,6 +366,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
 
     // Machine back
@@ -375,6 +381,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "row_machine",
         firstPhase = Exercise.FirstPhase.PARALLEL,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
@@ -388,6 +395,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_BACK_EXTENSION,
+        muscleRegion = Exercise.MuscleRegion.LOWER_BACK,
     ),
     Exercise(
         name = "",
@@ -404,6 +412,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_LAT_PULL_DOWN,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
@@ -415,6 +424,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "vertical_traction",
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
 
     // Dumbbell back
@@ -431,6 +441,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         // This could be tracked but it is one arm at a time so would only have half the data
         wearRepTrackable = Exercise.WearRepTrackable.NOT_TRACKABLE,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_DUMBBELL_ROW,
+        muscleRegion = Exercise.MuscleRegion.LATS,
     ),
     Exercise(
         name = "",
@@ -443,6 +454,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_DEADLIFT,
+        muscleRegion = Exercise.MuscleRegion.LOWER_BACK,
     ),
     Exercise(
         name = "",
@@ -454,17 +466,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_dumbbell_shrug_description",
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
-    ),
-    Exercise(
-        name = "",
-        nameResKey = "exercise_upright_dumbbell_row_name",
-        equipment = Equipment.DUMBBELL,
-        primaryMuscle = Exercise.Muscle.BACK,
-        secondaryMuscles = listOf(Exercise.Muscle.SHOULDERS),
-        descriptionResKey = "exercise_upright_dumbbell_row_description",
-        imageResKey = "dumbbell_upright_row",
-        firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
-        wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.UPPER_BACK,
     ),
 
     /*
@@ -484,6 +486,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_CRUNCH,
+        muscleRegion = Exercise.MuscleRegion.ABS,
     ),
 
     // Bodyweight abs
@@ -499,6 +502,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_CRUNCH,
+        muscleRegion = Exercise.MuscleRegion.ABS,
     ),
     Exercise(
         name = "",
@@ -508,7 +512,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_knee_raises_desc",
-        imageResKey = "knee_raises"
+        imageResKey = "knee_raises",
+        muscleRegion = Exercise.MuscleRegion.LOWER_ABS,
     ),
     Exercise(
         name = "",
@@ -520,6 +525,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_leg_raises_desc",
         imageResKey = "leg_raises",
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_LEG_RAISE,
+        muscleRegion = Exercise.MuscleRegion.LOWER_ABS,
     ),
     Exercise(
         name = "",
@@ -532,6 +538,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "plank",
         isDurationBased = true,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_PLANK,
+        muscleRegion = Exercise.MuscleRegion.DEEP_CORE,
     ),
     Exercise(
         name = "",
@@ -544,6 +551,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.PARALLEL,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_UPPER_TWIST,
+        muscleRegion = Exercise.MuscleRegion.OBLIQUES,
     ),
     Exercise(
         name = "",
@@ -552,7 +560,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         primaryMuscle = Exercise.Muscle.ABS,
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_side_plank_desc",
-        imageResKey = "side_plank"
+        imageResKey = "side_plank",
+        muscleRegion = Exercise.MuscleRegion.OBLIQUES,
     ),
     Exercise(
         name = "",
@@ -565,6 +574,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_SIT_UP,
+        muscleRegion = Exercise.MuscleRegion.ABS,
     ),
     Exercise(
         name = "",
@@ -576,6 +586,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "side_crunch",
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.OBLIQUES,
     ),
     Exercise(
         name = "",
@@ -585,7 +596,9 @@ val INITIAL_EXERCISE_DATA = listOf(
         secondaryMuscles = emptyList(),
         descriptionResKey = "exercise_dragon_flag_desc",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
-        imageResKey = "dragon_flag"
+        imageResKey = "dragon_flag",
+        muscleRegion = Exercise.MuscleRegion.LOWER_ABS,
+        suggestOnlyIfPerformed = true,
     ),
     Exercise(
         name = "",
@@ -597,6 +610,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "ab_roller",
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         firstPhase = Exercise.FirstPhase.PARALLEL,
+        muscleRegion = Exercise.MuscleRegion.DEEP_CORE,
     ),
 
     // Machine abs
@@ -610,6 +624,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "ab_machine",
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.ABS,
     ),
 
     // Dumbbell abs
@@ -623,6 +638,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "generic_dumbbell",
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.OBLIQUES,
     ),
 
     /*
@@ -936,6 +952,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        suggestOnlyIfPerformed = true,
     ),
     Exercise(
         name = "",
@@ -974,7 +991,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         nameResKey = "exercise_romanian_deadlift_name",
         equipment = Equipment.BARBELL,
         primaryMuscle = Exercise.Muscle.HAMSTRINGS,
-        secondaryMuscles = listOf(Exercise.Muscle.GLUTES),
+        secondaryMuscles = listOf(Exercise.Muscle.GLUTES, Exercise.Muscle.BACK),
         imageResKey = "romanian_deadlift",
         descriptionResKey = "exercise_romanian_deadlift_description",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
@@ -1061,6 +1078,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         equipment = Equipment.BODY_WEIGHT,
         primaryMuscle = Exercise.Muscle.QUADRICEPS,
         secondaryMuscles = listOf(Exercise.Muscle.GLUTES),
+        difficulty = Exercise.ExerciseDifficulty.BEGINNER,
         descriptionResKey = "exercise_bodyweight_lunge_description",
         imageResKey = "lunge",
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
@@ -1284,6 +1302,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_BARBELL_SHOULDER_PRESS,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
     ),
     Exercise(
         name = "",
@@ -1297,6 +1316,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_BARBELL_SHOULDER_PRESS,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
     ),
     Exercise(
         name = "",
@@ -1316,6 +1336,20 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_BARBELL_SHOULDER_PRESS,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
+        suggestOnlyIfPerformed = true,
+    ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_barbell_upright_row_name",
+        equipment = Equipment.BARBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.BACK, Exercise.Muscle.BICEPS),
+        imageResKey = "generic_barbell",
+        descriptionResKey = "exercise_barbell_upright_row_description",
+        firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
+        wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATERAL_DELT,
     ),
     // Cables
     Exercise(
@@ -1328,6 +1362,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "cable_side_raise",
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
+        muscleRegion = Exercise.MuscleRegion.LATERAL_DELT,
     ),
     Exercise(
         name = "",
@@ -1339,6 +1374,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "cable_delt_fly",
         firstPhase = Exercise.FirstPhase.PARALLEL,
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
+        muscleRegion = Exercise.MuscleRegion.REAR_DELT,
     ),
     Exercise(
         name = "",
@@ -1350,6 +1386,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "cable_face_pull",
         firstPhase = Exercise.FirstPhase.PARALLEL,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.REAR_DELT,
     ),
     Exercise(
         name = "",
@@ -1362,6 +1399,19 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_SHOULDER_PRESS,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
+    ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_cable_upright_row_name",
+        equipment = Equipment.CABLES,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.BACK, Exercise.Muscle.BICEPS),
+        imageResKey = "generic_cable",
+        descriptionResKey = "exercise_cable_upright_row_description",
+        firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
+        wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATERAL_DELT,
     ),
     // Bodyweight
     Exercise(
@@ -1374,6 +1424,8 @@ val INITIAL_EXERCISE_DATA = listOf(
         descriptionResKey = "exercise_handstand_pushups_desc",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
         firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
+        suggestOnlyIfPerformed = true,
     ),
     Exercise(
         name = "",
@@ -1384,7 +1436,9 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "planche",
         descriptionResKey = "exercise_planche_desc",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
-        isDurationBased = true
+        isDurationBased = true,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
+        suggestOnlyIfPerformed = true,
     ),
     Exercise(
         name = "",
@@ -1395,7 +1449,9 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "front_lever",
         descriptionResKey = "exercise_front_lever_desc",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
-        isDurationBased = true
+        isDurationBased = true,
+        muscleRegion = Exercise.MuscleRegion.REAR_DELT,
+        suggestOnlyIfPerformed = true,
     ),
     Exercise(
         name = "",
@@ -1406,7 +1462,9 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "back_lever",
         descriptionResKey = "exercise_back_lever_desc",
         difficulty = Exercise.ExerciseDifficulty.ADVANCED,
-        isDurationBased = true
+        isDurationBased = true,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
+        suggestOnlyIfPerformed = true,
     ),
     // Machine
     Exercise(
@@ -1421,6 +1479,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_SHOULDER_PRESS,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
     ),
     // Dumbbell
     Exercise(
@@ -1435,6 +1494,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_DUMBBELL_FRONT_RAISE,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
     ),
     Exercise(
         name = "",
@@ -1448,6 +1508,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_DUMBBELL_LATERAL_RAISE,
+        muscleRegion = Exercise.MuscleRegion.LATERAL_DELT,
     ),
     Exercise(
         name = "",
@@ -1464,6 +1525,7 @@ val INITIAL_EXERCISE_DATA = listOf(
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
         healthExerciseSegmentType = EXERCISE_SEGMENT_TYPE_SHOULDER_PRESS,
+        muscleRegion = Exercise.MuscleRegion.SHOULDERS,
     ),
     Exercise(
         name = "",
@@ -1475,5 +1537,18 @@ val INITIAL_EXERCISE_DATA = listOf(
         imageResKey = "dumbbell_row_standing",
         firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
         wearRepTrackable = Exercise.WearRepTrackable.ROTATION_MOVEMENT,
+        muscleRegion = Exercise.MuscleRegion.REAR_DELT,
+    ),
+    Exercise(
+        name = "",
+        nameResKey = "exercise_upright_dumbbell_row_name",
+        equipment = Equipment.DUMBBELL,
+        primaryMuscle = Exercise.Muscle.SHOULDERS,
+        secondaryMuscles = listOf(Exercise.Muscle.BACK, Exercise.Muscle.BICEPS),
+        descriptionResKey = "exercise_upright_dumbbell_row_description",
+        imageResKey = "dumbbell_upright_row",
+        firstPhase = Exercise.FirstPhase.AGAINST_GRAVITY,
+        wearRepTrackable = Exercise.WearRepTrackable.SUPPORTED,
+        muscleRegion = Exercise.MuscleRegion.LATERAL_DELT,
     ),
 )
