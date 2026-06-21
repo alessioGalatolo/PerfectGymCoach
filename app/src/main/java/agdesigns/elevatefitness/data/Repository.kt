@@ -205,7 +205,7 @@ class Repository @Inject constructor(
         }
 
     suspend fun addProgramExercise(exercise: ProgramExercise): Long =
-        db.programExerciseDao.insert(exercise)
+        db.programExerciseDao.upsert(exercise)
 
     suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =
         db.programExerciseDao.updateOrder(programExerciseReorders)

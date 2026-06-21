@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.proto)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 protobuf {
@@ -99,6 +100,12 @@ dependencies {
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
     implementation(project(":shared"))
+    // nav3
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.wear.navigation3)
+    implementation(libs.kotlinx.serialization.json)
+
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.service)
     implementation(libs.room.runtime)

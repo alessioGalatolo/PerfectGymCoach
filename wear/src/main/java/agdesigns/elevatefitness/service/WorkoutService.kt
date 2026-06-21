@@ -56,20 +56,20 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import java.time.Duration
 import javax.inject.Inject
 import kotlin.math.sqrt
@@ -152,6 +152,42 @@ class WorkoutService: LifecycleService() {
     private val _otherAppInProgress = MutableStateFlow(false)
     val otherAppInProgress: StateFlow<Boolean> = _otherAppInProgress.asStateFlow()
 
+    private val _exerciseMetrics = MutableSharedFlow<ExerciseMetrics>(
+        replay = 1,
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    private val exerciseUpdateCallback = object : ExerciseUpdateCallback {
+        override fun onRegistered() { }
+
+        override fun onRegistrationFailed(throwable: Throwable) {
+            Log.e(TAG, "Exercise registration failed", throwable)
+        }
+
+        override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
+            val latestMetrics = update.latestMetrics
+            val heartRate = latestMetrics.getData(DataType.HEART_RATE_BPM).map {
+                it.timeDurationFromBoot to it.value
+            }
+            val caloriesTotal = latestMetrics.getData(DataType.CALORIES_TOTAL)?.total
+            val heartBeatStats = latestMetrics.getData(DataType.HEART_RATE_BPM_STATS)
+            _exerciseMetrics.tryEmit(
+                ExerciseMetrics(
+                    totalCalories = caloriesTotal,
+                    heartRates = heartRate,
+                    maxHeartRate = heartBeatStats?.max,
+                    averageHeartRate = heartBeatStats?.average,
+                    minHeartRate = heartBeatStats?.min
+                )
+            )
+        }
+
+        override fun onLapSummaryReceived(lapSummary: ExerciseLapSummary) {}
+
+        override fun onAvailabilityChanged(dataType: DataType<*, *>, availability: Availability) { }
+    }
+
     // Saved for use when user confirms overriding another app's exercise
     private var pendingExerciseType: ExerciseType? = null
     private var pendingCanCollectCalories: Boolean = false
@@ -180,55 +216,7 @@ class WorkoutService: LifecycleService() {
         val minHeartRate: Double? = null
     )
 
-    fun exerciseMetricsFlow() = callbackFlow {
-        val callback = object : ExerciseUpdateCallback {
-            override fun onRegistered() {}
-
-            override fun onRegistrationFailed(throwable: Throwable) {
-                Log.e(TAG, "Exercise registration failed", throwable)
-            }
-
-            override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
-
-                val latestMetrics = update.latestMetrics
-
-                val heartRate = latestMetrics.getData(DataType.HEART_RATE_BPM).map {
-                    it.timeDurationFromBoot to it.value
-                }
-
-                val caloriesTotal = latestMetrics.getData(DataType.CALORIES_TOTAL)?.total
-
-                val heartBeatStats = latestMetrics.getData(DataType.HEART_RATE_BPM_STATS)
-
-                trySendBlocking(
-                    ExerciseMetrics(
-                        totalCalories = caloriesTotal,
-                        heartRates = heartRate,
-                        maxHeartRate = heartBeatStats?.max,
-                        averageHeartRate = heartBeatStats?.average,
-                        minHeartRate = heartBeatStats?.min
-                    )
-                )
-            }
-
-            override fun onLapSummaryReceived(lapSummary: ExerciseLapSummary) {}
-
-            override fun onAvailabilityChanged(
-                dataType: DataType<*, *>,
-                availability: Availability
-            ) {
-                Log.d(TAG, "Availability changed: $dataType -> $availability")
-            }
-        }
-        exerciseClient.setUpdateCallback(callback)
-
-        awaitClose {
-            Log.d(TAG, "Unregistering for data")
-            runBlocking {
-                exerciseClient.clearUpdateCallback(callback)
-            }
-        }
-    }
+    fun exerciseMetricsFlow(): SharedFlow<ExerciseMetrics> = _exerciseMetrics.asSharedFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun repCountFlow(): Flow<Int?> = _activeExerciseId.flatMapLatest { id ->
@@ -282,7 +270,6 @@ class WorkoutService: LifecycleService() {
 
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
-
         handleBind()
 
         return localBinder
@@ -437,6 +424,7 @@ class WorkoutService: LifecycleService() {
             isGpsEnabled = false,
         )
         exerciseClient.startExercise(exerciseConfig)
+        exerciseClient.setUpdateCallback(exerciseUpdateCallback)
     }
 
     fun confirmKillOtherApp() {
@@ -480,7 +468,11 @@ class WorkoutService: LifecycleService() {
                         rotationMovement = rotationMovement,
                 )
             repAndTempoCounters[exerciseId] = RepAndTempoCounter(
-                initialParams,
+                // only necessary due to a bug in the last db migration, can remove the copy later
+                initialParams.copy(
+                    firstPhase = firstPhase,
+                    rotationMovement = rotationMovement
+                ),
                 accelOffset = calibrationDataStore.accelNoiseFloor.first()
             )
         }
@@ -554,12 +546,20 @@ class WorkoutService: LifecycleService() {
         stopSetTracking()
         val counters = repAndTempoCounters.values.map { it.getTunedParameters().toEntity() }
         repAndTempoCounters.clear()
-        lifecycleScope.launch { counters.forEach { exerciseParamsDao.upsert(it) } }
+        lifecycleScope.launch {
+            counters.forEach { exerciseParamsDao.upsert(it) }
+            try {
+                exerciseClient.clearUpdateCallback(exerciseUpdateCallback)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error clearing exercise callback", e)
+            }
+        }
 
         if (serviceRunningInForeground) {
             Log.d(TAG, "Removing ongoing activity notification")
             stopForeground(STOP_FOREGROUND_REMOVE)
         }
+        stopSelfIfNotRunning()
     }
 
 

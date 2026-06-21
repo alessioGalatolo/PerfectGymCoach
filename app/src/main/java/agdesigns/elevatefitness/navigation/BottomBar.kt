@@ -19,6 +19,7 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -58,20 +59,20 @@ data object ProfileDestination: BottomBarDestination {
 context(sharedTransitionScope: SharedTransitionScope)
 fun EntryProviderScope< Any>.bottomBarEntryBuilder(
     destinationsNavigator: DestinationsNavigator,
-    primaryActionOrigin: MutableState<Any?>,
-    primaryActionContent: MutableState<PrimaryActionContent?>,
+    setPrimaryAction: (origin: Route, PrimaryActionContent) -> Unit,
     refreshContentFlow: MutableSharedFlow<Any>,
+    fabOverlapHeight: () -> Dp,
 ) {
     with (sharedTransitionScope) {
         entry<HomeDestination>(metadata = FadeTransition) {
             Home(
                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                 navigator = destinationsNavigator,
-                changePrimaryActionContent = {
-                    primaryActionOrigin.value = HomeDestination
-                    primaryActionContent.value = it
+                changePrimaryActionContent = { newFab ->
+                    setPrimaryAction(it, newFab)
                 },
-                refreshContentRequest = refreshContentFlow
+                refreshContentRequest = refreshContentFlow,
+                fabHeight = fabOverlapHeight,
             )
         }
         entry<HistoryDestination>(metadata = FadeTransition + ListDetailSceneStrategy.listPane(sceneKey = HistoryDetailSceneKey)) {

@@ -24,6 +24,7 @@ import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.os.Build
+import android.os.SystemClock
 import androidx.annotation.StringRes
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoFlow
@@ -44,6 +45,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -121,6 +123,9 @@ data class WorkoutState(
     val calibrationComplete: Boolean = false,
     val calibrationStarted: ZonedDateTime? = null,
     val lastSetResult: RepAndTempoCounter.SetResult? = null,
+    // metrics from watch (e.g., calories and HR) will arrive with an offset from start of workout, record that offset to align metrics with exercises and sets
+    val exerciseStartEpochMillis: Long? = null,
+    val firstHRTimeSinceBootSecs: Long? = null,
 )
 
 sealed class WorkoutEvent {
@@ -238,9 +243,6 @@ class WorkoutViewModel
             }
         }
         viewModelScope.launch {
-            // ensure binding happens
-            // wait until the service is available once, then start
-            repository.bindForegroundOnlyService()
             repository.startWorkout()
         }
         viewModelScope.launch {
@@ -291,17 +293,32 @@ class WorkoutViewModel
         viewModelScope.launch {
             // FIXME: do not user service directly
             repository.service
-                .flatMapLatest { it?.exerciseMetricsFlow() ?: flowOf(WorkoutService.ExerciseMetrics()) }
+                .flatMapLatest {
+                    it?.exerciseMetricsFlow() ?: flowOf(null)
+                }
+                .filterNotNull()
                 .collect {
                     _state.update { state ->
                         val secondsToHR = state.heartRateBySecond.toMutableMap()
+                        val firstHeartRateTime = it.heartRates.firstOrNull()?.first?.toMillis()
+                        val estimatedWorkoutStartEpochTime = state.exerciseStartEpochMillis ?:
+                            // this is the first emission, get the time of the first heart rate data
+                            // point and use that as the start time of the workout to align future metrics with exercises and sets
+                            if (firstHeartRateTime != null) {
+                                val currentTimeSinceBoot = SystemClock.elapsedRealtime()
+                                val currentEpochTime = System.currentTimeMillis()
+                                currentEpochTime - currentTimeSinceBoot + firstHeartRateTime
+                            } else null
+                        val firstHRTimeSinceBoot = state.firstHRTimeSinceBootSecs ?: firstHeartRateTime?.div(1000L)
+
                         it.heartRates.forEach {
+                            // this is time since boot
                             val timeInSeconds = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 it.first.toSeconds()
                             } else {
                                 it.first.toMillis() / 1000L
                             }
-                            secondsToHR[timeInSeconds] = it.second.toInt()
+                            secondsToHR[timeInSeconds-(firstHRTimeSinceBoot ?: 0L)] = it.second.toInt()
                         }
                         state.copy(
                             totalCalories = it.totalCalories ?: state.totalCalories,
@@ -311,7 +328,9 @@ class WorkoutViewModel
                             maxHeartRate = it.maxHeartRate?.toInt() ?: state.maxHeartRate,
                             averageHeartRate = it.averageHeartRate?.toInt() ?: state.averageHeartRate,
                             minHeartRate = it.minHeartRate?.toInt() ?: state.minHeartRate,
-                            heartRateBySecond = secondsToHR.toMap()
+                            heartRateBySecond = secondsToHR.toMap(),
+                            exerciseStartEpochMillis = estimatedWorkoutStartEpochTime,
+                            firstHRTimeSinceBootSecs = firstHRTimeSinceBoot
                         )
                     }
                 }
@@ -374,6 +393,9 @@ class WorkoutViewModel
                     state.value.heartRateBySecond.toList().sortedBy {
                         it.first
                     }.interpolateMissingValues().map { it.second }
+                )
+                .setWatchExerciseStartEpochMillis(
+                    state.value.exerciseStartEpochMillis ?: 0L
                 )
                 .build()
         }
@@ -559,6 +581,9 @@ class WorkoutViewModel
                                     state.value.heartRateBySecond.toList().sortedBy {
                                         it.first
                                     }.interpolateMissingValues().map { it.second }
+                                )
+                                .setWatchExerciseStartEpochMillis(
+                                    state.value.exerciseStartEpochMillis ?: 0L
                                 )
                                 .build()
                         )

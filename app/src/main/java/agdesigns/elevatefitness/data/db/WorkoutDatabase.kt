@@ -49,7 +49,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -101,7 +101,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_9_10,
                     MIGRATION_10_11,
                     MIGRATION_11_12,
-                    MIGRATION_12_13
+                    MIGRATION_12_13,
+                    MIGRATION_13_14
                 )
                     .build()
                     .also { instance = it }
@@ -265,6 +266,14 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
         )
         db.execSQL(
             "ALTER TABLE Exercise ADD COLUMN suggestOnlyIfPerformed INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
+
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE WorkoutRecord ADD COLUMN watchOffsetSeconds INTEGER"
         )
     }
 }

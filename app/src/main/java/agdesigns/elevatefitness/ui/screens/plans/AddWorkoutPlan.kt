@@ -12,6 +12,7 @@ import agdesigns.elevatefitness.navigation.AddProgramDestination
 import agdesigns.elevatefitness.navigation.ArchivedPlansDestination
 import agdesigns.elevatefitness.navigation.CustomizePlanGenerationDestination
 import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.navigation.PrimaryActionContent
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.GroupedCard
@@ -79,6 +80,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.rememberAsyncImagePainter
@@ -96,8 +98,23 @@ import kotlin.math.abs
 fun AddWorkoutPlan(
     navigator: DestinationsNavigator,
     openDialogNow: Boolean = false,
+    changePrimaryActionContent: (PrimaryActionContent) -> Unit,
+    fabHeight: () -> Dp,
     viewModel: PlansViewModel = hiltViewModel()
 ) {
+    // FABs are placed by parent, notify what to put
+    LaunchedEffect(Unit) {
+        changePrimaryActionContent(
+            PrimaryActionContent(
+                icon = Icons.Default.Add,
+                labelId = R.string.add_icon_workout_plan,
+                onClick = {
+                    viewModel.onEvent(PlansEvent.TogglePlanDialogue)
+                }
+            )
+        )
+    }
+
     val state by viewModel.state.collectAsState()
     // rename plan
     InsertNameDialog(
@@ -267,18 +284,6 @@ fun AddWorkoutPlan(
                 },
                 scrollBehavior = scrollBehavior
             )
-        }, floatingActionButton = {
-            MediumFloatingActionButton (
-                onClick = {
-                    viewModel.onEvent(PlansEvent.TogglePlanDialogue)
-                },
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.add_icon_workout_plan),
-                    modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize),
-                )
-            }
         }) { innerPadding ->
         if (state.workoutPlanMapPrograms.isEmpty() && state.mainPlanMapPrograms == null) {
             // if you have no plans
@@ -601,9 +606,7 @@ fun AddWorkoutPlan(
                     }
                 }
                 item(key = "bottomSpacers"){
-                    var finalSpacerSize = 80.dp + 16.dp // large fab size + its padding FIXME: not hardcode
-                    finalSpacerSize += 16.dp
-                    Spacer(Modifier.height(finalSpacerSize))
+                    Spacer(Modifier.height(fabHeight() + 16.dp))
                 }
             }
         }

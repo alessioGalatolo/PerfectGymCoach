@@ -163,7 +163,7 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 overriddenDurationBased = state.value.overriddenDurationBased,
                                 setTypes = state.value.setTypesArray,
                                 wearRepTrackable = state.value.exercise!!.wearRepTrackable,
-                                firstPhase = state.value.exercise!!.firstPhase
+                                firstPhase = state.value.exercise!!.firstPhase,
                             )
                         )
                     }
@@ -184,7 +184,8 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                                 else
                                     "",
                                 overriddenDurationBased = state.value.overriddenDurationBased,
-                                setTypes = state.value.setTypesArray
+                                setTypes = state.value.setTypesArray,
+                                supersetExercise = state.value.programExercise?.supersetExercise
                             )
                         )
                     }

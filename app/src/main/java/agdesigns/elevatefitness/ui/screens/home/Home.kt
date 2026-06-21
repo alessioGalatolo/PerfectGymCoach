@@ -18,6 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
@@ -78,7 +79,8 @@ fun SharedTransitionScope.Home(
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
     refreshContentRequest: SharedFlow<Any>,
-    changePrimaryActionContent: (PrimaryActionContent?) -> Unit,
+    changePrimaryActionContent: (PrimaryActionContent) -> Unit,
+    fabHeight: () -> Dp,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -95,7 +97,7 @@ fun SharedTransitionScope.Home(
     }
 
     // FABs are placed by parent, notify what to put
-    DisposableEffect(state.currentPlan) {
+    LaunchedEffect(state.currentPlan) {
         changePrimaryActionContent (
             if (state.currentPlan == null)
                 PrimaryActionContent(
@@ -107,11 +109,19 @@ fun SharedTransitionScope.Home(
                         )
                     }
                 )
-            else null
+            else {
+                PrimaryActionContent(
+                    icon = Icons.Default.ContentPaste,
+                    labelId = R.string.change_workout_plan,
+                    showLabel = true,
+                    onClick = {
+                        navigator.navigate(
+                            AddWorkoutPlanDestination(openDialogNow = false)
+                        )
+                    }
+                )
+            }
         )
-        onDispose {
-            changePrimaryActionContent(null)
-        }
     }
 
     var resumeWorkoutPossible by remember {
@@ -620,28 +630,7 @@ fun SharedTransitionScope.Home(
                     }
                 }
                 item {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        TextButton(
-                            onClick = {
-                                navigator.navigate(
-                                    AddWorkoutPlanDestination()
-                                )
-                            }, modifier = Modifier.align(Alignment.CenterHorizontally)
-                        ) { Text(stringResource(R.string.change_workout_plan)) }
-                        TextButton(onClick = {
-                            navigator.navigate(
-                                AddProgramDestination(
-                                    planId = state.currentPlan!!
-                                )
-                            )
-                        }) {
-                            Text(stringResource(R.string.change_programs))
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+                    Spacer(modifier = Modifier.height(fabHeight() + 16.dp))
                 }
             }
         }

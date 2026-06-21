@@ -872,7 +872,8 @@ class WorkoutViewModel @Inject constructor(
                         maxHeartRate = if (healthData.maxHeartRate != 0) healthData.maxHeartRate else null,
                         minHeartRate = if (healthData.minHeartRate != 0) healthData.minHeartRate else null,
                         avgHeartRate = if (healthData.avgHeartRate != 0) healthData.avgHeartRate else null,
-                        heartRates = if (healthData.heartRatesCount > 0) healthData.heartRatesList.toList() else null
+                        heartRates = if (healthData.heartRatesCount > 0) healthData.heartRatesList.toList() else null,
+                        watchExerciseStartEpochMillis = if (healthData.watchExerciseStartEpochMillis != 0L) healthData.watchExerciseStartEpochMillis else null
                     )
                 }
             }
@@ -1927,7 +1928,8 @@ class WorkoutViewModel @Inject constructor(
                     maxHeartRate = if (workout.maxHeartRate != 0) workout.maxHeartRate else null,
                     minHeartRate = if (workout.minHeartRate != 0) workout.minHeartRate else null,
                     avgHeartRate = if (workout.avgHeartRate != 0) workout.avgHeartRate else null,
-                    heartRates = if (workout.heartRatesCount > 0) workout.heartRatesList.toList() else null
+                    heartRates = if (workout.heartRatesCount > 0) workout.heartRatesList.toList() else null,
+                    watchExerciseStartEpochMillis = if (workout.watchExerciseStartEpochMillis != 0L) workout.watchExerciseStartEpochMillis else null
                 )
             }
         }
@@ -1991,7 +1993,8 @@ class WorkoutViewModel @Inject constructor(
         maxHeartRate: Int? = null,
         minHeartRate: Int? = null,
         avgHeartRate: Int? = null,
-        heartRates: List<Int>? = emptyList()
+        heartRates: List<Int>? = emptyList(),
+        watchExerciseStartEpochMillis: Long? = null
     ) {
         val exercises = repository.getWorkoutExerciseRecordsAndInfo(workoutState.value.workoutId).first().distinct()
         // add all exercises with no records to modifications as skipped
@@ -2014,6 +2017,22 @@ class WorkoutViewModel @Inject constructor(
         val workoutTimeSeconds = workoutTimeMillis / 1000
         // intensity is 0-100, need to convert within reasonable met values
         val intensityMet = getMetFromIntensity(intensity)
+
+        // Align watch data to phone workout start if the watch started later
+        val phoneStartEpochMillis = workoutState.value.startDate!!.toInstant().toEpochMilli()
+        val watchOffsetSeconds = if (watchExerciseStartEpochMillis != null && watchExerciseStartEpochMillis > 0L) {
+            (watchExerciseStartEpochMillis - phoneStartEpochMillis) / 1000L
+        } else 0L
+
+        // Extrapolate calories for the period before the watch started tracking
+        val adjustedCalories = if (calories != null && watchOffsetSeconds > 0L) {
+            val watchDurationSeconds = workoutTimeSeconds - watchOffsetSeconds
+            if (watchDurationSeconds > 0L) {
+                val ratePerSecond = calories / watchDurationSeconds
+                calories + ratePerSecond * watchOffsetSeconds
+            } else calories
+        } else calories
+
         repository.completeWorkoutRecord(
             WorkoutRecordFinish(
                 workoutId = workoutState.value.workoutId,
@@ -2029,14 +2048,15 @@ class WorkoutViewModel @Inject constructor(
                     ).toDouble() },
                 activeTimeSeconds = max(0L, workoutTimeSeconds -
                         exercises.sumOf { it.rest.sum() }),
-                calories = calories ?: (intensityMet *
+                calories = adjustedCalories ?: (intensityMet *
                         preferences.getUserWeight().first() *
                         workoutTimeSeconds / 3600),
                 workoutModifications = workoutModifications,
                 heartRates = heartRates,
                 maxHeartRate = maxHeartRate,
                 minHeartRate = minHeartRate,
-                avgHeartRate = avgHeartRate
+                avgHeartRate = avgHeartRate,
+                watchOffsetSeconds = watchOffsetSeconds
             )
         )
         val planPrograms = repository.getPlanMapPrograms().first().entries.find {

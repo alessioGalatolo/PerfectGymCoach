@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -269,6 +270,12 @@ class WearRepository @Inject constructor(
     /* Other stuff */
     private var foregroundOnlyServiceBound = false
 
+    // True from the moment bindService() is called until unbindService() is called, regardless
+    // of whether onServiceConnected has fired yet. Prevents stopForegroundOnlyService() from
+    // skipping unbindService() when the callback hasn't arrived yet (which leaves a dangling bind
+    // that keeps the service alive but permanently silences future onServiceConnected calls).
+    private var serviceBindRequested = false
+
     var foregroundOnlyWorkoutService: WorkoutService? = null
         private set
 
@@ -287,13 +294,15 @@ class WearRepository @Inject constructor(
         foregroundOnlyWorkoutService?.stopWorkout()
     }
 
-
-    private val connection = object : ServiceConnection {
+    // A fresh ServiceConnection is created for each bind cycle. Reusing the same instance across
+    // unbind→rebind can cause Android to silently skip onServiceConnected when the two calls race
+    // (e.g. rapid onStop/onStart on Wear OS screen-off), leaving _service permanently null.
+    private fun createConnection() = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             val binder = service as WorkoutService.LocalBinder
             foregroundOnlyWorkoutService = binder.workoutService
             foregroundOnlyServiceBound = true
-            _service.value = foregroundOnlyWorkoutService
+            _service.update { foregroundOnlyWorkoutService }
         }
         override fun onServiceDisconnected(name: ComponentName) {
             foregroundOnlyWorkoutService = null
@@ -301,6 +310,8 @@ class WearRepository @Inject constructor(
             _service.value = null
         }
     }
+
+    private var connection: ServiceConnection = createConnection()
 
     suspend fun startWorkout() {
         service.filterNotNull().first().startWorkout()
@@ -315,6 +326,8 @@ class WearRepository @Inject constructor(
     }
 
     fun bindForegroundOnlyService() {
+        if (serviceBindRequested) return
+        serviceBindRequested = true
         val intent = Intent(context, WorkoutService::class.java)
         // If it's a foreground service that must actually run, start it as well:
         // ContextCompat.startForegroundService(context, intent)
@@ -322,8 +335,11 @@ class WearRepository @Inject constructor(
     }
 
     fun stopForegroundOnlyService() {
-        if (foregroundOnlyServiceBound) {
-            context.unbindService(connection)
+        if (serviceBindRequested) {
+            serviceBindRequested = false
+            val oldConnection = connection
+            connection = createConnection() // fresh connection ensures onServiceConnected fires on next bind
+            context.unbindService(oldConnection)
             foregroundOnlyServiceBound = false
             _service.value = null
         }

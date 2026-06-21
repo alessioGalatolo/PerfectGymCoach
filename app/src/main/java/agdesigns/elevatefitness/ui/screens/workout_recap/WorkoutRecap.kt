@@ -323,6 +323,7 @@ fun WorkoutRecap(
                                     HrZoneCard(
                                         heartRates = record.heartRates,
                                         durationSeconds = record.durationSeconds,
+                                        userAge = state.userAge,
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
@@ -385,8 +386,8 @@ fun WorkoutRecap(
                                 }
                             )
 
-                            val zoneDecorations = remember {
-                                HrZones.filter {
+                            val zoneDecorations = remember(state.userAge, state.minHR, state.maxHR) {
+                                hrZonesForAge(state.userAge).filter {
                                     it.maxBpm > state.minHR &&
                                             it.minBpm < state.maxHR
                                 }.map { zone ->
@@ -929,24 +930,30 @@ data class HrZone(
     val color: Color
 )
 
-private val HrZones = listOf(
-    HrZone(R.string.hr_zone_warm_up, 0.0,   100.0, Color(0xFF42A5F5)), // light blue
-    HrZone(R.string.hr_zone_light, 100.0, 120.0, Color(0xFF66BB6A)), // green
-    HrZone(R.string.hr_zone_aerobic, 120.0, 140.0, Color(0xFFFFEE58)), // yellow
-    HrZone(R.string.hr_zone_anaerobic, 140.0, 160.0, Color(0xFFFFA726)), // orange
-    HrZone(R.string.hr_zone_peak, 160.0, 220.0, Color(0xFFEF5350)), // red
-)
+private fun hrZonesForAge(age: Int): List<HrZone> {
+    // TODO: instead get resting HR and use that, should be more accurate
+    val maxHr = (220 - age).toDouble()
+    return listOf(
+        HrZone(R.string.hr_zone_warm_up, 0.0, maxHr * 0.60, Color(0xFF42A5F5)),
+        HrZone(R.string.hr_zone_light, maxHr * 0.60, maxHr * 0.70, Color(0xFF66BB6A)),
+        HrZone(R.string.hr_zone_aerobic, maxHr * 0.70, maxHr * 0.80, Color(0xFFFFEE58)),
+        HrZone(R.string.hr_zone_anaerobic, maxHr * 0.80, maxHr * 0.90, Color(0xFFFFA726)),
+        HrZone(R.string.hr_zone_peak, maxHr * 0.90, maxHr, Color(0xFFEF5350)),
+    )
+}
 
 @Composable
 private fun HrZoneCard(
     heartRates: List<Int>,
     durationSeconds: Long,
+    userAge: Int,
     modifier: Modifier = Modifier,
 ) {
+    val hrZones = hrZonesForAge(userAge)
     // Compute seconds per sample, then tally seconds in each zone
     val secondsPerSample = if (heartRates.isNotEmpty())
         durationSeconds.toDouble() / heartRates.size else 0.0
-    val zoneSeconds = HrZones.map { zone ->
+    val zoneSeconds = hrZones.map { zone ->
         heartRates.count { it >= zone.minBpm && it < zone.maxBpm } * secondsPerSample
     }
     val totalSeconds = zoneSeconds.sum().coerceAtLeast(1.0)
@@ -986,7 +993,7 @@ private fun HrZoneCard(
                     .height(16.dp)
                     .clip(MaterialTheme.shapes.extraSmall)
             ) {
-                HrZones.forEachIndexed { index, zone ->
+                hrZones.forEachIndexed { index, zone ->
                     val fraction = (zoneSeconds[index] / totalSeconds).toFloat()
                     if (fraction > 0f) {
                         Box(
@@ -1003,31 +1010,33 @@ private fun HrZoneCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                HrZones.forEachIndexed { index, zone ->
+                hrZones.forEachIndexed { index, zone ->
                     val minutes = (zoneSeconds[index] / 60.0).toInt()
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(zone.color)
-                        )
-                        Text(
-                            stringResource(R.string.n_min, minutes),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                        Text(
-                            stringResource(zone.nameResId),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                        )
+                    if (minutes > 0) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(zone.color)
+                            )
+                            Text(
+                                stringResource(R.string.n_min, minutes),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                stringResource(zone.nameResId),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }
@@ -1079,7 +1088,7 @@ class FilteredHorizontalAxisItemPlacer(
         layerDimensions: CartesianLayerDimensions,
         fullXRange: ClosedFloatingPointRange<Double>,
         maxLabelWidth: Float,
-    ): List<Double> = listOfNotNull(sortedXValues.firstOrNull())
+    ): List<Double> = listOf(sortedXValues.firstOrNull() ?: 0.0)
 
     override fun getLineValues(
         context: CartesianDrawingContext,

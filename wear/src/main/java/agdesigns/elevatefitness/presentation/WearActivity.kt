@@ -20,12 +20,30 @@ import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import androidx.wear.compose.foundation.LocalAmbientModeManager
 import androidx.wear.compose.foundation.rememberAmbientModeManager
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.navigation3.rememberSwipeDismissableSceneStrategy
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
+import kotlinx.serialization.Serializable
 import javax.inject.Inject
+
+@Serializable
+sealed interface Destination: NavKey {
+    @Serializable
+    data object HomeDestination: Destination
+
+    @Serializable
+    data object WorkoutDestination: Destination
+
+    @Serializable
+    data object SelectValuesDestination: Destination
+}
 
 @AndroidEntryPoint
 class WearActivity : ComponentActivity() {
@@ -34,6 +52,17 @@ class WearActivity : ComponentActivity() {
     lateinit var wearRepository: WearRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // only intent we have now is to autoopen workout "elevatefitnesswear://startworkout"
+        val isOpenWorkoutIntent = intent.data?.let {
+            it.scheme == "elevatefitnesswear" && it.authority == "startworkout"
+        } ?: false
+
+        val initialStack = if (isOpenWorkoutIntent) {
+            listOf(Destination.HomeDestination, Destination.WorkoutDestination)
+        } else {
+            listOf(Destination.HomeDestination)
+        }.toTypedArray()
+
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
@@ -49,44 +78,45 @@ class WearActivity : ComponentActivity() {
                             textColor = MaterialTheme.colorScheme.onBackground,
                         )
                     ) {
-                        val navController = rememberSwipeDismissableNavController()
+                        val backStack = rememberNavBackStack(*initialStack)
+                        val strategy = rememberSwipeDismissableSceneStrategy<NavKey>()
                         AppScaffold {
-                            SwipeDismissableNavHost(
-                                navController = navController,
-                                startDestination = "home"
-                            ) {
-                                composable(route = "home") {
-                                    Home(
-                                        openWorkoutScreen = {
-                                            navController.navigate("workout")
-                                        }
-                                    )
-                                }
-                                composable(
-                                    route = "workout",
-                                    deepLinks = listOf(NavDeepLink("elevatefitnesswear://startworkout"))
-                                ) {
-                                    Workout(
-                                        onBack = {
-                                            navController.navigateUp()
-                                        },
-                                        navigateToSelectValues = {
-                                            navController.navigate("select-values")
-                                        },
-                                        terminate = {
-                                            Log.d("WearActivity", "Terminating")
-                                            this@WearActivity.finish()
-                                        }
-                                    )
-                                }
-                                composable(route = "select-values") {
-                                    val parentEntry = remember(it) {
-                                        navController.getBackStackEntry("workout")
+                            NavDisplay(
+                                backStack = backStack,
+                                sceneStrategies = listOf(strategy),
+                                entryProvider = entryProvider {
+                                    entry<Destination.HomeDestination> {
+                                        Home(
+                                            openWorkoutScreen = {
+                                                backStack.add(Destination.WorkoutDestination)
+                                            }
+                                        )
                                     }
-                                    val viewModel: WorkoutViewModel = hiltViewModel(parentEntry)
-                                    SelectValuesScreen(navController, viewModel)
+                                    entry<Destination.WorkoutDestination> {
+                                        Workout(
+                                            onBack = {
+                                                backStack.removeAt(backStack.lastIndex)
+                                            },
+                                            navigateToSelectValues = {
+                                                backStack.add(Destination.SelectValuesDestination)
+                                            },
+                                            terminate = {
+                                                Log.d("WearActivity", "Terminating")
+                                                this@WearActivity.finish()
+                                            }
+                                        )
+                                    }
+                                    entry<Destination.SelectValuesDestination> {
+//                                        val parentEntry = remember(it) {
+//                                            backStack.entryForKey(Destination.WorkoutDestination)
+//                                        }
+                                        val viewModel: WorkoutViewModel = hiltViewModel(/*parentEntry*/)
+                                        SelectValuesScreen({
+                                            backStack.removeAt(backStack.lastIndex)
+                                        }, viewModel)
+                                    }
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -99,8 +129,9 @@ class WearActivity : ComponentActivity() {
         wearRepository.bindForegroundOnlyService()
     }
 
-    override fun onStop() {
+
+    override fun onDestroy() {
         wearRepository.stopForegroundOnlyService()
-        super.onStop()
+        super.onDestroy()
     }
 }

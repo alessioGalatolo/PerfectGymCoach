@@ -86,7 +86,7 @@ import kotlin.math.floor
 @OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun SelectValuesScreen(
-    navController: NavHostController,
+    onBack: () -> Unit,
     viewModel: WorkoutViewModel
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -206,7 +206,7 @@ fun SelectValuesScreen(
                         if (totalValuePages == 2) {
                             valuesCompleted = true
                             viewModel.onEvent(WorkoutEvent.CompleteSet)
-                            navController.navigateUp()
+                            onBack()
                         } else {
                             page = 2
                         }
@@ -244,7 +244,7 @@ fun SelectValuesScreen(
                     ) {
                         valuesCompleted = true
                         viewModel.onEvent(WorkoutEvent.CompleteSet)
-                        navController.navigateUp()
+                        onBack()
                     }
                 }
 

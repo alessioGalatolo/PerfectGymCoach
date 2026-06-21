@@ -10,12 +10,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 // used when navigating back with a result
 class ResultKey<T>(val id: String)
 
-open class DestinationsNavigator(startKey: Route) {
+open class DestinationsNavigator(private val startKey: TopLevelRoute) {
 
     private val _results = mutableMapOf<String, MutableStateFlow<Any?>>()
 
     // Maintain a stack for each top level route
-    private var topLevelStacks : LinkedHashMap<Route, SnapshotStateList<Route>> = linkedMapOf(
+    private var topLevelStacks : LinkedHashMap<TopLevelRoute, SnapshotStateList<Route>> = linkedMapOf(
         startKey to mutableStateListOf(startKey)
     )
 
@@ -24,7 +24,7 @@ open class DestinationsNavigator(startKey: Route) {
         private set
 
     // Expose the back stack so it can be rendered by the NavDisplay
-    val backStack = mutableStateListOf(startKey)
+    val backStack: SnapshotStateList<Route> = mutableStateListOf(startKey)
 
     private fun updateBackStack() =
         backStack.apply {
@@ -32,7 +32,7 @@ open class DestinationsNavigator(startKey: Route) {
             addAll(topLevelStacks.flatMap { it.value })
         }
 
-    private fun addTopLevel(key: Route){
+    private fun addTopLevel(key: TopLevelRoute){
         // If the top level doesn't exist, add it
         if (topLevelStacks[key] == null){
             topLevelStacks[key] = mutableStateListOf(key)
@@ -63,9 +63,21 @@ open class DestinationsNavigator(startKey: Route) {
     }
 
     open fun navigateUp() {
-        val removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
+        val currentStack = topLevelStacks[topLevelKey]
+        if (topLevelKey == startKey && (currentStack == null || currentStack.size <= 1)) {
+            // Empty the back stack so NavDisplay lets the system close the app
+            topLevelStacks.clear()
+            backStack.clear()
+            return
+        }
+        val removedKey = currentStack?.removeLastOrNull()
         // If the removed key was a top level key, remove the associated top level stack
-        topLevelStacks.remove(removedKey)
+        if (removedKey is TopLevelRoute) {
+            topLevelStacks.remove(removedKey)
+            // go back to startKey, if available
+            // in order to keep the right sorting we need to pop and re-enter the startKey
+            addTopLevel(startKey)
+        }
         topLevelKey = topLevelStacks.keys.lastOrNull() ?: return
         updateBackStack()
     }

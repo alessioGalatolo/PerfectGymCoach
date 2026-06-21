@@ -610,14 +610,21 @@ private fun MuscleCard(
                 .fillMaxSize()
                 .padding(8.dp)
         ) {
-            // Use muscle.imageRes if available, otherwise use a default icon
-            AsyncImage(
-                model = muscle.imageRes,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                placeholder = painterResource(R.drawable.full_body), // fallback
-                error = painterResource(R.drawable.full_body)
-            )
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceBright
+            ) {
+                // Use muscle.imageRes if available, otherwise use a default icon
+                AsyncImage(
+                    model = muscle.imageRes,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(32.dp),
+                    placeholder = painterResource(R.drawable.full_body), // fallback
+                    error = painterResource(R.drawable.full_body)
+                )
+            }
             Spacer(Modifier.height(4.dp))
             Text(
                 text = stringResource(muscle.muscleNameResource),

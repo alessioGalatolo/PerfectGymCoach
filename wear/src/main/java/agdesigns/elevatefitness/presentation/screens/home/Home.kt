@@ -56,8 +56,6 @@ import androidx.wear.compose.material3.TextButton
 import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionState
-import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.launch
 

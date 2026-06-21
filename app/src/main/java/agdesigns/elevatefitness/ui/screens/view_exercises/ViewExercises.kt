@@ -124,8 +124,9 @@ fun SharedTransitionScope.ViewExercises(
 //    BackHandler(enabled = running) { }
 
     val toFocus = rememberSaveable { mutableStateOf(focusSearch) }
-
-    viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.entries[muscleOrdinal]))
+    LaunchedEffect(muscleOrdinal) {
+        viewModel.onEvent(ExercisesEvent.GetExercises(Exercise.Muscle.entries[muscleOrdinal]))
+    }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(

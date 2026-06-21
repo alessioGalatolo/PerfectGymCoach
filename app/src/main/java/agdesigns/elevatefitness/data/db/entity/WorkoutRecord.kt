@@ -38,7 +38,8 @@ data class WorkoutRecord(
     val maxHeartRate: Int? = null,
     val avgHeartRate: Int? = null,
     val minHeartRate: Int? = null,
-    val heartRates: List<Int>? = null
+    val heartRates: List<Int>? = null,
+    val watchOffsetSeconds: Long? = null, // offset between workout start and watch data start, in seconds
 ) : Parcelable {
     enum class WorkoutIntensity(val descriptionResKey: String, val metValue: Float) {
         HIGH_INTENSITY("intensities_high", 6f),
@@ -123,7 +124,8 @@ data class WorkoutRecordFinish(
     val maxHeartRate: Int? = null,
     val avgHeartRate: Int? = null,
     val minHeartRate: Int? = null,
-    val heartRates: List<Int>? = null
+    val heartRates: List<Int>? = null,
+    val watchOffsetSeconds: Long? = null,
 ): Parcelable
 
 @Parcelize

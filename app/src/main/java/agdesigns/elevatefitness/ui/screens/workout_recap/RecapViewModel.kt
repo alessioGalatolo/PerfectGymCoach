@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
@@ -34,6 +35,7 @@ enum class HealthConnectExportStatus {
 
 data class RecapState(
     val workoutId: Long = 0L,
+    val userAge: Int = 30,
     val workoutRecord: WorkoutRecord? = null,
     val previousRecord: WorkoutRecord? = null,
     val previousWorkoutTotalSets: Int? = null,
@@ -79,6 +81,14 @@ class RecapViewModel @Inject constructor(
         viewModelScope.launch {
             preferences.getImperialSystem().collect{ imperialSystem ->
                 _state.update { it.copy(imperialSystem = imperialSystem) }
+            }
+        }
+        // TODO: instead get resting HR and use that, should be more accurate
+        viewModelScope.launch {
+            preferences.getUserBirthday().collect { birthday ->
+                val age = ChronoUnit.YEARS.between(birthday.toLocalDate(), LocalDate.now()).toInt()
+                    .coerceIn(10, 100)
+                _state.update { it.copy(userAge = age) }
             }
         }
         viewModelScope.launch {
@@ -235,7 +245,11 @@ class RecapViewModel @Inject constructor(
                                                 )
                                             }
                                             for (second in workoutRecord.heartRates.indices) {
-                                                if (nextOffsetSeconds != null && second >= nextOffsetSeconds) {
+                                                // second from watch's perspective + offset from
+                                                // watch to phone + 15 seconds because exercise record
+                                                // is recorded *after* the first set is done
+                                                val secondWithOffset = second + (workoutRecord.watchOffsetSeconds ?: 0L) + 15
+                                                if (nextOffsetSeconds != null && secondWithOffset >= nextOffsetSeconds) {
                                                     currentRecord = sortedDistinctExercises.getOrNull(++recordsIndex)
                                                     nextOffsetSeconds = sortedDistinctExercises.getOrNull(recordsIndex + 1)?.date?.let {
                                                         ChronoUnit.SECONDS.between(

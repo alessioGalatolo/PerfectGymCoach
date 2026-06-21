@@ -297,6 +297,7 @@
     <string name="total_workout_time">Tempo totale allenamento: %1$s</string>
     <string name="workout_completion_tip">Non dimenticare di fare stretching alla fine!</string>
     <string name="how_intense_was_this_workout">Quanto è stato intenso questo allenamento?</string>
+    <string name="loading_recap">Raccogliendo tutti i dati dell\'allenamento…</string>
     <string name="fitness_center_icon_intensity">Intensità</string>
     <string name="add_exercise_to_workout">Aggiungi esercizio all\'allenamento</string>
     <string name="morevert_icon_options">Altre opzioni</string>

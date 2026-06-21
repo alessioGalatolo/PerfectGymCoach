@@ -7,10 +7,9 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExerciseWithExercise
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseSuperset
 import agdesigns.elevatefitness.data.db.entity.UpdateProgramExerciseSetTypes
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -59,8 +58,8 @@ interface ProgramExerciseDao {
     @Update(entity = ProgramExercise::class)
     suspend fun updateSetTypes(updateProgramExerciseSetTypes: UpdateProgramExerciseSetTypes)
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun insert(plan: ProgramExercise): Long
+    @Upsert
+    suspend fun upsert(plan: ProgramExercise): Long
 
     @Query("DELETE FROM programexercise WHERE programExerciseId = :programExerciseId")
     suspend fun delete(programExerciseId: Long)

@@ -49,7 +49,7 @@
 
         <activity
             android:name="agdesigns.elevatefitness.presentation.WearActivity"
-            android:launchMode="standard"
+            android:launchMode="singleTask"
             android:exported="true"
             android:taskAffinity=""
             android:theme="@style/MainActivityTheme.Starting">

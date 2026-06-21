@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.ui.unit.Dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 
@@ -128,7 +129,9 @@ internal const val DETAIL_PANE_METADATA_KEY = "detail_pane_present"
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 context(sharedTransitionScope: SharedTransitionScope)
 fun EntryProviderScope<Any>.deepScreensEntryBuilder(
-    navigator: DestinationsNavigator
+    navigator: DestinationsNavigator,
+    setPrimaryAction: (origin: Route, PrimaryActionContent) -> Unit,
+    fabOverlapHeight: () -> Dp,
 ) {
     with (sharedTransitionScope) {
         entry<AddProgramDestination>(metadata = SlideTransition + ListDetailSceneStrategy.listPane(
@@ -154,7 +157,11 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
         entry<AddWorkoutPlanDestination>(metadata = SlideTransition) {
             AddWorkoutPlan(
                 navigator = navigator,
-                openDialogNow = it.openDialogNow
+                openDialogNow = it.openDialogNow,
+                changePrimaryActionContent = { newFab ->
+                    setPrimaryAction(it, newFab)
+                },
+                fabHeight = fabOverlapHeight,
             )
         }
         entry<CustomizePlanGenerationDestination>(metadata = FullscreenDialogTransition) {
@@ -177,8 +184,8 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
         entry<AddProgramExerciseDestination>(
             metadata = SlideTransition
                     // TODO: extra placeholder for when tapping edit in workout card
-                + ListDetailSceneStrategy.detailPane(sceneKey = ProgramDetailSceneKey)
-                + mapOf(DETAIL_PANE_METADATA_KEY to true)
+                    + ListDetailSceneStrategy.detailPane(sceneKey = ProgramDetailSceneKey)
+                    + mapOf(DETAIL_PANE_METADATA_KEY to true)
         ) {
             AddProgramExercise(
                 navigator = navigator,
@@ -268,8 +275,8 @@ fun EntryProviderScope<Any>.deepScreensEntryBuilder(
         }
         entry<WorkoutRecapDestination>(
             metadata = SlideTransition
-                + ListDetailSceneStrategy.detailPane(sceneKey = HistoryDetailSceneKey)
-                + mapOf(DETAIL_PANE_METADATA_KEY to true)
+                    + ListDetailSceneStrategy.detailPane(sceneKey = HistoryDetailSceneKey)
+                    + mapOf(DETAIL_PANE_METADATA_KEY to true)
         ) {
             WorkoutRecap(
                 navigator = navigator,

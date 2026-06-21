@@ -28,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.background
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -39,12 +38,14 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
+import androidx.compose.runtime.mutableStateMapOf
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 
 data class PrimaryActionContent(
     val icon: ImageVector,
     val labelId: Int,
+    val showLabel: Boolean = false,
     val onClick: () -> Unit
 )
 
@@ -61,8 +62,9 @@ fun RootDestinationGraph(startDestination: Route) {
         creationCallback = { factory -> factory.create(HomeDestination) }
     )
 
+    // FIXME: take navigator outside of VM and inject
     LaunchedEffect(startDestination) {
-        navigationViewModel.navigator.navigate(startDestination)
+        navigationViewModel.navigateToStart(startDestination)
     }
 
     val destinationsNavigator = navigationViewModel.navigator
@@ -77,9 +79,7 @@ fun RootDestinationGraph(startDestination: Route) {
     LaunchedEffect(showNavBar) {
         if (showNavBar) state.show() else state.hide()
     }
-    val primaryActionContent = remember { mutableStateOf<PrimaryActionContent?>(null) }
-    // whose action it is
-    val primaryActionOrigin = remember { mutableStateOf<Any?>(null) }
+    val screenToPrimaryActionContent = remember { mutableStateMapOf<Route, PrimaryActionContent>() }
     val navSuiteType =
         with(currentWindowAdaptiveInfoV2()) {
             when {
@@ -91,6 +91,21 @@ fun RootDestinationGraph(startDestination: Route) {
                 else -> NavigationSuiteType.WideNavigationRailExpanded
             }
         }
+    val currentScreen = destinationsNavigator.backStack.lastOrNull()
+    val primaryActionContent = screenToPrimaryActionContent[currentScreen]
+    // Snapshot holds the last non-null content so the exit animation renders
+    // the FAB icon while it fades out (after navigating away from a FAB screen).
+    val snapshotContent = remember { mutableStateOf<PrimaryActionContent?>(null) }
+    primaryActionContent?.let { snapshotContent.value = it }
+
+    // FAB overlaps content only for bottom-bar nav types; rail types place it outside content area.
+    val fabOverlapHeight = { when (navSuiteType) {
+        NavigationSuiteType.NavigationBar,
+        NavigationSuiteType.ShortNavigationBarCompact,
+        NavigationSuiteType.ShortNavigationBarMedium -> if (snapshotContent.value?.showLabel == true) 56.dp + 16.dp else 80.dp + 16.dp
+        else -> 0.dp
+    } }
+
     val innerListDetail = rememberListDetailSceneStrategy<Any>(
         backNavigationBehavior = BackNavigationBehavior.PopUntilContentChange,
         directive = largeLandscapeDirective(currentWindowAdaptiveInfoV2())
@@ -150,68 +165,74 @@ fun RootDestinationGraph(startDestination: Route) {
                         + scaleIn(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
                 exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
                         scaleOut(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
-                visible = primaryActionOrigin.value == destinationsNavigator.topLevelKey
+                visible = primaryActionContent != null
             ) {
-                if (primaryActionContent.value == null) {
-                    return@AnimatedVisibility
-                }
+                val content = snapshotContent.value ?: return@AnimatedVisibility
                 when (navSuiteType) {
                     NavigationSuiteType.NavigationBar,
                     NavigationSuiteType.ShortNavigationBarCompact,
                     NavigationSuiteType.ShortNavigationBarMedium -> {
-                        MediumFloatingActionButton(
-                            onClick = { primaryActionContent.value?.onClick() },
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ) {
-                            Icon(
-                                imageVector = primaryActionContent.value?.icon ?: Icons.Default.AcUnit,
-                                contentDescription = primaryActionContent.value?.labelId?.let {
-                                    stringResource(it)
-                                },
-                                modifier = Modifier.size(
-                                    FloatingActionButtonDefaults.MediumIconSize
+                        if (!content.showLabel) {
+                            MediumFloatingActionButton(
+                                onClick = { content.onClick() },
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                Icon(
+                                    imageVector = content.icon,
+                                    contentDescription = stringResource(content.labelId),
+                                    modifier = Modifier.size(
+                                        FloatingActionButtonDefaults.MediumIconSize
+                                    )
                                 )
+                            }
+                        } else {
+                            ExtendedFloatingActionButton(
+                                text = { Text(stringResource(content.labelId)) },
+                                icon = {
+                                    Icon(
+                                        imageVector = content.icon,
+                                        contentDescription = stringResource(content.labelId),
+                                        modifier = Modifier.size(
+                                            FloatingActionButtonDefaults.MediumIconSize
+                                        )
+                                    )
+                                },
+                                expanded = true,
+                                onClick = { content.onClick() },
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                     NavigationSuiteType.WideNavigationRailCollapsed -> {
                         // Bigger fabs go out of bounds
                         FloatingActionButton(
-                            onClick = { primaryActionContent.value?.onClick() },
+                            onClick = { content.onClick() },
                             containerColor = MaterialTheme.colorScheme.primary,
                             elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
                             modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.navigation_rail_item_padding))
                         ) {
                             Icon(
-                                imageVector = primaryActionContent.value?.icon
-                                    ?: Icons.Default.AcUnit,
-                                contentDescription = primaryActionContent.value?.labelId?.let {
-                                    stringResource(it)
-                                },
+                                imageVector = content.icon,
+                                contentDescription = stringResource(content.labelId),
                                 modifier = Modifier.size(
                                     FloatingActionButtonDefaults.MediumIconSize
                                 )
                             )
+                            if (content.showLabel) {
+                                Text(stringResource(content.labelId))
+                            }
                         }
                     }
                     NavigationSuiteType.WideNavigationRailExpanded -> {
                         ExtendedFloatingActionButton(
-                            onClick = { primaryActionContent.value?.onClick() },
+                            onClick = { content.onClick() },
                             icon = {
                                 Icon(
-                                    imageVector = primaryActionContent.value?.icon ?: Icons.Default.AcUnit,
+                                    imageVector = content.icon,
                                     contentDescription = null,
                                 )
                             },
-                            text = {
-                                if (primaryActionContent.value != null) {
-                                    Text(
-                                        stringResource(
-                                            primaryActionContent.value?.labelId ?: R.string.app_name
-                                        )
-                                    )
-                                }
-                            },
+                            text = { Text(stringResource(content.labelId)) },
                             elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
                             modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.navigation_rail_item_padding))
                         )
@@ -232,8 +253,21 @@ fun RootDestinationGraph(startDestination: Route) {
                     listDetailStrategy
                 ),
                 entryProvider = entryProvider {
-                    bottomBarEntryBuilder(destinationsNavigator, primaryActionOrigin, primaryActionContent, refreshContentFlow)
-                    deepScreensEntryBuilder(destinationsNavigator)
+                    bottomBarEntryBuilder(
+                        destinationsNavigator,
+                        setPrimaryAction = { source, content ->
+                            screenToPrimaryActionContent[source] = content
+                        },
+                        refreshContentFlow = refreshContentFlow,
+                        fabOverlapHeight = fabOverlapHeight,
+                    )
+                    deepScreensEntryBuilder(
+                        destinationsNavigator,
+                        setPrimaryAction = { source, content ->
+                            screenToPrimaryActionContent[source] = content
+                        },
+                        fabOverlapHeight = fabOverlapHeight,
+                    )
                     workoutScreenEntryBuilder(destinationsNavigator)
                 },
                 entryDecorators = listOf(

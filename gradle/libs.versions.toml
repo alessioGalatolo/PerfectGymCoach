@@ -92,6 +92,8 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx_serialization" }
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
+# wear os gestures
+androidx-wear-navigation3 = { module = "androidx.wear.compose:compose-navigation3", version.ref = "wear_compose" }
 # Allows ViewModels to be scoped to entries in the back stack.
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest"}

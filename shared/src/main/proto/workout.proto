@@ -131,6 +131,8 @@ message CompleteWorkout {
   int32 avg_heart_rate = 4;
   int32 min_heart_rate = 5;
   repeated int32 heart_rates = 6;
+  // epoch millis when the watch exercise session actually started (0 = unknown)
+  int64 watch_exercise_start_epoch_millis = 7;
 }
 
 message AcceptedModification {

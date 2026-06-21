@@ -14,6 +14,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
@@ -52,10 +53,11 @@ fun EnterIntensityAndFinishDialog(
             wrapUp = true
         },
     )
+    var loadingRecap by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(wrapUp) {
         if (wrapUp) {
-            dismissDialog()
             completeWorkout(sliderState.value)
+            loadingRecap = true
         }
     }
 
@@ -64,21 +66,35 @@ fun EnterIntensityAndFinishDialog(
             onDismissRequest = {
                 dismissDialog()
             },
-            title = { Text(text = stringResource(R.string.how_intense_was_this_workout)) },
-            text = { Column {
-                var supportText = stringResource(R.string.workout_intensity_info)
-                if (lastIntensity != null) {
-                    supportText += stringResource(R.string.workout_intensity_intensity_info)
+            title = {
+                if (loadingRecap) {
+                    Text(text = stringResource(R.string.loading_recap))
+                } else {
+                    Text(text = stringResource(R.string.how_intense_was_this_workout))
                 }
-                Text(text = supportText)
-                SliderWithIndicator(
-                    sliderState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    indicatorPosition = lastIntensity
-                )
-            } },
+            },
+            text = {
+                if (loadingRecap) {
+                    Box (modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        LoadingIndicator()
+                    }
+                } else {
+                    Column {
+                        var supportText = stringResource(R.string.workout_intensity_info)
+                        if (lastIntensity != null) {
+                            supportText += stringResource(R.string.workout_intensity_intensity_info)
+                        }
+                        Text(text = supportText)
+                        SliderWithIndicator(
+                            sliderState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            indicatorPosition = lastIntensity
+                        )
+                    }
+                }
+            },
             confirmButton = {
                 // no confirm button, user needs to proceed by dragging the slider
                 // FIXME what if an external bug prevents the slider dragged callback?
