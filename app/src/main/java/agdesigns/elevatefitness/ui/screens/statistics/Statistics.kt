@@ -6,22 +6,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
-import agdesigns.elevatefitness.navigation.StatisticsDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.ui.navigation.StatisticsDestination
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.navigation.FadeTransition
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.MeanLineKey
 import agdesigns.elevatefitness.ui.common.PillChart
 import agdesigns.elevatefitness.ui.common.WorkoutFrequencyLabelsKey
 import agdesigns.elevatefitness.ui.common.chartColors
-import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.ui.common.rememberHorizontalLine
 import agdesigns.elevatefitness.utils.VolumeComparison
 import agdesigns.elevatefitness.utils.getStickyHeader
-import agdesigns.elevatefitness.utils.plus
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -72,9 +68,6 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
 import kotlinx.coroutines.flow.SharedFlow
-import java.text.DecimalFormat
-import java.time.Instant
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.navigation
+package agdesigns.elevatefitness.ui.navigation
 
 import android.net.Uri
 

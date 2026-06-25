@@ -33,15 +33,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
-import agdesigns.elevatefitness.navigation.CreateExerciseDialogDestination
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.ui.navigation.CreateExerciseDialogDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentIcon
 import agdesigns.elevatefitness.ui.screens.create_exercise.getEquipmentImage
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -61,8 +60,6 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import agdesigns.elevatefitness.shared.Equipment
-import agdesigns.elevatefitness.ui.common.lazyGroupedCard
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ceil

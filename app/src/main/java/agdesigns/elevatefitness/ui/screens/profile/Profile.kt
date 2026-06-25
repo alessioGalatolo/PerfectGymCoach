@@ -22,8 +22,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.ProfileDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.ProfileDestination
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.utils.getLangPreferenceDropdownEntries

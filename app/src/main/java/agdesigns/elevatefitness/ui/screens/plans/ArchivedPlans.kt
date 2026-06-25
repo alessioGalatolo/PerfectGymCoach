@@ -24,7 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.IconButtonDefaults

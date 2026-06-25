@@ -12,8 +12,8 @@ import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
-import agdesigns.elevatefitness.navigation.AddProgramDestination
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.AddProgramDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import androidx.compose.foundation.background
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource

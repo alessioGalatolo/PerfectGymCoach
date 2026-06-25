@@ -21,8 +21,8 @@ import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.TrackingResult
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.ExerciseStatsDestination
 import agdesigns.elevatefitness.ui.common.AdaptiveCircularTimer
 import agdesigns.elevatefitness.ui.common.ChangeRepsWeightDialog
 import agdesigns.elevatefitness.ui.common.InfoDialog

@@ -14,7 +14,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.*
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.shared.BarbellType
@@ -22,10 +21,10 @@ import agdesigns.elevatefitness.shared.maybeLbToKg
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
-import agdesigns.elevatefitness.navigation.HistoryDestination
-import agdesigns.elevatefitness.navigation.WorkoutRecapDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.ExercisesByMuscleDestination
+import agdesigns.elevatefitness.ui.navigation.HistoryDestination
+import agdesigns.elevatefitness.ui.navigation.WorkoutRecapDestination
 import agdesigns.elevatefitness.ui.common.CancelWorkoutDialog
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.InputOtherEquipmentDialog
@@ -38,7 +37,6 @@ import agdesigns.elevatefitness.ui.screens.workout.components.EnterIntensityAndF
 import agdesigns.elevatefitness.ui.screens.workout.components.SinglePaneWorkout
 import android.content.Intent
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.PredictiveBackHandler

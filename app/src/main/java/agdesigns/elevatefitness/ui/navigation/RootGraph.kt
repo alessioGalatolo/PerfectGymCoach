@@ -1,8 +1,6 @@
-package agdesigns.elevatefitness.navigation
+package agdesigns.elevatefitness.ui.navigation
 
 import androidx.compose.animation.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -21,6 +19,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -40,6 +39,7 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
 import androidx.compose.runtime.mutableStateMapOf
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlin.collections.get
 
 
 data class PrimaryActionContent(
@@ -56,24 +56,17 @@ data class PrimaryActionContent(
     ExperimentalMaterial3AdaptiveApi::class
 )
 @Composable
-fun RootDestinationGraph(startDestination: Route) {
+fun RootDestinationGraph(
+    navigator: DestinationsNavigator
+) {
     val state = rememberNavigationSuiteScaffoldState()
-    val navigationViewModel = hiltViewModel<NavigationViewModel, NavigationViewModel.Factory>(
-        creationCallback = { factory -> factory.create(HomeDestination) }
-    )
 
-    // FIXME: take navigator outside of VM and inject
-    LaunchedEffect(startDestination) {
-        navigationViewModel.navigateToStart(startDestination)
-    }
-
-    val destinationsNavigator = navigationViewModel.navigator
     // history is the only bottom bar route which is allowed to be in a pane,
     // if it happens remove the nav bar
     val showNavBar by remember {
         derivedStateOf {
-            destinationsNavigator.topLevelKey in BOTTOM_BAR_ROUTES
-                && destinationsNavigator.backStack.none { it is WorkoutRecapDestination }
+            navigator.topLevelKey in BOTTOM_BAR_ROUTES
+                && navigator.backStack.none { it is WorkoutRecapDestination }
         }
     }
     LaunchedEffect(showNavBar) {
@@ -91,7 +84,7 @@ fun RootDestinationGraph(startDestination: Route) {
                 else -> NavigationSuiteType.WideNavigationRailExpanded
             }
         }
-    val currentScreen = destinationsNavigator.backStack.lastOrNull()
+    val currentScreen = navigator.backStack.lastOrNull()
     val primaryActionContent = screenToPrimaryActionContent[currentScreen]
     // Snapshot holds the last non-null content so the exit animation renders
     // the FAB icon while it fades out (after navigating away from a FAB screen).
@@ -127,12 +120,14 @@ fun RootDestinationGraph(startDestination: Route) {
         extraBufferCapacity = 10  // Buffer for slow subscribers
     ) }
 
+    val activity = LocalActivity.current
+
     NavigationSuiteScaffold(
         state = state,
         navigationSuiteType = navSuiteType,
         navigationItems = {
             BOTTOM_BAR_ROUTES.forEach { destination ->
-                val selected = destination == destinationsNavigator.topLevelKey
+                val selected = destination == navigator.topLevelKey
                 NavigationSuiteItem(
                     navigationSuiteType = navSuiteType,
                     icon = {
@@ -151,8 +146,12 @@ fun RootDestinationGraph(startDestination: Route) {
                     label = { Text(stringResource(destination.label)) },
                     selected = selected,
                     onClick = {
-                        destinationsNavigator.navigateUpTo(destination)
-                        if (destinationsNavigator.backStack.lastOrNull() == destination) {
+                        if (selected) {
+                            navigator.navigateUpTo(destination)
+                        } else {
+                            navigator.navigate(destination)
+                        }
+                        if (navigator.backStack.lastOrNull() == destination) {
                             refreshContentFlow.tryEmit(destination)
                         }
                     }
@@ -246,15 +245,15 @@ fun RootDestinationGraph(startDestination: Route) {
         SharedTransitionLayout {
             NavDisplay(
                 modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
-                backStack = destinationsNavigator.backStack,
-                onBack = { destinationsNavigator.navigateUp() },
+                backStack = navigator.backStack,
+                onBack = { if (navigator.navigateUp()) activity?.finish() },
                 sceneStrategies = listOf(
                     supportingPaneSceneStrategy,
                     listDetailStrategy
                 ),
                 entryProvider = entryProvider {
                     bottomBarEntryBuilder(
-                        destinationsNavigator,
+                        navigator,
                         setPrimaryAction = { source, content ->
                             screenToPrimaryActionContent[source] = content
                         },
@@ -262,13 +261,13 @@ fun RootDestinationGraph(startDestination: Route) {
                         fabOverlapHeight = fabOverlapHeight,
                     )
                     deepScreensEntryBuilder(
-                        destinationsNavigator,
+                        navigator,
                         setPrimaryAction = { source, content ->
                             screenToPrimaryActionContent[source] = content
                         },
                         fabOverlapHeight = fabOverlapHeight,
                     )
-                    workoutScreenEntryBuilder(destinationsNavigator)
+                    workoutScreenEntryBuilder(navigator)
                 },
                 entryDecorators = listOf(
                     // Add the default decorators for managing scenes and saving state

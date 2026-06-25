@@ -22,8 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.HealthConnectRepository
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.ExerciseStatsDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.ExerciseStatsDestination
 import agdesigns.elevatefitness.ui.common.InfoDialog
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import androidx.compose.foundation.pager.HorizontalPager
@@ -73,7 +73,6 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.common.LegendItem
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.compose.cartesian.decoration.Decoration
 import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalBox
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
@@ -83,10 +82,7 @@ import com.patrykandpatrick.vico.compose.cartesian.marker.LineCartesianLayerMark
 import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
-import com.patrykandpatrick.vico.compose.common.Position
-import com.patrykandpatrick.vico.compose.common.component.LineComponent
 import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
-import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import kotlinx.coroutines.launch

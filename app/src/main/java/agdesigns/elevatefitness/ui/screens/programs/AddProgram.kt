@@ -26,9 +26,9 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutProgramRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgramReorder
 import agdesigns.elevatefitness.data.db.entity.getPlanDisplayName
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.WorkoutDestination
+import agdesigns.elevatefitness.ui.navigation.AddProgramExerciseDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.WorkoutDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.IconAndLabel
 import agdesigns.elevatefitness.ui.common.IconsWithOverflow

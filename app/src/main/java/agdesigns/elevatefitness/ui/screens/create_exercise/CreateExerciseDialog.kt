@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.SelectableCard
 import agdesigns.elevatefitness.utils.plus
 import androidx.compose.foundation.BorderStroke

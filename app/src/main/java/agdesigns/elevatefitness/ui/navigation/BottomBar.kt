@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.navigation
+package agdesigns.elevatefitness.ui.navigation
 
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.ui.screens.history.History
@@ -17,7 +17,6 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.navigation3.runtime.EntryProviderScope

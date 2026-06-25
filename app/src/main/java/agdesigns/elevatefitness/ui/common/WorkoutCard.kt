@@ -2,21 +2,16 @@ package agdesigns.elevatefitness.ui.common
 
 import agdesigns.elevatefitness.R
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RocketLaunch
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -25,13 +20,10 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.AddProgramExerciseDestination
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.WorkoutDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.WorkoutDestination
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource

@@ -33,10 +33,10 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanDifficulty
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanGoal
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanSplit
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.CustomSplitEditorDestination
-import agdesigns.elevatefitness.navigation.ExcludeExercisesDestination
-import agdesigns.elevatefitness.navigation.ViewGeneratedPlanDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.CustomSplitEditorDestination
+import agdesigns.elevatefitness.ui.navigation.ExcludeExercisesDestination
+import agdesigns.elevatefitness.ui.navigation.ViewGeneratedPlanDestination
 import agdesigns.elevatefitness.ui.common.ReversedCorner
 import agdesigns.elevatefitness.ui.common.ReversedCornersShape
 import agdesigns.elevatefitness.ui.common.SelectableCardDefaults

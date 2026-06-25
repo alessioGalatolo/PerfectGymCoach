@@ -25,8 +25,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.ExercisesByMuscleDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.ui.screens.program_exercises.components.ProgramExerciseCard

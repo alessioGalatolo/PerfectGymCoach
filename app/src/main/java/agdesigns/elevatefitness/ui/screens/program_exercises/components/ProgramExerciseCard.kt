@@ -3,8 +3,8 @@ package agdesigns.elevatefitness.ui.screens.program_exercises.components
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
-import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.common.SharedElementKey
 import agdesigns.elevatefitness.ui.common.SharedElementType
 import androidx.compose.animation.AnimatedVisibility

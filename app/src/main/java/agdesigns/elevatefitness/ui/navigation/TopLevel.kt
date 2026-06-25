@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.navigation
+package agdesigns.elevatefitness.ui.navigation
 
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.ui.screens.workout.Workout

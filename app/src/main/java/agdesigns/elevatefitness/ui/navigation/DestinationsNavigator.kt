@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.navigation
+package agdesigns.elevatefitness.ui.navigation
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -62,13 +62,10 @@ open class DestinationsNavigator(private val startKey: TopLevelRoute) {
         updateBackStack()
     }
 
-    open fun navigateUp() {
+    open fun navigateUp(): Boolean {
         val currentStack = topLevelStacks[topLevelKey]
         if (topLevelKey == startKey && (currentStack == null || currentStack.size <= 1)) {
-            // Empty the back stack so NavDisplay lets the system close the app
-            topLevelStacks.clear()
-            backStack.clear()
-            return
+            return true // caller should finish the activity
         }
         val removedKey = currentStack?.removeLastOrNull()
         // If the removed key was a top level key, remove the associated top level stack
@@ -78,8 +75,9 @@ open class DestinationsNavigator(private val startKey: TopLevelRoute) {
             // in order to keep the right sorting we need to pop and re-enter the startKey
             addTopLevel(startKey)
         }
-        topLevelKey = topLevelStacks.keys.lastOrNull() ?: return
+        topLevelKey = topLevelStacks.keys.lastOrNull() ?: return false
         updateBackStack()
+        return false
     }
 
     /**

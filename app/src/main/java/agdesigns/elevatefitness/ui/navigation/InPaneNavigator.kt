@@ -1,4 +1,4 @@
-package agdesigns.elevatefitness.navigation
+package agdesigns.elevatefitness.ui.navigation
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,12 +38,13 @@ class InPaneNavigator(
         }
     }
 
-    override fun navigateUp() {
+    override fun navigateUp(): Boolean {
         if (rightPaneStack.isNotEmpty()) {
             rightPaneStack.removeAt(rightPaneStack.lastIndex)
         }
         // If the stack is empty the BackHandler in DoublePaneWorkout is disabled,
         // so the system back press will be handled by the real navigator.
+        return false
     }
 
     fun popAllRightPanes() {

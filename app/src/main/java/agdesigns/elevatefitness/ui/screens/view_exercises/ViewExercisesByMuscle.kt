@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
-import agdesigns.elevatefitness.navigation.AddExerciseDialogDestination
-import agdesigns.elevatefitness.navigation.DestinationsNavigator
-import agdesigns.elevatefitness.navigation.ViewExercisesDestination
+import agdesigns.elevatefitness.ui.navigation.AddExerciseDialogDestination
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.ViewExercisesDestination
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
 import agdesigns.elevatefitness.ui.common.lazyGroupedCard
 import agdesigns.elevatefitness.utils.plus

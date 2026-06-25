@@ -4,7 +4,7 @@ import agdesigns.elevatefitness.data.ELEVATE_FITNESS_SHARE_EXTENSION
 import agdesigns.elevatefitness.data.ELEVATE_FITNESS_SHARE_MIME_TYPE
 import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.SharableElement
-import agdesigns.elevatefitness.navigation.ReceivePlanDestination
+import agdesigns.elevatefitness.ui.navigation.ReceivePlanDestination
 import android.provider.OpenableColumns
 import agdesigns.elevatefitness.ui.theme.ElevateFitnessTheme
 import android.content.Intent
@@ -16,10 +16,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import agdesigns.elevatefitness.data.db.entity.Theme
-import agdesigns.elevatefitness.navigation.DeepLinkMatcher
-import agdesigns.elevatefitness.navigation.HomeDestination
-import agdesigns.elevatefitness.navigation.RootDestinationGraph
-import agdesigns.elevatefitness.navigation.Route
+import agdesigns.elevatefitness.ui.navigation.DeepLinkMatcher
+import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
+import agdesigns.elevatefitness.ui.navigation.HomeDestination
+import agdesigns.elevatefitness.ui.navigation.RootDestinationGraph
+import agdesigns.elevatefitness.ui.navigation.Route
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
@@ -36,6 +37,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var preferences: PreferenceRepository
+
+    @Inject
+    lateinit var navigator: DestinationsNavigator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +93,7 @@ class MainActivity : ComponentActivity() {
             }
             else -> intentDeeplink ?: HomeDestination
         }
+        navigator.navigate(startDestination)
 
         // Call enableEdgeToEdge() BEFORE setContent, with a default style.
         enableEdgeToEdge()
@@ -122,7 +127,7 @@ class MainActivity : ComponentActivity() {
 
             ElevateFitnessTheme (darkTheme = darkTheme) {
                 ProvideVicoTheme(rememberM3VicoTheme()) {
-                    RootDestinationGraph(startDestination = startDestination)
+                    RootDestinationGraph(navigator = navigator)
                 }
             }
         }
