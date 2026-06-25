@@ -48,7 +48,7 @@ data class Exercise(
     val muscleRegion: MuscleRegion = MuscleRegion.PRIMARY,
     // exercises that set this to true will only be included in plan generation if already performed,
     // e.g., planche
-    @ColumnInfo(defaultValue = "false")
+    @ColumnInfo(defaultValue = "0")
     val suggestOnlyIfPerformed: Boolean = false,
 ) : Parcelable {
     // Helper properties for UI

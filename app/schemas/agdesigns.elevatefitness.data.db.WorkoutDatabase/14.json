@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 14,
-    "identityHash": "9c490b6b8be4346a988d07dad48afa59",
+    "identityHash": "d7676ebc9417c3163a41d23c93661431",
     "entities": [
       {
         "tableName": "plan",
@@ -763,7 +763,7 @@
       },
       {
         "tableName": "Exercise",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`exerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `nameResKey` TEXT NOT NULL DEFAULT '', `equipment` TEXT NOT NULL, `primaryMuscle` TEXT NOT NULL, `secondaryMuscles` TEXT NOT NULL, `image` INTEGER NOT NULL, `imageResKey` TEXT NOT NULL DEFAULT 'finish_workout', `description` TEXT NOT NULL, `descriptionResKey` TEXT NOT NULL DEFAULT 'description_not_available', `difficulty` TEXT NOT NULL, `probability` REAL NOT NULL, `variations` TEXT NOT NULL, `variationsResKeys` TEXT NOT NULL DEFAULT '', `userDefined` INTEGER NOT NULL DEFAULT 0, `needsMigration` INTEGER NOT NULL DEFAULT 1, `isDurationBased` INTEGER NOT NULL DEFAULT 0, `wearRepTrackable` TEXT NOT NULL DEFAULT 'NOT_TRACKABLE', `firstPhase` TEXT NOT NULL DEFAULT 'AGAINST_GRAVITY', `healthExerciseSegmentType` INTEGER NOT NULL DEFAULT 38, `muscleRegion` TEXT NOT NULL DEFAULT 'PRIMARY', `suggestOnlyIfPerformed` INTEGER NOT NULL DEFAULT false)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`exerciseId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `nameResKey` TEXT NOT NULL DEFAULT '', `equipment` TEXT NOT NULL, `primaryMuscle` TEXT NOT NULL, `secondaryMuscles` TEXT NOT NULL, `image` INTEGER NOT NULL, `imageResKey` TEXT NOT NULL DEFAULT 'finish_workout', `description` TEXT NOT NULL, `descriptionResKey` TEXT NOT NULL DEFAULT 'description_not_available', `difficulty` TEXT NOT NULL, `probability` REAL NOT NULL, `variations` TEXT NOT NULL, `variationsResKeys` TEXT NOT NULL DEFAULT '', `userDefined` INTEGER NOT NULL DEFAULT 0, `needsMigration` INTEGER NOT NULL DEFAULT 1, `isDurationBased` INTEGER NOT NULL DEFAULT 0, `wearRepTrackable` TEXT NOT NULL DEFAULT 'NOT_TRACKABLE', `firstPhase` TEXT NOT NULL DEFAULT 'AGAINST_GRAVITY', `healthExerciseSegmentType` INTEGER NOT NULL DEFAULT 38, `muscleRegion` TEXT NOT NULL DEFAULT 'PRIMARY', `suggestOnlyIfPerformed` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "exerciseId",
@@ -907,7 +907,7 @@
             "columnName": "suggestOnlyIfPerformed",
             "affinity": "INTEGER",
             "notNull": true,
-            "defaultValue": "false"
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -920,7 +920,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9c490b6b8be4346a988d07dad48afa59')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd7676ebc9417c3163a41d23c93661431')"
     ]
   }
 }
