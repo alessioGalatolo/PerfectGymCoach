@@ -39,6 +39,8 @@ import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ConfirmationDialogDefaults
+import androidx.wear.compose.material3.EdgeButton
+import androidx.wear.compose.material3.EdgeButtonSize
 import androidx.wear.compose.material3.FailureConfirmationDialog
 import androidx.wear.compose.material3.HorizontalPageIndicator
 import androidx.wear.compose.material3.HorizontalPagerScaffold
@@ -225,14 +227,19 @@ fun Workout(
                 }
             },
             edgeButton = {
-                AlertDialogDefaults.EdgeButton(
+                EdgeButton(
                     colors = if (ambientMode is AmbientMode.Interactive)
                         ButtonDefaults.buttonColors()
                     else
                         ButtonDefaults.outlinedButtonColors(),
                     onClick = {
                         viewModel.onEvent(WorkoutEvent.DismissHint)
-                    }
+                    },
+                    buttonSize = EdgeButtonSize.Medium,
+                    border = if (ambientMode is AmbientMode.Interactive)
+                        null
+                    else
+                        ButtonDefaults.outlinedButtonBorder(true)
                 ) {
                     Icon(
                         Icons.Default.Check,

@@ -108,6 +108,7 @@ fun WorkoutPage(
             nextSetExerciseName = workoutState.nextSetExerciseName,
             ambientMode = ambientMode,
             isLastSet = workoutState.isLastSet,
+            heartRate = workoutState.currentHeartRate,
             skipRest = resetRest,
             onAddSet = onAddSet,
             onExtendRest = onExtendRest,

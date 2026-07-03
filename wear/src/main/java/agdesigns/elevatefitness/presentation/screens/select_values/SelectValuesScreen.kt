@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.android.awaitFrame
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -278,10 +280,23 @@ fun SelectSingleValue(
     onNext: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
-    // for rotary control of value
+    // need focus to use rotary control
     val focusRequester = remember { FocusRequester() }
+    var hasFocus by remember { mutableStateOf(false) }
+
     LaunchedEffect(focusRequester) {
-        focusRequester.requestFocus()
+        // nav3 affects the focus requests, make sure we have a stable focus for a few frames
+        // before we allow rotary input to change the value
+        var stableFrames = 0
+        while (stableFrames < 3) {
+            awaitFrame()
+            if (hasFocus) {
+                stableFrames++
+            } else {
+                stableFrames = 0
+                try { focusRequester.requestFocus() } catch (_: IllegalStateException) {}
+            }
+        }
     }
 
     val scope = rememberCoroutineScope()
@@ -366,6 +381,7 @@ fun SelectSingleValue(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .fillMaxSize()
+                            .onFocusChanged { hasFocus = it.hasFocus }
                             .rotaryScrollable(
                                 accumulatedBehavior { value ->
                                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
