@@ -34,8 +34,9 @@
     <string name="exercise_image">Immagine sbiadita esercizio</string>
     <string name="not_now">Non adesso</string>
     <string name="complete_set_next">Avanti</string>
-    <string name="no_title">Nessun titolo</string>
     <string name="no_artist">Artista non disponibile</string>
+    <string name="no_media_playing">Nessun brano in riproduzione</string>
+    <string name="no_media_playing_desc">Riproduci della musica per controllarla da qui</string>
     <string name="all_done">Tutto fatto!</string>
     <string name="non_retriable_error_with_phone">Azione non completata!</string>
     <string name="retriable_error_title">Impossibile comunicare con il cellulare!</string>

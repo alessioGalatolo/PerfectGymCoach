@@ -49,6 +49,9 @@ open class DestinationsNavigator(private val startKey: TopLevelRoute) {
     }
 
     open fun navigate(key: Route){
+        if (key is NoDestination) {
+            return
+        }
         if (key is TopLevelRoute) {
             addTopLevel(key)
             return
@@ -71,6 +74,8 @@ open class DestinationsNavigator(private val startKey: TopLevelRoute) {
         // If the removed key was a top level key, remove the associated top level stack
         if (removedKey is TopLevelRoute) {
             topLevelStacks.remove(removedKey)
+        }
+        if (removedKey is BottomBarDestination) {
             // go back to startKey, if available
             // in order to keep the right sorting we need to pop and re-enter the startKey
             addTopLevel(startKey)

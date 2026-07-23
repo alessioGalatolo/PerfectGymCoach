@@ -7,6 +7,7 @@ import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingW
 import agdesigns.elevatefitness.presentation.screens.workout.components.MediaPlayingPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.RepsTempoPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.WorkoutPage
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
@@ -26,8 +27,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.AmbientMode
 import androidx.wear.compose.foundation.LocalAmbientModeManager
@@ -52,6 +55,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.confirmationDialogCurvedText
 import androidx.wear.compose.material3.openOnPhoneDialogCurvedText
+import androidx.wear.remote.interactions.RemoteActivityHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -69,6 +73,7 @@ fun Workout(
     val mediaState by viewModel.mediaState.collectAsState()
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     DisposableEffect(Unit) {
         onDispose {
@@ -168,9 +173,7 @@ fun Workout(
         LaunchedEffect(Unit) {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         }
-        val mainPagerState = rememberPagerState(initialPage = 1) {
-            if (mediaState.title == null) 2 else 3
-        }
+        val mainPagerState = rememberPagerState(initialPage = 1) { 3 }
         val setTrackingPagerState = rememberPagerState {
             if (exercisesState.tempoRomTrackingEnabled)
                 2
@@ -278,6 +281,15 @@ fun Workout(
                                 scope.launch {
                                     viewModel.onEvent(WorkoutEvent.EndWorkout(workoutIntensity = intensity))
                                     openOnPhone = true
+                                    val openAppIntent = Intent(Intent.ACTION_VIEW).apply {
+                                        addCategory(Intent.CATEGORY_BROWSABLE)
+                                        data = "elevatefitness://bringtoforeground".toUri()
+                                    }
+                                    val remoteActivityHelper = RemoteActivityHelper(context)
+                                    remoteActivityHelper.startRemoteActivity(
+                                        openAppIntent,
+                                        context.packageName
+                                    )
                                     delay(OpenOnPhoneDialogDefaults.DurationMillis)
                                     delay(500L)
                                     terminate()

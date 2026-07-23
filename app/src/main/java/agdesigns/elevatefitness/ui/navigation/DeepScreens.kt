@@ -32,6 +32,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 
+// dummy destination for deep links that don't actually navigate anywhere,
+// but just bring the app to the foreground
+data object NoDestination: Route
+
 data class AddProgramDestination(
     val planId: Long,
     val openDialogNow: Boolean = false

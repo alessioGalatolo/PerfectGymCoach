@@ -210,6 +210,13 @@ class Repository @Inject constructor(
     suspend fun reorderProgramExercises(programExerciseReorders: List<ProgramExerciseReorder>) =
         db.programExerciseDao.updateOrder(programExerciseReorders)
 
+    suspend fun shiftProgramExercisesToRight(programId: Long, fromPosition: Int) {
+        val reorders = getProgramExercises(programId).first()
+            .filter { it.orderInProgram >= fromPosition }
+            .map { ProgramExerciseReorder(it.programExerciseId, it.orderInProgram + 1) }
+        reorderProgramExercises(reorders)
+    }
+
     suspend fun duplicateProgramExercise(programExerciseId: Long) {
         val exercise = getProgramExercise(programExerciseId).first()
         val exercisesToShift = getProgramExercises(exercise.extProgramId)
@@ -281,7 +288,7 @@ class Repository @Inject constructor(
 
     fun getWorkoutExercise(workoutExerciseId: Long) =
         db.workoutExerciseDao.getWorkoutExercise(workoutExerciseId).map {
-            resolveResources(it)
+            it?.let { workoutExercise -> resolveResources(workoutExercise) }
         }
 
     fun getWorkoutExercises(workoutId: Long) =

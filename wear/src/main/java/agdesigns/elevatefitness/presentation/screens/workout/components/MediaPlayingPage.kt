@@ -38,11 +38,19 @@ fun MediaPlayingPage(
 ) {
     PlayerScreen(
         mediaDisplay = {
-            TextHeaderWithMarquee(
-                title = mediaState.title ?: stringResource(R.string.no_title),
-                subtitle = mediaState.artist ?: stringResource(R.string.no_artist),
-                ambientMode = ambientMode
-            )
+            if (mediaState.title == null) {
+                TextHeaderWithMarquee(
+                    title = stringResource(R.string.no_media_playing),
+                    subtitle = stringResource(R.string.no_media_playing_desc),
+                    ambientMode = ambientMode
+                )
+            } else {
+                TextHeaderWithMarquee(
+                    title = mediaState.title,
+                    subtitle = mediaState.artist ?: stringResource(R.string.no_artist),
+                    ambientMode = ambientMode
+                )
+            }
         },
         controlButtons = {
             MediaControlButtons(

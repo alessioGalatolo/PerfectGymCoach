@@ -53,7 +53,7 @@ android {
     defaultConfig {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 30
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 31  // cannot match app version
         versionName = "0.1.1" // match phone app version + eventual revisions
     }

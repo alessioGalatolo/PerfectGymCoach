@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 fun SharedTransitionScope.Workout(
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigator: DestinationsNavigator,
-    programId: Long = 0L,
+    programId: Long? = 0L, // 0L means auto infer, null means start a new (empty) program
     previewExercise: ProgramExerciseAndInfo? = null, // preview of the first exercise, used for transition
     quickStart: Boolean = false,
     resumeWorkout: Boolean = false,
@@ -109,21 +109,21 @@ fun SharedTransitionScope.Workout(
         SharedElementKey(
             "Workout",
             SharedElementType.Bounds,
-            idLong = programId
+            idLong = programId ?: 0L
         )
     )
     val sharedStateImg = rememberSharedContentState(
         SharedElementKey(
             "Workout",
             SharedElementType.Image,
-            idLong = programId
+            idLong = programId ?: 0L
         )
     )
     val sharedStateTitle = rememberSharedContentState(
         SharedElementKey(
             "Workout",
             SharedElementType.Title,
-            idLong = programId
+            idLong = programId ?: 0L
         )
     )
 

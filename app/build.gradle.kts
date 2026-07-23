@@ -61,6 +61,7 @@ android {
             // FIXME: Optimisation currently disabled as it makes app crash upon entering
             //  ViewExercises: Field queries_ for c.u not found (protobuf stuff)
             //  also there are some glitches around the same screens
+            //  also breaks wear-phone connection
             // TODO: add proper proguard rules
             // Enables code-related app optimization.
             isMinifyEnabled = false

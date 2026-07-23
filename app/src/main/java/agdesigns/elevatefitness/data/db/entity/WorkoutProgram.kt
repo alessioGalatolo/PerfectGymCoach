@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data.db.entity
 
+import agdesigns.elevatefitness.R
 import android.content.Context
 import android.os.Parcelable
 import androidx.compose.runtime.Composable
@@ -45,6 +46,8 @@ fun getProgramDisplayName(name: String): String {
         name.removePrefix(GENERATED_PROGRAM_PREFIX).split(", ").map {
             stringResource(getMuscleResource(it))
         }.joinToString(", ")
+    } else if (name == "[Unbound Workout]") {
+        stringResource(R.string.unbound_workout_name)
     } else {
         name
     }
@@ -56,6 +59,8 @@ fun getProgramDisplayName(name: String, context: Context): String {
         name.removePrefix(GENERATED_PROGRAM_PREFIX).split(", ").joinToString(", ") {
             context.getString(getMuscleResource(it))
         }
+    } else if (name == "[Unbound Workout]") {
+        context.getString(R.string.unbound_workout_name)
     } else {
         name
     }

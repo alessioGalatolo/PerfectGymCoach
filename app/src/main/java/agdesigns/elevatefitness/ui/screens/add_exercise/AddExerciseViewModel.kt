@@ -169,12 +169,21 @@ class AddExerciseViewModel @Inject constructor(private val repository: Repositor
                     }
                     // could also need to add to program, these conditions are NOT mutually exclusive
                     if (state.value.programId != 0L) {
+                        if (state.value.insertAtPosition != null) {
+                            // we are inserting in an existing program at position X,
+                            // all exercises at positions Y >= X should become Y+1
+                            repository.shiftProgramExercisesToRight(
+                                state.value.programId,
+                                state.value.insertAtPosition!!
+                            )
+                        }
+                        val programOrderInProgram = state.value.insertAtPosition ?: state.value.exerciseNumber
                         repository.addProgramExercise(
                             ProgramExercise(
                                 programExerciseId = state.value.programExerciseId,
                                 extProgramId = state.value.programId,
                                 extExerciseId = state.value.exercise!!.exerciseId,
-                                orderInProgram = state.value.exerciseNumber,
+                                orderInProgram = programOrderInProgram,
                                 reps = state.value.repsArray.map { it.toInt() },
                                 rest = state.value.restArray.map { it.toInt() },
                                 note = state.value.note,

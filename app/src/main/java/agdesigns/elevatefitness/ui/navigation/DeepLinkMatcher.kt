@@ -18,6 +18,9 @@ class DeepLinkMatcher(
                 programId = requestUri.pathSegments[0].toLongOrNull() ?: 0L
             )
         }
+        if (requestUri.authority == "bringtoforeground") {
+            return NoDestination
+        }
         return null
     }
 }

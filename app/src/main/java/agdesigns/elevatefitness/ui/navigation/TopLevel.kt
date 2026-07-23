@@ -11,7 +11,7 @@ sealed interface Route
 sealed interface TopLevelRoute: Route
 
 data class WorkoutDestination (
-    val programId: Long,
+    val programId: Long?,
     val previewExercise: ProgramExerciseAndInfo? = null,
     val quickStart: Boolean = false,
     val resumeWorkout: Boolean = false

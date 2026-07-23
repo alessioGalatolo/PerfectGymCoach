@@ -246,9 +246,9 @@ class RecapViewModel @Inject constructor(
                                             }
                                             for (second in workoutRecord.heartRates.indices) {
                                                 // second from watch's perspective + offset from
-                                                // watch to phone + 15 seconds because exercise record
+                                                // watch to phone + 20 seconds because exercise record
                                                 // is recorded *after* the first set is done
-                                                val secondWithOffset = second + (workoutRecord.watchOffsetSeconds ?: 0L) + 15
+                                                val secondWithOffset = second + (workoutRecord.watchOffsetSeconds ?: 0L) + 20
                                                 if (nextOffsetSeconds != null && secondWithOffset >= nextOffsetSeconds) {
                                                     currentRecord = sortedDistinctExercises.getOrNull(++recordsIndex)
                                                     nextOffsetSeconds = sortedDistinctExercises.getOrNull(recordsIndex + 1)?.date?.let {

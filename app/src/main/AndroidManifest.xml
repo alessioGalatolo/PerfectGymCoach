@@ -141,6 +141,14 @@
                     android:scheme="elevatefitness"
                     android:host="workout" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="elevatefitness"
+                    android:host="bringtoforeground" />
+            </intent-filter>
 
             <!-- Handle opening proprietary files -->
             <intent-filter android:priority="100">

@@ -33,8 +33,9 @@
     <string name="exercise_image">Faded image of the exercise</string>
     <string name="not_now">Not now</string>
     <string name="complete_set_next">Next</string>
-    <string name="no_title">No title</string>
     <string name="no_artist">No artist</string>
+    <string name="no_media_playing">No media playing</string>
+    <string name="no_media_playing_desc">Play some music to control it from here</string>
     <string name="all_done">All done!</string>
     <string name="non_retriable_error_with_phone">Action unsuccessful!</string>
     <string name="retriable_error_title">Could not communicate with phone!</string>

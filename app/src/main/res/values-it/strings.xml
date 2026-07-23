@@ -92,6 +92,7 @@
     <string name="done_icon">Fatto</string>
 
     <!-- Add exercise to program -->
+    <string name="add_here">Aggiungi esercizio qui</string>
     <string name="current_probability_2f">Probabilità attuale: %.2f</string>
     <string name="notes">Note (opzionale)</string>
     <string name="variation">Variante</string>
@@ -148,6 +149,8 @@
     <string name="i_more_exercises">+ altri %1$s esercizi</string>
     <string name="change_workout_plan">Cambia allenamento</string>
     <string name="change_programs">Cambia programmi</string>
+    <string name="start_empty_workout">Inizia un allenamento vuoto</string>
+    <string name="empty_workout_description">Questo allenamento non sarà collegato a nessuno programma. Puoi aggiungere gli esercizi a piacimento.</string>
     <!-- Add/view workout plan -->
     <string name="current_plan">Piano attuale</string>
     <string name="set_as_current_plan">Imposta come piano attuale</string>
@@ -273,6 +276,7 @@
     <string name="secondary_muscles">"Muscoli secondari: "</string>
     <string name="i_variations_available">%1$s+ varianti disponibili</string>
     <!-- Workout screen (and components) -->
+    <string name="unbound_workout_name">Allenamento libero (nessun programma)</string>
     <string name="start_workout">Inizia allenamento</string>
     <string name="complete_workout">Completa allenamento</string>
     <string name="add_set">Aggiungi serie</string>

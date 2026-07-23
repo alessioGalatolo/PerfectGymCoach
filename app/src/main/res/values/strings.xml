@@ -93,6 +93,7 @@
 
 
     <!-- Add exercise to program -->
+    <string name="add_here">Add exercise here</string>
     <string name="current_probability_2f">Current probability: %.2f</string>
     <string name="notes">Notes (optional)</string>
     <string name="variation">Variation</string>
@@ -148,6 +149,8 @@
     <string name="i_more_exercises">+%1$s more exercises</string>
     <string name="change_workout_plan">Manage plans</string>
     <string name="change_programs">Change programs</string>
+    <string name="start_empty_workout">Start an empty workout</string>
+    <string name="empty_workout_description">This workout won\'t be tied to any program. You can add exercises as you go.</string>
     <!-- Add/view workout plan -->
     <string name="current_plan">Current plan</string>
     <string name="set_as_current_plan">Use as current plan</string>
@@ -273,6 +276,7 @@
     <string name="secondary_muscles">"Secondary muscles: "</string>
     <string name="i_variations_available">%1$s+ variations available</string>
     <!-- Workout screen (and components) -->
+    <string name="unbound_workout_name">Free workout (no program)</string>
     <string name="start_workout">Start workout</string>
     <string name="complete_workout">Complete workout</string>
     <string name="add_set">Add set</string>

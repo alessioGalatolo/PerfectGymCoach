@@ -268,6 +268,7 @@ fun CustomizePlanGeneration(
 
             item {
                 Button(
+                    enabled = customSplitIsValid || workoutSplit.value != WorkoutPlanSplit.CUSTOM,
                     onClick = {
                         navigator.navigateUp()
                         navigator.navigate(

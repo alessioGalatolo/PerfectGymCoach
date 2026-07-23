@@ -19,6 +19,7 @@ import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.ui.navigation.DeepLinkMatcher
 import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.navigation.HomeDestination
+import agdesigns.elevatefitness.ui.navigation.NoDestination
 import agdesigns.elevatefitness.ui.navigation.RootDestinationGraph
 import agdesigns.elevatefitness.ui.navigation.Route
 import android.net.Uri
@@ -48,6 +49,10 @@ class MainActivity : ComponentActivity() {
 
         // simple deeplink parsing, null if invalid or no uri
         val intentDeeplink = intent.data?.let { DeepLinkMatcher(it).match() }
+
+        if (intentDeeplink is NoDestination) {
+            finish() // no destination, just bring to foreground
+        }
 
         // Handle incoming file imports
         val sharedElement: SharableElement? = run {

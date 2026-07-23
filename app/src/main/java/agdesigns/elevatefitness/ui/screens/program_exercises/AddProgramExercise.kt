@@ -11,7 +11,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -41,8 +40,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -190,55 +191,53 @@ fun SharedTransitionScope.AddProgramExercise(
                     ) { index, programExercise ->
                         val exercise = remember(index) { state.exercises[index] }
                         val brightImage = remember { mutableStateOf(false) }
-                        if (index != 0){
-                            AnimatedVisibility(
-                                !dragStarted.value,
-                                enter = fadeIn() + slideInVertically(),
-                                exit = fadeOut() + slideOutVertically()
+
+                        AnimatedVisibility(
+                            !dragStarted.value,
+                            enter = fadeIn() + slideInVertically(),
+                            exit = fadeOut() + slideOutVertically()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
                             ) {
-                                Row(  // row with button for superset
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier
-                                        .clip(CardDefaults.shape)
-                                        .combinedClickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null,
-                                            onClick = {
-                                                viewModel.onEvent(
-                                                    ProgramExercisesEvent.UpdateSuperset(
-                                                        index,
-                                                        index - 1
-                                                    )
-                                                )
-                                            }, onLongClick = {})
-                                        .wrapContentHeight()
+                                // add exercise here row
+                                TextButton(
+                                    {
+                                        navigator.navigate(
+                                            ExercisesByMuscleDestination(
+                                                programName = programName,
+                                                programId = programId,
+                                                insertAtPosition = index,
+                                                returnAfterAdding = true
+                                            )
+                                        )
+                                    }
                                 ) {
-                                    val linked =
-                                        programExercise.supersetExercise == state.programExercises[index-1].programExerciseId
-                                    val orientation = remember { Animatable(0f) }
-                                    val scale = remember { Animatable(1f) }
-                                    LaunchedEffect(linked) {
-                                        orientation.animateTo(if (linked) 90f else 0f)
-                                    }
-                                    LaunchedEffect(linked) {
-                                        scale.animateTo(if (linked) 1.1f else 1f)
-                                    }
                                     Icon(
-                                        if (linked)
-                                            Icons.Default.Link
-                                        else
-                                            Icons.Default.LinkOff,
-                                        stringResource(if (linked) R.string.superset else R.string.superset_off),
-                                        Modifier
-                                            .scale(scale.value)
-                                            .rotate(orientation.value)
+                                        Icons.Default.Add,
+                                        contentDescription = stringResource(R.string.add_here),
                                     )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        stringResource(R.string.superset),
-                                        fontStyle = FontStyle.Italic,
-                                        style = MaterialTheme.typography.bodySmall
+                                    Spacer(
+                                        Modifier.width(ButtonDefaults.IconSpacing)
+                                    )
+                                    Text(stringResource(R.string.add_here))
+                                }
+                                if (index != 0) {
+                                    SupersetSelection(
+                                        linked = programExercise.supersetExercise ==
+                                                state.programExercises[index - 1].programExerciseId,
+                                        onClick = {
+                                            viewModel.onEvent(
+                                                ProgramExercisesEvent.UpdateSuperset(
+                                                    index,
+                                                    index - 1
+                                                )
+                                            )
+                                        }
                                     )
                                 }
                             }
@@ -309,4 +308,48 @@ fun SharedTransitionScope.AddProgramExercise(
                 }
             }
         })
+}
+
+@Composable
+fun SupersetSelection(
+    linked: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(  // row with button for superset
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .clip(CardDefaults.shape)
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick, onLongClick = {})
+            .wrapContentHeight()
+            .padding(horizontal = 16.dp)
+    ) {
+        val orientation = remember { Animatable(0f) }
+        val scale = remember { Animatable(1f) }
+        LaunchedEffect(linked) {
+            orientation.animateTo(if (linked) 90f else 0f)
+        }
+        LaunchedEffect(linked) {
+            scale.animateTo(if (linked) 1.1f else 1f)
+        }
+        Icon(
+            if (linked)
+                Icons.Default.Link
+            else
+                Icons.Default.LinkOff,
+            stringResource(if (linked) R.string.superset else R.string.superset_off),
+            Modifier
+                .scale(scale.value)
+                .rotate(orientation.value)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            stringResource(R.string.superset),
+            fontStyle = FontStyle.Italic,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
 }

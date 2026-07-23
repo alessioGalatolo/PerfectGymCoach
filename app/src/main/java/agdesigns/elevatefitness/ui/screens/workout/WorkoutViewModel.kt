@@ -13,6 +13,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSets
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
+import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
@@ -179,7 +180,7 @@ sealed class WorkoutEffect {
 
 sealed class WorkoutEvent{
     data class InitWorkout(
-        val programId: Long,
+        val programId: Long?,
         val resumeWorkout: Boolean,
         val quickStart: Boolean
     ): WorkoutEvent()
@@ -675,8 +676,15 @@ class WorkoutViewModel @Inject constructor(
                         // 0L is no program, try to infer next program from db data
                         val programId = if (event.programId == 0L)
                             inferProgramId()
-                        else
-                            event.programId
+                        else event.programId
+                            ?: repository.addProgram(
+                                WorkoutProgram(
+                                    extPlanId = null,
+                                    orderInWorkoutPlan = 0,
+                                    name = "[Unbound Workout]",  // FIXME: put in constant instead
+                                )
+                            )
+
                         if (programId == null) {
                             _effects.trySend(
                                 WorkoutEffect.ShowErrorAndBack(R.string.autostart_workout_failed)
@@ -1380,6 +1388,17 @@ class WorkoutViewModel @Inject constructor(
             ) {
                 relevantOldRecords.average().let {
                     avgOldRecordWeight = it.toFloat()
+                }
+                // when we average we also want to have the weight rounded to the nearest increment,
+                // but only if it is different from the current and previous set weights
+                // i.e., suppose user is doing an exercise where increments are different from the
+                // default, and they are doing the same weight as last time,
+                // we don't want to round it up to the nearest (wrong) increment
+                if (
+                    avgOldRecordWeight != oldRecordWeightCurrentSet &&
+                    avgOldRecordWeight != oldRecordWeightPreviousSet &&
+                    avgOldRecordWeight != null
+                ) {
                     // now round it to the nearest increment
                     if (avgOldRecordWeight % increment != 0f) {
                         avgOldRecordWeight += increment - (avgOldRecordWeight % increment)
@@ -2061,10 +2080,10 @@ class WorkoutViewModel @Inject constructor(
         )
         val planPrograms = repository.getPlanMapPrograms().first().entries.find {
             it.value.find { it1 -> it1.programId == workoutState.value.programId } != null
-        }!!
-        val currentProgram = planPrograms.value.find {
+        }
+        val currentProgram = planPrograms?.value?.find {
             it.programId == workoutState.value.programId
-        }!!
+        }
         /*
         scenario: user does not do the upcoming workout, does another one instead
             Now, after he finishes, should the next workout be the old upcoming one
@@ -2072,10 +2091,15 @@ class WorkoutViewModel @Inject constructor(
 
             Currently the latter
          */
-        repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
-            planId = planPrograms.key.planId,
-            currentProgram = (currentProgram.orderInWorkoutPlan+1) % planPrograms.value.size
-        ))
+        if (planPrograms != null && currentProgram != null) {
+            // if starting an unbound workout, these will be null
+            repository.updateCurrentPlan(
+                WorkoutPlanUpdateProgram(
+                    planId = planPrograms.key.planId,
+                    currentProgram = (currentProgram.orderInWorkoutPlan + 1) % planPrograms.value.size
+                )
+            )
+        }
         preferences.setCurrentWorkout(null)
         _effects.trySend(WorkoutEffect.ShutDown)
     }
