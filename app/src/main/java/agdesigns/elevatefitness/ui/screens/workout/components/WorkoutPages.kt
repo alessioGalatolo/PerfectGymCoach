@@ -55,10 +55,12 @@ import agdesigns.elevatefitness.shared.barbellResFromWeight
 import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.maybeLbToKg
 import agdesigns.elevatefitness.shared.weightAndUnit
+import agdesigns.elevatefitness.ui.common.AnimatedTimer
 import agdesigns.elevatefitness.ui.common.CompletionCheckmark
 import agdesigns.elevatefitness.ui.common.GroupedCard
 import agdesigns.elevatefitness.ui.common.IconAndLabel
 import agdesigns.elevatefitness.ui.common.IconsWithOverflow
+import agdesigns.elevatefitness.ui.common.MorphDigit
 import agdesigns.elevatefitness.ui.common.UpdateWeightDialog
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.screens.workout.ModificationSuggestion
@@ -124,6 +126,7 @@ fun SharedTransitionScope.ExercisePages(
     bottomPadding: Dp,
     fabHeight: Dp,
     restCounterProgress: Float?,
+    exerciseTimerCounterProgress: Float?,
     showTitle: Boolean,
     title: @Composable (Modifier) -> Unit,
     addSet: () -> Unit,
@@ -333,8 +336,13 @@ fun SharedTransitionScope.ExercisePages(
         val haptic = LocalHapticFeedback.current
         val restTimeSecs = currentExerciseState.restTimeSecs
         val restCounterProgress = restCounterProgress
+        val exerciseTimerSecs = currentExerciseState.exerciseTimerSecs
+        val exerciseStopwatchSecs = currentExerciseState.exerciseStopwatchSecs
+        val exercisePrepSecs = currentExerciseState.exercisePrepSecs
+        // if there is another timer active, don't show the rest timer
+        val durationTimerActive = (exerciseTimerSecs ?: 0L) > 0L || (exerciseStopwatchSecs ?: 0L) > 0L || (exercisePrepSecs ?: 0L) > 0L
         // content
-        if (restTimeSecs != null && restCounterProgress != null){
+        if (restTimeSecs != null && restCounterProgress != null && !durationTimerActive) {
             AdaptiveCircularTimer(
                 restTimeSecs,
                 restCounterProgress,
@@ -350,6 +358,70 @@ fun SharedTransitionScope.ExercisePages(
                     haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                     haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                     haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                }
+            }
+        }
+        if (exercisePrepSecs != null) {
+            Column(
+                Modifier.align(CenterHorizontally),
+                horizontalAlignment = CenterHorizontally
+            ) {
+                Text(
+                    stringResource(R.string.get_ready),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                MorphDigit(
+                    digit = exercisePrepSecs.toString().last(),
+                    modifier = Modifier.padding(16.dp).width(IntrinsicSize.Max),
+                    textStyle = MaterialTheme.typography.displayLargeEmphasized,
+                    fontWeight = FontWeight.Bold,
+                    textColor = MaterialTheme.colorScheme.primary
+                )
+            }
+            LaunchedEffect(exercisePrepSecs) {
+                haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+            }
+        } else {
+            if (exerciseTimerSecs != null && exerciseTimerCounterProgress != null) {
+                Column(
+                    Modifier.align(CenterHorizontally),
+                    horizontalAlignment = CenterHorizontally
+                ) {
+                    if (exerciseTimerCounterProgress > 0f) {
+                        Text(
+                            stringResource(R.string.exercise_hold),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        AdaptiveCircularTimer(
+                            exerciseTimerSecs,
+                            exerciseTimerCounterProgress,
+                            Modifier.align(CenterHorizontally)
+                        )
+
+                        LaunchedEffect(exerciseTimerSecs) {
+                            // do not vibrate on 0L as this will be called multiple times with 0L
+                            if (exerciseTimerSecs == 2L || exerciseTimerSecs == 3L) {
+                                haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                            } else if (exerciseTimerSecs == 1L) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                delay(1000)
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                            }
+                        }
+                    } else if (exerciseStopwatchSecs != null) {
+                        AnimatedTimer(
+                            (currentExerciseState.exerciseTimerTotalSecs ?: 0L) + exerciseStopwatchSecs,
+                            textStyle = MaterialTheme.typography.displaySmallEmphasized,
+                            fontWeight = FontWeight.Bold,
+                            textColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(CenterHorizontally).padding(vertical = 64.dp)
+                        )
+                    }
                 }
             }
         }

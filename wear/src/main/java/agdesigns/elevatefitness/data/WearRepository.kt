@@ -116,6 +116,46 @@ class WearRepository @Inject constructor(
         }
     }
 
+    private val exerciseTimerAlarmAction = "agdesigns.elevatefitness.EXERCISE_TIMER_ALARM"
+    private val exerciseTimerAlarmReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+
+            // Vibrate pattern
+            vibrator.vibrate(
+                VibrationEffect.createWaveform(
+                    longArrayOf(0, 200, 800, 200, 800, 200, 800, 200, 1000),
+                    -1
+                )
+            )
+        }
+    }
+
+    fun vibrateForExercisePrep() {
+        // vibrates for 3 seconds, simulating a 3, 2, 1, start timer.
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        // Vibrate pattern
+        vibrator.vibrate(
+            VibrationEffect.createWaveform(
+                longArrayOf(250, 150, 850, 150, 850, 200),
+                -1
+            )
+        )
+    }
+
     private val hintAlarmAction = "agdesigns.elevatefitness.HINT_ALARM"
     private val hintAlarmReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -144,6 +184,12 @@ class WearRepository @Inject constructor(
     fun scheduleRestAlarm(durationMillis: Long) {
         cancelRestAlarm()
         val intent = Intent(restAlarmAction).setPackage(context.packageName)
+        scheduleAlarm(intent, durationMillis)
+    }
+
+    fun scheduleExerciseTimerAlarm(durationMillis: Long) {
+        cancelExerciseTimerAlarm()
+        val intent = Intent(exerciseTimerAlarmAction).setPackage(context.packageName)
         scheduleAlarm(intent, durationMillis)
     }
 
@@ -182,6 +228,11 @@ class WearRepository @Inject constructor(
         cancelAlarm(intent)
     }
 
+    fun cancelExerciseTimerAlarm() {
+        val intent = Intent(exerciseTimerAlarmAction).setPackage(context.packageName)
+        cancelAlarm(intent)
+    }
+
     private fun cancelAlarm(intent: Intent) {
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -210,12 +261,20 @@ class WearRepository @Inject constructor(
             hintAlarmFilter,
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+        val exerciseTimerAlarmFilter = IntentFilter(exerciseTimerAlarmAction)
+        ContextCompat.registerReceiver(
+            context,
+            exerciseTimerAlarmReceiver,
+            exerciseTimerAlarmFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     fun unregisterAlarmReceivers() {
         try {
             context.unregisterReceiver(restAlarmReceiver)
             context.unregisterReceiver(hintAlarmReceiver)
+            context.unregisterReceiver(exerciseTimerAlarmReceiver)
         } catch (e: IllegalArgumentException) {
             Log.w("WearRepository", "Error unregistering alarm receivers", e)
         }

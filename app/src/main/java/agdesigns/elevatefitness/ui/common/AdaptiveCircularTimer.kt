@@ -270,7 +270,7 @@ fun AnimatedTimer(
                     textColor = textColor,
                     fontWeight = fontWeight,
                     modifier = Modifier
-                        .width(IntrinsicSize.Max)            // prevents jitter
+                        .width(IntrinsicSize.Max) // prevents jitter
                 )
             }
         }

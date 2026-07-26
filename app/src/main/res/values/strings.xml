@@ -282,6 +282,11 @@
     <string name="add_set">Add set</string>
     <string name="next_exercise">Next exercise</string>
     <string name="complete_set">Complete</string>
+    <string name="start_exercise_timer">Start timer</string>
+    <string name="stop_exercise_timer">Stop timer</string>
+    <string name="reset_exercise_timer">Reset timer</string>
+    <string name="get_ready">Get ready!</string>
+    <string name="exercise_timer">Exercise timer: </string>
     <string name="decrease_i">Decrease %1$s</string>
     <string name="increase_i">Increase %1$s</string>
     <string name="arrowback_icon_previous_ex">Previous exercise</string>

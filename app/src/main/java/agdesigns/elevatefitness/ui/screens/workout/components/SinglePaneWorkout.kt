@@ -214,6 +214,7 @@ fun SharedTransitionScope.SinglePaneWorkout(
                             PaddingValues(horizontal = 16.dp),
                     containerColor = NavigationBarDefaults.containerColor,
                     hideMainAction = false,
+                    completeSet = completeSet,
                     startWorkout = {
                         scope.launch {
                             haptics.performHapticFeedback(HapticFeedbackType.ToggleOn)
@@ -221,7 +222,15 @@ fun SharedTransitionScope.SinglePaneWorkout(
                         viewModel.onEvent(WorkoutEvent.StartWorkout)
                     },
                     completeWorkout = completeWorkout,
-                    completeSet = completeSet,
+                    startExerciseTimer = {
+                        viewModel.onEvent(WorkoutEvent.StartExerciseTimer)
+                    },
+                    stopExerciseTimer = {
+                        viewModel.onEvent(WorkoutEvent.StopExerciseTimer)
+                    },
+                    resetExerciseTimer = {
+                        viewModel.onEvent(WorkoutEvent.ResetExerciseTimer)
+                    },
                     addSet = {
                         scope.launch {
                             haptics.performHapticFeedback(HapticFeedbackType.ToggleOn)
@@ -314,6 +323,13 @@ fun SharedTransitionScope.SinglePaneWorkout(
                 easing = LinearEasing
             ),
         )
+        val exerciseTimerProgressAnim = animateFloatAsState(
+            targetValue = currentExerciseState.exerciseTimerProgress,
+            animationSpec = tween(
+                500, // exercise timer progress gets updated every 500 millis, slowly progress
+                easing = LinearEasing
+            ),
+        )
 
         /*
         Bottom padding can become 0.dp when scrolling pager as it makes bottomBar disappear
@@ -342,6 +358,7 @@ fun SharedTransitionScope.SinglePaneWorkout(
             bottomPadding = bottomPadding,
             fabHeight = fabHeight,
             restCounterProgress = progressAnim.value,
+            exerciseTimerCounterProgress = exerciseTimerProgressAnim.value,
             showTitle = true,
             title = title,
             addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },

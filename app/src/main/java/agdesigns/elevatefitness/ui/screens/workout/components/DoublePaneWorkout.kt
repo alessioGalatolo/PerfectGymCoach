@@ -162,7 +162,6 @@ fun SharedTransitionScope.DoublePaneWorkout(
     mediaVM: MediaViewModel
 ) {
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
 
     // Right-pane navigation stack. When non-empty the top entry replaces the normal exercise
@@ -177,6 +176,11 @@ fun SharedTransitionScope.DoublePaneWorkout(
 
     val restProgressAnim by animateFloatAsState(
         targetValue = currentExerciseState.restProgress,
+        animationSpec = tween(500, easing = LinearEasing),
+    )
+    // TODO: why not have this in ExercisePages instead?
+    val exerciseTimerProgressAnim by animateFloatAsState(
+        targetValue = currentExerciseState.exerciseTimerProgress,
         animationSpec = tween(500, easing = LinearEasing),
     )
 
@@ -527,6 +531,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                                         contentPadding = PaddingValues(),
                                                         containerColor = Color.Transparent,
                                                         hideMainAction = true,
+                                                        completeSet = completeSet,
                                                         startWorkout = {
                                                             scope.launch {
                                                                 haptics.performHapticFeedback(
@@ -536,7 +541,15 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                                             viewModel.onEvent(WorkoutEvent.StartWorkout)
                                                         },
                                                         completeWorkout = completeWorkout,
-                                                        completeSet = completeSet,
+                                                        startExerciseTimer = {
+                                                            viewModel.onEvent(WorkoutEvent.StartExerciseTimer)
+                                                        },
+                                                        stopExerciseTimer = {
+                                                            viewModel.onEvent(WorkoutEvent.StopExerciseTimer)
+                                                        },
+                                                        resetExerciseTimer = {
+                                                            viewModel.onEvent(WorkoutEvent.ResetExerciseTimer)
+                                                        },
                                                         addSet = {
                                                             scope.launch {
                                                                 haptics.performHapticFeedback(
@@ -653,6 +666,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                         bottomPadding = innerPadding.calculateBottomPadding(),
                                         fabHeight = toolbarHeight + 16.dp,
                                         restCounterProgress = restProgressAnim,
+                                        exerciseTimerCounterProgress = exerciseTimerProgressAnim,
                                         showTitle = false,
                                         title = title,
                                         addSet = { viewModel.onEvent(WorkoutEvent.AddSetToCurrentExercise) },

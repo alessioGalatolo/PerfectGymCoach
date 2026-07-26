@@ -282,6 +282,11 @@
     <string name="add_set">Aggiungi serie</string>
     <string name="next_exercise">Esercizio successivo</string>
     <string name="complete_set">Completa</string>
+    <string name="start_exercise_timer">Avvia timer</string>
+    <string name="stop_exercise_timer">Ferma timer</string>
+    <string name="reset_exercise_timer">Reimposta timer</string>
+    <string name="get_ready">Preparati!</string>
+    <string name="exercise_timer">Timer esercizio: </string>
     <string name="decrease_i">Diminuisci %1$s</string>
     <string name="increase_i">Aumenta %1$s</string>
     <string name="arrowback_icon_previous_ex">Esercizio precedente</string>

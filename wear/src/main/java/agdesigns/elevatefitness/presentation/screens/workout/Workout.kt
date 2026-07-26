@@ -332,6 +332,12 @@ fun Workout(
                                     startRest = {
                                         viewModel.onEvent(WorkoutEvent.StartRest)
                                     },
+                                    startExerciseTimer = {
+                                        viewModel.onEvent(WorkoutEvent.StartExerciseTimer)
+                                    },
+                                    stopExerciseTimer = {
+                                        viewModel.onEvent(WorkoutEvent.StopExerciseTimer)
+                                    },
                                     onNextExercise = {
                                         viewModel.onEvent(WorkoutEvent.NextExercise)
                                     },

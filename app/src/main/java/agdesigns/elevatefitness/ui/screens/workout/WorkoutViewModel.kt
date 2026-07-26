@@ -51,6 +51,8 @@ import kotlin.collections.toList
 import kotlin.math.max
 import kotlin.math.min
 
+// duration of the "get ready" countdown shown before a duration-based exercise's hold timer starts
+private const val EXERCISE_TIMER_PREP_SECS = 3L
 
 // elements that change frequently e.g., current exercise, reps, timer, etc.
 data class CurrentExerciseState(
@@ -65,6 +67,13 @@ data class CurrentExerciseState(
     val restProgress: Float = 0f,
     val restTimestamp: ZonedDateTime? = null, // workout time of end of rest // FIXME: sometimes timer shows negative e.g., resume workout
     val currentExerciseRest: Long? = null, // useful to compute progress of rest
+    val exercisePrepTimestamp: ZonedDateTime? = null, // end of the "get ready" countdown before the hold timer starts
+    val exercisePrepSecs: Long? = null,
+    val exerciseTimerTimestamp: ZonedDateTime? = null, // end of the duration-based exercise hold timer
+    val exerciseTimerTotalSecs: Long? = null,
+    val exerciseTimerSecs: Long? = null,
+    val exerciseTimerProgress: Float = 0f,
+    val exerciseStopwatchSecs: Long? = null, // seconds counted up once the hold timer reaches 0, in case user wants to hold longer
     val currentTime: ZonedDateTime = ZonedDateTime.now(),
     val currentExerciseOngoingRecord: ExerciseRecordAndEquipment? = null,
     val currentExercise: WorkoutExercise? = null,
@@ -196,6 +205,12 @@ sealed class WorkoutEvent{
     data object ToggleOtherEquipmentDialog: WorkoutEvent()
 
     data object CompleteSet: WorkoutEvent()
+
+    data object StartExerciseTimer: WorkoutEvent()
+
+    data object StopExerciseTimer: WorkoutEvent()
+
+    data object ResetExerciseTimer: WorkoutEvent()
 
     data object ToggleRequestNotificationAccessDialog : WorkoutEvent()
 
@@ -600,6 +615,22 @@ class WorkoutViewModel @Inject constructor(
             }.collect()
         }
         viewModelScope.launch {
+            // navigating away from the current exercise cancels any ongoing hold timer
+            _currentPage.drop(1).collect {
+                _currentExerciseState.update {
+                    it.copy(
+                        exercisePrepTimestamp = null,
+                        exercisePrepSecs = null,
+                        exerciseTimerTimestamp = null,
+                        exerciseTimerTotalSecs = null,
+                        exerciseTimerSecs = null,
+                        exerciseTimerProgress = 0f,
+                        exerciseStopwatchSecs = null
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
             combine(
                 pagesContent.map { it.suggestedTares }.distinctUntilChanged(),
                 pagesContent.map { it.suggestedBarbellTypes }.distinctUntilChanged(),
@@ -785,7 +816,69 @@ class WorkoutViewModel @Inject constructor(
                     preferences.setDontWantOngoingWorkoutNotification(true)
                 }
             }
+            is WorkoutEvent.StartExerciseTimer -> {
+                val currentExIdx = _currentPage.value
+                val currentSet = pagesContent.value.exerciseSetsDone.getOrNull(currentExIdx) ?: 0
+                val exerciseRow= pagesContent.value.exerciseRepsWeightRows
+                    .getOrNull(currentExIdx)
+                    ?.getOrNull(currentSet)
+                val durationSecs = (exerciseRow?.projectedReps ?: exerciseRow?.reps)?.toLongOrNull()
+                if (durationSecs == null ||
+                    durationSecs <= 0L ||
+                    currentExerciseState.value.exercisePrepTimestamp != null ||
+                    currentExerciseState.value.exerciseTimerTimestamp != null
+                ) return
+                _currentExerciseState.update {
+                    it.copy(
+                        exercisePrepTimestamp = ZonedDateTime.now().plusSeconds(EXERCISE_TIMER_PREP_SECS),
+                        exerciseTimerTotalSecs = durationSecs,
+                        restTimestamp = null
+                    )
+                }
+            }
+            is WorkoutEvent.StopExerciseTimer -> {
+                if ((currentExerciseState.value.exercisePrepSecs ?: 0L) > 0L) return
+                val stopwatchSecs = currentExerciseState.value.exerciseStopwatchSecs ?: 0L
+                val totalHeldSecs = (currentExerciseState.value.exerciseTimerTotalSecs ?: 0L) + stopwatchSecs - (currentExerciseState.value.exerciseTimerSecs ?: 0L)
+                _currentExerciseState.update {
+                    it.copy(
+                        repsBottomBar = totalHeldSecs.toString(),
+                        repsIsValid = totalHeldSecs > 0L,
+                        exercisePrepTimestamp = null,
+                        exercisePrepSecs = null,
+                        exerciseTimerTimestamp = null,
+                        exerciseTimerTotalSecs = null,
+                        exerciseTimerSecs = null,
+                        exerciseTimerProgress = 0f,
+                        exerciseStopwatchSecs = null
+                    )
+                }
+            }
+            is WorkoutEvent.ResetExerciseTimer -> {
+                _currentExerciseState.update {
+                    it.copy(
+                        exercisePrepTimestamp = null,
+                        exercisePrepSecs = null,
+                        exerciseTimerTimestamp = null,
+                        exerciseTimerTotalSecs = null,
+                        exerciseTimerSecs = null,
+                        exerciseTimerProgress = 0f,
+                        exerciseStopwatchSecs = null
+                    )
+                }
+            }
             is WorkoutEvent.CompleteSet -> {
+                _currentExerciseState.update {
+                    it.copy(
+                        exercisePrepTimestamp = null,
+                        exercisePrepSecs = null,
+                        exerciseTimerTimestamp = null,
+                        exerciseTimerTotalSecs = null,
+                        exerciseTimerSecs = null,
+                        exerciseTimerProgress = 0f,
+                        exerciseStopwatchSecs = null
+                    )
+                }
                 viewModelScope.launch {
                     startWorkoutJob?.join()
                     if (currentExerciseState.value.repsBottomBar.toUIntOrNull() == null ||
@@ -2190,6 +2283,64 @@ class WorkoutViewModel @Inject constructor(
                         it.copy(
                             restTimeSecs = null,
                             restProgress = 0f
+                        )
+                    }
+                }
+                if (currentExerciseState.value.exercisePrepTimestamp != null) {
+                    val exercisePrepMillis = max(
+                        0L,
+                        currentExerciseState.value.exercisePrepTimestamp?.toInstant()?.toEpochMilli()
+                            ?.minus(
+                                currentExerciseState.value.currentTime.toInstant()
+                                    .toEpochMilli()
+                            ) ?: 0L
+                    )
+                    if (exercisePrepMillis <= 0L) {
+                        // prep finished, start the actual hold timer
+                        val durationSecs = currentExerciseState.value.exerciseTimerTotalSecs ?: 0L
+                        _currentExerciseState.update {
+                            it.copy(
+                                exercisePrepTimestamp = null,
+                                exercisePrepSecs = null,
+                                exerciseTimerTimestamp = ZonedDateTime.now().plusSeconds(durationSecs)
+                            )
+                        }
+                    } else {
+                        _currentExerciseState.update {
+                            it.copy(
+                                // ceiling so the countdown reads 3, 2, 1 and never touches 0
+                                exercisePrepSecs = (exercisePrepMillis + 999) / 1000,
+                            )
+                        }
+                    }
+                } else if (currentExerciseState.value.exerciseTimerTimestamp != null) {
+                    val exerciseTimerDiffMillis =
+                        currentExerciseState.value.exerciseTimerTimestamp?.toInstant()?.toEpochMilli()
+                            ?.minus(
+                                currentExerciseState.value.currentTime.toInstant()
+                                    .toEpochMilli()
+                            ) ?: 0L
+                    val exerciseTimerMillis = max(0L, exerciseTimerDiffMillis)
+                    val exerciseTimerSecs = exerciseTimerMillis / 1000
+                    // once the hold timer reaches 0, keep counting up (stopwatch) instead of stopping
+                    val exerciseStopwatchSecs = max(0L, -exerciseTimerDiffMillis) / 1000
+                    _currentExerciseState.update {
+                        var total = it.exerciseTimerTotalSecs?.times(1000L)?.toFloat() ?: 1f
+                        if (total == 0f)
+                            total = 1f
+                        it.copy(
+                            exerciseTimerSecs = exerciseTimerSecs,
+                            exerciseTimerProgress = exerciseTimerMillis.toFloat().div(total),
+                            exerciseStopwatchSecs = if (exerciseTimerDiffMillis <= 0L) exerciseStopwatchSecs else null
+                        )
+                    }
+                } else {
+                    _currentExerciseState.update {
+                        it.copy(
+                            exercisePrepSecs = null,
+                            exerciseTimerSecs = null,
+                            exerciseTimerProgress = 0f,
+                            exerciseStopwatchSecs = null
                         )
                     }
                 }

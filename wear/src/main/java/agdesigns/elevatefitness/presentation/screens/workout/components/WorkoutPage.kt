@@ -7,9 +7,13 @@ import agdesigns.elevatefitness.presentation.screens.common.TextHeaderWithMarque
 import agdesigns.elevatefitness.presentation.screens.common.VignetteImage
 import agdesigns.elevatefitness.presentation.screens.workout.ExercisesState
 import agdesigns.elevatefitness.presentation.screens.workout.WorkoutState
+import agdesigns.elevatefitness.presentation.screens.workout.WorkoutViewModel
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.shared.grpc.Workout
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -27,9 +31,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.CornerRounding
@@ -58,6 +65,8 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.AlertDialogDefaults
+import androidx.wear.compose.material3.CircularProgressIndicator
+import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
@@ -80,6 +89,8 @@ fun WorkoutPage(
     dismissModification: (Int) -> Unit,
     startRest: () -> Unit,
     resetRest: () -> Unit,
+    startExerciseTimer: () -> Unit,
+    stopExerciseTimer: () -> Unit,
     onNextExercise: () -> Unit,
     onPreviousExercise: () -> Unit,
     onDismissHint: () -> Unit,
@@ -139,6 +150,14 @@ fun WorkoutPage(
             },
             bottomText = workoutState.currentExercise?.note ?: "",
             startRest = startRest,
+            isDurationBased = workoutState.currentExercise?.isDurationBased == true,
+            ongoingExercisePrepSecs = workoutState.ongoingExercisePrepSecs,
+            exerciseTimerTotalSecs = workoutState.exerciseTimerTotalSecs,
+            ongoingExerciseTimerSecs = workoutState.ongoingExerciseTimerSecs,
+            ongoingExerciseTimerProgression = workoutState.ongoingExerciseTimerProgression,
+            ongoingExerciseStopwatchSecs = workoutState.ongoingExerciseStopwatchSecs,
+            startExerciseTimer = startExerciseTimer,
+            stopExerciseTimer = stopExerciseTimer,
             hasPrevious = workoutState.currentExerciseIndex > 0,
             hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
             ambientMode = ambientMode,
@@ -195,8 +214,41 @@ fun ExercisePage(
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     startRest: () -> Unit,
+    isDurationBased: Boolean,
+    ongoingExercisePrepSecs: Long?,
+    exerciseTimerTotalSecs: Long?,
+    ongoingExerciseTimerSecs: Long?,
+    ongoingExerciseTimerProgression: Float?,
+    ongoingExerciseStopwatchSecs: Long?,
+    startExerciseTimer: () -> Unit,
+    stopExerciseTimer: () -> Unit,
     modificationDismissedMap: Map<Workout.ProtoSuggestedModification, Boolean>,
 ) {
+    val isPreparing = ongoingExercisePrepSecs != null
+    val timerStarted = ongoingExerciseTimerSecs != null
+    val timerRunning = (ongoingExerciseTimerSecs ?: 0L) > 0L
+    val stopwatchActive = ongoingExerciseStopwatchSecs != null
+
+    var previousExerciseTimerProgression by remember {
+        mutableFloatStateOf(ongoingExerciseTimerProgression ?: 1f)
+    }
+    val animatedExerciseTimerProgression = animateFloatAsState(
+        targetValue = ongoingExerciseTimerProgression ?: 0f,
+        animationSpec = if ((ongoingExerciseTimerProgression ?: 0f) > previousExerciseTimerProgression) {
+            // Resetting to full, snap with no animation
+            snap()
+        } else {
+            tween(
+                WorkoutViewModel.TIME_REFRESH_DELAY_MILLIS.toInt(),
+                easing = LinearEasing
+            )
+        }
+    )
+    LaunchedEffect(ongoingExerciseTimerProgression) {
+        previousExerciseTimerProgression = ongoingExerciseTimerProgression ?: previousExerciseTimerProgression
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     PlayerScreen(
         mediaDisplay = {
             TextHeaderWithMarquee(
@@ -271,49 +323,124 @@ fun ExercisePage(
                         MaterialTheme.colorScheme.primary
                     }
                     Box {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .rotate(45f)
-                                .clip(
-                                    MorphPolygonShape(morph, animatedProgress.value)
-                                )
-                                .border(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    MorphPolygonShape(morph, animatedProgress.value)
-                                )
-                                .rotate(-45f)
-                                .clickable(
-                                    interactionSource = interactionSource,
-                                    indication = null,
-                                    onClick = {
-                                        startRest()
+                        if (isDurationBased && (timerRunning || isPreparing || stopwatchActive))  {
+                            val borderColor = if (stopwatchActive){
+                                Color.Green
+                            } else {
+                                Color.Yellow
+                            }
+
+                            if (isPreparing) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = ongoingExercisePrepSecs.toString(),
+                                        style = MaterialTheme.typography.numeralExtraLarge,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(MaterialTheme.shapes.medium)
+                                        .background(background)
+                                        .clickable {
+                                            stopExerciseTimer()
+                                            startRest()
+                                        }
+                                        .border(
+                                            2.dp,
+                                            borderColor,
+                                            MaterialTheme.shapes.medium
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    val displaySecs = if (stopwatchActive) {
+                                        (exerciseTimerTotalSecs
+                                            ?: 0L) + (ongoingExerciseStopwatchSecs ?: 0L)
+                                    } else {
+                                        ongoingExerciseTimerSecs ?: 0L
                                     }
-                                )
-                                .background(background),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Default.Done,
-                                modifier = Modifier
-                                    .defaultMinSize(
-                                        minWidth = ButtonDefaults.DefaultButtonSize,
-                                        minHeight = ButtonDefaults.DefaultButtonSize,
-                                    )
-                                    .size(
-                                        if (LocalConfiguration.current.isLargeScreen)
-                                            38.dp
+                                    val minutes = displaySecs.floorDiv(60)
+                                    val seconds = displaySecs.mod(60)
+                                    Text(
+                                        text = if (ambientMode is AmbientMode.Interactive)
+                                            "%02d:%02d".format(minutes, seconds)
                                         else
-                                            32.dp
+                                            "%02d:--".format(minutes),
+                                        style = MaterialTheme.typography.numeralExtraSmall,
+                                        color = if (ambientMode is AmbientMode.Ambient)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onPrimary,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
                                     )
-                                    .align(Alignment.Center),
-                                contentDescription = stringResource(agdesigns.elevatefitness.R.string.done_icon),
-                                tint = if (ambientMode is AmbientMode.Ambient)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onPrimary,
-                            )
+                                }
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .rotate(45f)
+                                    .clip(
+                                        MorphPolygonShape(morph, animatedProgress.value)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        MorphPolygonShape(morph, animatedProgress.value)
+                                    )
+                                    .rotate(-45f)
+                                    .clickable(
+                                        interactionSource = interactionSource,
+                                        indication = null,
+                                        onClick = {
+                                            if (isDurationBased && !timerStarted && !isPreparing) {
+                                                startExerciseTimer()
+                                            } else if (isDurationBased && stopwatchActive) {
+                                                // should not get here, other branch should catch this
+                                                stopExerciseTimer()
+                                            } else if (!isDurationBased) {
+                                                startRest()
+                                            }
+                                        }
+                                    )
+                                    .background(background),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    if (isDurationBased && !timerStarted) Icons.Default.Timer else Icons.Default.Done,
+                                    modifier = Modifier
+                                        .defaultMinSize(
+                                            minWidth = ButtonDefaults.DefaultButtonSize,
+                                            minHeight = ButtonDefaults.DefaultButtonSize,
+                                        )
+                                        .size(
+                                            if (LocalConfiguration.current.isLargeScreen)
+                                                38.dp
+                                            else
+                                                32.dp
+                                        )
+                                        .align(Alignment.Center),
+                                    contentDescription = stringResource(
+                                        if (isDurationBased && !timerStarted)
+                                            R.string.start_exercise_timer
+                                        else
+                                            R.string.done_icon
+                                    ),
+                                    tint = if (ambientMode is AmbientMode.Ambient)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
                         }
                         if (isSuperset) {
                             val buttonBackground = if (ambientMode is AmbientMode.Ambient) {
@@ -323,7 +450,7 @@ fun ExercisePage(
                             }
                             Icon(
                                 Icons.Default.Link,
-                                stringResource(agdesigns.elevatefitness.R.string.superset),
+                                stringResource(R.string.superset),
                                 tint = if (ambientMode is AmbientMode.Ambient)
                                     MaterialTheme.colorScheme.secondary
                                 else
@@ -340,10 +467,22 @@ fun ExercisePage(
             )
         },
         buttons = {
-            if (bottomText.isNotBlank()) {
+            val ambientAwareModifier = if (ambientMode is AmbientMode.Ambient) {
+                Modifier
+            } else {
+                Modifier.basicMarquee()
+            }
+            if (isDurationBased && stopwatchActive) {
+                // doing an exercise with a timer, e.g., plank
+                // user is not stopping the timer, tell them how to do that
+                Text(
+                    stringResource(R.string.stop_timer_prompt),
+                    modifier = ambientAwareModifier
+                )
+            } else if (bottomText.isNotBlank()) {
                 Text(
                     bottomText,
-                    modifier = Modifier.basicMarquee()
+                    modifier = ambientAwareModifier
                 )
             } else {
                 HeartRate(
@@ -353,6 +492,15 @@ fun ExercisePage(
             }
         },
     )
+        if (isDurationBased && timerStarted && ambientMode is AmbientMode.Interactive) {
+            CircularProgressIndicator(
+                progress = { animatedExerciseTimerProgression.value },
+                startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center
+                endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
+                strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
+            )
+        }
+    }
     // we only suggest modification is the user has not done any sets yet
     if (modification != null && setsDone == 0) {
         var dialogVisible by rememberSaveable(modification) { mutableStateOf(false) }

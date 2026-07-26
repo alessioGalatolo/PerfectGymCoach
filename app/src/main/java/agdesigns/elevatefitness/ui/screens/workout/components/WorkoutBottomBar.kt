@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,12 +38,20 @@ fun WorkoutBottomBar(
     startWorkout: () -> Unit,
     completeWorkout: () -> Unit,
     completeSet: () -> Unit,
+    startExerciseTimer: () -> Unit,
+    stopExerciseTimer: () -> Unit,
+    resetExerciseTimer: () -> Unit,
     addSet: () -> Unit,
     goToNextExercise: () -> Unit,
     updateReps: (String) -> Unit,
     updateWeight: (String) -> Unit,
     autoStepWeight: (String, Equipment, Boolean) -> Unit
 ) {
+    val isDurationBased = currentExerciseState.currentExercise?.overriddenDurationBased == true
+    val isPreparing = currentExerciseState.exercisePrepSecs != null
+    val timerStarted = currentExerciseState.exerciseTimerSecs != null
+    val timerRunning = (currentExerciseState.exerciseTimerSecs ?: 0L) > 0L
+    val stopwatchActive = currentExerciseState.exerciseStopwatchSecs != null
     val imeVisible = WindowInsets.isImeVisible
     Column(
         Modifier
@@ -91,13 +102,20 @@ fun WorkoutBottomBar(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 TextFieldWithButtons(
-                    stringResource(R.string.reps),
+                    if (isDurationBased)
+                        stringResource(R.string.exercise_hold)
+                    else
+                        stringResource(R.string.reps),
                     hapticsEnabled = true,
                     text = { currentExerciseState.repsBottomBar },
                     onNewText = { new -> updateReps(new) },
                     onIncrement = { updateReps(((currentExerciseState.repsBottomBar.toIntOrNull() ?: 0) + 1).toString()) },
                     onDecrement = { updateReps(((currentExerciseState.repsBottomBar.toIntOrNull() ?: 0) - 1).toString()) },
-                    contentDescription = stringResource(R.string.reps),
+                    contentDescription =
+                        if (isDurationBased)
+                            stringResource(R.string.exercise_hold)
+                        else
+                            stringResource(R.string.reps),
                     textIsValid = { currentExerciseState.repsIsValid }
                 )
                 Spacer(Modifier.width(8.dp))
@@ -119,6 +137,47 @@ fun WorkoutBottomBar(
                     contentDescription = stringResource(R.string.weight),
                     textIsValid = { currentExerciseState.weightIsValid }
                 )
+            }
+
+            // control exercise timer (for e.g., plank)
+            if (isDurationBased) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.exercise_timer),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    IconButton(
+                        onClick = startExerciseTimer,
+                        enabled = !isPreparing && !timerStarted
+                    ) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            stringResource(R.string.start_exercise_timer)
+                        )
+                    }
+                    IconButton(
+                        onClick = stopExerciseTimer,
+                        enabled = timerRunning || stopwatchActive
+                    ) {
+                        Icon(
+                            Icons.Filled.Stop,
+                            stringResource(R.string.stop_exercise_timer)
+                        )
+                    }
+                    IconButton(
+                        onClick = resetExerciseTimer,
+                        enabled = isPreparing || timerStarted || stopwatchActive
+                    ) {
+                        Icon(
+                            Icons.Filled.Replay,
+                            stringResource(R.string.reset_exercise_timer)
+                        )
+                    }
+                }
             }
 
             /*

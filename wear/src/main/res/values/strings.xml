@@ -21,6 +21,8 @@
     <string name="next_thing">Next up:</string>
     <string name="skip_rest">Skip rest</string>
     <string name="done_icon">Done</string>
+    <string name="start_exercise_timer">Start timer</string>
+    <string name="stop_timer_prompt">✨ Tap the timer to stop it</string>
     <string name="reps">Reps</string>
     <string name="remove_icon_minus_reps">Decrease reps</string>
     <string name="add_icon_plus_reps">Increase reps</string>
