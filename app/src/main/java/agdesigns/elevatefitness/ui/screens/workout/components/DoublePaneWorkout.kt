@@ -56,27 +56,25 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -108,17 +106,21 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -126,7 +128,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -208,10 +209,15 @@ fun SharedTransitionScope.DoublePaneWorkout(
         listPane = {
             AnimatedPane {
                 // ---- LEFT PANE: exercise image + list + media ----
-                Column(
+                // The header (image + title) sits behind an opaque, bottom-sheet-like exercise
+                // list. The list starts right below the header, but scrolling it up collapses
+                // the header via nested scroll, letting the sheet slide on top of the image
+                // instead of the image always staying pinned above the list.
+                Box(
                     Modifier
                         .background(MaterialTheme.colorScheme.surfaceContainer)
                         .fillMaxHeight()
+                        .clipToBounds()
                 ) {
                     val currentImageId = if (pagerState.currentPage == pagesContent.exercises.size)
                         R.drawable.finish_workout
@@ -219,66 +225,112 @@ fun SharedTransitionScope.DoublePaneWorkout(
                         pagesContent.exercises.getOrNull(pagerState.currentPage)?.image
                             ?: R.drawable.finish_workout
                     var fabHeight by remember { mutableStateOf(0.dp) }
-                    ElevatedCard(
-                        shape = MaterialTheme.shapes.extraLarge,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .statusBarsPadding()
-                            .fillMaxWidth()
-                    ) {
-                        Box {
-                            WorkoutExerciseImage(
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                imageId = currentImageId,
-                                sharedStateImg = sharedStateImg,
-                                imageCorners = MaterialTheme.shapes.extraLarge,
-                                previewImage = previewExercise?.image,
-                                previewImageShouldDisappear = previewImageShouldDisappear,
-                                canShowActualImage = containerTransitionFinished && !currentExerciseState.isLoading,
-                                showPagerIndicator = false,
-                                pagerState = pagerState,
-                                setImageIsBright = {},
-                                setImageHeight = {}
-                            )
-                            this@Column.AnimatedVisibility(
-                                visible = containerTransitionFinished && !currentExerciseState.isLoading,
-                                enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()),
-                                exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()),
-                                modifier = Modifier.padding(4.dp)
-                            ) {
-                                IconButton(
-                                    shapes = IconButtonDefaults.shapes(),
-                                    onClick = {
-                                        scope.launch {
-                                            // we may have some inPaneNavigation, close all the onClose
-                                            inPaneNavigator.popAllRightPanes()
-                                            delay(200L)
-                                            onClose()
-                                        }
-                                    },
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                                    )
-                                ) {
-                                    Icon(Icons.Filled.Close, stringResource(R.string.close_icon))
-                                }
+                    var headerHeightPx by remember { mutableFloatStateOf(0f) }
+                    // 0f = sheet resting right below the header; -headerHeightPx = sheet fully
+                    // collapsed on top of the header/image.
+                    var sheetOffsetPx by remember { mutableFloatStateOf(0f) }
+                    val nestedScrollConnection = remember {
+                        object : NestedScrollConnection {
+                            override fun onPreScroll(
+                                available: Offset,
+                                source: NestedScrollSource
+                            ): Offset {
+                                if (headerHeightPx <= 0f || available.y >= 0f) return Offset.Zero
+                                val newOffset = (sheetOffsetPx + available.y).coerceIn(-headerHeightPx, 0f)
+                                val consumed = newOffset - sheetOffsetPx
+                                sheetOffsetPx = newOffset
+                                return Offset(0f, consumed)
+                            }
+
+                            override fun onPostScroll(
+                                consumed: Offset,
+                                available: Offset,
+                                source: NestedScrollSource
+                            ): Offset {
+                                if (headerHeightPx <= 0f || available.y <= 0f) return Offset.Zero
+                                val newOffset = (sheetOffsetPx + available.y).coerceIn(-headerHeightPx, 0f)
+                                val consumed2 = newOffset - sheetOffsetPx
+                                sheetOffsetPx = newOffset
+                                return Offset(0f, consumed2)
                             }
                         }
                     }
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                        ProvideTextStyle(
-                            value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)
+
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned {
+                                headerHeightPx = it.size.height.toFloat()
+                            }
+                    ) {
+                        ElevatedCard(
+                            shape = MaterialTheme.shapes.extraLarge,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .statusBarsPadding()
+                                .fillMaxWidth()
                         ) {
-                            CompositionLocalProvider(
-                                content = { title(Modifier) }
-                            )
+                            Box {
+                                WorkoutExerciseImage(
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    imageId = currentImageId,
+                                    sharedStateImg = sharedStateImg,
+                                    imageCorners = MaterialTheme.shapes.extraLarge,
+                                    previewImage = previewExercise?.image,
+                                    previewImageShouldDisappear = previewImageShouldDisappear,
+                                    canShowActualImage = containerTransitionFinished && !currentExerciseState.isLoading,
+                                    showPagerIndicator = false,
+                                    pagerState = pagerState,
+                                    setImageIsBright = {},
+                                    setImageHeight = {}
+                                )
+                                this@Column.AnimatedVisibility(
+                                    visible = containerTransitionFinished && !currentExerciseState.isLoading,
+                                    enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()),
+                                    exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()),
+                                    modifier = Modifier.padding(4.dp)
+                                ) {
+                                    IconButton(
+                                        shapes = IconButtonDefaults.shapes(),
+                                        onClick = {
+                                            scope.launch {
+                                                // we may have some inPaneNavigation, close all the onClose
+                                                inPaneNavigator.popAllRightPanes()
+                                                delay(200L)
+                                                onClose()
+                                            }
+                                        },
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                        )
+                                    ) {
+                                        Icon(Icons.Filled.Close, stringResource(R.string.close_icon))
+                                    }
+                                }
+                            }
+                        }
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                            ProvideTextStyle(
+                                value = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)
+                            ) {
+                                CompositionLocalProvider(
+                                    content = { title(Modifier) }
+                                )
+                            }
                         }
                     }
 
-                    Box {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(nestedScrollConnection)
+                    ) {
+                        val sheetOffset = with(LocalDensity.current) { sheetOffsetPx.toDp() }
+                        val headerHeight = with(LocalDensity.current) { headerHeightPx.toDp() }
                         LazyColumn(
                             Modifier
-                                .padding(4.dp)
+                                .fillMaxSize()
+                                .offset(y = headerHeight + sheetOffset)
                                 .clip(
                                     MaterialTheme.shapes.large.copy(
                                         bottomStart = CornerSize(0.dp),
@@ -286,74 +338,28 @@ fun SharedTransitionScope.DoublePaneWorkout(
                                     )
                                 )
                                 .background(MaterialTheme.colorScheme.surface)
-                                .fillMaxWidth()
                         ) {
                             item {
                                 Spacer(Modifier.height(16.dp))
                             }
-                            itemsIndexed(pagesContent.exercises) { page, ex ->
-                                val selected = page == pagerState.currentPage
-                                ExerciseListItem(
-                                    name = ex.name,
-                                    imageModel = ex.image,
-                                    selected = selected,
-                                    onClick = {
-                                        scope.launch {
-                                            inPaneNavigator.popAllRightPanes()
-                                            pagerState.animateScrollToPage(page)
-                                        }
+                            exercisesOverviewItems(
+                                exercises = pagesContent.exercises,
+                                exerciseSetsDone = pagesContent.exerciseSetsDone,
+                                currentPage = pagerState.currentPage,
+                                workoutStarted = workoutState.workoutStarted,
+                                onExerciseClick = { page ->
+                                    scope.launch {
+                                        inPaneNavigator.popAllRightPanes()
+                                        pagerState.animateScrollToPage(page)
                                     }
-                                )
-                            }
-                            if (workoutState.workoutStarted) {
-                                item {
-                                    val selected =
-                                        pagerState.currentPage == pagesContent.exercises.size
-                                    Card(
-                                        onClick = {
-                                            inPaneNavigator.popAllRightPanes()
-                                            scope.launch {
-                                                pagerState.animateScrollToPage(pagesContent.exercises.size)
-                                            }
-                                        },
-                                        colors = if (selected)
-                                            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                                        else
-                                            CardDefaults.cardColors(),
-                                        modifier = Modifier
-                                            .padding(horizontal = 16.dp, vertical = 4.dp)
-                                            .fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            verticalAlignment = CenterVertically,
-                                            modifier = Modifier.padding(8.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.DoneAll,
-                                                contentDescription = null,
-                                                tint = if (selected)
-                                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                                else
-                                                    MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier
-                                                    .size(56.dp)
-                                                    .padding(16.dp)
-                                            )
-                                            Text(
-                                                stringResource(R.string.end_of_workout),
-                                                modifier = Modifier
-                                                    .padding(horizontal = 12.dp)
-                                                    .weight(1f),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = if (selected)
-                                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                                else
-                                                    MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
+                                },
+                                onFinishClick = {
+                                    inPaneNavigator.popAllRightPanes()
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(pagesContent.exercises.size)
                                     }
                                 }
-                            }
+                            )
                             if (fabHeight > 0.dp) {
                                 item {
                                     Spacer(Modifier.height(fabHeight))
@@ -369,7 +375,7 @@ fun SharedTransitionScope.DoublePaneWorkout(
                             val visibleFabHeight = SwipeableMediaPlayingDefaults.totalHeight +
                                     16.dp // fab bottom padding
                             fabHeight = if (mediaControlsDismissed) 0.dp else visibleFabHeight
-                            this@Column.AnimatedVisibility(
+                            AnimatedVisibility(
                                 visible = containerTransitionFinished && !mediaControlsDismissed,
                                 enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                                 exit = fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
@@ -785,59 +791,4 @@ fun SharedTransitionScope.DoublePaneWorkout(
             }
         }
     )
-}
-
-/** A single row in the left-pane exercise list. Extracted for reuse. */
-@Composable
-fun ExerciseListItem(
-    name: String,
-    imageModel: Any?,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        colors = if (selected)
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-        else
-            CardDefaults.cardColors(),
-        modifier = modifier
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .fillMaxWidth()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                AsyncImage(
-                    model = imageModel,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(MaterialTheme.shapes.large)
-                )
-                if (selected) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-            Text(
-                name,
-                modifier = Modifier
-                    .padding(horizontal = 12.dp)
-                    .weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (selected)
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                else
-                    MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
 }

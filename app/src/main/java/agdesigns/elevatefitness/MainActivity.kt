@@ -45,60 +45,67 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // check if we're being opened from launcher shortcut with a valid uri
+        // Only handle deeplinks/shared files and set the start destination on a genuine
+        // cold start. On a config-change recreation (e.g. rotation) the same intent is
+        // still attached to the activity, and the navigator's backstack is already
+        // retained (@ActivityRetainedScoped), so re-running this would incorrectly
+        // force navigation back to the start destination.
+        if (savedInstanceState == null) {
+            // check if we're being opened from launcher shortcut with a valid uri
 
-        // simple deeplink parsing, null if invalid or no uri
-        val intentDeeplink = intent.data?.let { DeepLinkMatcher(it).match() }
+            // simple deeplink parsing, null if invalid or no uri
+            val intentDeeplink = intent.data?.let { DeepLinkMatcher(it).match() }
 
-        if (intentDeeplink is NoDestination) {
-            finish() // no destination, just bring to foreground
-        }
-
-        // Handle incoming file imports
-        val sharedElement: SharableElement? = run {
-            if (intentDeeplink != null) return@run null
-            val action = intent.action ?: return@run null
-            if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return@run null
-
-            val fileUri: Uri = (when (action) {
-                Intent.ACTION_VIEW -> intent.data
-                else -> @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-            }) ?: return@run null
-
-            // Accept if MIME type matches, or if the file's display name / URI path ends with .efplan
-            val mimeTypeOk = intent.type == ELEVATE_FITNESS_SHARE_MIME_TYPE
-            val displayName: String? = runCatching {
-                contentResolver.query(
-                    fileUri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
-                )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-            }.getOrNull()
-            val nameOk = displayName?.endsWith(ELEVATE_FITNESS_SHARE_EXTENSION, ignoreCase = true) == true
-                || fileUri.path?.endsWith(ELEVATE_FITNESS_SHARE_EXTENSION, ignoreCase = true) == true
-
-            if (!mimeTypeOk && !nameOk) {
-                Toast.makeText(this, getString(R.string.invalid_file_type), Toast.LENGTH_SHORT).show()
-                finish()
-                return@run null
+            if (intentDeeplink is NoDestination) {
+                finish() // no destination, just bring to foreground
             }
-            runCatching {
-                val json = contentResolver.openInputStream(fileUri)?.bufferedReader()?.readText()
-                    ?: return@run null
-                Json.decodeFromString<SharableElement>(json)
-            }.getOrNull()
-        }
 
-        val startDestination: Route = when {
-            sharedElement != null -> {
-                when (sharedElement.type) {
-                    SharableElement.Type.WORKOUT_PLAN -> {
-                        ReceivePlanDestination(sharedElement.element)
-                    }
-                    // other sharable types...
+            // Handle incoming file imports
+            val sharedElement: SharableElement? = run {
+                if (intentDeeplink != null) return@run null
+                val action = intent.action ?: return@run null
+                if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return@run null
+
+                val fileUri: Uri = (when (action) {
+                    Intent.ACTION_VIEW -> intent.data
+                    else -> @Suppress("DEPRECATION") intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                }) ?: return@run null
+
+                // Accept if MIME type matches, or if the file's display name / URI path ends with .efplan
+                val mimeTypeOk = intent.type == ELEVATE_FITNESS_SHARE_MIME_TYPE
+                val displayName: String? = runCatching {
+                    contentResolver.query(
+                        fileUri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+                    )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                }.getOrNull()
+                val nameOk = displayName?.endsWith(ELEVATE_FITNESS_SHARE_EXTENSION, ignoreCase = true) == true
+                    || fileUri.path?.endsWith(ELEVATE_FITNESS_SHARE_EXTENSION, ignoreCase = true) == true
+
+                if (!mimeTypeOk && !nameOk) {
+                    Toast.makeText(this, getString(R.string.invalid_file_type), Toast.LENGTH_SHORT).show()
+                    finish()
+                    return@run null
                 }
+                runCatching {
+                    val json = contentResolver.openInputStream(fileUri)?.bufferedReader()?.readText()
+                        ?: return@run null
+                    Json.decodeFromString<SharableElement>(json)
+                }.getOrNull()
             }
-            else -> intentDeeplink ?: HomeDestination
+
+            val startDestination: Route = when {
+                sharedElement != null -> {
+                    when (sharedElement.type) {
+                        SharableElement.Type.WORKOUT_PLAN -> {
+                            ReceivePlanDestination(sharedElement.element)
+                        }
+                        // other sharable types...
+                    }
+                }
+                else -> intentDeeplink ?: HomeDestination
+            }
+            navigator.navigate(startDestination)
         }
-        navigator.navigate(startDestination)
 
         // Call enableEdgeToEdge() BEFORE setContent, with a default style.
         enableEdgeToEdge()

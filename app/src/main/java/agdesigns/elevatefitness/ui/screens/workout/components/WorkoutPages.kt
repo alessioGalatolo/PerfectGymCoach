@@ -20,6 +20,7 @@ import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.data.db.entity.ProgramExerciseAndInfo
 import agdesigns.elevatefitness.data.db.entity.TrackingResult
 import agdesigns.elevatefitness.shared.SetType
+import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.navigation.ExerciseStatsDestination
@@ -70,6 +71,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.text.InlineTextContent
@@ -177,72 +179,24 @@ fun SharedTransitionScope.ExercisePages(
             LazyColumn(
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                itemsIndexed(pagesContent.exercises) { index, exercise ->
-                    val setsDone = pagesContent.exerciseSetsDone.getOrElse(index) { 0 }
-                    val selected = index == horizontalPagerState.currentPage
-                    WorkoutOverviewListItem(
-                        name = exercise.name,
-                        imageModel = exercise.image,
-                        setsDone = setsDone,
-                        totalSets = exercise.reps.size,
-                        selected = selected,
-                        isDurationBased = exercise.overriddenDurationBased,
-                        onClick = {
-                            exercisesOverviewSheetOpen = false
-                            scope.launch {
-                                horizontalPagerState.animateScrollToPage(index)
-                            }
+                exercisesOverviewItems(
+                    exercises = pagesContent.exercises,
+                    exerciseSetsDone = pagesContent.exerciseSetsDone,
+                    currentPage = horizontalPagerState.currentPage,
+                    workoutStarted = workoutState.workoutStarted,
+                    onExerciseClick = { index ->
+                        exercisesOverviewSheetOpen = false
+                        scope.launch {
+                            horizontalPagerState.animateScrollToPage(index)
                         }
-                    )
-                }
-                if (workoutState.workoutStarted) {
-                    item {
-                        val selected = horizontalPagerState.currentPage == pagesContent.exercises.size
-                        Card(
-                            onClick = {
-                                exercisesOverviewSheetOpen = false
-                                scope.launch {
-                                    horizontalPagerState.animateScrollToPage(pagesContent.exercises.size)
-                                }
-                            },
-                            colors = if (selected)
-                                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                            else
-                                CardDefaults.cardColors(),
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.DoneAll,
-                                    contentDescription = null,
-                                    tint = if (selected)
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .padding(16.dp)
-                                )
-                                Text(
-                                    stringResource(R.string.end_of_workout),
-                                    modifier = Modifier
-                                        .padding(horizontal = 12.dp)
-                                        .weight(1f),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (selected)
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    else
-                                        MaterialTheme.colorScheme.onSurface
-                                )
-                            }
+                    },
+                    onFinishClick = {
+                        exercisesOverviewSheetOpen = false
+                        scope.launch {
+                            horizontalPagerState.animateScrollToPage(pagesContent.exercises.size)
                         }
                     }
-                }
+                )
                 item {
                     Spacer(Modifier.navigationBarsPadding())
                 }
@@ -1672,6 +1626,73 @@ fun WorkoutOverviewListItem(
                     else
                         MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+/** Exercise overview rows + end-of-workout entry. Shared between the overview bottom sheet and the double-pane layout. */
+fun LazyListScope.exercisesOverviewItems(
+    exercises: List<WorkoutExercise>,
+    exerciseSetsDone: List<Int>,
+    currentPage: Int,
+    workoutStarted: Boolean,
+    onExerciseClick: (Int) -> Unit,
+    onFinishClick: () -> Unit
+) {
+    itemsIndexed(exercises) { index, exercise ->
+        val setsDone = exerciseSetsDone.getOrElse(index) { 0 }
+        val selected = index == currentPage
+        WorkoutOverviewListItem(
+            name = exercise.name,
+            imageModel = exercise.image,
+            setsDone = setsDone,
+            totalSets = exercise.reps.size,
+            selected = selected,
+            isDurationBased = exercise.overriddenDurationBased,
+            onClick = { onExerciseClick(index) }
+        )
+    }
+    if (workoutStarted) {
+        item {
+            val selected = currentPage == exercises.size
+            Card(
+                onClick = onFinishClick,
+                colors = if (selected)
+                    CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                else
+                    CardDefaults.cardColors(),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.DoneAll,
+                        contentDescription = null,
+                        tint = if (selected)
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .padding(16.dp)
+                    )
+                    Text(
+                        stringResource(R.string.end_of_workout),
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (selected)
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
