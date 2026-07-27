@@ -713,7 +713,6 @@ class WorkoutViewModel
                         ongoingExerciseStopwatchSecs = null,
                     )
                 }
-                _effects.trySend(WorkoutEffect.NavigateToSelectValues)
             }
             is WorkoutEvent.NextExercise -> {
                 if (state.value.currentExerciseIndex == exercisesState.value.exercises.size - 1)
