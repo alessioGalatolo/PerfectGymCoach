@@ -12,7 +12,9 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord.WorkoutIntensity
 import agdesigns.elevatefitness.ui.common.BestColumnKey
 import agdesigns.elevatefitness.ui.common.MeanLineKey
+import agdesigns.elevatefitness.utils.StreakWorkout
 import agdesigns.elevatefitness.utils.VolumeComparison
+import agdesigns.elevatefitness.utils.calculateWeeklyStreaks
 import agdesigns.elevatefitness.utils.computeVolume
 import agdesigns.elevatefitness.utils.generateVolumeProgressionData
 import agdesigns.elevatefitness.utils.getVolumeComparison
@@ -30,11 +32,11 @@ import javax.inject.Inject
 import com.jaikeerthick.composable_graphs.composables.donut.model.DonutData
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
+import java.time.temporal.WeekFields
+import java.util.Locale
 import kotlin.collections.filter
 import kotlin.collections.indexOfLast
 import kotlin.collections.indices
@@ -66,6 +68,9 @@ data class StatisticsState(
     val volumeMuscleFilter: Muscle = Muscle.EVERYTHING,
     val allExerciseRecords: List<ExerciseRecordAndEquipment> = emptyList(),
     val allWorkouts: List<WorkoutRecord> = emptyList(),
+    val programToPlan: Map<Long, Long> = emptyMap(),
+    val planSizes: Map<Long, Int> = emptyMap(),
+    val currentPlanId: Long? = null,
     val progressTextRes: Int = R.string.stats_loading_generic,
     val volumeIndex2Date: Map<Int, String> = emptyMap(),
     val volumeComparison: VolumeComparison? = null,
@@ -148,12 +153,19 @@ class StatisticsViewModel @Inject constructor(
             combine(
                 preferences.getImperialSystem(),
                 repository.getWorkoutHistory(),
-                repository.getAllExerciseRecordsAndEquipment()
-            ) { useImperial, workouts, exerciseRecords ->
+                repository.getAllExerciseRecordsAndEquipment(),
+                repository.getPlanMapPrograms(),
+                preferences.getCurrentPlan()
+            ) { useImperial, workouts, exerciseRecords, planPrograms, currentPlanId ->
                 _state.update { it.copy(
                     allExerciseRecords = exerciseRecords,
                     allWorkouts = workouts,
                     useImperialSystem = useImperial,
+                    programToPlan = planPrograms.flatMap { (plan, programs) ->
+                        programs.map { it.programId to plan.planId }
+                    }.toMap(),
+                    planSizes = planPrograms.entries.associate { it.key.planId to it.value.size },
+                    currentPlanId = currentPlanId
                 ) }
                 computeStatistics()
             }.collect()
@@ -212,9 +224,16 @@ class StatisticsViewModel @Inject constructor(
                 workoutsDateFiltered.sumOf { it.calories.toDouble() } / workoutsDateFiltered.size
             } else 0.0
 
-            // Calculate streaks
+            // Calculate streaks; they span the whole history, a time frame would cut them short
             _state.update { it.copy(progressTextRes = R.string.stats_loading_calculating) }
-            val (currentStreak, longestStreak) = calculateStreaks(workoutsDateFiltered)
+            val (currentStreak, longestStreak) = calculateWeeklyStreaks(
+                workouts = nonEmptyWorkouts.map {
+                    StreakWorkout(it.startDate!!.toLocalDate(), state.value.programToPlan[it.extProgramId])
+                },
+                planSizes = state.value.planSizes,
+                currentPlanId = state.value.currentPlanId,
+                firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+            )
 
             // Generate chart data
             _state.update { it.copy(progressTextRes = R.string.stats_loading_summing) }
@@ -324,38 +343,6 @@ class StatisticsViewModel @Inject constructor(
         }
     }
 
-    private fun calculateStreaks(workouts: List<WorkoutRecord>): Pair<Int, Int> {
-        if (workouts.isEmpty()) return Pair(0, 0)
-
-        val workoutDates = workouts
-            .map { it.startDate!!.toLocalDate() }
-            .distinct()
-            .sortedDescending()
-
-        var currentStreak = 0
-        var longestStreak = 0
-        var tempStreak = 0
-        var previousDate = LocalDate.now()
-
-        for (date in workoutDates) {
-            val daysDiff = ChronoUnit.DAYS.between(date, previousDate)
-
-            if (daysDiff <= 1) {
-                tempStreak++
-                if (date == LocalDate.now() || date == LocalDate.now().minusDays(1)) {
-                    currentStreak = tempStreak
-                }
-            } else {
-                longestStreak = maxOf(longestStreak, tempStreak)
-                tempStreak = 1
-            }
-            previousDate = date
-        }
-        longestStreak = maxOf(longestStreak, tempStreak)
-
-        return Pair(currentStreak, longestStreak)
-    }
-
     private fun generateMonthlyWorkoutData(
         workouts: List<WorkoutRecord>
     ): List<Pair<String, Int>> {
@@ -430,6 +417,8 @@ class StatisticsViewModel @Inject constructor(
                     color = chartColors[index % chartColors.size]
                 )
             )
+        }.sortedByDescending {
+            it.second.value
         }
     }
 
@@ -449,6 +438,8 @@ class StatisticsViewModel @Inject constructor(
                 muscle.muscleNameResource,
                 count.toFloat() / totalCount * 100f,
             )
+        }.sortedByDescending {
+            it.second
         }
     }
 

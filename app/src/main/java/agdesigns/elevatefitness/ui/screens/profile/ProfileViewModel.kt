@@ -4,6 +4,7 @@ import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.HealthConnectRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
+import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.shared.grpc.WearInfoServiceGrpcKt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -44,13 +45,22 @@ data class ProfileState(
     val isHealthConnectAvailable: Boolean = false,
     val hasHealthConnectPermissions: Boolean = false,
     val hasSomeHealthConnectPermissions: Boolean = false,
+    // number of past workouts not yet in health connect, non-null while the backfill offer is shown
+    val healthConnectBackfillOffer: Int? = null,
+    val healthConnectBackfillProgress: HealthConnectBackfillProgress? = null,
+    val healthConnectBackfillOutcome: HealthConnectBackfillOutcome? = null,
     val suggestRepsWeight: Boolean = true,
     val suggestWorkoutModifications: Boolean = true,
     val inRestHints: Boolean = true,
     val tempoRomTracking: Boolean = false,
+    val wearKeepScreenOn: Boolean = false,
     val hasConnectedWatch: Boolean = false,
     val wearSupportsTempoRom: Boolean? = null,
 )
+
+data class HealthConnectBackfillProgress(val done: Int, val total: Int)
+
+data class HealthConnectBackfillOutcome(val exported: Int, val failed: Int)
 
 sealed class ProfileEvent{
     data class UpdateWeight(val newWeight: Float): ProfileEvent()
@@ -95,6 +105,15 @@ sealed class ProfileEvent{
 
     data object RefreshHealthConnectStatus : ProfileEvent()
 
+    // sent after the user went through the health connect permission screen
+    data object HealthConnectPermissionsResult : ProfileEvent()
+
+    data object ConfirmHealthConnectBackfill : ProfileEvent()
+
+    data object DismissHealthConnectBackfill : ProfileEvent()
+
+    data object ResetHealthConnectBackfillOutcome : ProfileEvent()
+
     data class ToggleSuggestRepsWeight(val newValue: Boolean): ProfileEvent()
 
     data class ToggleSuggestWorkoutModifications(val newValue: Boolean): ProfileEvent()
@@ -102,12 +121,15 @@ sealed class ProfileEvent{
     data class ToggleInRestHints(val newValue: Boolean): ProfileEvent()
 
     data class ToggleTempoRomTracking(val newValue: Boolean): ProfileEvent()
+
+    data class ToggleWearKeepScreenOn(val newValue: Boolean): ProfileEvent()
 }
 
 @OptIn(ExperimentalHorologistApi::class)
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
+    private val repository: Repository,
     private val preferences: PreferenceRepository,
     private val healthConnectRepository: HealthConnectRepository,
     private val phoneDataLayerAppHelper: PhoneDataLayerAppHelper,
@@ -147,6 +169,7 @@ class ProfileViewModel @Inject constructor(
                 preferences.getSuggestWorkoutModifications(),
                 preferences.getInRestHints(),
                 preferences.getTempoRomTracking(),
+                preferences.getWearKeepScreenOn(),
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -169,6 +192,7 @@ class ProfileViewModel @Inject constructor(
                         suggestWorkoutModifications = values[16] as Boolean,
                         inRestHints = values[17] as Boolean,
                         tempoRomTracking = values[18] as Boolean,
+                        wearKeepScreenOn = values[19] as Boolean,
                     )
                 }
             }.collect()
@@ -393,24 +417,102 @@ class ProfileViewModel @Inject constructor(
                     preferences.setTempoRomTracking(event.newValue)
                 }
             }
+            is ProfileEvent.ToggleWearKeepScreenOn -> {
+                viewModelScope.launch {
+                    preferences.setWearKeepScreenOn(event.newValue)
+                }
+            }
             is ProfileEvent.ResetOutcomeMessage -> {
                 _state.update { it.copy(backupOutcomeResId = null) }
             }
             is ProfileEvent.RefreshHealthConnectStatus -> {
                 viewModelScope.launch {
-                    val hasPermissions = healthConnectRepository.hasAllPermissions()
-                    _state.update {
-                        it.copy(
-                            hasHealthConnectPermissions = hasPermissions,
-                            hasSomeHealthConnectPermissions = healthConnectRepository.hasSomePermissions()
-                        )
-                    }
-                    if (hasPermissions) {
-                        // check/update weight
-                        checkHealthConnectWeight()
+                    refreshHealthConnectStatus()
+                }
+            }
+            is ProfileEvent.HealthConnectPermissionsResult -> {
+                viewModelScope.launch {
+                    val wasConnected = state.value.hasHealthConnectPermissions
+                    if (refreshHealthConnectStatus() && !wasConnected) {
+                        maybeOfferHealthConnectBackfill()
                     }
                 }
             }
+            is ProfileEvent.ConfirmHealthConnectBackfill -> {
+                _state.update { it.copy(healthConnectBackfillOffer = null) }
+                viewModelScope.launch {
+                    exportPastWorkoutsToHealthConnect()
+                }
+            }
+            is ProfileEvent.DismissHealthConnectBackfill -> {
+                _state.update { it.copy(healthConnectBackfillOffer = null) }
+            }
+            is ProfileEvent.ResetHealthConnectBackfillOutcome -> {
+                _state.update { it.copy(healthConnectBackfillOutcome = null) }
+            }
+        }
+    }
+
+    private suspend fun refreshHealthConnectStatus(): Boolean {
+        val hasPermissions = healthConnectRepository.hasAllPermissions()
+        _state.update {
+            it.copy(
+                hasHealthConnectPermissions = hasPermissions,
+                hasSomeHealthConnectPermissions = healthConnectRepository.hasSomePermissions()
+            )
+        }
+        if (hasPermissions) {
+            // check/update weight
+            checkHealthConnectWeight()
+        }
+        return hasPermissions
+    }
+
+    private suspend fun getWorkoutsToExport() = repository.getWorkoutHistory().first()
+        .filter { it.healthRecordId == null && it.startDate != null && it.durationSeconds > 0 }
+        .sortedBy { it.startDate }
+
+    // only offered the first time the user connects health connect
+    private suspend fun maybeOfferHealthConnectBackfill() {
+        if (preferences.getHealthConnectBackfillOffered().first()) return
+        if (state.value.healthConnectBackfillProgress != null) return
+        val toExport = getWorkoutsToExport().size
+        if (toExport == 0) return
+        preferences.setHealthConnectBackfillOffered(true)
+        _state.update { it.copy(healthConnectBackfillOffer = toExport) }
+    }
+
+    private suspend fun exportPastWorkoutsToHealthConnect() {
+        if (state.value.healthConnectBackfillProgress != null) return
+        val workouts = getWorkoutsToExport()
+        if (workouts.isEmpty()) return
+        _state.update {
+            it.copy(healthConnectBackfillProgress = HealthConnectBackfillProgress(0, workouts.size))
+        }
+        var exported = 0
+        var failed = 0
+        workouts.forEachIndexed { index, workout ->
+            val programName = runCatching {
+                repository.getProgram(workout.extProgramId).first().name
+            }.getOrDefault("")
+            val exerciseRecords = repository.getWorkoutExerciseRecordsAndInfo(workout.workoutId)
+                .first()
+                .distinct()
+            healthConnectRepository.writeWorkout(workout, programName, exerciseRecords)
+                .onSuccess { healthRecordId ->
+                    repository.updateWorkoutRecordHealthId(workout.workoutId, healthRecordId)
+                    exported++
+                }
+                .onFailure { failed++ }
+            _state.update {
+                it.copy(healthConnectBackfillProgress = HealthConnectBackfillProgress(index + 1, workouts.size))
+            }
+        }
+        _state.update {
+            it.copy(
+                healthConnectBackfillProgress = null,
+                healthConnectBackfillOutcome = HealthConnectBackfillOutcome(exported, failed)
+            )
         }
     }
 

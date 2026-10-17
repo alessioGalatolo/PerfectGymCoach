@@ -49,7 +49,7 @@ import java.util.Locale
         WorkoutExercise::class,
         Exercise::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -102,7 +102,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_10_11,
                     MIGRATION_11_12,
                     MIGRATION_12_13,
-                    MIGRATION_13_14
+                    MIGRATION_13_14,
+                    MIGRATION_14_15
                 )
                     .build()
                     .also { instance = it }
@@ -275,6 +276,34 @@ val MIGRATION_13_14 = object : Migration(13, 14) {
         db.execSQL(
             "ALTER TABLE WorkoutRecord ADD COLUMN watchOffsetSeconds INTEGER"
         )
+    }
+}
+
+val MIGRATION_14_15 = object : Migration(14, 15) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Muscle.LEGS was split into GLUTES, HAMSTRINGS and QUADRICEPS, but rows created before
+        // the split (user-defined exercises, old backups) still reference it and crash on read.
+        // Those rows also store secondaryMuscles as ordinals of the old enum:
+        // old LEGS(6), SHOULDERS(7), TRICEPS(8) are now QUADRICEPS(8), SHOULDERS(9), TRICEPS(10)
+        val oldToNewOrdinal = mapOf(6 to 8, 7 to 9, 8 to 10)
+        db.query(
+            "SELECT exerciseId, secondaryMuscles FROM Exercise WHERE primaryMuscle = 'LEGS'"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                val exerciseId = cursor.getLong(0)
+                val secondaryMuscles = cursor.getString(1)
+                if (secondaryMuscles.isNullOrEmpty()) continue
+                val remapped = secondaryMuscles.split(",")
+                    .map { it.trim().toInt() }
+                    .map { oldToNewOrdinal[it] ?: it }
+                    .joinToString(",")
+                db.execSQL(
+                    "UPDATE Exercise SET secondaryMuscles = ? WHERE exerciseId = ?",
+                    arrayOf<Any>(remapped, exerciseId)
+                )
+            }
+        }
+        db.execSQL("UPDATE Exercise SET primaryMuscle = 'QUADRICEPS' WHERE primaryMuscle = 'LEGS'")
     }
 }
 

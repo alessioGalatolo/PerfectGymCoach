@@ -23,14 +23,41 @@ open class DestinationsNavigator(private val startKey: TopLevelRoute) {
     var topLevelKey by mutableStateOf(startKey)
         private set
 
-    // Expose the back stack so it can be rendered by the NavDisplay
+    // All the entries of every top level stack, used to retain the state of stacks that are not
+    // currently visible (e.g. other bottom bar destinations)
     val backStack: SnapshotStateList<Route> = mutableStateListOf(startKey)
 
-    private fun updateBackStack() =
+    // The entries that navigateUp would actually go through, i.e. what the NavDisplay should show
+    // (and preview on predictive back). Popping the root of a bottom bar destination always goes
+    // back to the startKey, so stacks sitting in between are not part of it.
+    val visibleBackStack: SnapshotStateList<Route> = mutableStateListOf(startKey)
+
+    private fun updateBackStack() {
         backStack.apply {
             clear()
             addAll(topLevelStacks.flatMap { it.value })
         }
+        visibleBackStack.apply {
+            clear()
+            addAll(computeVisibleBackStack())
+        }
+    }
+
+    // Mirrors the behaviour of navigateUp
+    private fun computeVisibleBackStack(): List<Route> {
+        val keys = topLevelStacks.keys.toList()
+        val visible = ArrayDeque<Route>()
+        for (key in keys.asReversed()) {
+            visible.addAll(0, topLevelStacks[key].orEmpty())
+            if (key == startKey) break
+            if (key is BottomBarDestination) {
+                // navigateUp re-creates the start stack if it is missing
+                visible.addAll(0, topLevelStacks[startKey] ?: listOf(startKey))
+                break
+            }
+        }
+        return visible
+    }
 
     private fun addTopLevel(key: TopLevelRoute){
         // If the top level doesn't exist, add it

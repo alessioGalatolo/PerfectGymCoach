@@ -94,6 +94,10 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelCompone
 import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayerDimensions
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import kotlin.math.roundToInt
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
@@ -318,7 +322,6 @@ fun WorkoutRecap(
                                 if (state.hasHRData && record.heartRates != null) {
                                     HrZoneCard(
                                         heartRates = record.heartRates,
-                                        durationSeconds = record.durationSeconds,
                                         userAge = state.userAge,
                                         modifier = Modifier.fillMaxWidth()
                                     )
@@ -757,6 +760,15 @@ fun WorkoutRecap(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    if (state.healthConnectExportStatus == HealthConnectExportStatus.ERROR) {
+                                        state.healthConnectExportError?.let { error ->
+                                            Text(
+                                                error,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
                                 }
                                 when (state.healthConnectExportStatus) {
                                     HealthConnectExportStatus.EXPORTING -> {
@@ -823,6 +835,11 @@ fun WorkoutRecap(
                                 navigator.navigate(
                                     ExerciseStatsDestination(exerciseId = exerciseId)
                                 )
+                            }
+                        },
+                        extraContent = { exercise ->
+                            state.exerciseHeartRates[exercise.recordId]?.let { heartRates ->
+                                ExerciseHeartRate(heartRates)
                             }
                         }
                     )
@@ -934,25 +951,23 @@ private fun hrZonesForAge(age: Int): List<HrZone> {
         HrZone(R.string.hr_zone_light, maxHr * 0.60, maxHr * 0.70, Color(0xFF66BB6A)),
         HrZone(R.string.hr_zone_aerobic, maxHr * 0.70, maxHr * 0.80, Color(0xFFFFEE58)),
         HrZone(R.string.hr_zone_anaerobic, maxHr * 0.80, maxHr * 0.90, Color(0xFFFFA726)),
-        HrZone(R.string.hr_zone_peak, maxHr * 0.90, maxHr, Color(0xFFEF5350)),
+        // open-ended so that samples above the estimated max HR are still counted
+        HrZone(R.string.hr_zone_peak, maxHr * 0.90, Double.POSITIVE_INFINITY, Color(0xFFEF5350)),
     )
 }
 
 @Composable
 private fun HrZoneCard(
     heartRates: List<Int>,
-    durationSeconds: Long,
     userAge: Int,
     modifier: Modifier = Modifier,
 ) {
     val hrZones = hrZonesForAge(userAge)
-    // Compute seconds per sample, then tally seconds in each zone
-    val secondsPerSample = if (heartRates.isNotEmpty())
-        durationSeconds.toDouble() / heartRates.size else 0.0
+    // heart rates are sampled once per second, so each sample counts as one second
     val zoneSeconds = hrZones.map { zone ->
-        heartRates.count { it >= zone.minBpm && it < zone.maxBpm } * secondsPerSample
+        heartRates.count { it >= zone.minBpm && it < zone.maxBpm }
     }
-    val totalSeconds = zoneSeconds.sum().coerceAtLeast(1.0)
+    val totalSeconds = zoneSeconds.sum().coerceAtLeast(1)
 
     Card(
         modifier = modifier,
@@ -982,6 +997,16 @@ private fun HrZoneCard(
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
+            if (heartRates.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    HrStat(stringResource(R.string.hr_min_short), heartRates.min())
+                    HrStat(stringResource(R.string.hr_avg_short), heartRates.average().roundToInt())
+                    HrStat(stringResource(R.string.hr_max_short), heartRates.max())
+                }
+            }
             // Segmented proportional bar
             Row(
                 modifier = Modifier
@@ -990,7 +1015,7 @@ private fun HrZoneCard(
                     .clip(MaterialTheme.shapes.extraSmall)
             ) {
                 hrZones.forEachIndexed { index, zone ->
-                    val fraction = (zoneSeconds[index] / totalSeconds).toFloat()
+                    val fraction = zoneSeconds[index].toFloat() / totalSeconds
                     if (fraction > 0f) {
                         Box(
                             modifier = Modifier
@@ -1007,8 +1032,9 @@ private fun HrZoneCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 hrZones.forEachIndexed { index, zone ->
-                    val minutes = (zoneSeconds[index] / 60.0).toInt()
-                    if (minutes > 0) {
+                    val seconds = zoneSeconds[index]
+                    // show every zone that appears in the bar, even if < 1 minute
+                    if (seconds > 0) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.weight(1f)
@@ -1020,7 +1046,10 @@ private fun HrZoneCard(
                                     .background(zone.color)
                             )
                             Text(
-                                stringResource(R.string.n_min, minutes),
+                                if (seconds < 60)
+                                    stringResource(R.string.n_sec, seconds)
+                                else
+                                    stringResource(R.string.n_min, seconds / 60),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
@@ -1034,6 +1063,74 @@ private fun HrZoneCard(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HrStat(label: String, bpm: Int) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            stringResource(R.string.bpm_value, bpm.toString()),
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
+}
+
+/** Heart rate summary + sparkline for a single exercise in the records list */
+@Composable
+private fun ExerciseHeartRate(heartRates: List<Int>) {
+    if (heartRates.isEmpty()) return
+    val min = heartRates.min()
+    val max = heartRates.max()
+    val avg = heartRates.average().roundToInt()
+    val lineColor = MaterialTheme.colorScheme.error
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        modifier = Modifier.padding(bottom = 8.dp)
+    ) {
+        Column(Modifier.padding(8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    Icons.Outlined.Favorite,
+                    contentDescription = null,
+                    tint = lineColor,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    stringResource(R.string.exercise_hr_summary, avg, min, max),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (heartRates.size > 1) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .padding(top = 4.dp)
+                ) {
+                    val range = (max - min).coerceAtLeast(1).toFloat()
+                    val stepX = size.width / (heartRates.size - 1)
+                    val path = Path()
+                    heartRates.forEachIndexed { i, bpm ->
+                        val x = i * stepX
+                        val y = size.height - (bpm - min) / range * size.height
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    drawPath(path, lineColor, style = Stroke(width = 2.dp.toPx()))
                 }
             }
         }

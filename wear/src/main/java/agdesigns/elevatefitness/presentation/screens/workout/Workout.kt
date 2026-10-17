@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -74,6 +75,14 @@ fun Workout(
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val view = LocalView.current
+
+    DisposableEffect(exercisesState.keepScreenOn) {
+        view.keepScreenOn = exercisesState.keepScreenOn
+        onDispose {
+            view.keepScreenOn = false
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose {

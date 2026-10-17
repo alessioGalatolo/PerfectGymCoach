@@ -291,10 +291,16 @@ suspend fun generatePlan(
                         totalMuscleToSets.mapValues { it.value / size }
                 }
             }
-        val muscleToSets = programToMuscleToSets.values.reduce { acc, map ->
-            map.mapValues { (muscle, sets) ->
-                (acc[muscle] ?: 0) + sets
+        // weekly volume = sum of the per-session averages of every program
+        val muscleToSets = mutableMapOf<Muscle, Int>()
+        programToMuscleToSets.values.forEach { map ->
+            map.forEach { (muscle, sets) ->
+                muscleToSets[muscle] = (muscleToSets[muscle] ?: 0) + sets
             }
+        }
+        // no usable history (e.g. no workouts done yet), fall back to defaults
+        if (muscleToSets.values.none { it > 0 }) {
+            return@let null
         }
         // adjust based on new goal
         when (currentPlanGoal) {
@@ -312,6 +318,10 @@ suspend fun generatePlan(
                 }
             }
             else -> null
+        }?.let { historySets ->
+            // muscles not trained in the current plan keep the default volume
+            targetWeeklySetsByMuscle(goalChoice, resolvedDifficulty, allMuscles) +
+                historySets.filterValues { it > 0 }
         }
     } ?: targetWeeklySetsByMuscle(goalChoice, resolvedDifficulty, allMuscles)
     if (resolvedSplit == WorkoutPlanSplit.UPPER_LOWER) {

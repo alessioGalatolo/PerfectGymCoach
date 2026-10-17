@@ -666,7 +666,7 @@ private fun LazyListScope.overviewCards(
         ) {
             MetricCard(
                 title = stringResource(R.string.best_streak),
-                value = stringResource(R.string.streak_in_days, longestStreak),
+                value = stringResource(R.string.streak_in_weeks, longestStreak),
                 icon = Icons.Default.EmojiEvents,
                 iconColor = Color(0xFFFFD700),
                 containerColor = Color(0xFFFFF5BA), // pastel yellow
@@ -675,7 +675,7 @@ private fun LazyListScope.overviewCards(
             Spacer(Modifier.width(8.dp))
             MetricCard(
                 title = stringResource(R.string.current_streak),
-                value = stringResource(R.string.streak_in_days, currentStreak),
+                value = stringResource(R.string.streak_in_weeks, currentStreak),
                 icon = Icons.Default.Whatshot,
                 iconColor = Color(0xFFFF9500),
                 containerColor = Color(0xFFFFF5BA), // reuse pastel yellow

@@ -238,6 +238,9 @@ class Repository @Inject constructor(
     suspend fun deleteProgramExercise(programExerciseId: Long) =
         db.programExerciseDao.delete(programExerciseId)
 
+    suspend fun updateProgramExercise(exercise: ProgramExercise) =
+        db.programExerciseDao.update(exercise)
+
     suspend fun updateExerciseSuperset(updateExerciseSupersets: List<UpdateExerciseSuperset>) =
         db.programExerciseDao.updateSuperset(updateExerciseSupersets)
 
@@ -294,6 +297,12 @@ class Repository @Inject constructor(
     fun getWorkoutExercises(workoutId: Long) =
         db.workoutExerciseDao.getWorkoutExercises(workoutId).map {
             it.map { exercise -> resolveResources(exercise) }
+        }
+
+    // resources not resolved, only meant to inspect what was planned (e.g., reps)
+    suspend fun getWorkoutExercisesByIds(workoutExerciseIds: List<Long>) =
+        workoutExerciseIds.chunked(500).flatMap {
+            db.workoutExerciseDao.getWorkoutExercisesByIds(it)
         }
 
     suspend fun deleteWorkoutExercise(workoutExerciseId: Long) =

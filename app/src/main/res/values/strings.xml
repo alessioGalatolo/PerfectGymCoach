@@ -73,7 +73,6 @@
     <!-- # icons -->
     <string name="chart_icon">Chart icon</string>
     <string name="achievement_icon">Achievement</string>
-    <string name="workout_i_icon">Workout %1$s</string>
     <string name="year_icon">Year</string>
     <string name="week_icon">Week</string>
     <string name="empty_history_icon">Empty history</string>
@@ -117,10 +116,23 @@
     <string name="select_secondary_muscle_s">Secondary muscle(s)</string>
 
     <!-- History -->
-    <string name="weekly_overview">Weekly Overview</string>
-    <string name="calendar">Calendar</string>
+    <string name="workout_activity">Workout Activity</string>
+    <string name="heatmap_less">Less</string>
+    <string name="heatmap_more">More</string>
+    <string name="week_of_date">Week of %1$s</string>
+    <string name="tap_a_week_for_details">Tap a week for details</string>
+    <string name="previous_year">Previous year</string>
+    <string name="next_year">Next year</string>
+    <string name="tap_week_again_to_show_in_history">Tap the week again to show it in your history</string>
+    <string name="hide_week_details">Hide week details</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="show_workout_activity">Show workout activity</string>
     <string name="week_i">Week %1$s</string>
-    <string name="no_workouts">No workouts</string>
+    <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched to -->
+    <string name="plan_change_new">New plan: %1$s</string>
+    <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched from -->
+    <string name="plan_change_old">Previous plan: %1$s</string>
     <string name="rest_week">Rest week</string>
     <plurals name="workout_count">
         <item quantity="one">%1$s workout</item>
@@ -262,8 +274,8 @@
     <string name="avg_duration">Avg Duration</string>
     <string name="avg_calories">Avg Calories</string>
     <string name="current_streak">Current Streak</string>
-    <!-- ## A streak in number of days   -->
-    <string name="streak_in_days">%1$sd</string>
+    <!-- ## A streak in number of weeks; a week counts when all workouts of the plan were done   -->
+    <string name="streak_in_weeks">%1$sw</string>
     <string name="best_streak">Best Streak</string>
     <string name="sets_total">%1$s occurrences • %2$s %3$s total</string>
     <!-- View exercises -->
@@ -878,7 +890,7 @@
     <string name="add_set_fail">Tried to add a set but current exercise is unknown!</string>
     <string name="resume_workout_fail">Couldn\'t find the workout to resume.</string>
     <string name="lock_workout_scroll">Lock workout horizontal scroll: </string>
-    <string name="auto_open_wearos">Automatically open Wear OS companion on workout start: </string>
+    <string name="auto_open_wearos">Automatically open Wear OS companion on workout start</string>
     <string name="show_media_controls">Show media controls</string>
     <string name="discard_data_dialog_title">Discard changed data?</string>
     <string name="discard_data_dialog_info">You have changed some options for this exercise. If you go back now you will lose these changes.</string>
@@ -910,15 +922,31 @@
     <string name="modification_suggestion_desc_replace">Last time you replaced this exercise with: %1$s</string>
     <string name="modification_suggestion_not_this_time">Not this time</string>
     <string name="modification_suggestion_do_it">Okay!</string>
+    <string name="permanent_modifications_title">Make recent changes permanent?</string>
+    <string name="permanent_modifications_desc">You made these changes in your last workout and in a previous one. Select the ones to keep in this program.</string>
+    <string name="permanent_modifications_apply">Apply selected</string>
+    <string name="permanent_modifications_dismiss">Dismiss</string>
+    <string name="permanent_modification_add">Add %1$s after %2$s</string>
+    <string name="permanent_modification_remove">Remove %1$s</string>
+    <string name="permanent_modification_replace">Replace %1$s with %2$s</string>
 
     <!-- Smart features -->
     <string name="smart_features_title">Smart features</string>
     <string name="suggest_reps_weight">Suggest reps and weight in workout</string>
     <string name="suggest_workout_modifications">Suggest workout modifications based on previous sessions</string>
-    <string name="in_rest_hints_wear">Wearable: guidance between sets on changing weight, reps, etc.</string>
-    <string name="tempo_rom_tracking_wear">Wearable: tempo and ROM tracking for each single set (experimental, only supported exercises)</string>
+    <string name="in_rest_hints_wear">Guidance between sets on changing weight, reps, etc.</string>
+    <string name="tempo_rom_tracking_wear">Tempo and ROM tracking for each single set (experimental, only supported exercises)</string>
     <string name="requires_connected_watch">Requires a connected wearable</string>
     <string name="requires_compatible_wearable">This feature requires a connected compatible wearable</string>
+
+    <!-- Wearable -->
+    <string name="wearable_title">Wearable</string>
+    <string name="no_wearable_connected">No wearable connected</string>
+    <string name="no_wearable_connected_info">Connect a Wear OS watch to unlock more features</string>
+    <string name="info_icon_wearable">How to connect a wearable</string>
+    <string name="wearable_help_info">Elevate Fitness has a Wear OS companion app that lets you follow and control your workout from your wrist, get guidance between sets and track tempo and range of motion.\n\nTo connect your watch:\n1. Pair your Wear OS watch with this phone\n2. Install Elevate Fitness on the watch from the Play Store\n3. Make sure Bluetooth is on and the watch is nearby, then reopen this screen</string>
+    <string name="wear_keep_screen_on">Keep watch screen on during workouts</string>
+    <string name="wear_keep_screen_on_info">Prevents the watch from dimming or turning off its screen. Uses more battery</string>
 
     <string name="exercise_type_hold">Isometric</string>
     <string name="exercise_type_reps">Traditional</string>
@@ -939,6 +967,15 @@
     <string name="health_connect_exported">Exported to Health Connect</string>
     <string name="health_connect_export_error">Export failed. Tap to retry.</string>
     <string name="health_connect_retry">Retry</string>
+    <string name="health_connect_backfill_title">Export past workouts?</string>
+    <plurals name="health_connect_backfill_text">
+        <item quantity="one">You have %1$d workout that is not in Health Connect yet. Do you want to export it now?</item>
+        <item quantity="other">You have %1$d workouts that are not in Health Connect yet. Do you want to export them now?</item>
+    </plurals>
+    <string name="health_connect_backfill_not_now">Not now</string>
+    <string name="health_connect_backfill_progress">Exporting past workouts (%1$d/%2$d)</string>
+    <string name="health_connect_backfill_success">Past workouts exported to Health Connect</string>
+    <string name="health_connect_backfill_partial">Exported %1$d workouts, %2$d failed</string>
     <string name="heart_rate_bpm">Heart rate (bpm)</string>
     <string name="progression_over_time">Progression over time</string>
     <string name="avg_heart_rate">Avg Heart Rate</string>
@@ -955,6 +992,11 @@
     <string name="hr_zone_anaerobic">Anaerobic</string>
     <string name="hr_zone_peak">Peak</string>
     <string name="n_min">%1$sm</string>
+    <string name="n_sec">%1$ss</string>
+    <string name="hr_min_short">Min</string>
+    <string name="hr_avg_short">Avg</string>
+    <string name="hr_max_short">Max</string>
+    <string name="exercise_hr_summary">Avg %1$d bpm · %2$d–%3$d bpm</string>
     <string name="days_ago">" ~ %1$d days ago"</string>
     <string name="bottom_bar_current">" (current)"</string>
     <string name="last_set_tracking_data">Last set tracking data</string>

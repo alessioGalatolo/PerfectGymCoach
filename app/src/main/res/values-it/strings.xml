@@ -73,7 +73,6 @@
     <!-- # icons -->
     <string name="chart_icon">Icona grafico</string>
     <string name="achievement_icon">Obiettivo</string>
-    <string name="workout_i_icon">Allenamento %1$s</string>
     <string name="year_icon">Anno</string>
     <string name="week_icon">Settimana</string>
     <string name="empty_history_icon">Storico vuoto</string>
@@ -116,10 +115,23 @@
     <string name="select_secondary_muscle_s">Muscoli secondari</string>
 
     <!-- History -->
-    <string name="weekly_overview">Panoramica settimanale</string>
-    <string name="calendar">Calendario</string>
+    <string name="workout_activity">Attività di allenamento</string>
+    <string name="heatmap_less">Meno</string>
+    <string name="heatmap_more">Più</string>
+    <string name="week_of_date">Settimana del %1$s</string>
+    <string name="tap_a_week_for_details">Tocca una settimana per i dettagli</string>
+    <string name="previous_year">Anno precedente</string>
+    <string name="next_year">Anno successivo</string>
+    <string name="tap_week_again_to_show_in_history">Tocca di nuovo la settimana per vederla nella cronologia</string>
+    <string name="hide_week_details">Nascondi dettagli settimana</string>
+    <string name="previous_month">Mese precedente</string>
+    <string name="next_month">Mese successivo</string>
+    <string name="show_workout_activity">Mostra attività di allenamento</string>
     <string name="week_i">Settimana %1$s</string>
-    <string name="no_workouts">Nessun allenamento</string>
+    <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched to -->
+    <string name="plan_change_new">Nuovo piano: %1$s</string>
+    <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched from -->
+    <string name="plan_change_old">Piano precedente: %1$s</string>
     <string name="rest_week">Settimana di riposo</string>
     <plurals name="workout_count">
         <item quantity="one">%1$s allenamento</item>
@@ -160,7 +172,7 @@
     <string name="archived_plans_title">Piani archiviati</string>
     <string name="plan_archived">Piano archiviato</string>
     <string name="undo">Annulla</string>
-    <string name="generate_a_new_plan">Genera un nuovo piano (beta)</string>
+    <string name="generate_a_new_plan">Genera un nuovo piano</string>
     <!-- Plan change reminder -->
     <string name="time_to_change_plan">Ora di cambiare il tuo piano!</string>
     <string name="plan_change_reason_cycles">Hai completato questo piano %1$d volte. Considera cambiarlo per continuare a progredire.</string>
@@ -262,8 +274,8 @@
     <string name="avg_duration">Durata media</string>
     <string name="avg_calories">Calorie medie</string>
     <string name="current_streak">Serie attuale</string>
-    <!-- ## A streak in number of days   -->
-    <string name="streak_in_days">%1$sg</string>
+    <!-- ## A streak in number of weeks; a week counts when all workouts of the plan were done   -->
+    <string name="streak_in_weeks">%1$s sett.</string>
     <string name="best_streak">Miglior serie</string>
     <string name="sets_total">%1$s occorrenze • %2$s %3$s totali</string>
     <!-- View exercises -->
@@ -909,15 +921,31 @@
     <string name="modification_suggestion_desc_replace">L\'ultima volta hai sostituito questo esercizio con: %1$s</string>
     <string name="modification_suggestion_not_this_time">Non questa volta</string>
     <string name="modification_suggestion_do_it">Okay!</string>
+    <string name="permanent_modifications_title">Rendere permanenti le modifiche recenti?</string>
+    <string name="permanent_modifications_desc">Hai fatto queste modifiche nell\'ultimo allenamento e in uno precedente. Seleziona quelle da mantenere in questo programma.</string>
+    <string name="permanent_modifications_apply">Applica selezionate</string>
+    <string name="permanent_modifications_dismiss">Ignora</string>
+    <string name="permanent_modification_add">Aggiungi %1$s dopo %2$s</string>
+    <string name="permanent_modification_remove">Rimuovi %1$s</string>
+    <string name="permanent_modification_replace">Sostituisci %1$s con %2$s</string>
 
     <!-- Smart features -->
     <string name="smart_features_title">Funzionalità smart</string>
     <string name="suggest_reps_weight">Suggerisci ripetizioni e peso negli allenamenti</string>
     <string name="suggest_workout_modifications">Suggeriscie modifiche all\'allenamento in base alle sessioni precedenti</string>
-    <string name="in_rest_hints_wear">Orologio: guida tra le serie per cambiare peso, ripetizioni, ecc.</string>
-    <string name="tempo_rom_tracking_wear">Orologio: traccia il tempo e ROM per le singole ripetizioni (sperimentale, solo esercizi supportati)</string>
+    <string name="in_rest_hints_wear">Guida tra le serie per cambiare peso, ripetizioni, ecc.</string>
+    <string name="tempo_rom_tracking_wear">Traccia il tempo e ROM per le singole ripetizioni (sperimentale, solo esercizi supportati)</string>
     <string name="requires_connected_watch">Richiede un orologio connesso</string>
     <string name="requires_compatible_wearable">Questa funzionalità richede un orologio compatibile</string>
+
+    <!-- Wearable -->
+    <string name="wearable_title">Orologio</string>
+    <string name="no_wearable_connected">Nessun orologio connesso</string>
+    <string name="no_wearable_connected_info">Connetti un orologio Wear OS per sbloccare altre funzionalità</string>
+    <string name="info_icon_wearable">Come connettere un orologio</string>
+    <string name="wearable_help_info">Elevate Fitness ha un\'app Wear OS che ti permette di seguire e controllare l\'allenamento dal polso, ricevere suggerimenti tra le serie e tracciare tempo e ampiezza del movimento.\n\nPer connettere l\'orologio:\n1. Associa l\'orologio Wear OS a questo telefono\n2. Installa Elevate Fitness sull\'orologio dal Play Store\n3. Assicurati che il Bluetooth sia attivo e l\'orologio sia vicino, poi riapri questa schermata</string>
+    <string name="wear_keep_screen_on">Mantieni lo schermo dell\'orologio acceso durante l\'allenamento</string>
+    <string name="wear_keep_screen_on_info">Impedisce all\'orologio di oscurare o spegnere lo schermo. Consuma più batteria</string>
 
     <string name="exercise_type_hold">Isometrico</string>
     <string name="exercise_type_reps">Tradizionale</string>
@@ -936,6 +964,16 @@
     <string name="health_connect_exported">Esportato in Health Connect</string>
     <string name="health_connect_export_error">Esportazione fallita. Tocca per riprovare.</string>
     <string name="health_connect_retry">Riprova</string>
+    <string name="health_connect_backfill_title">Esportare gli allenamenti passati?</string>
+    <plurals name="health_connect_backfill_text">
+        <item quantity="one">Hai %1$d allenamento non ancora presente in Health Connect. Vuoi esportarlo ora?</item>
+        <item quantity="many">Hai %1$d allenamenti non ancora presenti in Health Connect. Vuoi esportarli ora?</item>
+        <item quantity="other">Hai %1$d allenamenti non ancora presenti in Health Connect. Vuoi esportarli ora?</item>
+    </plurals>
+    <string name="health_connect_backfill_not_now">Non ora</string>
+    <string name="health_connect_backfill_progress">Esportazione allenamenti passati (%1$d/%2$d)</string>
+    <string name="health_connect_backfill_success">Allenamenti passati esportati in Health Connect</string>
+    <string name="health_connect_backfill_partial">Esportati %1$d allenamenti, %2$d non riusciti</string>
     <string name="heart_rate_bpm">Battiti (bpm)</string>
     <string name="progression_over_time">Progressione nel tempo</string>
     <string name="avg_heart_rate">Battiti medi</string>
@@ -952,6 +990,11 @@
     <string name="hr_zone_anaerobic">Anaerobico</string>
     <string name="hr_zone_peak">Massimo</string>
     <string name="n_min">%1$sm</string>
+    <string name="n_sec">%1$ss</string>
+    <string name="hr_min_short">Min</string>
+    <string name="hr_avg_short">Media</string>
+    <string name="hr_max_short">Max</string>
+    <string name="exercise_hr_summary">Media %1$d bpm · %2$d–%3$d bpm</string>
     <string name="days_ago">" ~ %1$d giorni fa"</string>
     <string name="bottom_bar_current">" (attuale)"</string>
     <string name="last_set_tracking_data">Dati tracciati ultima serie</string>

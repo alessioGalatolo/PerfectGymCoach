@@ -256,6 +256,14 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.autoOpenWear] = newValue
     }
 
+    fun getHealthConnectBackfillOffered(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.healthConnectBackfillOffered] ?: false
+    }
+
+    suspend fun setHealthConnectBackfillOffered(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.healthConnectBackfillOffered] = newValue
+    }
+
     fun getSuggestRepsWeight(): Flow<Boolean> = dataStore.data.map {
         it[PrefKeys.suggestRepsWeight] ?: true
     }
@@ -288,6 +296,14 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.tempoRomTracking] = newValue
     }
 
+    fun getWearKeepScreenOn(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.wearKeepScreenOn] ?: false
+    }
+
+    suspend fun setWearKeepScreenOn(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.wearKeepScreenOn] = newValue
+    }
+
     fun getExcludedPlanExercises(): Flow<Set<Long>> = dataStore.data.map {
         val raw = it[PrefKeys.excludedPlanExercises] ?: ""
         raw.split(",").mapNotNull { s -> s.toLongOrNull() }.toSet()
@@ -314,6 +330,24 @@ class PreferenceRepository @Inject constructor(
         dismissedPlans.add(planId.toString())
         it[PrefKeys.dismissedPlanChangeReminders] = dismissedPlans.joinToString(",")
     }
+
+    // last workout (per program) whose recurring modifications were already proposed as permanent
+    fun getReviewedModificationsWorkout(programId: Long): Flow<Long?> = dataStore.data.map {
+        val reviewed = it[PrefKeys.reviewedModificationsWorkouts] ?: ""
+        reviewed.split(",")
+            .map { entry -> entry.split(":") }
+            .find { entry -> entry.size == 2 && entry[0] == programId.toString() }
+            ?.get(1)?.toLongOrNull()
+    }
+
+    suspend fun setReviewedModificationsWorkout(programId: Long, workoutId: Long) = dataStore.edit {
+        val current = it[PrefKeys.reviewedModificationsWorkouts] ?: ""
+        val reviewed = current.split(",")
+            .filter { entry -> entry.isNotBlank() && !entry.startsWith("$programId:") }
+            .toMutableList()
+        reviewed.add("$programId:$workoutId")
+        it[PrefKeys.reviewedModificationsWorkouts] = reviewed.joinToString(",")
+    }
 }
 
 internal object PrefKeys {
@@ -339,12 +373,15 @@ internal object PrefKeys {
     val language = stringPreferencesKey("Language")
     val lockHorizontalScroll = booleanPreferencesKey("Lock horizontal scroll")
     val autoOpenWear = booleanPreferencesKey("Auto open wear")
+    val healthConnectBackfillOffered = booleanPreferencesKey("Health connect backfill offered")
     val dismissedPlanChangeReminders = stringPreferencesKey("Dismissed plan change reminders")
     val excludedPlanExercises = stringPreferencesKey("Plan generation excluded exercises")
     val suggestRepsWeight = booleanPreferencesKey("Suggest reps weight")
     val suggestWorkoutModifications = booleanPreferencesKey("Suggest workout modifications")
     val inRestHints = booleanPreferencesKey("In rest hints")
     val tempoRomTracking = booleanPreferencesKey("Tempo rom tracking")
+    val wearKeepScreenOn = booleanPreferencesKey("Wear keep screen on")
+    val reviewedModificationsWorkouts = stringPreferencesKey("Reviewed modifications workouts")
 }
 
 

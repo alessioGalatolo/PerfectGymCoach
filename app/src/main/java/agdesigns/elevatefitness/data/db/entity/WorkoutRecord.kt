@@ -148,6 +148,10 @@ data class WorkoutRecordAndName(
     val avgHeartRate: Int? = null,
     val minHeartRate: Int? = null,
     val heartRates: List<Int>? = null,
+    // plan the program belonged to; null for unbound workouts or programs removed from a plan
+    val extPlanId: Long? = null,
+    val planName: String? = null,
+    val totalSets: Int = 0,
 ) : Parcelable
 
 @Parcelize

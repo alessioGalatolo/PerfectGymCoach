@@ -29,6 +29,12 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
+// exercise records are saved *after* the first set is done, this is an estimate of how long
+// that first set took, used to find when the exercise actually started
+private const val FIRST_SET_ESTIMATE_SECONDS = 30L
+// extra margin before/after each exercise when slicing its heart rate data
+private const val EXERCISE_HR_PADDING_SECONDS = 10L
+
 enum class HealthConnectExportStatus {
     NOT_EXPORTED, EXPORTING, EXPORTED, ERROR
 }
@@ -51,11 +57,14 @@ data class RecapState(
     val minHR: Double = 0.0,
     val hrChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val secondsToExercise: Map<Int, ExerciseRecordAndInfo> = emptyMap(),
+    // per-second heart rate samples recorded while doing each exercise, keyed by recordId
+    val exerciseHeartRates: Map<Long, List<Int>> = emptyMap(),
     val imperialSystem: Boolean = false,
     val index2date: Map<Int, ZonedDateTime> = emptyMap(),
     val isHealthConnectAvailable: Boolean = false,
     val hasHealthConnectPermissions: Boolean = false,
     val healthConnectExportStatus: HealthConnectExportStatus = HealthConnectExportStatus.NOT_EXPORTED,
+    val healthConnectExportError: String? = null,
 )
 
 sealed class RecapEvent{
@@ -108,7 +117,7 @@ class RecapViewModel @Inject constructor(
             ) { record, hasPermissions, programName, exerciseRecords ->
                 if (record == null) return@combine
                 if (!hasPermissions) return@combine
-                if (programName.isEmpty()) return@combine
+                // exercise records and program name are loaded together, wait for them
                 if (exerciseRecords.isEmpty()) return@combine
                 tryExportToHealthConnect(
                     record,
@@ -220,6 +229,7 @@ class RecapViewModel @Inject constructor(
                                     var minHR = 0.0
                                     var hasHRData = false
                                     var secondsToExercise: MutableMap<Int, ExerciseRecordAndInfo> = mutableMapOf()
+                                    val exerciseHeartRates = mutableMapOf<Long, List<Int>>()
                                     if (workoutRecord.heartRates != null) {
                                         val hrMax = workoutRecord.heartRates.max()
                                         val hrMin = workoutRecord.heartRates.min()
@@ -248,7 +258,7 @@ class RecapViewModel @Inject constructor(
                                                 // second from watch's perspective + offset from
                                                 // watch to phone + 20 seconds because exercise record
                                                 // is recorded *after* the first set is done
-                                                val secondWithOffset = second + (workoutRecord.watchOffsetSeconds ?: 0L) + 20
+                                                val secondWithOffset = second + (workoutRecord.watchOffsetSeconds ?: 0L) + FIRST_SET_ESTIMATE_SECONDS
                                                 if (nextOffsetSeconds != null && secondWithOffset >= nextOffsetSeconds) {
                                                     currentRecord = sortedDistinctExercises.getOrNull(++recordsIndex)
                                                     nextOffsetSeconds = sortedDistinctExercises.getOrNull(recordsIndex + 1)?.date?.let {
@@ -261,6 +271,23 @@ class RecapViewModel @Inject constructor(
                                                 if (currentRecord == null)
                                                     break
                                                 secondsToExercise[second] = currentRecord
+                                            }
+                                            // slice heart rates for each exercise: from its (estimated)
+                                            // start to the start of the next one, with some padding
+                                            val heartRates = workoutRecord.heartRates
+                                            val watchOffset = workoutRecord.watchOffsetSeconds ?: 0L
+                                            val exerciseStarts = sortedDistinctExercises.map {
+                                                ChronoUnit.SECONDS.between(workoutStart, it.date) - FIRST_SET_ESTIMATE_SECONDS
+                                            }
+                                            sortedDistinctExercises.forEachIndexed { index, exercise ->
+                                                val start = exerciseStarts[index] - EXERCISE_HR_PADDING_SECONDS
+                                                val end = (exerciseStarts.getOrNull(index + 1)
+                                                    ?: workoutRecord.durationSeconds) + EXERCISE_HR_PADDING_SECONDS
+                                                // convert from phone time to watch sample index (1 sample per second)
+                                                val from = (start - watchOffset).coerceAtLeast(0L).toInt()
+                                                val to = (end - watchOffset).coerceAtMost(heartRates.size.toLong()).toInt()
+                                                if (from < to)
+                                                    exerciseHeartRates[exercise.recordId] = heartRates.subList(from, to).toList()
                                             }
                                         }
                                     }
@@ -296,7 +323,8 @@ class RecapViewModel @Inject constructor(
                                             hasHRData = hasHRData,
                                             maxHR = maxHR,
                                             minHR = minHR,
-                                            secondsToExercise = secondsToExercise
+                                            secondsToExercise = secondsToExercise,
+                                            exerciseHeartRates = exerciseHeartRates
                                         )
                                     }
 
@@ -330,33 +358,41 @@ class RecapViewModel @Inject constructor(
         programName: String,
         exerciseRecords: List<ExerciseRecordAndInfo>
     ) {
+        if (record == null) return
+        if (!hasPermissions) return
+        if (record.healthRecordId != null) {
+            _state.update { it.copy(healthConnectExportStatus = HealthConnectExportStatus.EXPORTED) }
+            return
+        }
+        // avoid exporting the same workout twice
+        when (state.value.healthConnectExportStatus) {
+            HealthConnectExportStatus.EXPORTING, HealthConnectExportStatus.EXPORTED -> return
+            else -> Unit
+        }
+        _state.update {
+            it.copy(
+                healthConnectExportStatus = HealthConnectExportStatus.EXPORTING,
+                healthConnectExportError = null
+            )
+        }
         viewModelScope.launch {
-            if (record == null) return@launch
-            if (!hasPermissions) return@launch
-            if (record.healthRecordId != null) {
-                _state.update { it.copy(healthConnectExportStatus = HealthConnectExportStatus.EXPORTED) }
-                return@launch
-            }
-            if (programName.isEmpty()) return@launch
-            _state.update { it.copy(healthConnectExportStatus = HealthConnectExportStatus.EXPORTING) }
-            val healthRecordId = healthConnectRepository.writeWorkout(
+            healthConnectRepository.writeWorkout(
                 record,
                 programName,
                 exerciseRecords
-            )
-            _state.update {
-                it.copy(
-                    healthConnectExportStatus = if (healthRecordId != null)
-                        HealthConnectExportStatus.EXPORTED
-                    else
-                        HealthConnectExportStatus.ERROR
-                )
-            }
-            if (healthRecordId != null) {
+            ).onSuccess { healthRecordId ->
+                _state.update { it.copy(healthConnectExportStatus = HealthConnectExportStatus.EXPORTED) }
                 repository.updateWorkoutRecordHealthId(
                     record.workoutId,
                     healthRecordId
                 )
+            }.onFailure { e ->
+                _state.update {
+                    it.copy(
+                        healthConnectExportStatus = HealthConnectExportStatus.ERROR,
+                        healthConnectExportError = e.message ?: e.javaClass.simpleName
+                    )
+                }
             }
         }
     }

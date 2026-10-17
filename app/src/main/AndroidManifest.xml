@@ -104,16 +104,26 @@
                     />
             </intent-filter>
         </service>
-        <!-- Required by Health Connect to show permission usage to users -->
+        <!-- Required by Health Connect (Android 13 and lower) to show the permissions rationale -->
         <activity
             android:name=".PrivacyPolicyActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Required by Health Connect (Android 14+) to show permission usage to users -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
             android:exported="true"
+            android:targetActivity=".PrivacyPolicyActivity"
             android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <activity
             android:name=".MainActivity"

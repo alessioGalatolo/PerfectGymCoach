@@ -20,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +47,8 @@ fun LazyListScope.ExerciseRecordsList(
     useImperialSystem: Boolean,
     exerciseRecordsWithImage: List<ExerciseRecordAndInfo> = emptyList(),
     onRecordClick: (Long) -> Unit = {},
+    // optional extra content
+    extraContent: @Composable (ExerciseRecordAndInfo) -> Unit = {},
 ) {
     items (items = exerciseRecordsWithImage, key = { it.recordId }) { exercise ->
         Card (onClick = {
@@ -70,6 +73,7 @@ fun LazyListScope.ExerciseRecordsList(
                 )
             }
             Column(Modifier.padding(dimensionResource(R.dimen.card_inner_padding))) {
+                extraContent(exercise)
                 if (exercise.name.isNotEmpty())
                     Text(text = exercise.name + exercise.variation, style = MaterialTheme.typography.titleLarge)
                 if (exercise.equipment == Equipment.BARBELL) {
@@ -127,7 +131,6 @@ fun LazyListScope.ExerciseRecordsList(
                         )
                     }
                 }
-
             }
         }
     }

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
@@ -66,7 +67,7 @@ fun RootDestinationGraph(
     val showNavBar by remember {
         derivedStateOf {
             navigator.topLevelKey in BOTTOM_BAR_ROUTES
-                && navigator.backStack.none { it is WorkoutRecapDestination }
+                && navigator.visibleBackStack.none { it is WorkoutRecapDestination }
         }
     }
     LaunchedEffect(showNavBar) {
@@ -84,7 +85,7 @@ fun RootDestinationGraph(
                 else -> NavigationSuiteType.WideNavigationRailExpanded
             }
         }
-    val currentScreen = navigator.backStack.lastOrNull()
+    val currentScreen = navigator.visibleBackStack.lastOrNull()
     val primaryActionContent = screenToPrimaryActionContent[currentScreen]
     // Snapshot holds the last non-null content so the exit animation renders
     // the FAB icon while it fades out (after navigating away from a FAB screen).
@@ -151,7 +152,7 @@ fun RootDestinationGraph(
                         } else {
                             navigator.navigate(destination)
                         }
-                        if (navigator.backStack.lastOrNull() == destination) {
+                        if (navigator.visibleBackStack.lastOrNull() == destination) {
                             refreshContentFlow.tryEmit(destination)
                         }
                     }
@@ -243,15 +244,18 @@ fun RootDestinationGraph(
         primaryActionContentHorizontalAlignment = Alignment.End
     ) {
         SharedTransitionLayout {
-            NavDisplay(
-                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
+            // Decorate the entries of every stack so the ones that are not visible keep their
+            // state, but only display the ones that back navigation will actually go through,
+            // otherwise predictive back would preview the wrong destination.
+            val allEntries = rememberDecoratedNavEntries<Any>(
                 backStack = navigator.backStack,
-                onBack = { if (navigator.navigateUp()) activity?.finish() },
-                sceneStrategies = listOf(
-                    supportingPaneSceneStrategy,
-                    listDetailStrategy
+                entryDecorators = listOf(
+                    // Add the default decorators for managing scenes and saving state
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    // Then add the view model store decorator
+                    rememberViewModelStoreNavEntryDecorator()
                 ),
-                entryProvider = entryProvider {
+                entryProvider = entryProvider<Any> {
                     bottomBarEntryBuilder(
                         navigator,
                         setPrimaryAction = { source, content ->
@@ -268,12 +272,21 @@ fun RootDestinationGraph(
                         fabOverlapHeight = fabOverlapHeight,
                     )
                     workoutScreenEntryBuilder(navigator)
-                },
-                entryDecorators = listOf(
-                    // Add the default decorators for managing scenes and saving state
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    // Then add the view model store decorator
-                    rememberViewModelStoreNavEntryDecorator()
+                }
+            )
+            // allEntries is index-aligned with navigator.backStack
+            val visibleKeys = navigator.visibleBackStack
+            val entries = allEntries.filterIndexed { i, _ ->
+                val key = navigator.backStack.getOrNull(i)
+                visibleKeys.any { it === key }
+            }
+            NavDisplay(
+                entries = entries,
+                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
+                onBack = { if (navigator.navigateUp()) activity?.finish() },
+                sceneStrategies = listOf(
+                    supportingPaneSceneStrategy,
+                    listDetailStrategy
                 ),
                 sharedTransitionScope = this,
                 transitionSpec = {

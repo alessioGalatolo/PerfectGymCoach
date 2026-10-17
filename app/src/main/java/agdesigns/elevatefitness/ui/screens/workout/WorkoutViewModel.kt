@@ -21,6 +21,7 @@ import agdesigns.elevatefitness.data.db.entity.toTrackingResult
 import agdesigns.elevatefitness.service.NotificationService
 import agdesigns.elevatefitness.service.WorkoutNotificationState
 import agdesigns.elevatefitness.utils.computeVolume
+import agdesigns.elevatefitness.utils.estimate1RM
 import agdesigns.elevatefitness.utils.getMetFromIntensity
 import android.os.Build
 import android.text.format.DateUtils
@@ -50,6 +51,7 @@ import javax.inject.Inject
 import kotlin.collections.toList
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 // duration of the "get ready" countdown shown before a duration-based exercise's hold timer starts
 private const val EXERCISE_TIMER_PREP_SECS = 3L
@@ -295,6 +297,8 @@ class WorkoutViewModel @Inject constructor(
     private val _workoutExercises = MutableStateFlow<List<WorkoutExercise>>(emptyList())
     private val _allRecords =
         MutableStateFlow<Map<Long, List<ExerciseRecordAndEquipment>>>(emptyMap())
+    // workout exercises (i.e., what was planned) of the latest records, by workoutExerciseId
+    private val _recordsWorkoutExercises = MutableStateFlow<Map<Long, WorkoutExercise>>(emptyMap())
 
     // Static content to be in the horizontalPager
     val pagesContent: StateFlow<WorkoutPagesContent> = combine(
@@ -306,6 +310,7 @@ class WorkoutViewModel @Inject constructor(
         workoutState.map { it.lastWorkoutModifications }.distinctUntilChanged(),
         workoutState.map { it.suggestRepsWeight }.distinctUntilChanged(),
         workoutState.map { it.suggestWorkoutModifications }.distinctUntilChanged(),
+        _recordsWorkoutExercises,
     ) { values ->
         /**
          * Glocal stuff for pages, precompute all so that pager can cache stuff
@@ -320,6 +325,7 @@ class WorkoutViewModel @Inject constructor(
         val modifications = values[5] as List<WorkoutRecord.WorkoutModification>
         val suggestRepsWeight = values[6] as Boolean
         val suggestWorkoutModifications = values[7] as Boolean
+        val recordsWorkoutExercises = values[8] as Map<Long, WorkoutExercise>
         val recordsAndOngoingForAllExercises = exercises.mapIndexed { index, exercise ->
             getUpdatedRecords(exercise, records, index, workoutId)
         }
@@ -343,10 +349,18 @@ class WorkoutViewModel @Inject constructor(
         val exerciseSetsDone = recordsAndOngoingForAllExercises.map {
             it.second?.reps?.size ?: 0
         }
-        // check if we can "auto-add" sets to exercises (when user added one last time, re-propose)
-        exercises = exercises.zip(recordsForAllExercises).map { (ex, records) ->
+        // whether program (exercise) changed since last record, if so history should not be copied
+        val programChangedForAllExercises = exercises.zip(recordsForAllExercises).map { (ex, records) ->
             val lastRecord = records.firstOrNull()
-            if (lastRecord?.reps?.size?.let { it > ex.reps.size } == true) {
+            hasProgramChanged(ex, lastRecord?.let { recordsWorkoutExercises[it.extWorkoutExerciseId] })
+        }
+        // check if we can "auto-add" sets to exercises (when user added one last time, re-propose)
+        exercises = exercises.zip(recordsForAllExercises).mapIndexed { index, (ex, records) ->
+            val lastRecord = records.firstOrNull()
+            if (
+                !programChangedForAllExercises[index] &&
+                lastRecord?.reps?.size?.let { it > ex.reps.size } == true
+            ) {
                 val additionalReps = lastRecord.reps.slice(ex.reps.size until lastRecord.reps.size)
                 val additionalRest = lastRecord.rest.slice(ex.rest.size until lastRecord.rest.size)
                 val additionalSetTypes = List(additionalReps.size) { SetType.AWESOME }
@@ -367,6 +381,7 @@ class WorkoutViewModel @Inject constructor(
                 val allRecords = records.first
                 var lastOne: SetDisplayRow? = null
                 val tare = tares.getOrNull(index) ?: 0f
+                val programChanged = programChangedForAllExercises[index]
                 val isPyramid = exercise.reps
                     .zip(exercise.setTypes ?: List(exercise.reps.size) { SetType.NORMAL})
                     .filter {
@@ -411,10 +426,14 @@ class WorkoutViewModel @Inject constructor(
                                 exercise,
                                 allRecords,
                                 (lastOne?.projectedReps ?: lastOne?.reps)?.toIntOrNull(),
-                                setCount
+                                setCount,
+                                programChanged
                             )?.toString()
                             projectedWeight = computeNextWeight(
                                 recordsToDisplay = allRecords,
+                                plannedReps = exercise.reps,
+                                // reps are seconds for duration based exercises, cannot estimate from them
+                                estimateFromHistory = programChanged && !exercise.overriddenDurationBased,
                                 ongoingRecordWeightPreviousSet = (lastOne?.projectedWeight ?: lastOne?.weight)?.toFloatOrNull(),
                                 setsDone = setCount,
                                 barbellDiff = barbellDiff,
@@ -1420,8 +1439,65 @@ class WorkoutViewModel @Inject constructor(
         return recordsToDisplay to ongoingRecord
     }
 
+    /**
+     * True if the exercise has been planned differently than the last time it was recorded,
+     * e.g., it comes from a different program (exercise) or the reps have been edited.
+     * In this case, reps/weights from the last record should not be copied as-is.
+     */
+    private fun hasProgramChanged(
+        currentExercise: WorkoutExercise,
+        lastOldWorkoutExercise: WorkoutExercise?
+    ): Boolean {
+        // no history (or legacy record not linked to a workout exercise): nothing to compare with
+        if (lastOldWorkoutExercise == null) return false
+        // different program exercise, e.g., different program or exercise added during workout
+        if (currentExercise.extProgramExerciseId != lastOldWorkoutExercise.extProgramExerciseId)
+            return true
+        // same program exercise, check if reps were edited since. Only compare the common sets,
+        // as user may have added sets during the last workout.
+        // Set types are not compared as they can be changed during the workout
+        val commonSets = min(currentExercise.reps.size, lastOldWorkoutExercise.reps.size)
+        return currentExercise.reps.take(commonSets) != lastOldWorkoutExercise.reps.take(commonSets)
+    }
+
+    /**
+     * Estimate the weight for [targetReps] from the best estimated 1RM of the most recent records,
+     * rounded to the nearest [increment]. Returned weight is in the same space as the records
+     * (e.g., per side for barbell/dumbbell, without tare), converted to lb if [imperialSystem].
+     */
+    private fun estimateWeightFromHistory(
+        recordsToDisplay: List<ExerciseRecordAndEquipment>,
+        targetReps: Int,
+        imperialSystem: Boolean,
+        increment: Float,
+    ): Float? {
+        if (targetReps <= 0) return null
+        // best of last few records, so that a single bad (or deload) workout does not drag it down
+        val bestRecord = recordsToDisplay
+            .filter { it.weights.isNotEmpty() }
+            .take(3)
+            .maxByOrNull { estimate1RM(it) } ?: return null
+        val oneRepMax = estimate1RM(bestRecord)
+        // invert estimate1RM (Epley), tare and sides are accounted the same way
+        val sides = when (bestRecord.equipment) {
+            Equipment.BARBELL, Equipment.DUMBBELL -> 2
+            else -> 1
+        }
+        val totalOneRepMax = oneRepMax * sides + bestRecord.tare
+        val totalWeight = totalOneRepMax / (1 + targetReps / 30f)
+        val weight = maybeKgToLb(
+            max(0f, (totalWeight - bestRecord.tare) / sides),
+            imperialSystem
+        )
+        if (increment <= 0f) return weight
+        // round to nearest increment (and to 2 decimals to avoid float artifacts)
+        return ((weight / increment).roundToInt() * increment * 100).roundToInt() / 100f
+    }
+
     private fun computeNextWeight(
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
+        plannedReps: List<Int>,
+        estimateFromHistory: Boolean, // true if weights should not be copied from last record
         ongoingRecordWeightPreviousSet: Float?,
         setsDone: Int,
         barbellDiff: Float,
@@ -1442,6 +1518,10 @@ class WorkoutViewModel @Inject constructor(
          2a. If not, keep weight from previous set
          (not used rn)
          ~3. Otherwise, take last record increased/decreased by same amount as previous set~
+
+         If estimateFromHistory (i.e., program changed since last record), working sets instead:
+         E1. If not first set and planned reps are the same as previous set, keep previous set weight
+         E2. Otherwise, estimate weight for planned reps from the 1RM of the latest records
          */
 
         // do not propagate ongoing weight across set type boundaries (e.g., warmup -> normal)
@@ -1454,6 +1534,28 @@ class WorkoutViewModel @Inject constructor(
         val lastOldRecord = recordsToDisplay.firstOrNull()
 
         var weightCandidate: Float?
+        // warmups and drop sets do not relate to the planned reps, fallback to normal logic for them
+        if (
+            estimateFromHistory &&
+            currentSetType in listOf(SetType.NORMAL, SetType.FAILURE, SetType.AWESOME)
+        ) {
+            val targetReps = plannedReps.getOrNull(setsDone)
+            val carryOver = setsDone > 0 && !setTypeBoundary &&
+                ongoingRecordWeightPreviousSet != null &&
+                targetReps == plannedReps.getOrNull(setsDone - 1)
+            weightCandidate = if (carryOver) {
+                ongoingRecordWeightPreviousSet
+            } else {
+                targetReps?.let {
+                    estimateWeightFromHistory(recordsToDisplay, it, imperialSystem, increment)
+                } ?: ongoingRecordWeightPreviousSet
+            }
+            if (isUpcomingSet) {
+                weightCandidate = weightCandidate?.plus(barbellDiff / 2)
+            }
+            return weightCandidate
+        }
+
         var oldRecordWeightCurrentSet: Float? = null
         var oldRecordWeightPreviousSet: Float? = null
         var avgOldRecordWeight: Float? = null
@@ -1526,7 +1628,8 @@ class WorkoutViewModel @Inject constructor(
         currentExercise: WorkoutExercise,
         recordsToDisplay: List<ExerciseRecordAndEquipment>,
         ongoingLastRep: Int?,
-        setsDone: Int
+        setsDone: Int,
+        programChanged: Boolean, // if true, reps from last record are not relevant anymore
     ): Int? {
         val setTypes = currentExercise.setTypes
 
@@ -1544,13 +1647,14 @@ class WorkoutViewModel @Inject constructor(
 
         if (setsDone == 0 || setTypeBoundary) {
             // first set (or first set of a new type): prefer what user actually did last time
-            return oldRecordRepCurrentSet ?: upcomingReps
+            // unless program changed since then
+            return if (programChanged) upcomingReps else oldRecordRepCurrentSet ?: upcomingReps
         }
 
         // reps done last set
         val lastRepsDone = ongoingLastRep
         val lastRepsThatShouldHaveBeenDone = currentExercise.reps.getOrNull(setsDone - 1)
-        if (oldRecordRepPreviousSet == lastRepsDone) {
+        if (!programChanged && oldRecordRepPreviousSet == lastRepsDone) {
             // user is on track with history: follow historical reps for current set
             return oldRecordRepCurrentSet ?: upcomingReps
         }
@@ -1623,6 +1727,20 @@ class WorkoutViewModel @Inject constructor(
                         sortedExs.map { it.extExerciseId }
                     ).collect { records ->
                         val allRecords = records.groupBy { it.extExerciseId }
+                        // fetch what was planned for the latest records (i.e., up to the most
+                        // recent one from a past workout) to know whether program has changed
+                        val workoutId = workoutState.value.workoutId
+                        val workoutExerciseIds = allRecords.values.flatMap { exRecords ->
+                            val sorted = exRecords
+                                .filter { it.reps.isNotEmpty() }
+                                .sortedByDescending { it.date }
+                            val lastPastIndex = sorted.indexOfFirst { it.extWorkoutId != workoutId }
+                            if (lastPastIndex == -1) sorted else sorted.take(lastPastIndex + 1)
+                        }.map { it.extWorkoutExerciseId }.filter { it != 0L }.distinct()
+                        val recordsWorkoutExercises = repository
+                            .getWorkoutExercisesByIds(workoutExerciseIds)
+                            .associateBy { it.workoutExerciseId }
+                        _recordsWorkoutExercises.update { recordsWorkoutExercises }
                         // TODO: sort by date before putting in
                         _allRecords.update { allRecords }
                     }
@@ -1823,6 +1941,7 @@ class WorkoutViewModel @Inject constructor(
                 pagesContent.map { it.modificationsSuggestions }.distinctUntilChanged(),
                 preferences.getInRestHints().distinctUntilChanged(),
                 preferences.getTempoRomTracking().distinctUntilChanged(),
+                preferences.getWearKeepScreenOn().distinctUntilChanged(),
             ) { values: Array<Any?> ->
                 val workoutId = values[0] as Long
                 val startDate = values[1] as ZonedDateTime?
@@ -1838,6 +1957,7 @@ class WorkoutViewModel @Inject constructor(
                 val suggestedModifications = values[11] as List<ModificationSuggestion?>
                 val inRestHintsEnabled = values[12] as Boolean
                 val tempoRomTrackingEnabled = values[13] as Boolean
+                val keepScreenOn = values[14] as Boolean
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
                 try {
@@ -1868,6 +1988,7 @@ class WorkoutViewModel @Inject constructor(
                             )
                             .setSmartFeaturesInRestHints(inRestHintsEnabled)
                             .setSmartFeaturesTempoRomTracking(tempoRomTrackingEnabled)
+                            .setKeepScreenOn(keepScreenOn)
                             .build()
                     }
                 } catch (e: Exception) {

@@ -13,6 +13,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -143,6 +144,46 @@ fun Profile(
         }
         viewModel.onEvent(ProfileEvent.ResetOutcomeMessage)
     }
+    val backfillMessage = state.healthConnectBackfillOutcome?.let {
+        if (it.failed == 0)
+            stringResource(R.string.health_connect_backfill_success)
+        else
+            stringResource(R.string.health_connect_backfill_partial, it.exported, it.failed)
+    }
+    LaunchedEffect(backfillMessage) {
+        backfillMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(ProfileEvent.ResetHealthConnectBackfillOutcome)
+        }
+    }
+    // TODO: replace with an expansion of the integration subcard
+    state.healthConnectBackfillOffer?.let { count ->
+        AlertDialog(
+            onDismissRequest = { viewModel.onEvent(ProfileEvent.DismissHealthConnectBackfill) },
+            icon = {
+                Icon(
+                    painterResource(R.drawable.ic_health_connect_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = Color.Unspecified
+                )
+            },
+            title = { Text(stringResource(R.string.health_connect_backfill_title)) },
+            text = {
+                Text(pluralStringResource(R.plurals.health_connect_backfill_text, count, count))
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.onEvent(ProfileEvent.ConfirmHealthConnectBackfill) }) {
+                    Text(stringResource(R.string.health_connect_export))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.onEvent(ProfileEvent.DismissHealthConnectBackfill) }) {
+                    Text(stringResource(R.string.health_connect_backfill_not_now))
+                }
+            }
+        )
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -216,7 +257,6 @@ fun Profile(
                 )
                 PreferencesContent(
                     profileState = state,
-                    snackbarHost = snackbarHostState,
                     viewModel = viewModel
                 )
             }
@@ -233,6 +273,22 @@ fun Profile(
                 )
                 SmartFeaturesContent(
                     profileState = state,
+                    viewModel = viewModel
+                )
+            }
+
+            // Wearable Section
+            item {
+                Text(
+                    stringResource(R.string.wearable_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(
+                        bottom = dimensionResource(R.dimen.header_to_content_padding)
+                    )
+                )
+                WearableContent(
+                    profileState = state,
                     snackbarHost = snackbarHostState,
                     viewModel = viewModel
                 )
@@ -244,7 +300,7 @@ fun Profile(
                     val healthConnectPermissionsLauncher = rememberLauncherForActivityResult(
                         PermissionController.createRequestPermissionResultContract()
                     ) {
-                        viewModel.onEvent(ProfileEvent.RefreshHealthConnectStatus)
+                        viewModel.onEvent(ProfileEvent.HealthConnectPermissionsResult)
                     }
                     Text(
                         stringResource(R.string.integrations_title),
@@ -258,49 +314,67 @@ fun Profile(
                         )
                     ) {
                         subCard {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    painterResource(R.drawable.ic_health_connect_logo),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .padding(end = 8.dp),
-                                    tint = Color.Unspecified
-                                )
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        stringResource(R.string.health_connect_title),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        if (state.hasHealthConnectPermissions)
-                                            stringResource(R.string.health_connect_connected)
-                                        else if (state.hasSomeHealthConnectPermissions)
-                                            stringResource(R.string.health_connect_problems)
-                                        else
-                                            stringResource(R.string.health_connect_info),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (state.hasHealthConnectPermissions) {
+                            Column {
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     Icon(
-                                        Icons.Default.CheckCircle,
+                                        painterResource(R.drawable.ic_health_connect_logo),
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .padding(end = 8.dp),
+                                        tint = Color.Unspecified
                                     )
-                                } else {
-                                    TextButton(onClick = {
-                                        healthConnectPermissionsLauncher.launch(
-                                            HealthConnectRepository.REQUIRED_PERMISSIONS
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            stringResource(R.string.health_connect_title),
+                                            style = MaterialTheme.typography.bodyMedium
                                         )
-                                    }) {
-                                        Text(stringResource(R.string.health_connect_connect))
+                                        Text(
+                                            if (state.hasHealthConnectPermissions)
+                                                stringResource(R.string.health_connect_connected)
+                                            else if (state.hasSomeHealthConnectPermissions)
+                                                stringResource(R.string.health_connect_problems)
+                                            else
+                                                stringResource(R.string.health_connect_info),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
+                                    if (state.hasHealthConnectPermissions) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        TextButton(onClick = {
+                                            healthConnectPermissionsLauncher.launch(
+                                                HealthConnectRepository.REQUIRED_PERMISSIONS
+                                            )
+                                        }) {
+                                            Text(stringResource(R.string.health_connect_connect))
+                                        }
+                                    }
+                                }
+                                state.healthConnectBackfillProgress?.let { progress ->
+                                    Text(
+                                        stringResource(
+                                            R.string.health_connect_backfill_progress,
+                                            progress.done,
+                                            progress.total
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                                    )
+                                    LinearWavyProgressIndicator(
+                                        progress = { progress.done.toFloat() / progress.total },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
                                 }
                             }
                         }
@@ -1028,7 +1102,6 @@ fun MeasurementRow(
 @Composable
 fun PreferencesContent(
     profileState: ProfileState,
-    snackbarHost: SnackbarHostState,
     viewModel: ProfileViewModel,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -1039,8 +1112,6 @@ fun PreferencesContent(
             "und",
             stringResource(R.string.system_default)
     ))
-    val noWatchConnectedMessage = stringResource(R.string.requires_connected_watch)
-    val scope = rememberCoroutineScope()
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -1256,42 +1327,6 @@ fun PreferencesContent(
                     )
                 }
             }
-            subCard(
-                onClick = {
-                    if (profileState.hasConnectedWatch) {
-                        viewModel.onEvent(
-                            ProfileEvent.ToggleAutoOpenWear(
-                                !profileState.autoOpenWear
-                            )
-                        )
-                    } else {
-                        scope.launch {
-                            snackbarHost.showSnackbar(noWatchConnectedMessage)
-                        }
-                    }
-                }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        stringResource(R.string.auto_open_wearos),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (profileState.hasConnectedWatch)
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Switch(
-                        checked = profileState.autoOpenWear,
-                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(it)) },
-                        enabled = profileState.hasConnectedWatch
-                    )
-                }
-            }
         }
     }
 }
@@ -1389,13 +1424,8 @@ fun IncrementRow(
 @Composable
 fun SmartFeaturesContent(
     profileState: ProfileState,
-    snackbarHost: SnackbarHostState,
     viewModel: ProfileViewModel,
 ) {
-    val noWatchConnectedMessage = stringResource(R.string.requires_connected_watch)
-    val noCompatibleWatchMessage = stringResource(R.string.requires_compatible_wearable)
-    val scope = rememberCoroutineScope()
-
     GroupedCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -1495,18 +1525,116 @@ fun SmartFeaturesContent(
                 )
             }
         }
-        subCard(onClick = {
-            if (!profileState.hasConnectedWatch) {
-                scope.launch {
-                    snackbarHost.showSnackbar(noWatchConnectedMessage)
+    }
+}
+
+@Composable
+fun WearableContent(
+    profileState: ProfileState,
+    snackbarHost: SnackbarHostState,
+    viewModel: ProfileViewModel,
+) {
+    var helpDialogShown by remember { mutableStateOf(false) }
+    val noCompatibleWatchMessage = stringResource(R.string.requires_compatible_wearable)
+    val scope = rememberCoroutineScope()
+
+    InfoDialog(
+        dialogueIsOpen = helpDialogShown,
+        toggleDialogue = { helpDialogShown = !helpDialogShown }
+    ) {
+        Text(stringResource(R.string.wearable_help_info))
+    }
+
+    GroupedCard(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+    ) {
+        if (!profileState.hasConnectedWatch) {
+            subCard {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.Watch,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.no_wearable_connected),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            stringResource(R.string.no_wearable_connected_info),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { helpDialogShown = true }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.HelpOutline,
+                            stringResource(R.string.info_icon_wearable)
+                        )
+                    }
                 }
-            } else {
-                viewModel.onEvent(ProfileEvent.ToggleInRestHints(
-                    !profileState.inRestHints
-                ))
             }
-        }) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+        } else {
+            subCard(
+                onClick = {
+                    viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(!profileState.autoOpenWear))
+                }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.auto_open_wearos),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = profileState.autoOpenWear,
+                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleAutoOpenWear(it)) }
+                    )
+                }
+            }
+            subCard(
+                onClick = {
+                    viewModel.onEvent(ProfileEvent.ToggleWearKeepScreenOn(!profileState.wearKeepScreenOn))
+                }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.wear_keep_screen_on),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.wear_keep_screen_on_info),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = profileState.wearKeepScreenOn,
+                        onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleWearKeepScreenOn(it)) }
+                    )
+                }
+            }
+            subCard(onClick = {
+                viewModel.onEvent(ProfileEvent.ToggleInRestHints(!profileState.inRestHints))
+            }) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -1514,10 +1642,7 @@ fun SmartFeaturesContent(
                     Text(
                         stringResource(R.string.in_rest_hints_wear),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (profileState.hasConnectedWatch)
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(8.dp))
@@ -1525,30 +1650,26 @@ fun SmartFeaturesContent(
                         checked = profileState.inRestHints,
                         onCheckedChange = {
                             viewModel.onEvent(ProfileEvent.ToggleInRestHints(it))
-                        },
-                        enabled = profileState.hasConnectedWatch
+                        }
                     )
                 }
             }
-        }
-        subCard(onClick = {
-            if (profileState.wearSupportsTempoRom == true) {
-                viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(
-                    !profileState.tempoRomTracking
-                ))
-            } else {
-                scope.launch {
-                    snackbarHost.showSnackbar(noCompatibleWatchMessage)
+            subCard(onClick = {
+                if (profileState.wearSupportsTempoRom == true) {
+                    viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(
+                        !profileState.tempoRomTracking
+                    ))
+                } else {
+                    scope.launch {
+                        snackbarHost.showSnackbar(noCompatibleWatchMessage)
+                    }
                 }
-            }
-        }) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            }) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val tempoEnabled = profileState.hasConnectedWatch &&
-                            profileState.wearSupportsTempoRom == true
+                    val tempoEnabled = profileState.wearSupportsTempoRom == true
                     Text(
                         stringResource(R.string.tempo_rom_tracking_wear),
                         style = MaterialTheme.typography.bodyMedium,

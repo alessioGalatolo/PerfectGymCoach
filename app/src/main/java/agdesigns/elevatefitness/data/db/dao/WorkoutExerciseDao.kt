@@ -26,6 +26,9 @@ interface WorkoutExerciseDao {
     @Query("SELECT * FROM workoutexercise WHERE workoutExerciseId LIKE :workoutExerciseId")
     fun getWorkoutExercise(workoutExerciseId: Long): Flow<WorkoutExercise?>
 
+    @Query("SELECT * FROM workoutexercise WHERE workoutExerciseId IN (:workoutExerciseIds)")
+    suspend fun getWorkoutExercisesByIds(workoutExerciseIds: List<Long>): List<WorkoutExercise>
+
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insert(exercise: WorkoutExercise): Long
 

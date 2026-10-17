@@ -77,6 +77,7 @@ data class ExercisesState(
     val suggestedModifications: List<Workout.ProtoSuggestedModification?> = emptyList(),
     val inRestHintsEnabled: Boolean = true,
     val tempoRomTrackingEnabled: Boolean = false,
+    val keepScreenOn: Boolean = false,
 )
 
 data class InRestHint(
@@ -88,6 +89,9 @@ data class InRestHint(
 
 data class WorkoutState(
     val currentExerciseIndex: Int = 0,
+    // index of the exercise whose set was just completed from watch; currentExerciseIndex
+    // is advanced as soon as a set is completed, so it may point to the next exercise already
+    val lastCompletedExerciseIndex: Int? = null,
     val currentWeight: Float = 0f,
     val currentExercise: Workout.Exercise? = null,
     val restTimestamp: ZonedDateTime? = null,
@@ -211,6 +215,7 @@ class WorkoutViewModel
             suggestedModifications = staticData.suggestedModificationsList.map { if (!it.hasSuggestion) null else it },
             inRestHintsEnabled = staticData.smartFeaturesInRestHints,
             tempoRomTrackingEnabled = staticData.smartFeaturesTempoRomTracking,
+            keepScreenOn = staticData.keepScreenOn,
         )
     }.stateIn(
         viewModelScope,
@@ -262,7 +267,7 @@ class WorkoutViewModel
             // listen for scroll to exercise requests from phone
             for (event in repository.scrollToExerciseChannel) {
                 _state.update {
-                    it.copy(currentExerciseIndex = event)
+                    it.copy(currentExerciseIndex = event, lastCompletedExerciseIndex = null)
                 }
             }
         }
@@ -474,8 +479,9 @@ class WorkoutViewModel
                 _state.update { it.copy(currentWeight = state.value.currentWeight + deincrement) }
             }
             is WorkoutEvent.CompleteSet -> {
+                val completedExerciseIndex = state.value.currentExerciseIndex
                 val currentExercise = exercisesState.value.exercises.getOrNull(
-                    state.value.currentExerciseIndex
+                    completedExerciseIndex
                 ) ?: return
                 val setTrackingResults = repository.setTrackingTruthAndGetResults(
                     exerciseId = currentExercise.exerciseId,
@@ -538,7 +544,8 @@ class WorkoutViewModel
                 _state.update {
                     it.copy(
                         settingSetValues = false,
-                        successfullySetValues = true
+                        successfullySetValues = true,
+                        lastCompletedExerciseIndex = completedExerciseIndex
                     )
                 }
                 viewModelScope.launch {
@@ -643,6 +650,7 @@ class WorkoutViewModel
                         repository.scheduleRestAlarm(0L)
                         state.copy(
                             restTimestamp = null,
+                            lastCompletedExerciseIndex = null,
                             settingSetValues = true,
                             currentExerciseRest = null,
                             successfullySetValues = false,
@@ -663,6 +671,7 @@ class WorkoutViewModel
                                 .plusSeconds(
                                     rest.toLong()
                                 ),
+                            lastCompletedExerciseIndex = null,
                             settingSetValues = true,
                             successfullySetValues = false,
                             currentExerciseRest = rest.toLong(),
@@ -721,6 +730,7 @@ class WorkoutViewModel
                 _state.update {
                     it.copy(
                         currentExerciseIndex = it.currentExerciseIndex + 1,
+                        lastCompletedExerciseIndex = null,
                         exercisePrepTimestamp = null,
                         ongoingExercisePrepSecs = null,
                         exerciseTimerTimestamp = null,
@@ -737,6 +747,7 @@ class WorkoutViewModel
                 _state.update {
                     it.copy(
                         currentExerciseIndex = it.currentExerciseIndex - 1,
+                        lastCompletedExerciseIndex = null,
                         exercisePrepTimestamp = null,
                         ongoingExercisePrepSecs = null,
                         exerciseTimerTimestamp = null,
@@ -849,6 +860,18 @@ class WorkoutViewModel
                 }
             }
             is WorkoutEvent.AcceptModification -> {
+                val modification = exercisesState.value.suggestedModifications.getOrNull(event.index)
+                if (modification?.type == Workout.ProtoModificationType.EXERCISE_ADDED &&
+                    event.index == state.value.currentExerciseIndex
+                ) {
+                    // added after the current (last) exercise, move to it
+                    _state.update {
+                        it.copy(
+                            currentExerciseIndex = event.index + 1,
+                            lastCompletedExerciseIndex = null
+                        )
+                    }
+                }
                 viewModelScope.launch {
                     try {
                         workoutService.acceptModification(
@@ -887,7 +910,16 @@ class WorkoutViewModel
                 _state.update { it.copy(showOtherAppExerciseDialog = false) }
             }
             is WorkoutEvent.AddSetToCurrentExercise -> {
-                val exerciseId = state.value.currentExercise?.workoutExerciseId ?: return
+                // currentExerciseIndex was already advanced when completing the last set,
+                // the set must go to the exercise that was just completed
+                val targetIndex = state.value.lastCompletedExerciseIndex ?: state.value.currentExerciseIndex
+                val exerciseId = exercisesState.value.exercises.getOrNull(targetIndex)?.workoutExerciseId ?: return
+                _state.update {
+                    it.copy(
+                        currentExerciseIndex = targetIndex,
+                        lastCompletedExerciseIndex = null
+                    )
+                }
                 viewModelScope.launch {
                     try {
                         workoutService.addSet(
@@ -1083,7 +1115,8 @@ class WorkoutViewModel
             exercisesState.map { it.suggestedTare }.distinctUntilChanged(),
             exercisesState.map { it.exercises }.distinctUntilChanged(),
             exercisesState.map { it.imperialSystem }.distinctUntilChanged(),
-            state.map { it.settingSetValues }.distinctUntilChanged()
+            state.map { it.settingSetValues }.distinctUntilChanged(),
+            state.map { it.lastCompletedExerciseIndex }.distinctUntilChanged()
         ) { values ->
             val index = values[0] as Int
             val suggestedRepsWeight = values[1] as List<Workout.SuggestedRepsWeight>
@@ -1092,6 +1125,7 @@ class WorkoutViewModel
             val exercises = values[4] as List<Workout.Exercise>
             val imperialSystem = values[5] as Boolean
             val settingSetValues = values[6] as Boolean
+            val lastCompletedIndex = values[7] as Int?
             if (settingSetValues) return@combine
             _state.update {
                 val currentExercise = exercises.getOrNull(index) ?: exercises.lastOrNull()
@@ -1136,7 +1170,12 @@ class WorkoutViewModel
                     tareBarbell = suggestedTare ?: it.tareBarbell,
                     tareIndex = suggestedTareIndex ?: it.tareIndex,
                     nextSetExerciseName = nextSetExerciseName,
-                    isLastSet = currentExercise?.let { setsDone >= it.restCount } ?: false,
+                    // the rest screen refers to the set just completed, not to the (possibly advanced) current exercise
+                    isLastSet = (lastCompletedIndex ?: index).let { completedIndex ->
+                        exercises.getOrNull(completedIndex)?.let {
+                            (allSetsDone.getOrNull(completedIndex) ?: 0) >= it.restCount
+                        }
+                    } ?: false,
                     currentExercise = currentExercise
                 )
             }
@@ -1240,55 +1279,62 @@ class WorkoutViewModel
                             InRestHint(
                                 titleResId = R.string.rest_hint_change_exercise_title,
                                 descResId = R.string.rest_hint_change_exercise,
-                                descVarArgs = listOf(nextExercise.name)
+                                descVarArgs = listOf(nextExercise.name, nextReps?.toString() ?: "…", nextWeight?.toString() ?: "…", unitString)
                             )
                         )
-                        if (nextWeight != null) {
-                            when (equipment) {
-                                Equipment.DUMBBELL -> {
-                                    add(
-                                        InRestHint(
-                                            titleResId = R.string.rest_hint_start_weight_title,
-                                            descResId = R.string.rest_hint_start_weight_dumbbell,
-                                            descVarArgs = listOf(nextWeight, unitString)
-                                        )
-                                    )
-                                }
-
-                                Equipment.BARBELL -> {
-                                    val plates = getPlates(nextWeight)
-                                    val platesFormatted = plates.map { (plate, count) ->
-                                        "${count}x${plate}$unitString"
-                                    }.joinToString(", ")
-                                    add(
-                                        InRestHint(
-                                            titleResId = R.string.rest_hint_start_weight_title,
-                                            descResId = R.string.rest_hint_start_weight_barbell,
-                                            descVarArgs = listOf(platesFormatted)
-                                        )
-                                    )
-                                }
-
-                                else -> {
-                                    add(
-                                        InRestHint(
-                                            titleResId = R.string.rest_hint_start_weight_title,
-                                            descResId = R.string.rest_hint_start_weight_generic,
-                                            descVarArgs = listOf(nextWeight, unitString)
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                        if (nextReps != null) {
-                            add(
-                                InRestHint(
-                                    titleResId = R.string.rest_hint_start_reps_title,
-                                    descResId = R.string.rest_hint_start_reps,
-                                    descVarArgs = listOf(nextReps)
-                                )
-                            )
-                        }
+                        // commented as we prefer to deliver all info in a single hint
+//                        if (nextWeight != null) {
+//                            when (equipment) {
+//                                Equipment.DUMBBELL -> {
+//                                    add(
+//                                        InRestHint(
+//                                            titleResId = R.string.rest_hint_start_weight_title,
+//                                            descResId = R.string.rest_hint_start_weight_dumbbell,
+//                                            descVarArgs = listOf(nextWeight, unitString)
+//                                        )
+//                                    )
+//                                }
+//
+//                                Equipment.BARBELL -> {
+//                                    val plates = getPlates(nextWeight)
+//                                    val platesFormatted = plates.map { (plate, count) ->
+//                                        "${count}x${plate}$unitString"
+//                                    }.joinToString(", ")
+//                                    add(
+//                                        InRestHint(
+//                                            titleResId = R.string.rest_hint_start_weight_title,
+//                                            descResId = R.string.rest_hint_start_weight_barbell,
+//                                            descVarArgs = listOf(platesFormatted)
+//                                        )
+//                                    )
+//                                }
+//
+//                                else -> {
+//                                    add(
+//                                        InRestHint(
+//                                            titleResId = R.string.rest_hint_start_weight_title,
+//                                            descResId = R.string.rest_hint_start_weight_generic,
+//                                            descVarArgs = listOf(nextWeight, unitString)
+//                                        )
+//                                    )
+//                                }
+//                            }
+//                        }
+//                        if (nextReps != null) {
+//                            add(
+//                                InRestHint(
+//                                    titleResId = if (nextExercise.isDurationBased)
+//                                        R.string.rest_hint_start_hold_title
+//                                    else
+//                                        R.string.rest_hint_start_reps_title,
+//                                    descResId = if (nextExercise.isDurationBased)
+//                                        R.string.rest_hint_start_hold
+//                                    else
+//                                        R.string.rest_hint_start_reps,
+//                                    descVarArgs = listOf(nextReps)
+//                                )
+//                            )
+//                        }
                     } else if (isNextSetSameExercise) {
                         // Same exercise
                         val currentWeight = if (setsDone > 0 && repsWeight.weightCount > setsDone) {
@@ -1381,16 +1427,28 @@ class WorkoutViewModel
                             if (currentReps < nextReps) {
                                 add(
                                     InRestHint(
-                                        titleResId = R.string.rest_hint_increase_reps_title,
-                                        descResId = R.string.rest_hint_increase_reps,
+                                    titleResId = if (currentExercise.isDurationBased)
+                                            R.string.rest_hint_increase_hold_title
+                                        else
+                                            R.string.rest_hint_increase_reps_title,
+                                        descResId = if (currentExercise.isDurationBased)
+                                            R.string.rest_hint_increase_hold
+                                        else
+                                            R.string.rest_hint_increase_reps,
                                         descVarArgs = listOf(nextReps)
                                     )
                                 )
                             } else {
                                 add(
                                     InRestHint(
-                                        titleResId = R.string.rest_hint_decrease_reps_title,
-                                        descResId = R.string.rest_hint_decrease_reps,
+                                        titleResId = if (currentExercise.isDurationBased)
+                                            R.string.rest_hint_decrease_hold_title
+                                        else
+                                            R.string.rest_hint_decrease_reps_title,
+                                        descResId = if (currentExercise.isDurationBased)
+                                            R.string.rest_hint_decrease_hold
+                                        else
+                                            R.string.rest_hint_decrease_reps,
                                         descVarArgs = listOf(nextReps)
                                     )
                                 )

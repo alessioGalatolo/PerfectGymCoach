@@ -33,9 +33,14 @@ interface WorkoutRecordDao {
 
 
     @Query(
-        "SELECT workoutrecord.*, `program`.name " +
+        "SELECT workoutrecord.*, `program`.name, `program`.extPlanId, `plan`.name AS planName, " +
+        // reps are stored comma-separated, one entry per set
+        "(SELECT COALESCE(SUM(CASE WHEN reps = '' THEN 0 " +
+        "ELSE LENGTH(reps) - LENGTH(REPLACE(reps, ',', '')) + 1 END), 0) " +
+        "FROM exerciserecord WHERE exerciserecord.extWorkoutId = workoutrecord.workoutId) AS totalSets " +
         "FROM workoutrecord " +
-        "LEFT JOIN `program` ON workoutrecord.extProgramId = `program`.programId "
+        "LEFT JOIN `program` ON workoutrecord.extProgramId = `program`.programId " +
+        "LEFT JOIN `plan` ON `program`.extPlanId = `plan`.planId "
     )
     fun getRecordsAndName(): Flow<List<WorkoutRecordAndName>>
 

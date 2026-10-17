@@ -103,6 +103,21 @@ fun WorkoutPage(
     val currentImage = remember(workoutState.currentExerciseIndex, exercisesState.images) {
         exercisesState.images.getOrNull(workoutState.currentExerciseIndex)
     }
+    val modificationIndex = remember(
+        workoutState.currentExerciseIndex,
+        setsDone,
+        exercisesState.exercises,
+        exercisesState.suggestedModifications,
+        workoutState.modificationIsDismissed
+    ) {
+        modificationIndexToSuggest(
+            index = workoutState.currentExerciseIndex,
+            setsDone = setsDone,
+            exercises = exercisesState.exercises,
+            modifications = exercisesState.suggestedModifications,
+            dismissed = workoutState.modificationIsDismissed
+        )
+    }
     val currentSetType = workoutState.currentExercise?.setTypesList?.getOrNull(setsDone)?.let {
         SetType.fromResKey(it)
     } ?: SetType.NORMAL
@@ -140,7 +155,7 @@ fun WorkoutPage(
                         "s "
                     } else { " " }
                 +
-                    "x ${workoutState.currentWeight}" +
+                    "× ${workoutState.currentWeight}" +
                     if (exercisesState.imperialSystem)
                         stringResource(sharedR.string.lb)
                     else
@@ -161,24 +176,13 @@ fun WorkoutPage(
             hasPrevious = workoutState.currentExerciseIndex > 0,
             hasNext = workoutState.currentExerciseIndex < exercisesState.exercises.size - 1,
             ambientMode = ambientMode,
-            modification = if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
-                exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)
-            else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
-                exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)
-            else null,
-            // this is really ugly, should compute modification in VM instead
+            modification = modificationIndex?.let { exercisesState.suggestedModifications.getOrNull(it) },
             modificationDismissedMap = workoutState.modificationIsDismissed,
             acceptModification = {
-                if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
-                    acceptModification(workoutState.currentExerciseIndex-1)
-                else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
-                    acceptModification(workoutState.currentExerciseIndex)
+                modificationIndex?.let { acceptModification(it) }
             },
             dismissModification = {
-                if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex-1)?.type == Workout.ProtoModificationType.EXERCISE_ADDED)
-                    dismissModification(workoutState.currentExerciseIndex-1)
-                else if (exercisesState.suggestedModifications.getOrNull(workoutState.currentExerciseIndex)?.type != Workout.ProtoModificationType.EXERCISE_ADDED)
-                    dismissModification(workoutState.currentExerciseIndex)
+                modificationIndex?.let { dismissModification(it) }
             },
             onNext = {
                 if (workoutState.currentExerciseIndex < exercisesState.exercises.size - 1) {
@@ -501,8 +505,8 @@ fun ExercisePage(
             )
         }
     }
-    // we only suggest modification is the user has not done any sets yet
-    if (modification != null && setsDone == 0) {
+    // when to suggest (e.g., only if no sets done yet) is decided by modificationIndexToSuggest
+    if (modification != null) {
         var dialogVisible by rememberSaveable(modification) { mutableStateOf(false) }
         val haptics = LocalHapticFeedback.current
         LaunchedEffect(modification) {
@@ -582,4 +586,32 @@ fun ExercisePage(
         )
     }
 
+}
+
+/**
+ * Returns the index (in the suggested modifications list) of the modification to suggest
+ * for the exercise at [index], or null if none should be suggested.
+ * Modifications are indexed by their source exercise, an EXERCISE_ADDED at i means
+ * "add an exercise after i", so it is suggested once exercise i is done.
+ */
+private fun modificationIndexToSuggest(
+    index: Int,
+    setsDone: Int,
+    exercises: List<Workout.Exercise>,
+    modifications: List<Workout.ProtoSuggestedModification?>,
+    dismissed: Map<Workout.ProtoSuggestedModification, Boolean>,
+): Int? {
+    val previous = modifications.getOrNull(index - 1)?.takeIf { dismissed[it] != true }
+    val current = modifications.getOrNull(index)?.takeIf { dismissed[it] != true }
+    val exercise = exercises.getOrNull(index) ?: return null
+    return when {
+        // previous exercise was followed by an added one, suggest before starting this
+        setsDone == 0 && previous?.type == Workout.ProtoModificationType.EXERCISE_ADDED -> index - 1
+        // replace/skip this exercise, only before starting it
+        setsDone == 0 && current != null && current.type != Workout.ProtoModificationType.EXERCISE_ADDED -> index
+        // last exercise has no following exercise to show the addition on, suggest once it is done
+        current?.type == Workout.ProtoModificationType.EXERCISE_ADDED &&
+            index == exercises.lastIndex && setsDone >= exercise.restCount -> index
+        else -> null
+    }
 }

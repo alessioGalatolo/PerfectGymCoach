@@ -28,6 +28,7 @@ import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.navigation.ExercisesByMuscleDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
 import agdesigns.elevatefitness.ui.common.SharedElementGeneralKeys
+import agdesigns.elevatefitness.ui.screens.program_exercises.components.PermanentModificationsCard
 import agdesigns.elevatefitness.ui.screens.program_exercises.components.ProgramExerciseCard
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
@@ -185,6 +186,27 @@ fun SharedTransitionScope.AddProgramExercise(
                     contentPadding = innerPadding,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    if (state.permanentModificationProposals.isNotEmpty()) {
+                        item(key = "permanent_modifications") {
+                            LaunchedEffect(state.permanentModificationProposals) {
+                                if (state.permanentModificationProposals.isNotEmpty()) {
+                                    listState.animateScrollToItem(0)
+                                }
+                            }
+                            PermanentModificationsCard(
+                                proposals = state.permanentModificationProposals,
+                                onApply = {
+                                    viewModel.onEvent(
+                                        ProgramExercisesEvent.ApplyPermanentModifications(it)
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .animateItem()
+                            )
+                        }
+                    }
                     itemsIndexed(
                         items = state.programExercises,
                         key = { _, it -> it.programExerciseId }

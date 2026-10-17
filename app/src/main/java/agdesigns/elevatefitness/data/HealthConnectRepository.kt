@@ -18,6 +18,7 @@ import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.max
@@ -34,6 +35,7 @@ class HealthConnectRepository @Inject constructor(
 //            HealthPermission.getWritePermission(WeightRecord::class),
 //            HealthPermission.getReadPermission(WeightRecord::class),
         )
+        private const val MAX_KCAL = 1_000_000.0
     }
 
     val isAvailable: Boolean
@@ -64,76 +66,114 @@ class HealthConnectRepository @Inject constructor(
         workoutRecord: WorkoutRecord,
         programName: String,
         exerciseRecords: List<ExerciseRecordAndInfo>
-    ): String? {
-        if (!isAvailable || workoutRecord.startDate == null) {
-            return null
+    ): Result<String> {
+        if (!isAvailable) {
+            return Result.failure(IllegalStateException("Health Connect unavailable"))
+        }
+        if (workoutRecord.startDate == null) {
+            return Result.failure(IllegalStateException("Workout has no start date"))
+        }
+        if (workoutRecord.durationSeconds <= 0) {
+            return Result.failure(IllegalStateException("Workout has no duration"))
         }
         Log.d("HealthConnectRepository", "Writing workout to Health Connect")
         val startTime = workoutRecord.startDate.toInstant()
         val endTime = startTime.plusSeconds(workoutRecord.durationSeconds)
         val zoneOffset = workoutRecord.startDate.offset
-        try {
+        return try {
+            val metadata = HealthMetadata.activelyRecorded(
+                device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
+            )
+            val title = programName.takeIf { it.isNotBlank() }
+                ?.let { getProgramDisplayName(it, context) }
+            val segments = buildSegments(startTime, endTime, exerciseRecords)
+            val session = try {
+                ExerciseSessionRecord(
+                    startTime = startTime,
+                    startZoneOffset = zoneOffset,
+                    endTime = endTime,
+                    endZoneOffset = zoneOffset,
+                    exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING,
+                    title = title,
+                    metadata = metadata,
+                    segments = segments
+                )
+            } catch (e: IllegalArgumentException) {
+                // segments are a nice-to-have, don't lose the whole workout because of them
+                Log.w("HealthConnectRepository", "Invalid segments, exporting session without them", e)
+                ExerciseSessionRecord(
+                    startTime = startTime,
+                    startZoneOffset = zoneOffset,
+                    endTime = endTime,
+                    endZoneOffset = zoneOffset,
+                    exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING,
+                    title = title,
+                    metadata = metadata
+                )
+            }
+            val calories = workoutRecord.calories.toDouble()
+                .takeIf { it.isFinite() }
+                ?.coerceIn(0.0, MAX_KCAL)
+                ?: 0.0
             val results = healthConnectClient.insertRecords(
                 listOf<Record>(
-                    ExerciseSessionRecord(
-                        startTime = startTime,
-                        startZoneOffset = zoneOffset,
-                        endTime = endTime,
-                        endZoneOffset = zoneOffset,
-                        exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING,
-                        title = getProgramDisplayName(programName, context),
-                        metadata = HealthMetadata.activelyRecorded(
-                            device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
-                        ),
-                        segments = buildList {
-                            // we start by reversing, this is because to get start/end of the segment
-                            // (relative to a single set) by splitting time between current and following
-                            // exercise based on sets done
-                            var lastExEndTime = endTime
-                            exerciseRecords.sortedByDescending { it.date }.forEach { record ->
-                                if (record.reps.isEmpty()) return@forEach
-                                val startTime = record.date.toInstant()
-                                val endTime = lastExEndTime
-                                val totalTimeMillis =
-                                    Duration.between(startTime, endTime).toMillis()
-                                val millisPerSet = totalTimeMillis / record.reps.size
-                                val recordSegments = record.reps.indices.map { index ->
-                                    val segmentStartTime =
-                                        startTime.plusMillis(index * millisPerSet)
-                                    val segmentEndTime = segmentStartTime.plusMillis(millisPerSet)
-                                    ExerciseSegment(
-                                        startTime = segmentStartTime,
-                                        endTime = segmentEndTime,
-                                        segmentType = record.healthExerciseSegmentType,
-                                        repetitions = record.reps[index],
-                                        weight = record.weights.getOrNull(index)?.let {
-                                            // this needs to be non-negative but we allow that
-                                            Mass.kilograms(max(0.0, it.toDouble()))
-                                        },
-                                        setIndex = index
-                                    )
-                                }
-                                addAll(recordSegments.asReversed())
-                                lastExEndTime = startTime
-                            }
-                        }.asReversed()
-                    ),
+                    session,
                     ActiveCaloriesBurnedRecord(
                         startTime = startTime,
                         startZoneOffset = zoneOffset,
                         endTime = endTime,
                         endZoneOffset = zoneOffset,
-                        energy = Energy.kilocalories(workoutRecord.calories.toDouble()),
-                        metadata = HealthMetadata.activelyRecorded(
-                            device = Device(Device.TYPE_PHONE) // FIXME: change when using watch
-                        )
+                        energy = Energy.kilocalories(calories),
+                        metadata = metadata
                     )
                 )
             )
-            return results.recordIdsList.getOrNull(0)
+            results.recordIdsList.firstOrNull()?.let { Result.success(it) }
+                ?: Result.failure(IllegalStateException("Health Connect returned no record id"))
         } catch (e: Exception) {
             Log.e("HealthConnectRepository", "Error writing workout to Health Connect", e)
-            return null
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Splits the session into one segment per set. Each exercise spans from its record date to the
+     * start of the following exercise (or the end of the session), divided equally among its sets.
+     * Everything is clamped to the session range and empty segments are dropped, so the result
+     * always satisfies Health Connect's validation (no overlaps, within the session).
+     */
+    private fun buildSegments(
+        sessionStart: Instant,
+        sessionEnd: Instant,
+        exerciseRecords: List<ExerciseRecordAndInfo>
+    ): List<ExerciseSegment> = buildList {
+        val records = exerciseRecords
+            .filter { it.reps.isNotEmpty() }
+            .sortedBy { it.date }
+        records.forEachIndexed { i, record ->
+            val exStart = maxOf(record.date.toInstant(), sessionStart)
+            val exEnd = minOf(
+                records.getOrNull(i + 1)?.date?.toInstant() ?: sessionEnd,
+                sessionEnd
+            )
+            val millisPerSet = Duration.between(exStart, exEnd).toMillis() / record.reps.size
+            if (millisPerSet <= 0) return@forEachIndexed
+            record.reps.forEachIndexed { index, reps ->
+                val segmentStart = exStart.plusMillis(index * millisPerSet)
+                add(
+                    ExerciseSegment(
+                        startTime = segmentStart,
+                        endTime = segmentStart.plusMillis(millisPerSet),
+                        segmentType = record.healthExerciseSegmentType,
+                        repetitions = max(0, reps),
+                        weight = record.weights.getOrNull(index)?.let {
+                            // this needs to be non-negative but we allow that
+                            Mass.kilograms(max(0.0, it.toDouble()))
+                        },
+                        setIndex = index
+                    )
+                )
+            }
         }
     }
 
