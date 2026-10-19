@@ -693,7 +693,8 @@ class WorkoutViewModel @Inject constructor(
                     restTimestamp = restTimestamp?.toInstant()?.toEpochMilli() ?:
                         (Date().time + (restTime ?: 0L) * 1000L),
                     totalRest = totalRest,
-                    workoutStarted = workoutStarted
+                    workoutStarted = workoutStarted,
+                    currentExerciseImage = exercises.getOrNull(currentPage)?.imageResource
                 )
             }.collect {
                 if (it.workoutStarted) {

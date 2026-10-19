@@ -9,6 +9,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -34,6 +36,7 @@ data class WorkoutNotificationState(
     val restTimestamp: Long = 0L,
     val totalRest: Long? = null,
     val workoutStarted: Boolean = false,
+    val currentExerciseImage: Int? = null,
 )
 
 fun getTintedIcon(context: Context, iconId: Int): Icon {
@@ -66,6 +69,10 @@ class NotificationService @Inject constructor(
     val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, IMPORTANCE_DEFAULT)
 
     private var foregroundStarted = false
+
+    // cache the last decoded exercise image to avoid decoding it on every notification update
+    private var cachedImageRes: Int? = null
+    private var cachedImage: Bitmap? = null
 
     init {
         notificationManager.createNotificationChannel(channel)
@@ -157,6 +164,30 @@ class NotificationService @Inject constructor(
             )
     }
 
+    private fun getExerciseImage(imageRes: Int): Bitmap? {
+        if (imageRes == cachedImageRes)
+            return cachedImage
+
+        // exercise images are large, downsample them to roughly the large icon size
+        val targetSize = context.resources.getDimensionPixelSize(
+            android.R.dimen.notification_large_icon_height
+        ) * 2
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeResource(context.resources, imageRes, bounds)
+        var sampleSize = 1
+        while (minOf(bounds.outWidth, bounds.outHeight) / (sampleSize * 2) >= targetSize)
+            sampleSize *= 2
+        val bitmap = BitmapFactory.decodeResource(
+            context.resources,
+            imageRes,
+            BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        )
+
+        cachedImageRes = imageRes
+        cachedImage = bitmap
+        return bitmap
+    }
+
     fun buildBaseNotification(): NotificationCompat.Builder {
         val intent = Intent(context, MainActivity::class.java).apply {
             // No NEW_TASK / CLEAR_TASK flags — we want to resume!
@@ -223,6 +254,7 @@ class NotificationService @Inject constructor(
                 .setSmallIcon(R.mipmap.ic_launcher_foreground)
                 .setContentText(contentText)
                 .setStyle(progressStyle)
+                .setLargeIcon(state.currentExerciseImage?.let { getExerciseImage(it) })
                 .build()
         }
 
