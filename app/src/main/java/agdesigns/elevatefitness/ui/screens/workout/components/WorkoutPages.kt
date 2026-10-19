@@ -1427,8 +1427,13 @@ fun WorkoutRepsWeightRow(
                 tooltip = { PlainTooltip { Text(stringResource(setType.displayRes)) } },
                 state = tooltipState,
             ) {
+                val defaultColors = IconButtonDefaults.filledIconToggleButtonColors()
                 FilledIconToggleButton(
-                    enabled = toBeDone,
+                    // completed sets stay clickable (to change their type) but look done
+                    colors = if (toBeDone) defaultColors else defaultColors.copy(
+                        containerColor = defaultColors.disabledContainerColor,
+                        contentColor = defaultColors.disabledContentColor
+                    ),
                     checked = setsDone == setCount,
                     onCheckedChange = {
                         expanded = !expanded

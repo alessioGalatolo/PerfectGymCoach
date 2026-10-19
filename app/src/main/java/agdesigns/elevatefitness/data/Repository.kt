@@ -22,6 +22,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.RemovePlan
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
+import agdesigns.elevatefitness.data.db.entity.UpdateExerciseRecordSetTypes
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSets
 import agdesigns.elevatefitness.data.db.entity.WorkoutPlanRename
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
@@ -429,6 +430,16 @@ class Repository @Inject constructor(
         }
 
     suspend fun addExerciseRecord(exerciseRecord: ExerciseRecord) = db.exerciseRecordDao.insert(exerciseRecord)
+
+    suspend fun updateExerciseRecordSetTypes(
+        recordId: Long,
+        setTypes: List<SetType>
+    ) = db.exerciseRecordDao.updateSetTypes(
+        UpdateExerciseRecordSetTypes(
+            recordId,
+            setTypes
+        )
+    )
 
     fun resolveResources(exerciseRecord: ExerciseRecord): ExerciseRecord {
         if (exerciseRecord.variationResKey.isBlank()) {

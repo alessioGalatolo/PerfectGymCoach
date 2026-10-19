@@ -1077,11 +1077,19 @@ class WorkoutViewModel @Inject constructor(
                     newTypes[setToChange] = event.type
                 }
                 if (exercise != null) {
+                    val ongoingRecord = pagesContent.value.ongoingRecords.getOrNull(event.page)
                     viewModelScope.launch {
                         repository.updateWorkoutExerciseSetTypes(
                             workoutExerciseId = exercise.workoutExerciseId,
                             setTypes = newTypes
                         )
+                        // keep already completed sets in sync
+                        if (ongoingRecord != null) {
+                            repository.updateExerciseRecordSetTypes(
+                                recordId = ongoingRecord.recordId,
+                                setTypes = newTypes
+                            )
+                        }
                     }
                 }
             }
