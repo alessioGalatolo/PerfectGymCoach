@@ -61,11 +61,10 @@ android {
     buildTypes {
         release {
             // Enables code-related app optimization.
-            // FIXME: optimization enabled breaks phone-watch connection...
-//            isMinifyEnabled = true
+            isMinifyEnabled = true
 
             // Enables resource shrinking.
-//            isShrinkResources = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
