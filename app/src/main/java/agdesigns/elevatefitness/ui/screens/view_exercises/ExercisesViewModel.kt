@@ -85,7 +85,7 @@ class ExercisesViewModel @Inject constructor(
                     state.copy(
                         recentSearchesAll = recent,
                         recentSearches = recent.filter {
-                            it.contains(state.searchQuery, ignoreCase = true)
+                            isRecentSearchRelevant(it, state.searchQuery)
                         }
                     )
                 }
@@ -144,14 +144,19 @@ class ExercisesViewModel @Inject constructor(
                     _state.update { it.copy(searchQuery = event.query) }
                     val all = _state.value.exercisesFilterEquip ?: emptyList()
 
-                    val results = all.mapNotNull { ex -> matchExercise(ex, event.query) }
-                        .sortedWith(
-                            compareByDescending<ExerciseSearchResult> { it.score }
-                                .thenBy { it.exercise.name.lowercase() }
-                        )
+                    // nothing typed yet: show every exercise (already sorted by name)
+                    val results = if (event.query.isBlank()) {
+                        all.map { ex -> ExerciseSearchResult(ex, 0, emptyList(), emptyList()) }
+                    } else {
+                        all.mapNotNull { ex -> matchExercise(ex, event.query) }
+                            .sortedWith(
+                                compareByDescending<ExerciseSearchResult> { it.score }
+                                    .thenBy { it.exercise.name.lowercase() }
+                            )
+                    }
                     Log.d("ExercisesViewModel", "Found ${results.size} results")
                     val recent = state.value.recentSearchesAll.filter { recent ->
-                        recent.contains(event.query, ignoreCase = true)
+                        isRecentSearchRelevant(recent, event.query)
                     }
                     _state.update {
                         it.copy(

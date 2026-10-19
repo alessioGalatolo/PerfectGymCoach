@@ -210,3 +210,10 @@ fun matchExercise(ex: Exercise, rawQuery: String): ExerciseSearchResult? {
         reasons = reasonLabels.toList()
     )
 }
+/** A recent search is relevant if every token typed so far appears in it (accent/case insensitive). */
+fun isRecentSearchRelevant(recent: String, rawQuery: String): Boolean {
+    val tokens = tokenize(rawQuery)
+    if (tokens.isEmpty()) return true
+    val normRecent = normalizeForSearch(recent)
+    return tokens.all { normRecent.contains(it) }
+}
