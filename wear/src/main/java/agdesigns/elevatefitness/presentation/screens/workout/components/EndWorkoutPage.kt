@@ -123,7 +123,7 @@ fun EndWorkoutPage(
                             )
                             if (calories != null) {
                                 Text(
-                                    "🔥 ${calories.roundToInt()} kcal",
+                                    "🔥 ${stringResource(R.string.kcal_value, calories.roundToInt())}",
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             }
@@ -289,9 +289,9 @@ fun HeartRate(
         Spacer(Modifier.width(4.dp))
         Text(
             if (ambientMode is AmbientMode.Interactive)
-                "$heartRate bpm"
+                stringResource(R.string.bpm_value, heartRate.toString())
             else
-                "-- bpm",
+                stringResource(R.string.bpm_value, "--"),
             style = MaterialTheme.typography.labelSmall
         )
     }

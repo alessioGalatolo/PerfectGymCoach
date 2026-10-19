@@ -30,6 +30,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -234,7 +235,14 @@ fun Workout(
             text = {
                 if (hint != null) {
                     Text(
-                        stringResource(hint.descResId, *hint.descVarArgs.toTypedArray())
+                        if (hint.descPluralsResId != null)
+                            pluralStringResource(
+                                hint.descPluralsResId,
+                                hint.descVarArgs.first() as Int,
+                                *hint.descVarArgs.toTypedArray()
+                            )
+                        else
+                            stringResource(hint.descResId, *hint.descVarArgs.toTypedArray())
                     )
                 }
             },

@@ -60,18 +60,42 @@
     <string name="rest_hint_decrease_reps_title">Diminuisci le ripetizioni</string>
     <string name="rest_hint_increase_hold_title">Aumenta il tempo</string>
     <string name="rest_hint_decrease_hold_title">Diminuisci il tempo</string>
-    <string name="rest_hint_increase_reps">Questa volta, fai %1$s ripetizioni</string>
-    <string name="rest_hint_decrease_reps">Questa volta, fai %1$s ripetizioni</string>
-    <string name="rest_hint_increase_hold">Questa volta, mantieni per %1$s secondi</string>
-    <string name="rest_hint_decrease_hold">Questa volta, mantieni per %1$s secondi</string>
+    <plurals name="rest_hint_increase_reps">
+        <item quantity="one">Questa volta, fai %1$s ripetizione</item>
+        <item quantity="many">Questa volta, fai %1$s ripetizioni</item>
+        <item quantity="other">Questa volta, fai %1$s ripetizioni</item>
+    </plurals>
+    <plurals name="rest_hint_decrease_reps">
+        <item quantity="one">Questa volta, fai %1$s ripetizione</item>
+        <item quantity="many">Questa volta, fai %1$s ripetizioni</item>
+        <item quantity="other">Questa volta, fai %1$s ripetizioni</item>
+    </plurals>
+    <plurals name="rest_hint_increase_hold">
+        <item quantity="one">Questa volta, mantieni per %1$s secondo</item>
+        <item quantity="many">Questa volta, mantieni per %1$s secondi</item>
+        <item quantity="other">Questa volta, mantieni per %1$s secondi</item>
+    </plurals>
+    <plurals name="rest_hint_decrease_hold">
+        <item quantity="one">Questa volta, mantieni per %1$s secondo</item>
+        <item quantity="many">Questa volta, mantieni per %1$s secondi</item>
+        <item quantity="other">Questa volta, mantieni per %1$s secondi</item>
+    </plurals>
     <string name="rest_hint_start_weight_title">Carica peso</string>
     <string name="rest_hint_start_weight_dumbbell">Prendi i manubri da %1$s%2$s</string>
     <string name="rest_hint_start_weight_barbell">Aggiungi a entrambi i lati del bilancere pesi da: %1$s</string>
     <string name="rest_hint_start_weight_generic">Carica %1$s%2$s</string>
     <string name="rest_hint_start_reps_title">Ripetizioni</string>
     <string name="rest_hint_start_hold_title">Mantieni</string>
-    <string name="rest_hint_start_reps">Inizia con %1$s ripetizioni</string>
-    <string name="rest_hint_start_hold">Inizia con %1$s secondi</string>
+    <plurals name="rest_hint_start_reps">
+        <item quantity="one">Inizia con %1$s ripetizione</item>
+        <item quantity="many">Inizia con %1$s ripetizioni</item>
+        <item quantity="other">Inizia con %1$s ripetizioni</item>
+    </plurals>
+    <plurals name="rest_hint_start_hold">
+        <item quantity="one">Inizia con %1$s secondo</item>
+        <item quantity="many">Inizia con %1$s secondi</item>
+        <item quantity="other">Inizia con %1$s secondi</item>
+    </plurals>
     <string name="end_workout">Fine allenamento?</string>
     <string name="how_intense_was_this_workout">Quanto intenso era l\'allenamento?</string>
     <string name="raise_audio_volume">Aumenta il volume dell\'audio</string>
@@ -107,4 +131,6 @@
     <string name="tracking_not_supported">Tracciamento automatico serie non disponibile per questo esercizio</string>
     <string name="rom_cm">ROM (cm)</string>
     <string name="duration_s">Tempo (s)</string>
+    <string name="kcal_value">%1$d kcal</string>
+    <string name="bpm_value">%1$s bpm</string>
 </resources>

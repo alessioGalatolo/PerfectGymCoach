@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -1068,7 +1069,7 @@ fun HistoricRecord(
             val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
             val daysAgo = remember { ChronoUnit.DAYS.between(record.date, ZonedDateTime.now()) }
             Text(
-                record.date.format(formatter) + stringResource(R.string.days_ago, daysAgo),
+                record.date.format(formatter) + pluralStringResource(R.plurals.days_ago, daysAgo.toInt(), daysAgo.toInt()),
                 style = MaterialTheme.typography.titleMedium,
                 fontStyle = FontStyle.Italic
             )

@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -163,8 +164,9 @@ fun ReceivePlanScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = stringResource(
-                                        R.string.receive_plan_exercises,
+                                    text = pluralStringResource(
+                                        R.plurals.receive_plan_exercises,
+                                        program.exercises.size,
                                         program.exercises.size
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
@@ -187,12 +189,16 @@ fun ReceivePlanScreen(
                                         val repsStr = if (exercise.reps.distinct().size == 1)
                                             stringResource(
                                                 R.string.sets_x_reps,
-                                                sets,
-                                                exercise.reps.first()
+                                                pluralStringResource(R.plurals.n_sets, sets, sets),
+                                                pluralStringResource(
+                                                    R.plurals.n_reps,
+                                                    exercise.reps.first(),
+                                                    exercise.reps.first()
+                                                )
                                             )
                                         else
                                             exercise.reps.mapIndexed { i, r ->
-                                                "Set ${i + 1}: $r reps"
+                                                pluralStringResource(R.plurals.set_i_reps, r, i + 1, r)
                                             }.joinToString(", ")
                                         Row(
                                             modifier = Modifier

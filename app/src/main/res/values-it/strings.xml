@@ -195,7 +195,11 @@
     <string name="no_exercises_found">Nessun esercizio trovato</string>
     <string name="exclude_all_n_results">Escludi tutti i %d risultati</string>
     <string name="clear_all_excluded">Rimuovi tutto</string>
-    <string name="n_exercises_excluded">%d esercizi esclusi</string>
+    <plurals name="n_exercises_excluded">
+        <item quantity="one">%d esercizio escluso</item>
+        <item quantity="many">%d esercizi esclusi</item>
+        <item quantity="other">%d esercizi esclusi</item>
+    </plurals>
     <string name="no_exercises_excluded">Nessun esercizio escluso</string>
     <!-- Generating plan waiting screen-->
     <string name="generating_plan_waiting_text">Generazione di un piano personalizzato…</string>
@@ -226,7 +230,11 @@
     <string name="salute_user">Ciao, %1$s</string>
     <string name="name">Nome</string>
     <string name="age">Età</string>
-    <string name="i_years">%1$s anni</string>
+    <plurals name="i_years">
+        <item quantity="one">%1$d anno</item>
+        <item quantity="many">%1$d anni</item>
+        <item quantity="other">%1$d anni</item>
+    </plurals>
     <string name="born_in">Nato nel:</string>
     <string name="year">Anno</string>
     <string name="please_enter_a_valid_year">Per favore inserisci un anno valido</string>
@@ -277,7 +285,11 @@
     <!-- ## A streak in number of weeks; a week counts when all workouts of the plan were done   -->
     <string name="streak_in_weeks">%1$s sett.</string>
     <string name="best_streak">Miglior serie</string>
-    <string name="sets_total">%1$s occorrenze • %2$s %3$s totali</string>
+    <plurals name="sets_total">
+        <item quantity="one">%1$d occorrenza • %2$s %3$s totali</item>
+        <item quantity="many">%1$d occorrenze • %2$s %3$s totali</item>
+        <item quantity="other">%1$d occorrenze • %2$s %3$s totali</item>
+    </plurals>
     <!-- View exercises -->
     <string name="search_exercise">Cerca esercizio…</string>
     <string name="search_icon">Cerca</string>
@@ -796,7 +808,11 @@
     <string name="custom_split_add_day">Aggiungi giornata</string>
     <string name="custom_split_day">Giorno %1$d</string>
     <string name="custom_split_not_configured">Tappa per configurare</string>
-    <string name="custom_split_n_days">%1$d giorni configurati</string>
+    <plurals name="custom_split_n_days">
+        <item quantity="one">%1$d giorno configurato</item>
+        <item quantity="many">%1$d giorni configurati</item>
+        <item quantity="other">%1$d giorni configurati</item>
+    </plurals>
     <string name="custom_split_invalid">Alcuni giorni nella tua divisione non sono validi</string>
     <string name="intensities_high">Alta intensità (...)</string>
     <string name="intensities_medium">Intensità normale (...)</string>
@@ -898,7 +914,11 @@
 <!--    This is shown as title of the notification -->
     <string name="ongoing_workout_notification_title">Allenamento in corso</string>
     <string name="remaining_rest_notification_content">Riposo prima del prossimo esercizio: %1$d</string>
-    <string name="ongoing_workout_notification_content">Completati %1$d serie di %2$d</string>
+    <plurals name="ongoing_workout_notification_content">
+        <item quantity="one">Completate %1$d di %2$d serie</item>
+        <item quantity="many">Completate %1$d di %2$d serie</item>
+        <item quantity="other">Completate %1$d di %2$d serie</item>
+    </plurals>
     <string name="ongoing_workout_rest_finished_notification">Ora del prossimo esercizio! • %1$s</string>
     <string name="enable_ongoing_workout_notifications_title">Abilitare notifiche per allenamento in corso?</string>
     <string name="enable_ongoing_workout_notifications_info">Verrà mostrata una notifica permanente del progresso nell\'allenamento corrente e il restante riposo per quando l\'app non è in primo piano</string>
@@ -973,7 +993,11 @@
     <string name="health_connect_backfill_not_now">Non ora</string>
     <string name="health_connect_backfill_progress">Esportazione allenamenti passati (%1$d/%2$d)</string>
     <string name="health_connect_backfill_success">Allenamenti passati esportati in Health Connect</string>
-    <string name="health_connect_backfill_partial">Esportati %1$d allenamenti, %2$d non riusciti</string>
+    <plurals name="health_connect_backfill_partial">
+        <item quantity="one">Esportato %1$d allenamento, falliti: %2$d</item>
+        <item quantity="many">Esportati %1$d allenamenti, falliti: %2$d</item>
+        <item quantity="other">Esportati %1$d allenamenti, falliti: %2$d</item>
+    </plurals>
     <string name="heart_rate_bpm">Battiti (bpm)</string>
     <string name="progression_over_time">Progressione nel tempo</string>
     <string name="avg_heart_rate">Battiti medi</string>
@@ -995,7 +1019,11 @@
     <string name="hr_avg_short">Media</string>
     <string name="hr_max_short">Max</string>
     <string name="exercise_hr_summary">Media %1$d bpm · %2$d–%3$d bpm</string>
-    <string name="days_ago">" ~ %1$d giorni fa"</string>
+    <plurals name="days_ago">
+        <item quantity="one">" ~ %1$d giorno fa"</item>
+        <item quantity="many">" ~ %1$d giorni fa"</item>
+        <item quantity="other">" ~ %1$d giorni fa"</item>
+    </plurals>
     <string name="bottom_bar_current">" (attuale)"</string>
     <string name="last_set_tracking_data">Dati tracciati ultima serie</string>
     <string name="rom_cm">ROM (cm)</string>
@@ -1013,13 +1041,30 @@
     <string name="share_plan_chooser_title">Condividi piano di allenamento</string>
     <string name="share_plan_from_app">Condiviso da Elevate Fitness</string>
     <string name="receive_plan_title">Importa piano di allenamento</string>
-    <string name="receive_plan_programs">%1$d programmi</string>
-    <string name="receive_plan_exercises">%1$d esercizi</string>
+    <plurals name="receive_plan_programs">
+        <item quantity="one">%1$d programma</item>
+        <item quantity="many">%1$d programmi</item>
+        <item quantity="other">%1$d programmi</item>
+    </plurals>
+    <plurals name="receive_plan_exercises">
+        <item quantity="one">%1$d esercizio</item>
+        <item quantity="many">%1$d esercizi</item>
+        <item quantity="other">%1$d esercizi</item>
+    </plurals>
     <string name="receive_plan_import">Importa piano</string>
     <string name="receive_plan_imported">Piano importato!</string>
     <string name="receive_plan_error">Impossibile leggere il piano condiviso</string>
     <string name="receive_plan_day">Giorno %1$d</string>
-    <string name="sets_x_reps">%1$d serie × %2$d ripetizioni</string>
+    <plurals name="n_sets">
+        <item quantity="one">%1$d serie</item>
+        <item quantity="many">%1$d serie</item>
+        <item quantity="other">%1$d serie</item>
+    </plurals>
+    <plurals name="n_reps">
+        <item quantity="one">%1$d ripetizione</item>
+        <item quantity="many">%1$d ripetizioni</item>
+        <item quantity="other">%1$d ripetizioni</item>
+    </plurals>
     <string name="rest_seconds">Riposo: %1$ds</string>
     <string name="invalid_file_type">Formato file invalido</string>
 
@@ -1027,4 +1072,16 @@
     <string name="update_body_weight">Aggiorna peso corporeo?</string>
     <string name="update_bodyweight_desc">Stai facendo un esercizio a corpo libero ma non hai aggiornato il tuo peso nell\'app per più di %1$d giorni. Avere un peso aggiornato aiuta ad avere un calcolo del volume più accurato.</string>
     <string name="new_weight">nuovo peso</string>
+    <plurals name="set_i_reps">
+        <item quantity="one">Serie %1$d: %2$d ripetizione</item>
+        <item quantity="many">Serie %1$d: %2$d ripetizioni</item>
+        <item quantity="other">Serie %1$d: %2$d ripetizioni</item>
+    </plurals>
+    <string name="unit_ft">ft</string>
+    <string name="unit_in">in</string>
+    <string name="feet_inches_value">%1$sft %2$sin</string>
+    <string name="intensity_percent_label" formatted="false">Intensità (%)</string>
+    <string name="calories_kcal_label">Calorie (kcal)</string>
+    <string name="workout_time_minutes_label">Tempo di allenamento (m)</string>
+    <string name="workout_active_time_minutes_label">Tempo attivo di allenamento (m)</string>
 </resources>

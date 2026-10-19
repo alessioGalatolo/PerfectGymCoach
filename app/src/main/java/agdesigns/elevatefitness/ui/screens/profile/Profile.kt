@@ -148,7 +148,7 @@ fun Profile(
         if (it.failed == 0)
             stringResource(R.string.health_connect_backfill_success)
         else
-            stringResource(R.string.health_connect_backfill_partial, it.exported, it.failed)
+            pluralStringResource(R.plurals.health_connect_backfill_partial, it.exported, it.exported, it.failed)
     }
     LaunchedEffect(backfillMessage) {
         backfillMessage?.let {
@@ -770,7 +770,7 @@ fun PersonalInfoContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = stringResource(R.string.i_years, age),
+                    text = pluralStringResource(R.plurals.i_years, age.toInt(), age.toInt()),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -890,7 +890,7 @@ fun PhysicalMeasurementsContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${feetText}ft ${inchesText}in",
+                            text = stringResource(R.string.feet_inches_value, feetText, inchesText),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -903,7 +903,7 @@ fun PhysicalMeasurementsContent(
                         value = feetText,
                         onValueChange = { feetText = it },
                         label = { Text(stringResource(R.string.height)) },
-                        suffix = { Text("ft") },
+                        suffix = { Text(stringResource(R.string.unit_ft)) },
                         isError = !feetIsValid,
                         supportingText = {
                             if (!feetIsValid) {
@@ -922,7 +922,7 @@ fun PhysicalMeasurementsContent(
                         value = inchesText,
                         onValueChange = { inchesText = it },
                         label = { Text(stringResource(R.string.height)) },
-                        suffix = { Text("in") },
+                        suffix = { Text(stringResource(R.string.unit_in)) },
                         isError = !inchesIsValid,
                         supportingText = {
                             if (!inchesIsValid) {

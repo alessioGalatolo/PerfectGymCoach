@@ -25,6 +25,7 @@ import agdesigns.elevatefitness.shared.toZonedDateTime
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.os.Build
 import android.os.SystemClock
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoFlow
@@ -82,8 +83,10 @@ data class ExercisesState(
 
 data class InRestHint(
     @param:StringRes val titleResId: Int,
-    @param:StringRes val descResId: Int,
-    val descVarArgs: List<Any>
+    @param:StringRes val descResId: Int = 0,
+    val descVarArgs: List<Any>,
+    // when set, used instead of descResId, with the first of descVarArgs as quantity
+    @param:PluralsRes val descPluralsResId: Int? = null
 )
 
 
@@ -1327,10 +1330,10 @@ class WorkoutViewModel
 //                                        R.string.rest_hint_start_hold_title
 //                                    else
 //                                        R.string.rest_hint_start_reps_title,
-//                                    descResId = if (nextExercise.isDurationBased)
-//                                        R.string.rest_hint_start_hold
+//                                    descPluralsResId = if (nextExercise.isDurationBased)
+//                                        R.plurals.rest_hint_start_hold
 //                                    else
-//                                        R.string.rest_hint_start_reps,
+//                                        R.plurals.rest_hint_start_reps,
 //                                    descVarArgs = listOf(nextReps)
 //                                )
 //                            )
@@ -1431,10 +1434,10 @@ class WorkoutViewModel
                                             R.string.rest_hint_increase_hold_title
                                         else
                                             R.string.rest_hint_increase_reps_title,
-                                        descResId = if (currentExercise.isDurationBased)
-                                            R.string.rest_hint_increase_hold
+                                        descPluralsResId = if (currentExercise.isDurationBased)
+                                            R.plurals.rest_hint_increase_hold
                                         else
-                                            R.string.rest_hint_increase_reps,
+                                            R.plurals.rest_hint_increase_reps,
                                         descVarArgs = listOf(nextReps)
                                     )
                                 )
@@ -1445,10 +1448,10 @@ class WorkoutViewModel
                                             R.string.rest_hint_decrease_hold_title
                                         else
                                             R.string.rest_hint_decrease_reps_title,
-                                        descResId = if (currentExercise.isDurationBased)
-                                            R.string.rest_hint_decrease_hold
+                                        descPluralsResId = if (currentExercise.isDurationBased)
+                                            R.plurals.rest_hint_decrease_hold
                                         else
-                                            R.string.rest_hint_decrease_reps,
+                                            R.plurals.rest_hint_decrease_reps,
                                         descVarArgs = listOf(nextReps)
                                     )
                                 )

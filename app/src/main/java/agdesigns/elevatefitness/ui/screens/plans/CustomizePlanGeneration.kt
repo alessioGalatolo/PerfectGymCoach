@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -397,7 +398,7 @@ private fun SplitSection(
     onOpenCustomEditor: () -> Unit
 ) {
     val subtitle = if (selectedSplit == WorkoutPlanSplit.CUSTOM && customMuscleDays.isNotEmpty()) {
-        stringResource(R.string.custom_split_n_days, customMuscleDays.size)
+        pluralStringResource(R.plurals.custom_split_n_days, customMuscleDays.size, customMuscleDays.size)
     } else {
         stringResource(selectedSplit.splitResource)
     }
@@ -595,7 +596,7 @@ private fun ExcludeExercisesSection(
                     text = if (excludedCount == 0)
                         stringResource(R.string.no_exercises_excluded)
                     else
-                        stringResource(R.string.n_exercises_excluded, excludedCount),
+                        pluralStringResource(R.plurals.n_exercises_excluded, excludedCount, excludedCount),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -659,7 +660,7 @@ fun ExcludeExercisesScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
-                title = { Text(stringResource(R.string.n_exercises_excluded, localExcludedIds.size)) },
+                title = { Text(pluralStringResource(R.plurals.n_exercises_excluded, localExcludedIds.size, localExcludedIds.size)) },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(

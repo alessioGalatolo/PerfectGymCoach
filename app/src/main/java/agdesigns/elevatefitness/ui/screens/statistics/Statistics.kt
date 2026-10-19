@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,7 +79,8 @@ fun Statistics(
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    var titleText by remember { mutableStateOf("Highlights") }
+    val highlightsTitle = stringResource(R.string.s_header1_highlights)
+    var titleText by remember(highlightsTitle) { mutableStateOf(highlightsTitle) }
 
     // we want to have headers as top app bar titles, need listState
     val listState = rememberLazyListState()
@@ -781,8 +783,9 @@ private fun ExerciseStatItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = stringResource(
-                    R.string.sets_total,
+                text = pluralStringResource(
+                    R.plurals.sets_total,
+                    exercise.timesPerformed,
                     exercise.timesPerformed,
                     exercise.totalVolume.toInt(),
                     if (useImperial) stringResource(R.string.lb) else stringResource(R.string.kg)

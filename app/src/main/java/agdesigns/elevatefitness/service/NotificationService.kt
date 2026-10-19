@@ -207,8 +207,9 @@ class NotificationService @Inject constructor(
                 )
                 .build()
         } else {
-            var contentText = context.getString(
-                R.string.ongoing_workout_notification_content,
+            var contentText = context.resources.getQuantityString(
+                R.plurals.ongoing_workout_notification_content,
+                state.setsPerExercise.sum(),
                 state.setsDonePerExercise.sum(),
                 state.setsPerExercise.sum()
             )

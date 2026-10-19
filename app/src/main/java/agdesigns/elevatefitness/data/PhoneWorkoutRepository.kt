@@ -39,7 +39,6 @@ class PhoneWorkoutRepository(
     @ApplicationContext private val context: Context
 ) {
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val _workoutDatastoreDeferred = CompletableDeferred<UrgentWearLocalDataStore<Workout.WorkoutStaticData>>()
 
     // split static data (e.g., exercises) with data that is frequently changing to avoid too many messages
     val wearWorkoutStaticDeferred = CompletableDeferred<UrgentWearLocalDataStore<Workout.WorkoutStaticData>>()
@@ -135,7 +134,7 @@ class PhoneWorkoutRepository(
             } catch (e: StatusException) {
                 Log.e("PhoneWorkoutRepository", "Error stopping ongoing workout", e)
             }
-            _workoutDatastoreDeferred.await().urgentUpdateData {
+            wearWorkoutStaticDeferred.await().urgentUpdateData {
                 Workout.WorkoutStaticData.newBuilder()
                     .setActiveWorkout(false)
                     .build()
@@ -146,11 +145,6 @@ class PhoneWorkoutRepository(
     init {
         secondaryScope.launch {
             if (datalayerHelper.isAvailable()) {
-                _workoutDatastoreDeferred.complete(
-                    registry.urgentProtoDataStore<Workout.WorkoutStaticData>(
-                        coroutineScope = secondaryScope
-                    )
-                )
                 wearWorkoutStaticDeferred.complete(
                     registry.urgentProtoDataStore<Workout.WorkoutStaticData>(
                         coroutineScope = secondaryScope

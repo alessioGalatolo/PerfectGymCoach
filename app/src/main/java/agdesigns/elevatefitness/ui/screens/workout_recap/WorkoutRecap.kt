@@ -505,9 +505,9 @@ fun WorkoutRecap(
                                     R.string.lb
                                 ) else stringResource(R.string.kg)
                             })",
-                            "${stringResource(R.string.fitness_center_icon_intensity)} (%)",
-                            "${stringResource(R.string.calories)} (kcal)",
-                            "${stringResource(R.string.workout_time)} (m)",
+                            stringResource(R.string.intensity_percent_label),
+                            stringResource(R.string.calories_kcal_label),
+                            stringResource(R.string.workout_time_minutes_label),
                         )
                         val legend = listOf(
                             listOf(
@@ -523,8 +523,8 @@ fun WorkoutRecap(
                                 stringResource(R.string.this_workout)
                             ),
                             listOf(
-                                "${stringResource(R.string.workout_time)} (m)",
-                                "${stringResource(R.string.workout_active_time)} (m)",
+                                stringResource(R.string.workout_time_minutes_label),
+                                stringResource(R.string.workout_active_time_minutes_label),
                                 stringResource(R.string.this_workout),
                             )
                         )
