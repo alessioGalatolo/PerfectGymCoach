@@ -133,4 +133,7 @@
     <string name="duration_s">Tempo (s)</string>
     <string name="kcal_value">%1$d kcal</string>
     <string name="bpm_value">%1$s bpm</string>
+    <string name="bpm_recovered">recuperato</string>
+    <string name="recovery_warning_title">Ancora in recupero</string>
+    <string name="recovery_target">Obiettivo ≤ %1$d bpm</string>
 </resources>

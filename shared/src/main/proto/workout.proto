@@ -21,6 +21,17 @@ message WorkoutStaticData {
   bool smart_features_in_rest_hints = 12;
   bool smart_features_tempo_rom_tracking = 13;
   bool keep_screen_on = 14;
+  bool smart_features_smart_rest = 15;
+  SmartRestParams smart_rest_params = 16;
+}
+
+// tunable parameters of smart rest, see SmartRestParams.kt
+message SmartRestParams {
+  int64 peak_lookback_secs = 1;
+  int64 smoothing_window_secs = 2;
+  float recovery_fraction = 3;
+  int32 min_target_above_baseline = 4;
+  float baseline_percentile = 5;
 }
 
 message ProtoSuggestedModification {

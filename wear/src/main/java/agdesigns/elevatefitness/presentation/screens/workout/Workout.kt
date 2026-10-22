@@ -5,6 +5,7 @@ import agdesigns.elevatefitness.presentation.screens.workout.components.Calibrat
 import agdesigns.elevatefitness.presentation.screens.workout.components.EndWorkoutPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingWorkoutScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.MediaPlayingPage
+import agdesigns.elevatefitness.presentation.screens.workout.components.RecoveryWarningScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.RepsTempoPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.WorkoutPage
 import android.content.Intent
@@ -169,6 +170,9 @@ fun Workout(
                 }
                 is WorkoutEffect.NavigateToSelectValues -> {
                     navigateToSelectValues()
+                }
+                is WorkoutEffect.HeartRateRecovered -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                 }
             }
         }
@@ -396,6 +400,16 @@ fun Workout(
     } else {
         LoadingWorkoutScreen(
             onBack
+        )
+    }
+    val recovery = state.recovery
+    if (recovery?.showWarning == true && recovery.target != null && exercisesState.exercises.isNotEmpty()) {
+        RecoveryWarningScreen(
+            heartRate = state.currentHeartRate,
+            targetHeartRate = recovery.target,
+            recoveryProgress = recovery.progress ?: 0f,
+            ambientMode = LocalAmbientModeManager.current?.currentAmbientMode ?: AmbientMode.Interactive,
+            onDismiss = { viewModel.onEvent(WorkoutEvent.DismissRecoveryWarning) },
         )
     }
     if (showCalibrationOverlay) {

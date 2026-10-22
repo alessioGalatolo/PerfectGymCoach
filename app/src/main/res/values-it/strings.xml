@@ -954,6 +954,26 @@
     <string name="suggest_reps_weight">Suggerisci ripetizioni e peso negli allenamenti</string>
     <string name="suggest_workout_modifications">Suggeriscie modifiche all\'allenamento in base alle sessioni precedenti</string>
     <string name="in_rest_hints_wear">Guida tra le serie per cambiare peso, ripetizioni, ecc.</string>
+    <string name="developer_options_title">Opzioni sviluppatore</string>
+    <string name="developer_mode">Modalità sviluppatore</string>
+    <string name="developer_mode_info">Funzionalità sperimentali che potrebbero non funzionare come previsto. Disattiva per nascondere questa sezione</string>
+    <string name="developer_mode_enabled">Ora sei uno sviluppatore!</string>
+    <string name="developer_mode_already_enabled">Non serve, sei già uno sviluppatore</string>
+    <plurals name="developer_mode_steps_away">
+        <item quantity="one">Ti manca %d passaggio per diventare uno sviluppatore</item>
+        <item quantity="many">Ti mancano %d passaggi per diventare uno sviluppatore</item>
+        <item quantity="other">Ti mancano %d passaggi per diventare uno sviluppatore</item>
+    </plurals>
+    <string name="smart_rest_recovery_fraction">Aumento del battito da recuperare</string>
+    <string name="smart_rest_min_target_above_baseline">Obiettivo minimo sopra il battito di base</string>
+    <string name="smart_rest_baseline_percentile">Percentile del battito di base nell\'allenamento</string>
+    <string name="smart_rest_peak_lookback">Ricerca del picco prima del recupero</string>
+    <string name="smart_rest_smoothing_window">Finestra di smussamento del battito</string>
+    <string name="smart_rest_reset_params">Ripristina i parametri del recupero smart</string>
+    <string name="unit_seconds_short">s</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="smart_rest_wear">Recupero smart: usa il battito cardiaco per capire quando hai recuperato tra le serie</string>
     <string name="tempo_rom_tracking_wear">Traccia il tempo e ROM per le singole ripetizioni (sperimentale, solo esercizi supportati)</string>
     <string name="requires_connected_watch">Richiede un orologio connesso</string>
     <string name="requires_compatible_wearable">Questa funzionalità richede un orologio compatibile</string>

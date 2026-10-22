@@ -60,6 +60,7 @@ import androidx.graphics.shapes.star
 import androidx.wear.compose.foundation.AmbientMode
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
+import androidx.wear.compose.material3.ProgressIndicatorDefaults
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
@@ -80,6 +81,7 @@ fun RestScreen(
     ambientMode: AmbientMode,
     isLastSet: Boolean,
     heartRate: Int?,
+    heartRateRecovered: Boolean,
     skipRest: () -> Unit,
     onAddSet: () -> Unit,
     onExtendRest: () -> Unit,
@@ -109,6 +111,7 @@ fun RestScreen(
         ambientMode = ambientMode,
         isLastSet = isLastSet,
         heartRate = heartRate,
+        heartRateRecovered = heartRateRecovered,
         skipRest = skipRest,
         onAddSet = onAddSet,
         onExtendRest = onExtendRest,
@@ -118,7 +121,14 @@ fun RestScreen(
             progress = { animatedRestProgression.value },
             startAngle = CircularProgressIndicatorDefaults.StartAngle + 20f,  // allow for clock in up center
             endAngle = CircularProgressIndicatorDefaults.StartAngle - 20f,
-            strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth
+            strokeWidth = CircularProgressIndicatorDefaults.smallStrokeWidth,
+            // heart rate already recovered, user can start the next set before the timer ends
+            colors = if (heartRateRecovered)
+                ProgressIndicatorDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.tertiary
+                )
+            else
+                ProgressIndicatorDefaults.colors()
         )
     }
 }
@@ -132,6 +142,7 @@ fun Rest(
     ambientMode: AmbientMode,
     isLastSet: Boolean,
     heartRate: Int?,
+    heartRateRecovered: Boolean,
     skipRest: () -> Unit,
     onAddSet: () -> Unit,
     onExtendRest: () -> Unit,
@@ -333,7 +344,8 @@ fun Rest(
             buttons = {
                 HeartRate(
                     heartRate,
-                    ambientMode
+                    ambientMode,
+                    recovered = heartRateRecovered
                 )
             }
         )

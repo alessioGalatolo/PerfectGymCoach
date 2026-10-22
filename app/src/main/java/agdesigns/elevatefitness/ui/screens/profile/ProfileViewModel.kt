@@ -5,6 +5,7 @@ import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.HealthConnectRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
+import agdesigns.elevatefitness.shared.SmartRestParams
 import agdesigns.elevatefitness.shared.grpc.WearInfoServiceGrpcKt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,6 +54,9 @@ data class ProfileState(
     val suggestWorkoutModifications: Boolean = true,
     val inRestHints: Boolean = true,
     val tempoRomTracking: Boolean = false,
+    val smartRest: Boolean = false,
+    val developerMode: Boolean = false,
+    val smartRestParams: SmartRestParams = SmartRestParams(),
     val wearKeepScreenOn: Boolean = false,
     val hasConnectedWatch: Boolean = false,
     val wearSupportsTempoRom: Boolean? = null,
@@ -122,6 +126,12 @@ sealed class ProfileEvent{
 
     data class ToggleTempoRomTracking(val newValue: Boolean): ProfileEvent()
 
+    data class ToggleSmartRest(val newValue: Boolean): ProfileEvent()
+
+    data class ToggleDeveloperMode(val newValue: Boolean): ProfileEvent()
+
+    data class UpdateSmartRestParams(val newValue: SmartRestParams): ProfileEvent()
+
     data class ToggleWearKeepScreenOn(val newValue: Boolean): ProfileEvent()
 }
 
@@ -170,6 +180,9 @@ class ProfileViewModel @Inject constructor(
                 preferences.getInRestHints(),
                 preferences.getTempoRomTracking(),
                 preferences.getWearKeepScreenOn(),
+                preferences.getSmartRest(),
+                preferences.getDeveloperMode(),
+                preferences.getSmartRestParams(),
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -193,6 +206,9 @@ class ProfileViewModel @Inject constructor(
                         inRestHints = values[17] as Boolean,
                         tempoRomTracking = values[18] as Boolean,
                         wearKeepScreenOn = values[19] as Boolean,
+                        smartRest = values[20] as Boolean,
+                        developerMode = values[21] as Boolean,
+                        smartRestParams = values[22] as SmartRestParams,
                     )
                 }
             }.collect()
@@ -415,6 +431,21 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.ToggleTempoRomTracking -> {
                 viewModelScope.launch {
                     preferences.setTempoRomTracking(event.newValue)
+                }
+            }
+            is ProfileEvent.UpdateSmartRestParams -> {
+                viewModelScope.launch {
+                    preferences.setSmartRestParams(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleDeveloperMode -> {
+                viewModelScope.launch {
+                    preferences.setDeveloperMode(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleSmartRest -> {
+                viewModelScope.launch {
+                    preferences.setSmartRest(event.newValue)
                 }
             }
             is ProfileEvent.ToggleWearKeepScreenOn -> {

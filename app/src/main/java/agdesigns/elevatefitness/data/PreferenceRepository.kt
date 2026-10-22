@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.shared.SmartRestParams
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
@@ -296,6 +297,41 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.tempoRomTracking] = newValue
     }
 
+    fun getDeveloperMode(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.developerMode] ?: false
+    }
+
+    suspend fun setDeveloperMode(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.developerMode] = newValue
+    }
+
+    fun getSmartRest(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.smartRest] ?: false
+    }
+
+    suspend fun setSmartRest(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.smartRest] = newValue
+    }
+
+    fun getSmartRestParams(): Flow<SmartRestParams> = dataStore.data.map {
+        val defaults = SmartRestParams()
+        SmartRestParams(
+            peakLookbackSecs = it[PrefKeys.smartRestPeakLookbackSecs] ?: defaults.peakLookbackSecs,
+            smoothingWindowSecs = it[PrefKeys.smartRestSmoothingWindowSecs] ?: defaults.smoothingWindowSecs,
+            recoveryFraction = it[PrefKeys.smartRestRecoveryFraction] ?: defaults.recoveryFraction,
+            minTargetAboveBaseline = it[PrefKeys.smartRestMinTargetAboveBaseline] ?: defaults.minTargetAboveBaseline,
+            baselinePercentile = it[PrefKeys.smartRestBaselinePercentile] ?: defaults.baselinePercentile,
+        )
+    }
+
+    suspend fun setSmartRestParams(newValue: SmartRestParams) = dataStore.edit {
+        it[PrefKeys.smartRestPeakLookbackSecs] = newValue.peakLookbackSecs
+        it[PrefKeys.smartRestSmoothingWindowSecs] = newValue.smoothingWindowSecs
+        it[PrefKeys.smartRestRecoveryFraction] = newValue.recoveryFraction
+        it[PrefKeys.smartRestMinTargetAboveBaseline] = newValue.minTargetAboveBaseline
+        it[PrefKeys.smartRestBaselinePercentile] = newValue.baselinePercentile
+    }
+
     fun getWearKeepScreenOn(): Flow<Boolean> = dataStore.data.map {
         it[PrefKeys.wearKeepScreenOn] ?: false
     }
@@ -380,6 +416,13 @@ internal object PrefKeys {
     val suggestWorkoutModifications = booleanPreferencesKey("Suggest workout modifications")
     val inRestHints = booleanPreferencesKey("In rest hints")
     val tempoRomTracking = booleanPreferencesKey("Tempo rom tracking")
+    val smartRest = booleanPreferencesKey("Smart rest")
+    val smartRestPeakLookbackSecs = longPreferencesKey("Smart rest peak lookback secs")
+    val smartRestSmoothingWindowSecs = longPreferencesKey("Smart rest smoothing window secs")
+    val smartRestRecoveryFraction = floatPreferencesKey("Smart rest recovery fraction")
+    val smartRestMinTargetAboveBaseline = intPreferencesKey("Smart rest min target above baseline")
+    val smartRestBaselinePercentile = floatPreferencesKey("Smart rest baseline percentile")
+    val developerMode = booleanPreferencesKey("Developer mode")
     val wearKeepScreenOn = booleanPreferencesKey("Wear keep screen on")
     val reviewedModificationsWorkouts = stringPreferencesKey("Reviewed modifications workouts")
 }

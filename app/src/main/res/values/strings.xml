@@ -950,6 +950,25 @@
     <string name="suggest_reps_weight">Suggest reps and weight in workout</string>
     <string name="suggest_workout_modifications">Suggest workout modifications based on previous sessions</string>
     <string name="in_rest_hints_wear">Guidance between sets on changing weight, reps, etc.</string>
+    <string name="developer_options_title">Developer options</string>
+    <string name="developer_mode">Developer mode</string>
+    <string name="developer_mode_info">Experimental features that may not work as expected. Turn off to hide this section</string>
+    <string name="developer_mode_enabled">You are now a developer!</string>
+    <string name="developer_mode_already_enabled">No need, you are already a developer</string>
+    <plurals name="developer_mode_steps_away">
+        <item quantity="one">You are now %d step away from being a developer</item>
+        <item quantity="other">You are now %d steps away from being a developer</item>
+    </plurals>
+    <string name="smart_rest_recovery_fraction">Heart rate increase to recover</string>
+    <string name="smart_rest_min_target_above_baseline">Minimum target above baseline</string>
+    <string name="smart_rest_baseline_percentile">Baseline percentile of workout heart rates</string>
+    <string name="smart_rest_peak_lookback">Peak search before rest starts</string>
+    <string name="smart_rest_smoothing_window">Heart rate smoothing window</string>
+    <string name="smart_rest_reset_params">Reset smart rest parameters to defaults</string>
+    <string name="unit_seconds_short">s</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="smart_rest_wear">Smart rest: use heart rate to tell when you have recovered between sets</string>
     <string name="tempo_rom_tracking_wear">Tempo and ROM tracking for each single set (experimental, only supported exercises)</string>
     <string name="requires_connected_watch">Requires a connected wearable</string>
     <string name="requires_compatible_wearable">This feature requires a connected compatible wearable</string>

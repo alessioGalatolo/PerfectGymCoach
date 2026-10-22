@@ -74,6 +74,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.SharedFlow
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -82,6 +87,9 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.roundToLong
+import agdesigns.elevatefitness.ui.common.GroupedCardScope
+import agdesigns.elevatefitness.shared.SmartRestParams
 
 @Composable
 @OptIn(
@@ -289,7 +297,6 @@ fun Profile(
                 )
                 WearableContent(
                     profileState = state,
-                    snackbarHost = snackbarHostState,
                     viewModel = viewModel
                 )
             }
@@ -577,19 +584,68 @@ fun Profile(
                     }
                 }
             }
+            if (state.developerMode) {
+                item {
+                    Text(
+                        stringResource(R.string.developer_options_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(
+                            bottom = dimensionResource(R.dimen.header_to_content_padding)
+                        )
+                    )
+                    DeveloperOptionsContent(
+                        profileState = state,
+                        snackbarHost = snackbarHostState,
+                        viewModel = viewModel
+                    )
+                }
+            }
             item {
+                val resources = LocalResources.current
+                val scope = rememberCoroutineScope()
+                // like Android's build number, tapping repeatedly unlocks developer mode
+                var developerTaps by rememberSaveable { mutableIntStateOf(0) }
+                fun showDeveloperMessage(message: String) {
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    scope.launch { snackbarHostState.showSnackbar(message) }
+                }
                 ProfileSection(title = stringResource(R.string.acknowledgements_title)) {
                     Text(
                         stringResource(R.string.acknowledgements),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .clickable(
+                                interactionSource = null,
+                                indication = null
+                            ) {
+                                if (state.developerMode) {
+                                    showDeveloperMessage(resources.getString(R.string.developer_mode_already_enabled))
+                                    return@clickable
+                                }
+                                developerTaps++
+                                val remaining = DEVELOPER_MODE_TAPS - developerTaps
+                                if (remaining <= 0) {
+                                    developerTaps = 0
+                                    viewModel.onEvent(ProfileEvent.ToggleDeveloperMode(true))
+                                    showDeveloperMessage(resources.getString(R.string.developer_mode_enabled))
+                                } else if (developerTaps >= DEVELOPER_MODE_TAPS_BEFORE_HINT) {
+                                    showDeveloperMessage(
+                                        resources.getQuantityString(R.plurals.developer_mode_steps_away, remaining, remaining)
+                                    )
+                                }
+                            }
                     )
                 }
             }
         }
     }
 }
+
+private const val DEVELOPER_MODE_TAPS = 7
+// taps after which the user is told how many are left
+private const val DEVELOPER_MODE_TAPS_BEFORE_HINT = 3
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -1338,12 +1394,13 @@ fun IncrementRow(
     unit: String,
     onValueChange: (Float) -> Unit,
     keyboardController: SoftwareKeyboardController?,
-    focusManager: FocusManager
+    focusManager: FocusManager,
+    isValueValid: (Float) -> Boolean = { it > 0f },
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var textValue by remember { mutableStateOf(value.toString()) }
     val isValid by remember { derivedStateOf {
-        textValue.toFloatOrNull() != null && textValue.toFloat() > 0
+        textValue.toFloatOrNull()?.let(isValueValid) == true
     }}
 
     LaunchedEffect(value) {
@@ -1531,12 +1588,9 @@ fun SmartFeaturesContent(
 @Composable
 fun WearableContent(
     profileState: ProfileState,
-    snackbarHost: SnackbarHostState,
     viewModel: ProfileViewModel,
 ) {
     var helpDialogShown by remember { mutableStateOf(false) }
-    val noCompatibleWatchMessage = stringResource(R.string.requires_compatible_wearable)
-    val scope = rememberCoroutineScope()
 
     InfoDialog(
         dialogueIsOpen = helpDialogShown,
@@ -1654,41 +1708,183 @@ fun WearableContent(
                     )
                 }
             }
-            subCard(onClick = {
-                if (profileState.wearSupportsTempoRom == true) {
-                    viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(
-                        !profileState.tempoRomTracking
-                    ))
-                } else {
-                    scope.launch {
-                        snackbarHost.showSnackbar(noCompatibleWatchMessage)
-                    }
-                }
-            }) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    val tempoEnabled = profileState.wearSupportsTempoRom == true
+        }
+    }
+}
+
+@Composable
+fun DeveloperOptionsContent(
+    profileState: ProfileState,
+    snackbarHost: SnackbarHostState,
+    viewModel: ProfileViewModel,
+) {
+    val noCompatibleWatchMessage = stringResource(R.string.requires_compatible_wearable)
+    val scope = rememberCoroutineScope()
+
+    GroupedCard(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+    ) {
+        subCard(onClick = {
+            viewModel.onEvent(ProfileEvent.ToggleDeveloperMode(false))
+        }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.weight(1f)) {
                     Text(
-                        stringResource(R.string.tempo_rom_tracking_wear),
+                        stringResource(R.string.developer_mode),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (tempoEnabled)
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                        modifier = Modifier.weight(1f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Switch(
-                        checked = profileState.tempoRomTracking,
-                        onCheckedChange = {
-                            viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(it))
-                        },
-                        enabled = tempoEnabled
+                    Text(
+                        stringResource(R.string.developer_mode_info),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = true,
+                    onCheckedChange = { viewModel.onEvent(ProfileEvent.ToggleDeveloperMode(it)) }
+                )
+            }
+        }
+        subCard(onClick = {
+            viewModel.onEvent(ProfileEvent.ToggleSmartRest(!profileState.smartRest))
+        }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    stringResource(R.string.smart_rest_wear),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = profileState.smartRest,
+                    onCheckedChange = {
+                        viewModel.onEvent(ProfileEvent.ToggleSmartRest(it))
+                    }
+                )
+            }
+        }
+        if (profileState.smartRest) {
+            smartRestParamsCards(
+                params = profileState.smartRestParams,
+                onParamsChange = { viewModel.onEvent(ProfileEvent.UpdateSmartRestParams(it)) }
+            )
+        }
+        subCard(onClick = {
+            if (profileState.wearSupportsTempoRom == true) {
+                viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(
+                    !profileState.tempoRomTracking
+                ))
+            } else {
+                scope.launch {
+                    snackbarHost.showSnackbar(noCompatibleWatchMessage)
                 }
             }
+        }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val tempoEnabled = profileState.wearSupportsTempoRom == true
+                Text(
+                    stringResource(R.string.tempo_rom_tracking_wear),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (tempoEnabled)
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = profileState.tempoRomTracking,
+                    onCheckedChange = {
+                        viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(it))
+                    },
+                    enabled = tempoEnabled
+                )
+            }
+        }
+    }
+}
+
+// subCard contents are composable but the GroupedCard builder is not
+private fun GroupedCardScope.smartRestParamsCards(
+    params: SmartRestParams,
+    onParamsChange: (SmartRestParams) -> Unit,
+) {
+    subCard {
+        IncrementRow(
+            label = stringResource(R.string.smart_rest_recovery_fraction),
+            value = params.recoveryFraction * 100f,
+            unit = stringResource(R.string.unit_percent),
+            onValueChange = { onParamsChange(params.copy(recoveryFraction = it / 100f)) },
+            keyboardController = LocalSoftwareKeyboardController.current,
+            focusManager = LocalFocusManager.current,
+            isValueValid = { it > 0f && it <= 100f },
+        )
+    }
+    subCard {
+        IncrementRow(
+            label = stringResource(R.string.smart_rest_min_target_above_baseline),
+            value = params.minTargetAboveBaseline.toFloat(),
+            unit = stringResource(R.string.unit_bpm),
+            onValueChange = { onParamsChange(params.copy(minTargetAboveBaseline = it.roundToInt())) },
+            keyboardController = LocalSoftwareKeyboardController.current,
+            focusManager = LocalFocusManager.current,
+            isValueValid = { it >= 0f },
+        )
+    }
+    subCard {
+        IncrementRow(
+            label = stringResource(R.string.smart_rest_baseline_percentile),
+            value = params.baselinePercentile * 100f,
+            unit = stringResource(R.string.unit_percent),
+            onValueChange = { onParamsChange(params.copy(baselinePercentile = it / 100f)) },
+            keyboardController = LocalSoftwareKeyboardController.current,
+            focusManager = LocalFocusManager.current,
+            isValueValid = { it >= 0f && it < 100f },
+        )
+    }
+    subCard {
+        IncrementRow(
+            label = stringResource(R.string.smart_rest_peak_lookback),
+            value = params.peakLookbackSecs.toFloat(),
+            unit = stringResource(R.string.unit_seconds_short),
+            onValueChange = { onParamsChange(params.copy(peakLookbackSecs = it.roundToLong())) },
+            keyboardController = LocalSoftwareKeyboardController.current,
+            focusManager = LocalFocusManager.current,
+            isValueValid = { it >= 0f },
+        )
+    }
+    subCard {
+        IncrementRow(
+            label = stringResource(R.string.smart_rest_smoothing_window),
+            value = params.smoothingWindowSecs.toFloat(),
+            unit = stringResource(R.string.unit_seconds_short),
+            onValueChange = { onParamsChange(params.copy(smoothingWindowSecs = it.roundToLong())) },
+            keyboardController = LocalSoftwareKeyboardController.current,
+            focusManager = LocalFocusManager.current,
+            isValueValid = { it >= 1f },
+        )
+    }
+    if (params != SmartRestParams()) {
+        subCard(onClick = { onParamsChange(SmartRestParams()) }) {
+            Text(
+                stringResource(R.string.smart_rest_reset_params),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

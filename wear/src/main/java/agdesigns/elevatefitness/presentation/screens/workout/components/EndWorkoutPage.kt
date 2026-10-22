@@ -261,6 +261,7 @@ fun EndWorkoutPage(
 fun HeartRate(
     heartRate: Int?,
     ambientMode: AmbientMode,
+    recovered: Boolean = false,
 ) {
     if (heartRate == null) {
         return
@@ -274,25 +275,39 @@ fun HeartRate(
             RepeatMode.Reverse
         )
     )
-    Row {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(16.dp)
-        ) {
-            Icon(
-                Icons.Filled.Favorite,
-                contentDescription = null,
-                modifier = Modifier.size(if (ambientMode is AmbientMode.Interactive) size.dp else 12.dp),
-                tint = MaterialTheme.colorScheme.error
+    Column (
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(16.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Favorite,
+                    contentDescription = null,
+                    modifier = Modifier.size(if (ambientMode is AmbientMode.Interactive) size.dp else 12.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+            Text(
+                stringResource(
+                    R.string.bpm_value,
+                    if (ambientMode is AmbientMode.Interactive) heartRate.toString() else "--"
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (recovered) MaterialTheme.colorScheme.tertiary else Color.Unspecified
             )
         }
-        Spacer(Modifier.width(4.dp))
-        Text(
-            if (ambientMode is AmbientMode.Interactive)
-                stringResource(R.string.bpm_value, heartRate.toString())
-            else
-                stringResource(R.string.bpm_value, "--"),
-            style = MaterialTheme.typography.labelSmall
-        )
+        if (recovered) {
+            Text(
+                stringResource(R.string.bpm_recovered),
+                style = MaterialTheme.typography.labelSmall,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
     }
 }

@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.shared.BarbellType
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.MEDIA_IMAGES_PATH
+import agdesigns.elevatefitness.shared.SmartRestParams
 import agdesigns.elevatefitness.shared.WORKOUT_IMAGES_PATH
 import agdesigns.elevatefitness.shared.barbellIndexFromWeight
 import agdesigns.elevatefitness.shared.bitmapFlow
@@ -22,6 +23,7 @@ import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
+import agdesigns.elevatefitness.utils.HeartRateRecovery
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.os.Build
 import android.os.SystemClock
@@ -79,6 +81,8 @@ data class ExercisesState(
     val inRestHintsEnabled: Boolean = true,
     val tempoRomTrackingEnabled: Boolean = false,
     val keepScreenOn: Boolean = false,
+    val smartRestEnabled: Boolean = false,
+    val heartRateRecovery: HeartRateRecovery = HeartRateRecovery(),
 )
 
 data class InRestHint(
@@ -89,6 +93,23 @@ data class InRestHint(
     @param:PluralsRes val descPluralsResId: Int? = null
 )
 
+// smart rest: heart rate recovery of the last completed set, see HeartRateRecovery
+data class RecoveryState(
+    // second on the heartRateBySecond timeline at which the rest started
+    val startSecs: Long,
+    val baseline: Int,
+    val peak: Int? = null,
+    val target: Int? = null,
+    val smoothedHeartRate: Int? = null,
+    val recovered: Boolean = false,
+    // rest is over but heart rate is not recovered yet
+    val showWarning: Boolean = false,
+) {
+    val progress: Float?
+        get() = if (peak != null && target != null && smoothedHeartRate != null)
+            HeartRateRecovery.progress(peak, target, smoothedHeartRate)
+        else null
+}
 
 data class WorkoutState(
     val currentExerciseIndex: Int = 0,
@@ -141,6 +162,10 @@ data class WorkoutState(
     // metrics from watch (e.g., calories and HR) will arrive with an offset from start of workout, record that offset to align metrics with exercises and sets
     val exerciseStartEpochMillis: Long? = null,
     val firstHRTimeSinceBootSecs: Long? = null,
+    // latest second with a heart rate sample in heartRateBySecond
+    val lastHeartRateSecs: Long? = null,
+    // non-null while tracking heart rate recovery between sets
+    val recovery: RecoveryState? = null,
 )
 
 sealed class WorkoutEvent {
@@ -177,6 +202,7 @@ sealed class WorkoutEvent {
     data class ExtendRest(val additionalSeconds: Long = 5L): WorkoutEvent()
     data object StartCalibration: WorkoutEvent()
     data object DismissCalibration: WorkoutEvent()
+    data object DismissRecoveryWarning: WorkoutEvent()
 }
 
 // effects that should be propagated to the UI
@@ -184,6 +210,7 @@ sealed class WorkoutEffect {
     data object RetriableError: WorkoutEffect()
     data object NonRetriableError: WorkoutEffect()
     data object NavigateToSelectValues: WorkoutEffect()
+    data object HeartRateRecovered: WorkoutEffect()
 }
 
 @OptIn(ExperimentalHorologistApi::class, ExperimentalCoroutinesApi::class)
@@ -219,6 +246,14 @@ class WorkoutViewModel
             inRestHintsEnabled = staticData.smartFeaturesInRestHints,
             tempoRomTrackingEnabled = staticData.smartFeaturesTempoRomTracking,
             keepScreenOn = staticData.keepScreenOn,
+            smartRestEnabled = staticData.smartFeaturesSmartRest,
+            // older phone apps do not send the params, fall back to defaults
+            heartRateRecovery = HeartRateRecovery(
+                if (staticData.hasSmartRestParams())
+                    SmartRestParams.fromProto(staticData.smartRestParams)
+                else
+                    SmartRestParams()
+            ),
         )
     }.stateIn(
         viewModelScope,
@@ -280,7 +315,10 @@ class WorkoutViewModel
                 // TODO: superset case
                 repository.stopSetTracking()
                 _state.update {
-                    it.copy(
+                    // the phone also echoes rest extensions, keep tracking the ongoing rest then
+                    val isOngoingRest = it.recovery != null && !it.recovery.showWarning &&
+                        (it.ongoingRestSecs ?: 0L) > 0L
+                    (if (isOngoingRest) it else startRecoveryTracking(it, event.rest)).copy(
                         currentExerciseRest = event.rest,
                         restTimestamp = event.restTimestamp.toZonedDateTime(),
                         successfullySetValues = true
@@ -329,6 +367,7 @@ class WorkoutViewModel
                             } else null
                         val firstHRTimeSinceBoot = state.firstHRTimeSinceBootSecs ?: firstHeartRateTime?.div(1000L)
 
+                        var lastHeartRateSecs = state.lastHeartRateSecs
                         it.heartRates.forEach {
                             // this is time since boot
                             val timeInSeconds = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -336,7 +375,9 @@ class WorkoutViewModel
                             } else {
                                 it.first.toMillis() / 1000L
                             }
-                            secondsToHR[timeInSeconds-(firstHRTimeSinceBoot ?: 0L)] = it.second.toInt()
+                            val secs = timeInSeconds-(firstHRTimeSinceBoot ?: 0L)
+                            secondsToHR[secs] = it.second.toInt()
+                            lastHeartRateSecs = max(lastHeartRateSecs ?: secs, secs)
                         }
                         state.copy(
                             totalCalories = it.totalCalories ?: state.totalCalories,
@@ -348,8 +389,14 @@ class WorkoutViewModel
                             minHeartRate = it.minHeartRate?.toInt() ?: state.minHeartRate,
                             heartRateBySecond = secondsToHR.toMap(),
                             exerciseStartEpochMillis = estimatedWorkoutStartEpochTime,
-                            firstHRTimeSinceBootSecs = firstHRTimeSinceBoot
-                        )
+                            firstHRTimeSinceBootSecs = firstHRTimeSinceBoot,
+                            lastHeartRateSecs = lastHeartRateSecs,
+                        ).let { updated -> updateRecovery(updated) }
+                    }
+                    if (_state.value.recovery?.let { it.showWarning && it.recovered } == true) {
+                        // heart rate recovered after rest ended, warning is no longer needed
+                        _state.update { it.copy(recovery = null) }
+                        _effects.trySend(WorkoutEffect.HeartRateRecovered)
                     }
                 }
         }
@@ -439,7 +486,8 @@ class WorkoutViewModel
                 }
 
                 viewModelScope.launch {
-                    _state.update { it.copy(restTimestamp = ZonedDateTime.now()) }
+                    // rest was skipped on purpose, do not warn about recovery
+                    _state.update { it.copy(restTimestamp = ZonedDateTime.now(), recovery = null) }
                 }
             }
             is WorkoutEvent.ChangeReps -> {
@@ -452,6 +500,7 @@ class WorkoutViewModel
                         successfullySetValues = false,
                         restTimestamp = null,
                         currentExerciseRest = null,
+                        recovery = null,
                     )
                 }
 
@@ -652,6 +701,7 @@ class WorkoutViewModel
                         // vibrate now to hint user to start next exercise
                         repository.scheduleRestAlarm(0L)
                         state.copy(
+                            recovery = null,
                             restTimestamp = null,
                             lastCompletedExerciseIndex = null,
                             settingSetValues = true,
@@ -668,7 +718,7 @@ class WorkoutViewModel
                         )
                     } else {
                         repository.scheduleRestAlarm((rest.toLong() - 2L) * 1000L)
-                        state.copy(
+                        startRecoveryTracking(state, rest.toLong()).copy(
                             restTimestamp = ZonedDateTime
                                 .now()
                                 .plusSeconds(
@@ -982,6 +1032,9 @@ class WorkoutViewModel
                     }
                 }
             }
+            is WorkoutEvent.DismissRecoveryWarning -> {
+                _state.update { it.copy(recovery = null) }
+            }
             is WorkoutEvent.DismissCalibration -> {
                 calibrationDismissedThisSession = true
                 _state.update {
@@ -1094,6 +1147,13 @@ class WorkoutViewModel
                 val calibrationProgress = if (it.calibrationInProgress) {
                     Duration.between(it.calibrationStarted, currentTime).toMillis().toFloat() / 5000f
                 } else it.calibrationProgress
+                // rest just ended: warn if heart rate has not recovered, otherwise stop tracking
+                val recovery = if (
+                    it.recovery != null && !it.recovery.showWarning && ongoingRestMillis == 0L
+                ) {
+                    if (it.recovery.recovered || it.recovery.target == null) null
+                    else it.recovery.copy(showWarning = true)
+                } else it.recovery
                 it.copy(
                     currentTime = currentTime,
                     ongoingRestSecs = ongoingRestSecs,
@@ -1105,11 +1165,50 @@ class WorkoutViewModel
                     ongoingExerciseTimerProgression = ongoingExerciseTimerProgression,
                     ongoingExerciseStopwatchSecs = ongoingExerciseStopwatchSecs,
                     workoutTime = workoutTime,
-                    calibrationProgress = calibrationProgress
+                    calibrationProgress = calibrationProgress,
+                    recovery = recovery,
                 )
             }
         }.launchIn(viewModelScope)
     }
+    private fun startRecoveryTracking(state: WorkoutState, restSecs: Long): WorkoutState {
+        val firstHRTimeSinceBoot = state.firstHRTimeSinceBootSecs
+        val baseline = exercisesState.value.heartRateRecovery.baseline(state.heartRateBySecond.values)
+        if (
+            !exercisesState.value.smartRestEnabled || restSecs <= 0L ||
+            firstHRTimeSinceBoot == null || baseline == null
+        ) {
+            return state.copy(recovery = null)
+        }
+        return updateRecovery(
+            state.copy(
+                recovery = RecoveryState(
+                    startSecs = SystemClock.elapsedRealtime() / 1000L - firstHRTimeSinceBoot,
+                    baseline = baseline
+                )
+            )
+        )
+    }
+
+    private fun updateRecovery(state: WorkoutState): WorkoutState {
+        val recovery = state.recovery ?: return state
+        val lastSecs = state.lastHeartRateSecs ?: return state
+        val heartRateRecovery = exercisesState.value.heartRateRecovery
+        val peak = heartRateRecovery.peak(state.heartRateBySecond, recovery.startSecs, lastSecs)
+            ?: return state
+        val target = heartRateRecovery.target(recovery.baseline, peak)
+        val smoothed = heartRateRecovery.smoothed(state.heartRateBySecond, lastSecs)
+        return state.copy(
+            recovery = recovery.copy(
+                peak = peak,
+                target = target,
+                smoothedHeartRate = smoothed,
+                // sticky, avoids flickering when heart rate hovers around the target
+                recovered = recovery.recovered || (smoothed != null && smoothed <= target)
+            )
+        )
+    }
+
     private suspend fun observeUpdateRepsWeightExercises() {
         combine(
             state.map { it.currentExerciseIndex }.distinctUntilChanged(),

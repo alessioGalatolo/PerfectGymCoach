@@ -8,6 +8,7 @@ import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndEquipment
 import agdesigns.elevatefitness.shared.SetType
+import agdesigns.elevatefitness.shared.SmartRestParams
 import agdesigns.elevatefitness.data.db.entity.Theme
 import agdesigns.elevatefitness.data.db.entity.WorkoutExercise
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
@@ -1951,6 +1952,8 @@ class WorkoutViewModel @Inject constructor(
                 preferences.getInRestHints().distinctUntilChanged(),
                 preferences.getTempoRomTracking().distinctUntilChanged(),
                 preferences.getWearKeepScreenOn().distinctUntilChanged(),
+                preferences.getSmartRest().distinctUntilChanged(),
+                preferences.getSmartRestParams().distinctUntilChanged(),
             ) { values: Array<Any?> ->
                 val workoutId = values[0] as Long
                 val startDate = values[1] as ZonedDateTime?
@@ -1967,6 +1970,8 @@ class WorkoutViewModel @Inject constructor(
                 val inRestHintsEnabled = values[12] as Boolean
                 val tempoRomTrackingEnabled = values[13] as Boolean
                 val keepScreenOn = values[14] as Boolean
+                val smartRestEnabled = values[15] as Boolean
+                val smartRestParams = values[16] as SmartRestParams
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
                 try {
@@ -1998,6 +2003,8 @@ class WorkoutViewModel @Inject constructor(
                             .setSmartFeaturesInRestHints(inRestHintsEnabled)
                             .setSmartFeaturesTempoRomTracking(tempoRomTrackingEnabled)
                             .setKeepScreenOn(keepScreenOn)
+                            .setSmartFeaturesSmartRest(smartRestEnabled)
+                            .setSmartRestParams(smartRestParams.toProto())
                             .build()
                     }
                 } catch (e: Exception) {
