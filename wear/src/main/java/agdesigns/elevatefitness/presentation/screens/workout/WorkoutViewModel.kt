@@ -27,6 +27,8 @@ import agdesigns.elevatefitness.utils.HeartRateRecovery
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.os.Build
 import android.os.SystemClock
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
@@ -82,6 +84,7 @@ data class ExercisesState(
     val tempoRomTrackingEnabled: Boolean = false,
     val keepScreenOn: Boolean = false,
     val smartRestEnabled: Boolean = false,
+    val recordSensorData: Boolean = false,
     val heartRateRecovery: HeartRateRecovery = HeartRateRecovery(),
 )
 
@@ -247,6 +250,7 @@ class WorkoutViewModel
             tempoRomTrackingEnabled = staticData.smartFeaturesTempoRomTracking,
             keepScreenOn = staticData.keepScreenOn,
             smartRestEnabled = staticData.smartFeaturesSmartRest,
+            recordSensorData = staticData.recordSensorData,
             // older phone apps do not send the params, fall back to defaults
             heartRateRecovery = HeartRateRecovery(
                 if (staticData.hasSmartRestParams())
@@ -312,6 +316,10 @@ class WorkoutViewModel
         viewModelScope.launch {
             // listen for set rest requests from phone
             for (event in repository.setRestChannel) {
+                repository.markSensorRecording(
+                    "phone_set_rest",
+                    JSONObject().put("rest_secs", event.rest)
+                )
                 // TODO: superset case
                 repository.stopSetTracking()
                 _state.update {
@@ -409,6 +417,16 @@ class WorkoutViewModel
                 }
         }
         viewModelScope.launch {
+            exercisesState.map { it.recordSensorData }.distinctUntilChanged().collect {
+                repository.setSensorRecording(it)
+            }
+        }
+        viewModelScope.launch {
+            state.map { it.currentExerciseIndex }.distinctUntilChanged().collect {
+                repository.markSensorRecording("exercise_index", JSONObject().put("index", it))
+            }
+        }
+        viewModelScope.launch {
             exercisesState.map { it.tempoRomTrackingEnabled }.distinctUntilChanged().collect {
                 repository.tempoRomTrackingEnabled = it
                 if (it) {
@@ -477,6 +495,8 @@ class WorkoutViewModel
     }
 
     fun onEvent(event: WorkoutEvent){
+        // every UI interaction can help segmenting the recorded sensor data
+        repository.markSensorRecording("ui_event", JSONObject().put("event", event.toString()))
         when (event) {
             is WorkoutEvent.ResetRest -> {
                 repository.cancelRestAlarm()
@@ -540,6 +560,8 @@ class WorkoutViewModel
                     groundTruthReps = state.value.currentReps
                 )
                 _state.update { it.copy(lastSetResult = setTrackingResults) }
+                val completedSetIndex = exercisesState.value.exercisesSetsDone
+                    .getOrNull(completedExerciseIndex) ?: -1
                 val protoTrackingResults = setTrackingResults?.toProto() ?: RepAndTempoCounter.SetResult.protoNoResult
 
                 val shouldAdvancePage =
@@ -581,6 +603,9 @@ class WorkoutViewModel
                 val tare = if (equipment == Equipment.BARBELL)
                     BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
                 else 0f
+                repository.cutSensorRecording(
+                    sensorRecordingSetInfo(currentExercise, completedSetIndex, tare, setTrackingResults)
+                )
                 val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
                 val queuedSetCompleted = Workout.SetCompleted.newBuilder()
                     .setWorkoutId(exercisesState.value.workoutId)
@@ -1048,6 +1073,48 @@ class WorkoutViewModel
         }
     }
 
+    // ground truth and context of a completed set, stored alongside the raw sensor data
+    private fun sensorRecordingSetInfo(
+        exercise: Workout.Exercise,
+        setIndex: Int,
+        tare: Float,
+        trackingResult: RepAndTempoCounter.SetResult?,
+    ): JSONObject = JSONObject()
+        .put("workout_id", exercisesState.value.workoutId)
+        .put("workout_exercise_id", exercise.workoutExerciseId)
+        .put("program_exercise_id", exercise.programExerciseId)
+        .put("exercise_id", exercise.exerciseId)
+        .put("exercise_name", exercise.name)
+        .put("variation", exercise.variation)
+        .put("equipment", exercise.equipment)
+        .put("wear_rep_trackable", exercise.wearRepTrackable.name)
+        .put("first_phase", exercise.firstPhase.name)
+        .put("is_duration_based", exercise.isDurationBased)
+        .put("set_index", setIndex)
+        .put("set_type", exercise.setTypesList.getOrNull(setIndex))
+        .put("reps", state.value.currentReps)
+        .put("weight", state.value.currentWeight.toDouble())
+        .put("tare", tare.toDouble())
+        .put("imperial_system", exercisesState.value.imperialSystem)
+        .put("rest_timestamp_wall_ms", state.value.restTimestamp?.toInstant()?.toEpochMilli())
+        .put("superset_exercise", exercise.supersetExercise)
+        // output of the current detector, as a baseline
+        .put("tracking_result", trackingResult?.let { result ->
+            JSONObject()
+                .put("detected_reps", result.detectedReps)
+                .put("avg_range_of_motion_m", result.avgRangeOfMotionM.toDouble())
+                .put("avg_concentric_ms", result.avgConcentricMs)
+                .put("avg_eccentric_ms", result.avgEccentricMs)
+                .put("reps", JSONArray(result.reps.map { rep ->
+                    JSONObject()
+                        .put("index", rep.index)
+                        .put("concentric_ms", rep.concentricMs)
+                        .put("eccentric_ms", rep.eccentricMs)
+                        .put("range_of_motion_m", rep.rangeOfMotionM.toDouble())
+                        .put("peak_velocity", rep.peakVelocity.toDouble())
+                }))
+        })
+
     private fun List<Pair<Long, Int>>.interpolateMissingValues(): List<Pair<Long, Int>> {
         // Here, Long is a timestamp, Int is a heart rate value
         // We want to interpolate for missing values
@@ -1255,7 +1322,7 @@ class WorkoutViewModel
                 }
                 val nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount } ?: false) {
                     (currentExercise.name ?: "") + if (suggestedReps != null && suggestedWeight != null)
-                        " (${suggestedReps}x${suggestedWeight}${
+                        " (${suggestedReps}×${suggestedWeight}${
                         if (imperialSystem)
                             repository.stringResToString(sharedR.string.lb)
                         else

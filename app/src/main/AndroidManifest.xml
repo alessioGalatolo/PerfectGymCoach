@@ -92,6 +92,19 @@
             </intent-filter>
         </service>
         <service
+            android:name=".service.SensorRecordingListenerService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/sensor_recording"
+                    android:scheme="wear"
+                    />
+            </intent-filter>
+        </service>
+        <service
             android:name=".service.WearMediaDataService"
             android:exported="true"
             tools:ignore="ExportedService">

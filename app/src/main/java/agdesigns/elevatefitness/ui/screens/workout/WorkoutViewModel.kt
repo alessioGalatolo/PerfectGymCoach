@@ -1954,6 +1954,11 @@ class WorkoutViewModel @Inject constructor(
                 preferences.getWearKeepScreenOn().distinctUntilChanged(),
                 preferences.getSmartRest().distinctUntilChanged(),
                 preferences.getSmartRestParams().distinctUntilChanged(),
+                // only a developer option, do not record if developer mode was turned off
+                combine(
+                    preferences.getRecordSensorData(),
+                    preferences.getDeveloperMode()
+                ) { record, developer -> record && developer }.distinctUntilChanged(),
             ) { values: Array<Any?> ->
                 val workoutId = values[0] as Long
                 val startDate = values[1] as ZonedDateTime?
@@ -1972,6 +1977,7 @@ class WorkoutViewModel @Inject constructor(
                 val keepScreenOn = values[14] as Boolean
                 val smartRestEnabled = values[15] as Boolean
                 val smartRestParams = values[16] as SmartRestParams
+                val recordSensorData = values[17] as Boolean
 
                 val startDateTimestamp = startDate.toProtoTimestamp()
                 try {
@@ -2005,6 +2011,7 @@ class WorkoutViewModel @Inject constructor(
                             .setKeepScreenOn(keepScreenOn)
                             .setSmartFeaturesSmartRest(smartRestEnabled)
                             .setSmartRestParams(smartRestParams.toProto())
+                            .setRecordSensorData(recordSensorData)
                             .build()
                     }
                 } catch (e: Exception) {

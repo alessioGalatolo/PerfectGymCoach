@@ -23,6 +23,8 @@ message WorkoutStaticData {
   bool keep_screen_on = 14;
   bool smart_features_smart_rest = 15;
   SmartRestParams smart_rest_params = 16;
+  // developer option: record raw watch sensor data for offline analysis
+  bool record_sensor_data = 17;
 }
 
 // tunable parameters of smart rest, see SmartRestParams.kt

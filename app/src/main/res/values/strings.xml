@@ -972,6 +972,19 @@
     <string name="tempo_rom_tracking_wear">Tempo and ROM tracking for each single set (experimental, only supported exercises)</string>
     <string name="requires_connected_watch">Requires a connected wearable</string>
     <string name="requires_compatible_wearable">This feature requires a connected compatible wearable</string>
+    <string name="record_sensor_data">Record watch sensor data</string>
+    <string name="record_sensor_data_info">Saves raw motion sensor data for every set done with the watch, to develop rep, tempo and ROM tracking offline. Uses more battery and storage</string>
+    <plurals name="sensor_recordings_count">
+        <item quantity="one">%d set recorded</item>
+        <item quantity="other">%d sets recorded</item>
+    </plurals>
+    <string name="sensor_recordings_delete_title">Delete sensor recordings?</string>
+    <plurals name="sensor_recordings_delete_text">
+        <item quantity="one">The sensor data of %d set will be permanently deleted. Export it first if you want to keep it.</item>
+        <item quantity="other">The sensor data of %d sets will be permanently deleted. Export it first if you want to keep it.</item>
+    </plurals>
+    <string name="sensor_recordings_export_success">Sensor recordings exported</string>
+    <string name="sensor_recordings_export_error">Could not export sensor recordings</string>
 
     <!-- Wearable -->
     <string name="wearable_title">Wearable</string>

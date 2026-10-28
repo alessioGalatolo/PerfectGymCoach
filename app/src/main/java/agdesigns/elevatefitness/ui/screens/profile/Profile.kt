@@ -83,7 +83,9 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.LocalDateTime
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -1712,6 +1714,7 @@ fun WearableContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DeveloperOptionsContent(
     profileState: ProfileState,
@@ -1720,6 +1723,38 @@ fun DeveloperOptionsContent(
 ) {
     val noCompatibleWatchMessage = stringResource(R.string.requires_compatible_wearable)
     val scope = rememberCoroutineScope()
+    val createDocForSensorRecordings = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(mimeType = "application/zip")
+    ) { uri ->
+        uri?.let { viewModel.onEvent(ProfileEvent.ExportSensorRecordings(it)) }
+    }
+    var showDeleteSensorRecordingsDialog by rememberSaveable { mutableStateOf(false) }
+    if (showDeleteSensorRecordingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteSensorRecordingsDialog = false },
+            title = { Text(stringResource(R.string.sensor_recordings_delete_title)) },
+            text = {
+                Text(pluralStringResource(
+                    R.plurals.sensor_recordings_delete_text,
+                    profileState.sensorRecordingsCount,
+                    profileState.sensorRecordingsCount
+                ))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteSensorRecordingsDialog = false
+                    viewModel.onEvent(ProfileEvent.DeleteSensorRecordings)
+                }) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteSensorRecordingsDialog = false }) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
+            }
+        )
+    }
 
     GroupedCard(
         colors = CardDefaults.cardColors(
@@ -1813,6 +1848,72 @@ fun DeveloperOptionsContent(
                     },
                     enabled = tempoEnabled
                 )
+            }
+        }
+        subCard(onClick = {
+            viewModel.onEvent(ProfileEvent.ToggleRecordSensorData(!profileState.recordSensorData))
+        }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.record_sensor_data),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        stringResource(R.string.record_sensor_data_info),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = profileState.recordSensorData,
+                    onCheckedChange = {
+                        viewModel.onEvent(ProfileEvent.ToggleRecordSensorData(it))
+                    }
+                )
+            }
+        }
+        subCard {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    pluralStringResource(
+                        R.plurals.sensor_recordings_count,
+                        profileState.sensorRecordingsCount,
+                        profileState.sensorRecordingsCount
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                if (profileState.isSensorRecordingsExportLoading) {
+                    CircularWavyProgressIndicator()
+                } else {
+                    val hasRecordings = profileState.sensorRecordingsCount > 0
+                    TextButton(
+                        onClick = {
+                            val date = LocalDateTime.now()
+                                .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"))
+                            createDocForSensorRecordings.launch("sensor_recordings_$date.zip")
+                        },
+                        enabled = hasRecordings
+                    ) {
+                        Text(stringResource(R.string.backup_export))
+                    }
+                    TextButton(
+                        onClick = { showDeleteSensorRecordingsDialog = true },
+                        enabled = hasRecordings
+                    ) {
+                        Text(stringResource(R.string.delete))
+                    }
+                }
             }
         }
     }

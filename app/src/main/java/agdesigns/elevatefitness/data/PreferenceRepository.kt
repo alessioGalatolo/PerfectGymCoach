@@ -305,6 +305,14 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.developerMode] = newValue
     }
 
+    fun getRecordSensorData(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.recordSensorData] ?: false
+    }
+
+    suspend fun setRecordSensorData(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.recordSensorData] = newValue
+    }
+
     fun getSmartRest(): Flow<Boolean> = dataStore.data.map {
         it[PrefKeys.smartRest] ?: false
     }
@@ -423,6 +431,7 @@ internal object PrefKeys {
     val smartRestMinTargetAboveBaseline = intPreferencesKey("Smart rest min target above baseline")
     val smartRestBaselinePercentile = floatPreferencesKey("Smart rest baseline percentile")
     val developerMode = booleanPreferencesKey("Developer mode")
+    val recordSensorData = booleanPreferencesKey("Record sensor data")
     val wearKeepScreenOn = booleanPreferencesKey("Wear keep screen on")
     val reviewedModificationsWorkouts = stringPreferencesKey("Reviewed modifications workouts")
 }

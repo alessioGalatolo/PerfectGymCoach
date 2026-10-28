@@ -627,7 +627,7 @@ fun ExercisePage(
         }
         GroupedCard(Modifier.fillMaxWidth()) {
             subCard {
-                Text(stringResource(R.string.rest) +
+                Text(stringResource(R.string.rest) + // FIXME: loose string
                         ": ${exerciseRest}s", Modifier.align(Alignment.Start))
 
                 // if barbell, allow to add barbell weight (used for volume)

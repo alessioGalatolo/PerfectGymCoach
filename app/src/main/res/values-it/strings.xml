@@ -977,6 +977,21 @@
     <string name="tempo_rom_tracking_wear">Traccia il tempo e ROM per le singole ripetizioni (sperimentale, solo esercizi supportati)</string>
     <string name="requires_connected_watch">Richiede un orologio connesso</string>
     <string name="requires_compatible_wearable">Questa funzionalità richede un orologio compatibile</string>
+    <string name="record_sensor_data">Registra i dati dei sensori dell\'orologio</string>
+    <string name="record_sensor_data_info">Salva i dati grezzi dei sensori di movimento per ogni serie fatta con l\'orologio, per sviluppare offline il tracciamento di ripetizioni, tempo e ROM. Consuma più batteria e spazio</string>
+    <plurals name="sensor_recordings_count">
+        <item quantity="one">%d serie registrata</item>
+        <item quantity="many">%d serie registrate</item>
+        <item quantity="other">%d serie registrate</item>
+    </plurals>
+    <string name="sensor_recordings_delete_title">Eliminare le registrazioni dei sensori?</string>
+    <plurals name="sensor_recordings_delete_text">
+        <item quantity="one">I dati dei sensori di %d serie verranno eliminati definitivamente. Esportali prima se vuoi conservarli.</item>
+        <item quantity="many">I dati dei sensori di %d serie verranno eliminati definitivamente. Esportali prima se vuoi conservarli.</item>
+        <item quantity="other">I dati dei sensori di %d serie verranno eliminati definitivamente. Esportali prima se vuoi conservarli.</item>
+    </plurals>
+    <string name="sensor_recordings_export_success">Registrazioni dei sensori esportate</string>
+    <string name="sensor_recordings_export_error">Impossibile esportare le registrazioni dei sensori</string>
 
     <!-- Wearable -->
     <string name="wearable_title">Orologio</string>

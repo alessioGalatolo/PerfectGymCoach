@@ -4,7 +4,9 @@ import agdesigns.elevatefitness.data.datastore.CalibrationDataStore
 import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.data.datastore.PermissionStateDataStore
 import agdesigns.elevatefitness.service.WorkoutService
+import agdesigns.elevatefitness.shared.SENSOR_RECORDING_PATH
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
+import agdesigns.elevatefitness.utils.SensorRecorder
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -40,6 +42,14 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.tasks.await
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
+import org.json.JSONObject
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.jvm.java
@@ -97,6 +107,7 @@ class WearRepository @Inject constructor(
         override fun onReceive(context: Context, intent: Intent) {
             // notify sensors so we can collect set data
             startSetTracking()
+            markSensorRecording("rest_alarm")
 
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -306,6 +317,59 @@ class WearRepository @Inject constructor(
 
     fun setTrackingTruthAndGetResults(exerciseId: Long, groundTruthReps: Int): RepAndTempoCounter.SetResult? {
         return service.value?.setTrackingTruthAndGetResults(exerciseId, groundTruthReps)
+    }
+
+    /* Raw sensor recording (developer option) */
+    private val sensorRecordingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val sensorRecordingSendMutex = Mutex()
+
+    fun setSensorRecording(enabled: Boolean) {
+        sensorRecordingScope.launch {
+            val workoutService = service.filterNotNull().first()
+            if (enabled) {
+                workoutService.startSensorRecording()
+                // leftovers of a previous failed send
+                sendSensorRecordings()
+            } else {
+                workoutService.stopSensorRecording()
+            }
+        }
+    }
+
+    fun markSensorRecording(name: String, extra: JSONObject? = null) {
+        service.value?.markSensorRecording(name, extra)
+    }
+
+    /** Closes the current recording with [setInfo] as ground truth and sends it to the phone. */
+    fun cutSensorRecording(setInfo: JSONObject) {
+        service.value?.cutSensorRecording(setInfo) ?: return
+        sensorRecordingScope.launch { sendSensorRecordings() }
+    }
+
+    /**
+     * Sends every completed recording as a data item, which the data layer keeps (and delivers)
+     * until the phone saves it and deletes it.
+     */
+    private suspend fun sendSensorRecordings() = sensorRecordingSendMutex.withLock {
+        val dir = SensorRecorder.recordingsDir(context)
+        val dataClient = Wearable.getDataClient(context)
+        dir.listFiles { file -> file.name.endsWith(".json") }?.forEach { metadataFile ->
+            val id = metadataFile.name.removeSuffix(".json")
+            val samplesFile = File(dir, "$id.csv.gz")
+            try {
+                val request = PutDataMapRequest.create("$SENSOR_RECORDING_PATH/$id").apply {
+                    dataMap.putString("id", id)
+                    // as an asset as well, data items are limited to 100KB
+                    dataMap.putAsset("metadata", Asset.createFromBytes(metadataFile.readBytes()))
+                    dataMap.putAsset("samples", Asset.createFromBytes(samplesFile.readBytes()))
+                }.asPutDataRequest().setUrgent()
+                dataClient.putDataItem(request).await()
+                metadataFile.delete()
+                samplesFile.delete()
+            } catch (e: Exception) {
+                Log.e("WearRepository", "Failed to send sensor recording $id", e)
+            }
+        }
     }
 
     suspend fun runCalibration(durationMs: Long = 5000L) {

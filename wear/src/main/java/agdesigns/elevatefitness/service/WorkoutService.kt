@@ -9,6 +9,7 @@ import agdesigns.elevatefitness.data.db.entity.toEntity
 import agdesigns.elevatefitness.data.db.entity.toExerciseParams
 import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
+import agdesigns.elevatefitness.utils.SensorRecorder
 import android.Manifest
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -70,6 +71,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.time.Duration
 import javax.inject.Inject
 import kotlin.math.sqrt
@@ -94,6 +96,7 @@ class WorkoutService: LifecycleService() {
     private var gravitySensor: Sensor? = null
 
     private val repAndTempoCounters = mutableMapOf<Long, RepAndTempoCounter>()
+    private lateinit var sensorRecorder: SensorRecorder
     private val _activeExerciseId = MutableStateFlow<Long?>(null)
 
     private val accelerationListener = object : SensorEventListener {
@@ -231,7 +234,7 @@ class WorkoutService: LifecycleService() {
 
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-
+        sensorRecorder = SensorRecorder(sensorManager, SensorRecorder.recordingsDir(this))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -261,6 +264,7 @@ class WorkoutService: LifecycleService() {
                 sensorManager.unregisterListener(accelerationListener)
                 sensorManager.unregisterListener(gravityListener)
                 sensorManager.unregisterListener(gyroscopeListener)
+                sensorRecorder.stop()
                 // We have nothing to do, so we can stop.
                 stopSelf()
             }
@@ -506,6 +510,17 @@ class WorkoutService: LifecycleService() {
         return results
     }
 
+    /* Raw sensor recording (developer option), see SensorRecorder */
+    fun startSensorRecording() = sensorRecorder.start()
+
+    fun stopSensorRecording() = sensorRecorder.stop()
+
+    fun markSensorRecording(name: String, extra: JSONObject? = null) =
+        sensorRecorder.mark(name, extra)
+
+    /** Returns the id of the completed recording, null if not recording. */
+    fun cutSensorRecording(setInfo: JSONObject): String? = sensorRecorder.cut(setInfo)
+
     /**
      * Collect linear acceleration samples while the user is still, then return the
      * standard deviation as the sensor noise floor. Called once per device lifetime
@@ -544,6 +559,7 @@ class WorkoutService: LifecycleService() {
     fun stopWorkout() {
         Log.d(TAG, "stopWorkout()")
         stopSetTracking()
+        sensorRecorder.stop()
         val counters = repAndTempoCounters.values.map { it.getTunedParameters().toEntity() }
         repAndTempoCounters.clear()
         lifecycleScope.launch {
