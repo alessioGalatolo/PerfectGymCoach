@@ -1742,6 +1742,46 @@ fun WearableContent(
                     )
                 }
             }
+            // retro-compatibility to people who have this enabled without developer options
+            val tempoEnabled = profileState.wearSupportsTempoRom == true
+            if (
+                tempoEnabled &&
+                !profileState.developerMode &&
+                profileState.tempoRomTracking
+            ) {
+                subCard(onClick = {
+                    if (tempoEnabled) {
+                        viewModel.onEvent(
+                            ProfileEvent.ToggleTempoRomTracking(
+                                !profileState.tempoRomTracking
+                            )
+                        )
+                    }
+                }) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            stringResource(R.string.tempo_rom_tracking_wear),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (tempoEnabled)
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Switch(
+                            checked = profileState.tempoRomTracking,
+                            onCheckedChange = {
+                                viewModel.onEvent(ProfileEvent.ToggleTempoRomTracking(it))
+                            },
+                            enabled = tempoEnabled
+                        )
+                    }
+                }
+            }
         }
     }
 }
