@@ -29,7 +29,7 @@ interface WorkoutRecordDao {
     @Query(
         "SELECT * FROM workoutrecord WHERE workoutrecord.workoutId LIKE :workoutId"
     )
-    fun getRecord(workoutId: Long): Flow<WorkoutRecord>
+    fun getRecord(workoutId: Long): Flow<WorkoutRecord?>
 
 
     @Query(

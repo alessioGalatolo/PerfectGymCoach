@@ -1,8 +1,10 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.data.db.ExerciseDataMigrator
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
 import android.content.Context
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.datastore.core.DataStore
@@ -65,19 +67,35 @@ class DatabaseBackupManager @Inject constructor(
             }
 
             if (!vacuumOk) {
-                // Fallback: take a brief write lock, checkpoint WAL, then copy the main file.
-                // This minimizes the window and yields a consistent copy of the main DB file.
+                // Fallback: checkpoint the WAL (it can't complete inside a transaction), then
+                // take a brief write lock and copy the main file together with whatever got
+                // into the WAL in the meantime, so that no committed data is missed.
+                db.query("PRAGMA wal_checkpoint(TRUNCATE)").close()
+                val liveFile = context.getDatabasePath(database.openHelper.databaseName)
+                val liveWal = File(liveFile.path + "-wal")
+                val tempWal = File(temp.path + "-wal")
                 db.execSQL("BEGIN IMMEDIATE")
                 try {
-                    db.query("PRAGMA wal_checkpoint(FULL)").close()
-                    // Optional: compact the db file a bit (older devices), not strictly needed:
-                    // db.execSQL("VACUUM")
-                    val liveFile = context.getDatabasePath(database.openHelper.databaseName)
                     liveFile.inputStream().use { input ->
                         temp.outputStream().use { output -> input.copyTo(output) }
                     }
+                    if (liveWal.sizeOrZero() > 0) {
+                        liveWal.inputStream().use { input ->
+                            tempWal.outputStream().use { output -> input.copyTo(output) }
+                        }
+                    }
                 } finally {
                     db.execSQL("COMMIT")
+                }
+                // merge the copied WAL into the copy, leaving a single self-contained file
+                try {
+                    SQLiteDatabase.openDatabase(temp.path, null, SQLiteDatabase.OPEN_READWRITE)
+                        .use { copy ->
+                            copy.rawQuery("PRAGMA journal_mode=DELETE", null).use { it.moveToFirst() }
+                        }
+                } finally {
+                    tempWal.delete()
+                    File(temp.path + "-shm").delete()
                 }
             }
 
@@ -150,6 +168,10 @@ class DatabaseBackupManager @Inject constructor(
         ).use { c -> if (c.moveToFirst()) c.getString(0) else null }
     } catch (_: Exception) { null }
 
+    fun readCurrentVersionOrNull(): Int? = try {
+        database.openHelper.writableDatabase.version
+    } catch (_: Exception) { null }
+
     fun readCurrentIdentityHashOrNull(): String? = try {
         // Ensure the DB is open before reading.
         val wdb = database.openHelper.writableDatabase
@@ -173,8 +195,10 @@ class DatabaseBackupManager @Inject constructor(
             "room_master_table",
         )
 
-        // Capture identity hash of the *current* DB (if any), before we close it.
+        // Capture identity hash and version of the *current* DB (if any), before we close it.
         val currentIdentityHash = readCurrentIdentityHashOrNull()
+        val currentVersion = readCurrentVersionOrNull()
+        var restoredVersion = 0
 
         try {
             // 1) Copy to TEMP and do quick checks
@@ -203,8 +227,15 @@ class DatabaseBackupManager @Inject constructor(
                 if (restoredIdentity == null) {
                     return@withContext Result.failure(IllegalStateException("Not a Room database (missing identity hash)"))
                 }
-                // Do not restore if hashes don't match  // TODO: allow and add migration
-                if (currentIdentityHash != null && currentIdentityHash != restoredIdentity) {
+                // d) Version check: a backup from an older schema is migrated by Room when it
+                // gets opened below, a newer one cannot be handled
+                restoredVersion = candidate.version
+                if (currentVersion != null && restoredVersion > currentVersion) {
+                    return@withContext Result.failure(IllegalStateException("Backup was made with a newer version of the app"))
+                }
+                val isOlderSchema = currentVersion != null && restoredVersion < currentVersion
+                // Same schema version: hashes must match
+                if (!isOlderSchema && currentIdentityHash != null && currentIdentityHash != restoredIdentity) {
                     return@withContext Result.failure(IllegalStateException("Incompatible database version (identity hash mismatch)"))
                 }
             }
@@ -263,6 +294,12 @@ class DatabaseBackupManager @Inject constructor(
             // 8) Clear prefs referencing stale IDs
             runCatching { dataStore.edit { it.remove(PrefKeys.currentPlan) } }
             runCatching { dataStore.edit { it.remove(PrefKeys.currentWorkout) } }
+
+            // 8b) An older backup also needs the data migrations of the versions after it,
+            // they run when the db is opened after the restart
+            if (currentVersion != null && restoredVersion < currentVersion) {
+                runCatching { ExerciseDataMigrator(context).requireDataMigrationFrom(restoredVersion) }
+            }
 
             // 9) Clean up temp
             runCatching { tempFile.delete() }
@@ -379,6 +416,16 @@ class DatabaseBackupManager @Inject constructor(
                     return@withContext Result.failure(IllegalArgumentException("Backup contains invalid keys"))
                 }
 
+                // ids in the backup may not exist in the current database: an ongoing workout is
+                // never restored, the current plan only if it still exists
+                val backupCurrentPlan = backup.longPrefs[PrefKeys.currentPlan.name]
+                val restoreCurrentPlan = backupCurrentPlan != null &&
+                        database.workoutPlanDao.getPlan(backupCurrentPlan).first() != null
+                val skippedLongPrefs = buildSet {
+                    add(PrefKeys.currentWorkout.name)
+                    if (!restoreCurrentPlan) add(PrefKeys.currentPlan.name)
+                }
+
                 // 4) Apply atomically – if anything throws inside, nothing is committed
                 dataStore.edit { preferences ->
                     preferences.clear()
@@ -396,7 +443,8 @@ class DatabaseBackupManager @Inject constructor(
                         preferences[floatPreferencesKey(keyName)] = value
                     }
                     backup.longPrefs.forEach { (keyName, value) ->
-                        preferences[longPreferencesKey(keyName)] = value
+                        if (keyName !in skippedLongPrefs)
+                            preferences[longPreferencesKey(keyName)] = value
                     }
                 }
 

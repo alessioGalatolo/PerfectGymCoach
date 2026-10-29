@@ -73,6 +73,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.seconds
@@ -95,7 +96,8 @@ class WorkoutService: LifecycleService() {
     private var accelSensor: Sensor? = null
     private var gravitySensor: Sensor? = null
 
-    private val repAndTempoCounters = mutableMapOf<Long, RepAndTempoCounter>()
+    // accessed from the sensor thread, Dispatchers.IO and the main thread
+    private val repAndTempoCounters = ConcurrentHashMap<Long, RepAndTempoCounter>()
     private lateinit var sensorRecorder: SensorRecorder
     private val _activeExerciseId = MutableStateFlow<Long?>(null)
 
@@ -223,7 +225,7 @@ class WorkoutService: LifecycleService() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun repCountFlow(): Flow<Int?> = _activeExerciseId.flatMapLatest { id ->
-        repAndTempoCounters[id]?.repCountFlow?.map { it as Int? } ?: flowOf(null)
+        id?.let { repAndTempoCounters[it] }?.repCountFlow?.map { it as Int? } ?: flowOf(null)
     }
 
     override fun onCreate() {
@@ -240,6 +242,12 @@ class WorkoutService: LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         Log.d(TAG, "onStartCommand()")
+
+        if (intent?.getBooleanExtra(EXTRA_CANCEL_WORKOUT_FROM_NOTIFICATION, false) == true) {
+            // "stop workout" action of the ongoing notification
+            stopWorkout()
+            return START_NOT_STICKY
+        }
 
         if (!isStarted) {
             isStarted = true
@@ -312,6 +320,8 @@ class WorkoutService: LifecycleService() {
     fun startWorkout() {
         Log.d(TAG, "startWorkout()")
         workoutActive = true
+        // a previous stopWorkout() may have stopped the service while still bound
+        startService(Intent(this, this::class.java))
 
         accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY)
@@ -506,7 +516,7 @@ class WorkoutService: LifecycleService() {
         counter.reportActualReps(groundTruthReps)
         Log.d(TAG, "Results post: ${counter.getResults()}")
         val results = counter.getResults()
-        repAndTempoCounters[_activeExerciseId.value]?.reset()
+        _activeExerciseId.value?.let { repAndTempoCounters[it] }?.reset()
         return results
     }
 
@@ -558,6 +568,8 @@ class WorkoutService: LifecycleService() {
 
     fun stopWorkout() {
         Log.d(TAG, "stopWorkout()")
+        // lets stopSelfIfNotRunning() end the Health Services exercise
+        workoutActive = false
         stopSetTracking()
         sensorRecorder.stop()
         val counters = repAndTempoCounters.values.map { it.getTunedParameters().toEntity() }

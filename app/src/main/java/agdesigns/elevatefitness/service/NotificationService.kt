@@ -68,7 +68,9 @@ class NotificationService @Inject constructor(
 
     val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, IMPORTANCE_DEFAULT)
 
+    @Volatile
     private var foregroundStarted = false
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     // cache the last decoded exercise image to avoid decoding it on every notification update
     private var cachedImageRes: Int? = null
@@ -269,14 +271,20 @@ class NotificationService @Inject constructor(
                     notification.hasPromotableCharacteristics().toString())
         }
 
-        Handler(Looper.getMainLooper()).post {
-            notificationManager.notify(NOTIFICATION_ID, notification)
+        mainHandler.post {
+            // the workout may have ended after this was posted
+            if (foregroundStarted)
+                notificationManager.notify(NOTIFICATION_ID, notification)
         }
     }
 
     fun stop() {
         stopForegroundService()
-        notificationManager.cancel(NOTIFICATION_ID)
+        // this is a singleton, the next workout must start the foreground service again
+        foregroundStarted = false
+        // drop pending updates, and cancel after one that may be running right now
+        mainHandler.removeCallbacksAndMessages(null)
+        mainHandler.post { notificationManager.cancel(NOTIFICATION_ID) }
     }
 
     companion object {

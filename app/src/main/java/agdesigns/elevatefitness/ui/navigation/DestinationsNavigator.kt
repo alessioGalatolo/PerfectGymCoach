@@ -133,14 +133,21 @@ open class DestinationsNavigator(private val startKey: TopLevelRoute) {
             navigate(destination)
             return
         }
-        var removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
-        while (removedKey != null && removedKey::class != destination::class) {
-            removedKey = topLevelStacks[topLevelKey]?.removeLastOrNull()
-        }
-        if (removedKey != null && !override) {
-            navigate(removedKey)
-        } else {
+        val stack = topLevelStacks[topLevelKey]
+        val index = stack?.indexOfLast { it::class == destination::class } ?: -1
+        if (stack == null || index == -1) {
+            // not in the stack: don't pop anything (it would also pop the top-level root)
             navigate(destination)
+            return
+        }
+        while (stack.lastIndex > index) {
+            stack.removeAt(stack.lastIndex)
+        }
+        if (override) {
+            // replaces the entry since it has the same class
+            navigate(destination)
+        } else {
+            updateBackStack()
         }
     }
 

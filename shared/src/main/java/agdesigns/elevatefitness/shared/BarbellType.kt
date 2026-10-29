@@ -20,4 +20,11 @@ enum class BarbellType(val barbellResKey: String, val weight: Map<Boolean, Float
             SQUAT -> R.string.barbells_squat_bar
             OTHER -> R.string.barbells_other
         }
+
+    /**
+     * Tare to store (always kg) for this barbell in the user's unit system. Imperial bars have
+     * their own nominal weight (e.g. 44 lb, not 20 kg), so that one is converted, otherwise it
+     * would be displayed back as 44.09 lb.
+     */
+    fun tareKg(useImperial: Boolean): Float = maybeLbToKg(weight[useImperial] ?: 0f, useImperial)
 }

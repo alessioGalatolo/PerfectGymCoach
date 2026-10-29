@@ -1,5 +1,7 @@
 package agdesigns.elevatefitness.data.db
 
+import kotlin.math.max
+import kotlin.math.min
 import agdesigns.elevatefitness.data.dataStore
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.dao.ExerciseDao
@@ -75,19 +77,21 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     WorkoutDatabase::class.java,
                     "workout-database"
                 ).addCallback(object : Callback() {
+                    // onOpen always follows onCreate
+                    private var created = false
+
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
-                        //pre-populate data
-                        scope.launch {
-                            instance?.exerciseDao?.insertAll(
-                                INITIAL_EXERCISE_DATA
-                            )
-                        }
+                        created = true
                     }
 
                     override fun onOpen(db: SupportSQLiteDatabase) {
-                        // Check if migration is needed every time database opens
-                        checkAndPerformDataMigration(context)
+                        val freshlyCreated = created
+                        created = false
+                        // Pre-populate a new db, otherwise check if migration is needed.
+                        // Done in the same coroutine: a migration running alongside the seeding
+                        // would insert every exercise a second time
+                        checkAndPerformDataMigration(context, freshlyCreated)
                     }
                 }).addMigrations(
                     MIGRATION_1_2,
@@ -110,13 +114,19 @@ abstract class WorkoutDatabase: RoomDatabase() {
             }
         }
 
-        private fun checkAndPerformDataMigration(context: Context) {
+        private fun checkAndPerformDataMigration(context: Context, freshlyCreated: Boolean) {
             CoroutineScope(Dispatchers.IO).launch {
                 val database = getInstance(context, this@launch)
 
                 // Perform data migration with context access
                 val migrator = ExerciseDataMigrator(context)
-                migrator.migrateExerciseData(database)
+                if (freshlyCreated) {
+                    database.exerciseDao.insertAll(INITIAL_EXERCISE_DATA)
+                    // seeded with the latest data, no migration needed
+                    migrator.markUpToDate()
+                } else {
+                    migrator.migrateExerciseData(database)
+                }
             }
         }
     }
@@ -310,6 +320,23 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
 
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")
+
+    /**
+     * Makes the data migrations after [dbVersion] run again (on next db open), e.g., when an
+     * older database is restored from a backup.
+     */
+    suspend fun requireDataMigrationFrom(dbVersion: Int) {
+        context.dataStore.edit {
+            val current = it[dbVersionKey] ?: 1
+            it[dbVersionKey] = min(current, max(1, dbVersion))
+        }
+    }
+
+    suspend fun markUpToDate() {
+        context.dataStore.edit {
+            it[dbVersionKey] = LATEST_DATA_VERSION
+        }
+    }
 
     suspend fun migrateExerciseData(db: WorkoutDatabase) {
         val dbVersion = context.dataStore.data.map {
@@ -579,4 +606,8 @@ class ExerciseDataMigrator(private val context: Context) {
         }
     }
 
+    companion object {
+        // version set by the last data migration, update when adding one
+        private const val LATEST_DATA_VERSION = 13
+    }
 }

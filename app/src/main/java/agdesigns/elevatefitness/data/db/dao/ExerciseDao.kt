@@ -3,7 +3,6 @@ package agdesigns.elevatefitness.data.db.dao
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import androidx.room.Dao
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -33,10 +32,12 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercise")
     fun getAllExercises(): Flow<List<Exercise>>
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    // no REPLACE: it would delete the row and cascade to its children
+    @Insert
     suspend fun insert(exercise: Exercise): Long
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    // no REPLACE: it would delete the row and cascade to its children
+    @Insert
     fun insertAll(exercises: List<Exercise>)
 
     @Query("UPDATE exercise SET probability = :newProbability WHERE exerciseId = :exerciseId")

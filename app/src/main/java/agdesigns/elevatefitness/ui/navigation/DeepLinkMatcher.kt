@@ -15,7 +15,7 @@ class DeepLinkMatcher(
         // try match: workout/{programId}
         if (requestUri.authority == "workout") {
             return WorkoutDestination(
-                programId = requestUri.pathSegments[0].toLongOrNull() ?: 0L
+                programId = requestUri.pathSegments.firstOrNull()?.toLongOrNull() ?: 0L
             )
         }
         if (requestUri.authority == "bringtoforeground") {

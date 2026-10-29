@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data
 
+import kotlin.math.abs
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
 import agdesigns.elevatefitness.data.db.entity.Exercise
@@ -33,7 +34,6 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordHealthId
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
 import agdesigns.elevatefitness.data.db.entity.getDuplicatePlanName
-import agdesigns.elevatefitness.shared.Equipment
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.annotation.DrawableRes
@@ -100,16 +100,32 @@ class Repository @Inject constructor(
                     extPlanId = newPlanId
                 )
             )
-            val programExercises = getProgramExercises(program.programId).first()
-            for (programExercise in programExercises) {
-                addProgramExercise(
-                    programExercise.copy(
-                        programExerciseId = 0L,
-                        extProgramId = newProgramId
-                    )
-                )
-            }
+            copyProgramExercises(program.programId, newProgramId)
         }
+    }
+
+    /**
+     * Copies all exercises of a program into another one. Supersets are remapped to the copies,
+     * otherwise they would still point to the exercises of the original program.
+     */
+    private suspend fun copyProgramExercises(fromProgramId: Long, toProgramId: Long) {
+        val programExercises = getProgramExercises(fromProgramId).first()
+        val oldToNewId = programExercises.associate { programExercise ->
+            programExercise.programExerciseId to addProgramExercise(
+                programExercise.copy(
+                    programExerciseId = 0L,
+                    extProgramId = toProgramId,
+                    supersetExercise = null
+                )
+            )
+        }
+        val supersets = programExercises.mapNotNull { programExercise ->
+            val newSuperset = programExercise.supersetExercise?.let { oldToNewId[it] }
+                ?: return@mapNotNull null
+            UpdateExerciseSuperset(oldToNewId.getValue(programExercise.programExerciseId), newSuperset)
+        }
+        if (supersets.isNotEmpty())
+            updateExerciseSuperset(supersets)
     }
 
     /*
@@ -143,7 +159,6 @@ class Repository @Inject constructor(
         db.workoutProgramDao.updateName(workoutProgramRename)
 
     suspend fun duplicateProgram(programId: Long) {
-        // this could be reused in duplicatePlan...
         val program = getProgram(programId).first()
         if (program.extPlanId != null) {
             val programsToShift = getPrograms(program.extPlanId).first().filter {
@@ -156,20 +171,14 @@ class Repository @Inject constructor(
             }
             reorderPrograms(reorders)
         }
+        // place the copy right after the original, in the slot freed by the shift above
         val newProgramId = addProgram(
             program.copy(
                 programId = 0L,
+                orderInWorkoutPlan = program.orderInWorkoutPlan + 1
             )
         )
-        val programExercises = getProgramExercises(program.programId).first()
-        for (programExercise in programExercises) {
-            addProgramExercise(
-                programExercise.copy(
-                    programExerciseId = 0L,
-                    extProgramId = newProgramId
-                )
-            )
-        }
+        copyProgramExercises(program.programId, newProgramId)
     }
 
     suspend fun reorderPrograms(workoutProgramReorder: List<WorkoutProgramReorder>) =
@@ -230,9 +239,13 @@ class Repository @Inject constructor(
             )
         }
         reorderProgramExercises(reorders)
+        // place the copy right after the original, in the slot freed by the shift above.
+        // Do not copy the superset, the partner would not point back to the copy
         addProgramExercise(
             exercise.copy(
                 programExerciseId = 0L,
+                orderInProgram = exercise.orderInProgram + 1,
+                supersetExercise = null
             )
         )
     }
@@ -652,7 +665,7 @@ class Repository @Inject constructor(
         val sharedPrograms = programs.map { program ->
             val exercises = getProgramExercisesAndInfo(program.programId).first()
             val sharedExercises = exercises.map { exercise ->
-                if (exercise.userDefined) {
+                if (exercise.userDefined && missingExercises.none { it.exerciseId == exercise.extExerciseId }) {
                     missingExercises.add(getExercise(exercise.extExerciseId).first())
                 }
                 SharedExerciseModel(
@@ -690,18 +703,26 @@ class Repository @Inject constructor(
 
     suspend fun importSharedPlan(sharedPlan: SharedWorkoutPlanModel): Long {
         val nameToMissingExercise = sharedPlan.missingExercises.associateBy { it.name }
+        // user-defined exercises resolved so far, so that each is created only once
+        val resolvedUserExercises = mutableMapOf<String, Long>()
         val newPlanId = addPlan(WorkoutPlan(name = sharedPlan.planName, creationDate = ZonedDateTime.now()))
         for (program in sharedPlan.programs.sortedBy { it.orderInWorkoutPlan }) {
             val newProgramId = addProgram(
                 WorkoutProgram(extPlanId = newPlanId, orderInWorkoutPlan = program.orderInWorkoutPlan, name = program.name)
             )
-            val programExercises = mutableListOf<ProgramExerciseAndInfo>()
+            // shared exercises that were imported, with the id of their new program exercise
+            val created = mutableListOf<Pair<SharedExerciseModel, Long>>()
             for (exercise in program.exercises.sortedBy { it.orderInProgram }) {
-                val exerciseId = resolveOrCreateExercise(exercise, nameToMissingExercise) ?: continue
+                val exerciseId = resolveOrCreateExercise(
+                    exercise,
+                    nameToMissingExercise,
+                    resolvedUserExercises
+                ) ?: continue
                 val programExercise = ProgramExercise(
                     extProgramId = newProgramId,
                     extExerciseId = exerciseId,
-                    orderInProgram = exercise.orderInProgram,
+                    // position among the imported ones, exercises that could not be resolved leave no gap
+                    orderInProgram = created.size,
                     reps = exercise.reps,
                     rest = exercise.rest,
                     note = exercise.note,
@@ -709,64 +730,51 @@ class Repository @Inject constructor(
                     overriddenDurationBased = exercise.overriddenDurationBased,
                     setTypes = exercise.setTypes,
                 )
-                val programExerciseId = addProgramExercise(
-                    programExercise
-                )
-                programExercises.add(ProgramExerciseAndInfo(
-                    programExerciseId = programExerciseId,
-                    extProgramId = 0L,
-                    extExerciseId = exerciseId,
-                    orderInProgram = 0,
-                    name = exercise.localizedName,
-                    nameResKey = exercise.nameResKey,
-                    description = "",
-                    descriptionResKey = "",
-                    reps = emptyList(),
-                    rest = emptyList(),
-                    note = "",
-                    variation = "",
-                    variationResKey = "",
-                    image = 0,
-                    imageResKey = "",
-                    equipment = Equipment.EVERYTHING,
-                    userDefined = false,
-                    overriddenDurationBased = false,
-                    wearRepTrackable = Exercise.WearRepTrackable.NOT_TRACKABLE,
-                    firstPhase = Exercise.FirstPhase.ALONG_GRAVITY,
-                ))
+                created.add(exercise to addProgramExercise(programExercise))
             }
             // after creating all the program exercises, we check for supersets
-            program.exercises.forEachIndexed { idx, exercise ->
+            val supersets = created.mapIndexedNotNull { index, (exercise, programExerciseId) ->
                 if (exercise.supersetExerciseNameResKey == null && exercise.supersetExerciseName == null)
-                    return@forEachIndexed
-                val programExercise = programExercises.getOrNull(idx) ?: return@forEachIndexed
-                val supersetExercise = programExercises.find {
-                    it.nameResKey == exercise.supersetExerciseNameResKey || it.name == exercise.supersetExerciseName
-                }
-                if (supersetExercise != null) {
-                    updateExerciseSuperset(
-                        listOf(
-                            UpdateExerciseSuperset(
-                                programExercise.programExerciseId,
-                                supersetExercise.programExerciseId
-                            )
-                        )
-                    )
-                }
+                    return@mapIndexedNotNull null
+                // user-defined exercises have a blank nameResKey, match them by name instead.
+                // If the same exercise appears more than once, the closest one is the partner
+                val partner = created.withIndex()
+                    .filter { (otherIndex, other) ->
+                        otherIndex != index && if (!exercise.supersetExerciseNameResKey.isNullOrBlank())
+                            other.first.nameResKey == exercise.supersetExerciseNameResKey
+                        else
+                            other.first.localizedName == exercise.supersetExerciseName
+                    }
+                    .minByOrNull { (otherIndex, _) -> abs(otherIndex - index) }
+                    ?: return@mapIndexedNotNull null
+                UpdateExerciseSuperset(programExerciseId, partner.value.second)
             }
+            if (supersets.isNotEmpty())
+                updateExerciseSuperset(supersets)
         }
         return newPlanId
     }
 
     private suspend fun resolveOrCreateExercise(
         shared: SharedExerciseModel,
-        nameToMissingExercise: Map<String, SharedBaseExercise>
+        nameToMissingExercise: Map<String, SharedBaseExercise>,
+        resolvedUserExercises: MutableMap<String, Long>
     ): Long? {
-        val existing = db.exerciseDao.getExerciseByNameResKey(shared.nameResKey)
-        if (existing != null) return existing.exerciseId
+        // user-defined exercises have a blank nameResKey, which would match any user-defined one
+        if (shared.nameResKey.isNotBlank()) {
+            val existing = db.exerciseDao.getExerciseByNameResKey(shared.nameResKey)
+            if (existing != null) return existing.exerciseId
+        }
 
+        resolvedUserExercises[shared.localizedName]?.let { return it }
         val missingExercise = nameToMissingExercise[shared.localizedName] ?: return null
-        return addExercise(missingExercise.toExercise())
+        // reuse a user-defined exercise with the same name, if any
+        val exerciseId = db.exerciseDao.getExerciseByName(missingExercise.name)
+            ?.takeIf { it.userDefined }
+            ?.exerciseId
+            ?: addExercise(missingExercise.toExercise())
+        resolvedUserExercises[shared.localizedName] = exerciseId
+        return exerciseId
     }
 
     companion object {

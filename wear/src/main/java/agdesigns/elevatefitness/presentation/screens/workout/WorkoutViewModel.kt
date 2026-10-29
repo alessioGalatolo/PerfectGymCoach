@@ -17,6 +17,7 @@ import agdesigns.elevatefitness.shared.WORKOUT_IMAGES_PATH
 import agdesigns.elevatefitness.shared.barbellIndexFromWeight
 import agdesigns.elevatefitness.shared.bitmapFlow
 import agdesigns.elevatefitness.shared.getPlates
+import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.grpc.Media
 import agdesigns.elevatefitness.shared.grpc.MediaServiceGrpcKt
 import agdesigns.elevatefitness.shared.grpc.Workout
@@ -76,6 +77,7 @@ data class ExercisesState(
     val exercisesSetsDone: List<Int> = emptyList(),
     val suggestedRepsWeight: List<Workout.SuggestedRepsWeight> = emptyList(),
     val suggestedTare: List<Float> = emptyList(),
+    val suggestedBarbellTypes: List<String> = emptyList(),
     val imperialSystem: Boolean = false,
     val activeWorkout: Boolean = true,
     val lastIntensity: Float? = null,
@@ -244,6 +246,7 @@ class WorkoutViewModel
             imperialSystem = staticData.imperialSystem,
             activeWorkout = staticData.activeWorkout,
             suggestedTare = staticData.suggestedTaresList,
+            suggestedBarbellTypes = staticData.suggestedBarbellTypesList,
             lastIntensity = if (staticData.previousIntensity == -1f) null else staticData.previousIntensity / 100f,
             suggestedModifications = staticData.suggestedModificationsList.map { if (!it.hasSuggestion) null else it },
             inRestHintsEnabled = staticData.smartFeaturesInRestHints,
@@ -600,9 +603,13 @@ class WorkoutViewModel
                     }
                 }
                 val equipment = Equipment.fromResKey(currentExercise.equipment)
-                val tare = if (equipment == Equipment.BARBELL)
-                    BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
-                else 0f
+                val barbellType = if (equipment == Equipment.BARBELL)
+                    BarbellType.entries[state.value.tareIndex]
+                else null
+                val tare = if (barbellType == BarbellType.OTHER)
+                    state.value.tareBarbell
+                else
+                    barbellType?.weight[exercisesState.value.imperialSystem] ?: 0f
                 repository.cutSensorRecording(
                     sensorRecordingSetInfo(currentExercise, completedSetIndex, tare, setTrackingResults)
                 )
@@ -613,6 +620,7 @@ class WorkoutViewModel
                     .setReps(state.value.currentReps)
                     .setWeight(state.value.currentWeight)
                     .setTare(tare)
+                    .setBarbellTypeResKey(barbellType?.barbellResKey ?: "")
                     .setRest(state.value.currentExerciseRest ?: 0L)
                     .setRestTimestamp(protoTimestamp)
                     .setSetTracking(protoTrackingResults)
@@ -891,7 +899,8 @@ class WorkoutViewModel
                     return
                 retryJob = viewModelScope.launch {
                     val failedSets = mutableListOf<Workout.SetCompleted>()
-                    for (set in setCompletedQueue) {
+                    // iterate over a copy, the queue is modified while sending
+                    for (set in setCompletedQueue.toList()) {
                         try {
                             val result = workoutService.setCompleted(set)
                             if (!result.success) {
@@ -1285,7 +1294,8 @@ class WorkoutViewModel
             exercisesState.map { it.exercises }.distinctUntilChanged(),
             exercisesState.map { it.imperialSystem }.distinctUntilChanged(),
             state.map { it.settingSetValues }.distinctUntilChanged(),
-            state.map { it.lastCompletedExerciseIndex }.distinctUntilChanged()
+            state.map { it.lastCompletedExerciseIndex }.distinctUntilChanged(),
+            exercisesState.map { it.suggestedBarbellTypes }.distinctUntilChanged()
         ) { values ->
             val index = values[0] as Int
             val suggestedRepsWeight = values[1] as List<Workout.SuggestedRepsWeight>
@@ -1295,15 +1305,18 @@ class WorkoutViewModel
             val imperialSystem = values[5] as Boolean
             val settingSetValues = values[6] as Boolean
             val lastCompletedIndex = values[7] as Int?
+            val barbellTypes = values[8] as List<String>
             if (settingSetValues) return@combine
             _state.update {
                 val currentExercise = exercises.getOrNull(index) ?: exercises.lastOrNull()
                 val repsWeight = suggestedRepsWeight.getOrNull(index)
                 val setsDone = allSetsDone.getOrNull(index) ?: 0
                 val suggestedTare = tares.getOrNull(index)
-                val suggestedTareIndex = suggestedTare?.let {
-                    barbellIndexFromWeight(it)
-                }
+                // prefer the type sent by the phone, the weight alone is ambiguous (e.g., 10 kg bars)
+                val suggestedTareIndex = barbellTypes.getOrNull(index)
+                    ?.let { key -> BarbellType.entries.indexOfFirst { it.barbellResKey == key } }
+                    ?.takeIf { it != -1 }
+                    ?: suggestedTare?.let { barbellIndexFromWeight(it) }
                 var suggestedWeight: String? = null
                 var suggestedReps: String? = null
                 if (repsWeight != null) {
@@ -1336,7 +1349,9 @@ class WorkoutViewModel
                 it.copy(
                     currentWeight = suggestedWeight?.toFloatOrNull() ?: 0f,
                     currentReps = suggestedReps?.toIntOrNull() ?: it.currentReps,
-                    tareBarbell = suggestedTare ?: it.tareBarbell,
+                    // tares from the phone are in kg, the watch shows (and sends back) the user's unit
+                    tareBarbell = suggestedTare?.let { tare -> maybeKgToLb(tare, imperialSystem) }
+                        ?: it.tareBarbell,
                     tareIndex = suggestedTareIndex ?: it.tareIndex,
                     nextSetExerciseName = nextSetExerciseName,
                     // the rest screen refers to the set just completed, not to the (possibly advanced) current exercise

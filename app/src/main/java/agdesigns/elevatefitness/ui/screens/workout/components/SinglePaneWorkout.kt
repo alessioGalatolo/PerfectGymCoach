@@ -391,7 +391,7 @@ fun SharedTransitionScope.SinglePaneWorkout(
             },
             updateTare = { barbellType ->
                 viewModel.onEvent(WorkoutEvent.UpdateTare(
-                    barbellType.weight[false]!!,
+                    barbellType.tareKg(workoutState.imperialSystem),
                     barbellType
                 ))
             },

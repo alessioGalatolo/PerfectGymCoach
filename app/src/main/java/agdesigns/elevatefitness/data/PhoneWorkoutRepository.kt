@@ -21,19 +21,21 @@ import io.grpc.StatusException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Singleton
 
 @OptIn(ExperimentalHorologistApi::class)
 @Singleton
 class PhoneWorkoutRepository(
-    registry: WearDataLayerRegistry,
+    private val registry: WearDataLayerRegistry,
     private val phoneToWatchService: WorkoutWearServiceGrpcKt.WorkoutWearServiceCoroutineStub,
     private val datalayerHelper: PhoneDataLayerAppHelper,
     @ApplicationContext private val context: Context
@@ -41,16 +43,57 @@ class PhoneWorkoutRepository(
     private val secondaryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // split static data (e.g., exercises) with data that is frequently changing to avoid too many messages
-    val wearWorkoutStaticDeferred = CompletableDeferred<UrgentWearLocalDataStore<Workout.WorkoutStaticData>>()
-    val wearWorkoutDynamicDeferred = CompletableDeferred<UrgentWearLocalDataStore<Workout.WorkoutDynamicData>>()
-    val wearWorkoutImagesDeferred = CompletableDeferred<WearBitmapArrayStore>()
+    class WearWorkoutStores(
+        val static: UrgentWearLocalDataStore<Workout.WorkoutStaticData>,
+        val dynamic: UrgentWearLocalDataStore<Workout.WorkoutDynamicData>,
+        val images: WearBitmapArrayStore
+    )
 
+    private val wearStoresMutex = Mutex()
+    private var wearStores: WearWorkoutStores? = null
+
+    /**
+     * The stores synced with the watch, null if the Wear API is not available (yet).
+     * Created on first use, so a watch paired after the app started still gets synced.
+     */
+    suspend fun wearWorkoutStores(): WearWorkoutStores? = wearStoresMutex.withLock {
+        wearStores ?: if (datalayerHelper.isAvailable()) {
+            WearWorkoutStores(
+                static = registry.urgentProtoDataStore<Workout.WorkoutStaticData>(coroutineScope = secondaryScope),
+                dynamic = registry.urgentProtoDataStore<Workout.WorkoutDynamicData>(coroutineScope = secondaryScope),
+                images = registry.bitmapArrayStore(
+                    coroutineScope = secondaryScope,
+                    path = WORKOUT_IMAGES_PATH
+                )
+            ).also { wearStores = it }
+        } else null
+    }
+
+
+    /**
+     * A set completed on the watch, waiting to be processed by the phone.
+     * Either the consumer or a timeout claims it first: a timed out set is reported as failed to
+     * the watch (which will retry it) and must then be skipped by the consumer.
+     */
+    class PendingSetCompletion(val request: Workout.SetCompleted) {
+        private val claimed = AtomicBoolean(false)
+        internal val processed = CompletableDeferred<Unit>()
+
+        /** Returns false if the set timed out and must not be processed. */
+        fun tryClaim(): Boolean = claimed.compareAndSet(false, true)
+
+        fun markProcessed() {
+            processed.complete(Unit)
+        }
+
+        internal fun tryCancel(): Boolean = claimed.compareAndSet(false, true)
+    }
 
     // Channel - only ONE subscriber, all events delivered
-    private val _setCompletions = Channel<Workout.SetCompleted>(
+    private val _setCompletions = Channel<PendingSetCompletion>(
         capacity = Channel.UNLIMITED
     )
-    val setCompletions: ReceiveChannel<Workout.SetCompleted> = _setCompletions
+    val setCompletions: ReceiveChannel<PendingSetCompletion> = _setCompletions
 
     private val _workoutCompletions = Channel<Workout.CompleteWorkout>(
         capacity = Channel.UNLIMITED
@@ -78,18 +121,19 @@ class PhoneWorkoutRepository(
     suspend fun apiIsAvailable() = datalayerHelper.isAvailable()
 
     // Called by the gRPC service
-    @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun handleSetCompleted(setCompleted: Workout.SetCompleted): Boolean {
+        val pending = PendingSetCompletion(setCompleted)
         // Send to channel - will buffer if no one is collecting
-        _setCompletions.send(setCompleted)
-        // only return once it has been consumed
-        for (i in 0..10) {
-            delay(200)
-            if (setCompletions.isEmpty) {
-                return true
-            }
-        }
-        return false
+        _setCompletions.send(pending)
+        // only return once it has been processed
+        if (withTimeoutOrNull(SET_COMPLETION_TIMEOUT_MILLIS) { pending.processed.await() } != null)
+            return true
+        // not processed in time: cancel it so that the watch's retry is not recorded twice
+        if (pending.tryCancel())
+            return false
+        // consumer is processing it right now
+        pending.processed.await()
+        return true
     }
 
     fun handleCompleteWorkout(completion: Workout.CompleteWorkout) {
@@ -134,7 +178,7 @@ class PhoneWorkoutRepository(
             } catch (e: StatusException) {
                 Log.e("PhoneWorkoutRepository", "Error stopping ongoing workout", e)
             }
-            wearWorkoutStaticDeferred.await().urgentUpdateData {
+            wearWorkoutStores()?.static?.urgentUpdateData {
                 Workout.WorkoutStaticData.newBuilder()
                     .setActiveWorkout(false)
                     .build()
@@ -142,26 +186,7 @@ class PhoneWorkoutRepository(
         }
     }
 
-    init {
-        secondaryScope.launch {
-            if (datalayerHelper.isAvailable()) {
-                wearWorkoutStaticDeferred.complete(
-                    registry.urgentProtoDataStore<Workout.WorkoutStaticData>(
-                        coroutineScope = secondaryScope
-                    )
-                )
-                wearWorkoutDynamicDeferred.complete(
-                    registry.urgentProtoDataStore<Workout.WorkoutDynamicData>(
-                        coroutineScope = secondaryScope
-                    )
-                )
-                wearWorkoutImagesDeferred.complete(
-                    registry.bitmapArrayStore(
-                        coroutineScope = secondaryScope,
-                        path = WORKOUT_IMAGES_PATH
-                    )
-                )
-            }
-        }
+    companion object {
+        private const val SET_COMPLETION_TIMEOUT_MILLIS = 2_200L
     }
 }

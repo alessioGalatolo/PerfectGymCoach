@@ -25,6 +25,8 @@ message WorkoutStaticData {
   SmartRestParams smart_rest_params = 16;
   // developer option: record raw watch sensor data for offline analysis
   bool record_sensor_data = 17;
+  // BarbellType.barbellResKey matching suggested_tares by index, empty if unknown
+  repeated string suggested_barbell_types = 18;
 }
 
 // tunable parameters of smart rest, see SmartRestParams.kt
@@ -127,6 +129,8 @@ message SetCompleted {
   int64 rest = 6;
   google.protobuf.Timestamp rest_timestamp = 7;
   ProtoSetTrackingResult setTracking = 8;
+  // BarbellType.barbellResKey of the selected barbell, empty if not a barbell exercise
+  string barbell_type_res_key = 9;
 }
 
 message SetCompletedResponse {

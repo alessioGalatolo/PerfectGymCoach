@@ -115,19 +115,26 @@ class ProgramsViewModel @Inject constructor(private val repository: Repository):
             }
             is ProgramsEvent.DeleteProgram -> {
                 viewModelScope.launch {
-                    // check that currentProgram in plan is not the one we are eliminating
+                    // keep currentProgram pointing to the same program (or to the one following
+                    // the deleted one), as the programs after the deleted one shift back by one
                     val plan = repository.getPlan(state.value.programs[0].extPlanId!!).first()
                     val program = state.value.programs.first { it.programId == event.programId }
-                    if (plan?.currentProgram == program.orderInWorkoutPlan){
-                        // it is, need to change it
-                        var newCurrentProgram = if (state.value.programs.size == 1)
-                            0
-                        else
-                            (plan.currentProgram+1) % (state.value.programs.size-1)
-                        repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
-                            planId = plan.planId,
-                            currentProgram = newCurrentProgram
-                        ))
+                    val deletedOrder = program.orderInWorkoutPlan
+                    val remainingPrograms = state.value.programs.size - 1
+                    if (plan != null) {
+                        val newCurrentProgram = when {
+                            remainingPrograms <= 0 -> 0
+                            plan.currentProgram > deletedOrder -> plan.currentProgram - 1
+                            // the following program takes the deleted one's place, wrap if it was last
+                            plan.currentProgram == deletedOrder -> deletedOrder % remainingPrograms
+                            else -> plan.currentProgram
+                        }
+                        if (newCurrentProgram != plan.currentProgram) {
+                            repository.updateCurrentPlan(WorkoutPlanUpdateProgram(
+                                planId = plan.planId,
+                                currentProgram = newCurrentProgram
+                            ))
+                        }
                     }
                     repository.removeProgramFromPlan(event.programId)
                     // reorder programs after this one

@@ -62,12 +62,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             // if we are in home, there is no workout. Make sure it is sent to wear
             // (this could happen if phone app is abruptly terminated)
-            if (phoneWorkoutRepository.apiIsAvailable()) {
-                phoneWorkoutRepository.wearWorkoutStaticDeferred.await().urgentUpdateData {
-                    Workout.WorkoutStaticData.newBuilder()
-                        .setActiveWorkout(false)
-                        .build()
-                }
+            phoneWorkoutRepository.wearWorkoutStores()?.static?.urgentUpdateData {
+                Workout.WorkoutStaticData.newBuilder()
+                    .setActiveWorkout(false)
+                    .build()
             }
         }
         viewModelScope.launch {

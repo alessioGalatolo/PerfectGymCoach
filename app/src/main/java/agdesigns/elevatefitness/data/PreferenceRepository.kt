@@ -481,6 +481,9 @@ class V1PrefsMigration(
     override suspend fun cleanUp() { /* no-op */ }
 }
 
+// see ExerciseDataMigrator
+private const val LEGACY_DB_VERSION_KEY_NAME = "Current db version"
+
 // move from context.dataStore to PreferenceDataStoreFactory
 class V2PrefsMigration(
     private val context: Context
@@ -494,6 +497,15 @@ class V2PrefsMigration(
         val out = currentData.toMutablePreferences()
 
         val old = context.dataStore.data.first()
+        // copy every pref set in the old store, the ones below only get a default on top
+        val alreadySet = currentData.asMap().keys
+        old.asMap().forEach { (key, value) ->
+            // the old store is still used for the db data migration version, leave that there
+            if (key !in alreadySet && key.name != LEGACY_DB_VERSION_KEY_NAME) {
+                @Suppress("UNCHECKED_CAST")
+                out[key as Preferences.Key<Any>] = value
+            }
+        }
         if (old[PrefKeys.currentPlan] != null) {
             out[PrefKeys.currentPlan] = old[PrefKeys.currentPlan]!!
         }

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -136,7 +137,7 @@ class RecapViewModel @Inject constructor(
                     _state.update { it.copy(workoutId = event.workoutId) }
                     retrieveWorkoutRecordJob?.cancel()
                     retrieveWorkoutRecordJob = viewModelScope.launch {
-                        repository.getWorkoutRecord(event.workoutId).collect{ workoutRecord ->
+                        repository.getWorkoutRecord(event.workoutId).filterNotNull().collect{ workoutRecord ->
                             _state.update { it.copy(
                                 workoutRecord = workoutRecord
                             ) }
@@ -145,7 +146,7 @@ class RecapViewModel @Inject constructor(
                                 combine(
                                     repository.getWorkoutRecordsByProgram(state.value.workoutRecord!!.extProgramId),
                                     repository.getWorkoutExerciseRecordsAndInfo(event.workoutId),
-                                    repository.getWorkoutRecord(event.workoutId)
+                                    repository.getWorkoutRecord(event.workoutId).filterNotNull()
                                 ) { olderRecords, exerciseRecords, workoutRecord ->
                                     // TODO: maybe limit max number of records?
                                     // TODO: also maybe get stats from similar workouts
