@@ -44,8 +44,8 @@ android {
         minSdk = 26
         // wait on targeting sdk 37 as it will break volume change from watch when workout not in foreground
         targetSdk = 36
-        versionCode = 35
-        versionName = "0.1.3"
+        versionCode = 37
+        versionName = "0.1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
