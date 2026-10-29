@@ -74,7 +74,6 @@
     <string name="chart_icon">Chart icon</string>
     <string name="achievement_icon">Achievement</string>
     <string name="year_icon">Year</string>
-    <string name="week_icon">Week</string>
     <string name="empty_history_icon">Empty history</string>
     <string name="edit_program_icon">Edit program</string>
     <string name="quick_start_icon">Quick start workout</string>
@@ -128,7 +127,11 @@
     <string name="previous_month">Previous month</string>
     <string name="next_month">Next month</string>
     <string name="show_workout_activity">Show workout activity</string>
-    <string name="week_i">Week %1$s</string>
+    <string name="month_summary">%1$s · %2$s</string>
+    <plurals name="days_off">
+        <item quantity="one">%1$d day off</item>
+        <item quantity="other">%1$d days off</item>
+    </plurals>
     <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched to -->
     <string name="plan_change_new">New plan: %1$s</string>
     <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched from -->
@@ -195,7 +198,10 @@
     <string name="no_exercises_found">No exercises found</string>
     <string name="exclude_all_n_results">Exclude all %d results</string>
     <string name="clear_all_excluded">Clear all</string>
-    <string name="n_exercises_excluded">%d exercises excluded</string>
+    <plurals name="n_exercises_excluded">
+        <item quantity="one">%d exercise excluded</item>
+        <item quantity="other">%d exercises excluded</item>
+    </plurals>
     <string name="no_exercises_excluded">No exercises excluded</string>
     <!-- Generating plan waiting screen-->
     <string name="generating_plan_waiting_text">Generating a plan just for you…</string>
@@ -226,7 +232,10 @@
     <string name="salute_user">Hi, %1$s</string>
     <string name="name">Name</string>
     <string name="age">Age</string>
-    <string name="i_years">%1$s years</string>
+    <plurals name="i_years">
+        <item quantity="one">%1$d year</item>
+        <item quantity="other">%1$d years</item>
+    </plurals>
     <string name="born_in">Born in:</string>
     <string name="year">Year</string>
     <string name="please_enter_a_valid_year">Please enter a valid year</string>
@@ -277,7 +286,10 @@
     <!-- ## A streak in number of weeks; a week counts when all workouts of the plan were done   -->
     <string name="streak_in_weeks">%1$sw</string>
     <string name="best_streak">Best Streak</string>
-    <string name="sets_total">%1$s occurrences • %2$s %3$s total</string>
+    <plurals name="sets_total">
+        <item quantity="one">%1$d occurrence • %2$s %3$s total</item>
+        <item quantity="other">%1$d occurrences • %2$s %3$s total</item>
+    </plurals>
     <!-- View exercises -->
     <string name="search_exercise">Search exercise…</string>
     <string name="search_icon">Search</string>
@@ -796,7 +808,10 @@
     <string name="custom_split_add_day">Add day</string>
     <string name="custom_split_day">Day %1$d</string>
     <string name="custom_split_not_configured">Tap to configure</string>
-    <string name="custom_split_n_days">%1$d days configured</string>
+    <plurals name="custom_split_n_days">
+        <item quantity="one">%1$d day configured</item>
+        <item quantity="other">%1$d days configured</item>
+    </plurals>
     <string name="custom_split_invalid">Some days in your custom split are invalid</string>
     <string name="intensities_high">High intensity (...)</string>
     <string name="intensities_medium">Normal intensity (...)</string>
@@ -891,6 +906,8 @@
     <string name="resume_workout_fail">Couldn\'t find the workout to resume.</string>
     <string name="lock_workout_scroll">Lock workout horizontal scroll: </string>
     <string name="auto_open_wearos">Automatically open Wear OS companion on workout start</string>
+    <string name="send_crash_reports">Send crash reports</string>
+    <string name="send_crash_reports_description">If the app crashes, send technical details (device model, Android version, stack trace) to help fix the issue. No workout or health data is included.</string>
     <string name="show_media_controls">Show media controls</string>
     <string name="discard_data_dialog_title">Discard changed data?</string>
     <string name="discard_data_dialog_info">You have changed some options for this exercise. If you go back now you will lose these changes.</string>
@@ -899,7 +916,10 @@
     <string name="workout_notification_name">Ongoing workout</string>
     <string name="ongoing_workout_notification_title">Ongoing workout</string>
     <string name="remaining_rest_notification_content">Rest until next exercise: %1$d</string>
-    <string name="ongoing_workout_notification_content">Done %1$d sets of %2$d</string>
+    <plurals name="ongoing_workout_notification_content">
+        <item quantity="one">Done %1$d of %2$d set</item>
+        <item quantity="other">Done %1$d of %2$d sets</item>
+    </plurals>
     <string name="ongoing_workout_rest_finished_notification">Time for next exercise! • %1$s</string>
     <string name="enable_ongoing_workout_notifications_title">Enable ongoing workout notifications?</string>
     <string name="enable_ongoing_workout_notifications_info">Will show a persistent notification with current workout progress and remaining rest for when you briefly exit the app</string>
@@ -935,9 +955,41 @@
     <string name="suggest_reps_weight">Suggest reps and weight in workout</string>
     <string name="suggest_workout_modifications">Suggest workout modifications based on previous sessions</string>
     <string name="in_rest_hints_wear">Guidance between sets on changing weight, reps, etc.</string>
+    <string name="developer_options_title">Developer options</string>
+    <string name="developer_mode">Developer mode</string>
+    <string name="developer_mode_info">Experimental features that may not work as expected. Turn off to hide this section</string>
+    <string name="developer_mode_enabled">You are now a developer!</string>
+    <string name="developer_mode_already_enabled">No need, you are already a developer</string>
+    <plurals name="developer_mode_steps_away">
+        <item quantity="one">You are now %d step away from being a developer</item>
+        <item quantity="other">You are now %d steps away from being a developer</item>
+    </plurals>
+    <string name="smart_rest_recovery_fraction">Heart rate increase to recover</string>
+    <string name="smart_rest_min_target_above_baseline">Minimum target above baseline</string>
+    <string name="smart_rest_baseline_percentile">Baseline percentile of workout heart rates</string>
+    <string name="smart_rest_peak_lookback">Peak search before rest starts</string>
+    <string name="smart_rest_smoothing_window">Heart rate smoothing window</string>
+    <string name="smart_rest_reset_params">Reset smart rest parameters to defaults</string>
+    <string name="unit_seconds_short">s</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="smart_rest_wear">Smart rest: use heart rate to tell when you have recovered between sets</string>
     <string name="tempo_rom_tracking_wear">Tempo and ROM tracking for each single set (experimental, only supported exercises)</string>
     <string name="requires_connected_watch">Requires a connected wearable</string>
     <string name="requires_compatible_wearable">This feature requires a connected compatible wearable</string>
+    <string name="record_sensor_data">Record watch sensor data</string>
+    <string name="record_sensor_data_info">Saves raw motion sensor data for every set done with the watch, to develop rep, tempo and ROM tracking offline. Uses more battery and storage</string>
+    <plurals name="sensor_recordings_count">
+        <item quantity="one">%d set recorded</item>
+        <item quantity="other">%d sets recorded</item>
+    </plurals>
+    <string name="sensor_recordings_delete_title">Delete sensor recordings?</string>
+    <plurals name="sensor_recordings_delete_text">
+        <item quantity="one">The sensor data of %d set will be permanently deleted. Export it first if you want to keep it.</item>
+        <item quantity="other">The sensor data of %d sets will be permanently deleted. Export it first if you want to keep it.</item>
+    </plurals>
+    <string name="sensor_recordings_export_success">Sensor recordings exported</string>
+    <string name="sensor_recordings_export_error">Could not export sensor recordings</string>
 
     <!-- Wearable -->
     <string name="wearable_title">Wearable</string>
@@ -975,7 +1027,10 @@
     <string name="health_connect_backfill_not_now">Not now</string>
     <string name="health_connect_backfill_progress">Exporting past workouts (%1$d/%2$d)</string>
     <string name="health_connect_backfill_success">Past workouts exported to Health Connect</string>
-    <string name="health_connect_backfill_partial">Exported %1$d workouts, %2$d failed</string>
+    <plurals name="health_connect_backfill_partial">
+        <item quantity="one">Exported %1$d workout, %2$d failed</item>
+        <item quantity="other">Exported %1$d workouts, %2$d failed</item>
+    </plurals>
     <string name="heart_rate_bpm">Heart rate (bpm)</string>
     <string name="progression_over_time">Progression over time</string>
     <string name="avg_heart_rate">Avg Heart Rate</string>
@@ -997,7 +1052,10 @@
     <string name="hr_avg_short">Avg</string>
     <string name="hr_max_short">Max</string>
     <string name="exercise_hr_summary">Avg %1$d bpm · %2$d–%3$d bpm</string>
-    <string name="days_ago">" ~ %1$d days ago"</string>
+    <plurals name="days_ago">
+        <item quantity="one">" ~ %1$d day ago"</item>
+        <item quantity="other">" ~ %1$d days ago"</item>
+    </plurals>
     <string name="bottom_bar_current">" (current)"</string>
     <string name="last_set_tracking_data">Last set tracking data</string>
     <string name="rom_cm">ROM (cm)</string>
@@ -1015,13 +1073,27 @@
     <string name="share_plan_chooser_title">Share workout plan</string>
     <string name="share_plan_from_app">Shared from Elevate Fitness</string>
     <string name="receive_plan_title">Import Workout Plan</string>
-    <string name="receive_plan_programs">%1$d program(s)</string>
-    <string name="receive_plan_exercises">%1$d exercise(s)</string>
+    <plurals name="receive_plan_programs">
+        <item quantity="one">%1$d program</item>
+        <item quantity="other">%1$d programs</item>
+    </plurals>
+    <plurals name="receive_plan_exercises">
+        <item quantity="one">%1$d exercise</item>
+        <item quantity="other">%1$d exercises</item>
+    </plurals>
     <string name="receive_plan_import">Import Plan</string>
     <string name="receive_plan_imported">Plan imported!</string>
     <string name="receive_plan_error">Unable to read shared plan</string>
     <string name="receive_plan_day">Day %1$d</string>
-    <string name="sets_x_reps">%1$d sets × %2$d reps</string>
+    <string name="sets_x_reps" translatable="false">%1$s × %2$s</string>
+    <plurals name="n_sets">
+        <item quantity="one">%1$d set</item>
+        <item quantity="other">%1$d sets</item>
+    </plurals>
+    <plurals name="n_reps">
+        <item quantity="one">%1$d rep</item>
+        <item quantity="other">%1$d reps</item>
+    </plurals>
     <string name="rest_seconds">Rest: %1$ds</string>
     <string name="invalid_file_type">Invalid file type</string>
 
@@ -1029,6 +1101,58 @@
     <string name="update_body_weight">Update body weight?</string>
     <string name="update_bodyweight_desc">You are doing a bodyweight exercise but haven\'t updated your weight in the app for more than %1$d days. Having an updated weight makes for a more accurate volume calculation.</string>
     <string name="new_weight">new weight</string>
+    <plurals name="set_i_reps">
+        <item quantity="one">Set %1$d: %2$d rep</item>
+        <item quantity="other">Set %1$d: %2$d reps</item>
+    </plurals>
+    <string name="unit_ft">ft</string>
+    <string name="unit_in">in</string>
+    <string name="feet_inches_value">%1$sft %2$sin</string>
+    <string name="intensity_percent_label" formatted="false">Intensity (%)</string>
+    <string name="calories_kcal_label">Calories (kcal)</string>
+    <string name="workout_time_minutes_label">Workout time (m)</string>
+    <string name="workout_active_time_minutes_label">Workout active time (m)</string>
 
-
+    <!-- # Achievements -->
+    <string name="achievements">Achievements</string>
+    <plurals name="achievements_unlocked">
+        <item quantity="one">%1$d achievement unlocked</item>
+        <item quantity="other">%1$d achievements unlocked</item>
+    </plurals>
+    <string name="achievement_heaviest_weight">Heaviest weight</string>
+    <string name="achievement_one_rep_max">Best estimated 1RM</string>
+    <string name="achievement_rep_record">Rep record</string>
+    <string name="achievement_exercise_volume">Most volume</string>
+    <string name="achievement_longest_duration">Longest set</string>
+    <string name="achievement_workout_volume">All-time volume record</string>
+    <string name="achievement_program_volume">Best volume for this workout</string>
+    <string name="achievement_workout_count">Workout milestone</string>
+    <string name="achievement_lifetime_volume">Volume milestone</string>
+    <string name="achievement_longest_streak">Longest streak</string>
+    <!-- ## weight lifted × reps, e.g., "100 kg × 5" -->
+    <string name="achievement_weight_reps">%1$s × %2$d</string>
+    <plurals name="achievement_reps">
+        <item quantity="one">%1$d rep</item>
+        <item quantity="other">%1$d reps</item>
+    </plurals>
+    <!-- ## e.g., "12 reps with 60 kg" -->
+    <plurals name="achievement_reps_with_weight">
+        <item quantity="one">%1$d rep with %2$s</item>
+        <item quantity="other">%1$d reps with %2$s</item>
+    </plurals>
+    <plurals name="achievement_workouts_completed">
+        <item quantity="one">%1$d workout completed</item>
+        <item quantity="other">%1$d workouts completed</item>
+    </plurals>
+    <string name="achievement_lifted_in_total">%1$s lifted in total</string>
+    <plurals name="achievement_weeks_in_a_row">
+        <item quantity="one">%1$d week in a row</item>
+        <item quantity="other">%1$d weeks in a row</item>
+    </plurals>
+    <string name="achievement_previous">Previous: %1$s</string>
+    <!-- ## Shown in the history, followed by the exercises, e.g., "2 new PRs: Squat, Bench press" -->
+    <plurals name="achievement_new_prs">
+        <item quantity="one">New PR: %2$s</item>
+        <item quantity="other">%1$d new PRs: %2$s</item>
+    </plurals>
 </resources>

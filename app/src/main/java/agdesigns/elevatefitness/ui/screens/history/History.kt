@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,7 @@ import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.navigation.HistoryDestination
 import agdesigns.elevatefitness.ui.navigation.WorkoutRecapDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
+import agdesigns.elevatefitness.ui.common.AchievementsNote
 import agdesigns.elevatefitness.ui.screens.history.components.CompactHeatmapOverlap
 import agdesigns.elevatefitness.ui.screens.history.components.CompactWorkoutHeatmap
 import agdesigns.elevatefitness.ui.screens.history.components.WorkoutHeatmap
@@ -35,6 +37,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -49,7 +52,9 @@ import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharedFlow
 import java.time.LocalDate
+import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
+import kotlin.math.roundToInt
 
 // items of the history list placed before the workouts (i.e., the heatmap)
 private const val HEADER_ITEMS = 1
@@ -123,9 +128,9 @@ fun History(
                     }
                     items(
                         items = state.mainList,
-                        key = { "workout_${it.year}_${it.week}_${it.workout.workoutId}" }
+                        key = { "workout_${it.workout.workoutId}" }
                     ) { listItem ->
-                        if (listItem.showYearHeader) {
+                        listItem.yearHeader?.let { year ->
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -145,7 +150,7 @@ fun History(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
-                                        text = listItem.year.toString(),
+                                        text = year.toString(),
                                         style = MaterialTheme.typography.headlineMedium,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                                         fontWeight = FontWeight.Bold
@@ -153,33 +158,8 @@ fun History(
                                 }
                             }
                         }
-                        if (listItem.showWeekHeader) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.DateRange,
-                                    contentDescription = stringResource(R.string.week_icon),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.week_i, listItem.week),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                HorizontalDivider(
-                                    modifier = Modifier.weight(1f),
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                )
-                            }
+                        listItem.monthHeader?.let { summary ->
+                            MonthHeader(summary, state.useImperialSystem)
                         }
                         OutlinedCard(
                             shape = MaterialTheme.shapes.large,
@@ -235,7 +215,7 @@ fun History(
                                             maybeKgToLb(
                                                 listItem.workout.volume,
                                                 state.useImperialSystem
-                                            )
+                                            ).roundToInt()
                                         } ${
                                             if (state.useImperialSystem) stringResource(R.string.lb) else stringResource(
                                                 R.string.kg
@@ -280,6 +260,10 @@ fun History(
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
+                                state.achievements[listItem.workout.workoutId]?.let { achievements ->
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    AchievementsNote(achievements, state.useImperialSystem)
+                                }
                             }
                         }
                         listItem.planChange?.let { planChange ->
@@ -287,6 +271,10 @@ fun History(
                             PlanChangeMarker(planChange) { planId ->
                                 navigator.navigate(AddProgramDestination(planId))
                             }
+                        }
+                        listItem.breakDays?.let { days ->
+                            Spacer(modifier = Modifier.height(8.dp))
+                            BreakMarker(days)
                         }
                     }
                     item {
@@ -309,6 +297,96 @@ fun History(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MonthHeader(summary: MonthSummary, useImperialSystem: Boolean) {
+    val monthName = remember(summary.month) {
+        summary.month.format(DateTimeFormatter.ofPattern("LLLL"))
+            .replaceFirstChar { it.titlecase() }
+    }
+    val volume = NumberFormat.getIntegerInstance()
+        .format(maybeKgToLb(summary.volume, useImperialSystem).roundToInt())
+    val unit = stringResource(if (useImperialSystem) R.string.lb else R.string.kg)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.DateRange,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = monthName,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(
+                R.string.month_summary,
+                pluralStringResource(R.plurals.workout_count, summary.workouts, summary.workouts),
+                "$volume $unit"
+            ),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// shown below the first workout after a long period without workouts
+@Composable
+private fun BreakMarker(days: Long) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        )
+        Surface(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            shape = MaterialTheme.shapes.large
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Bedtime,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = pluralStringResource(R.plurals.days_off, days.toInt(), days.toInt()),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        )
     }
 }
 
@@ -411,12 +489,16 @@ private fun StatCard(
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

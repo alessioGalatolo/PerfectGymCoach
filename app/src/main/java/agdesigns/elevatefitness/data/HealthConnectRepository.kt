@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.getProgramDisplayName
@@ -167,8 +168,16 @@ class HealthConnectRepository @Inject constructor(
                         segmentType = record.healthExerciseSegmentType,
                         repetitions = max(0, reps),
                         weight = record.weights.getOrNull(index)?.let {
-                            // this needs to be non-negative but we allow that
-                            Mass.kilograms(max(0.0, it.toDouble()))
+                            // weights are stored per side and without tare (e.g., the bar),
+                            // export the total load. For bodyweight exercises the tare is the
+                            // user's weight, only export the added weight.
+                            // This needs to be non-negative but we allow that
+                            val load = when (record.equipment) {
+                                Equipment.BARBELL, Equipment.DUMBBELL -> it * 2 + record.tare
+                                Equipment.BODY_WEIGHT -> it
+                                else -> it + record.tare
+                            }
+                            Mass.kilograms(max(0.0, load.toDouble()))
                         },
                         setIndex = index
                     )

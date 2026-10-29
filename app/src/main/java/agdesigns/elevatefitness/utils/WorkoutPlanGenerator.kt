@@ -427,14 +427,15 @@ suspend fun generatePlan(
                         minPer = 3,
                         maxPer = 6
                     )
-                    chosenCompounds.forEachIndexed { idx, ex ->
+                    // splitSets can return fewer buckets than exercises, extra picks are dropped
+                    chosenCompounds.zip(setsPerCompound).forEach { (ex, sets) ->
                         val (repsEachSet, restEachSet) = prescribeCompound(
                             goalChoice,
                             resolvedDifficulty,
                             isPrimary = isFirstExercise
                         )
-                        val repsList = MutableList(setsPerCompound[idx]) { repsEachSet }
-                        val restList = MutableList(setsPerCompound[idx]) { restEachSet }
+                        val repsList = MutableList(sets) { repsEachSet }
+                        val restList = MutableList(sets) { restEachSet }
                         warmMuscles.add(ex.primaryMuscle)
                         warmMuscles.addAll(ex.secondaryMuscles)
                         repository.addProgramExercise(
@@ -492,14 +493,25 @@ suspend fun generatePlan(
                     zones = zonesCovered
                 )
 
-                val setsPerAccessory = splitSets(accessorySets, chosenAccessories.size, minPer = 3, maxPer = 5)
+                val setsPerAccessory = splitSets(
+                    accessorySets,
+                    chosenAccessories.size,
+                    minPer = minSetsPerExercise,
+                    maxPer = 5
+                )
 
-                chosenAccessories.forEachIndexed { idx, ex ->
+                // splitSets can return fewer buckets than exercises, extra picks are dropped
+                chosenAccessories.zip(setsPerAccessory).forEach { (ex, sets) ->
                     val reps = sampleFromProgression(accessoryRepRange, seededRandom)
                     val rest = sampleFromProgression(accessoryRestRange, seededRandom)
-                    val repsList = MutableList(setsPerAccessory[idx]) { reps }
-                    val restList = MutableList(setsPerAccessory[idx]) { rest }
-                    val setTypes = MutableList(setsPerAccessory[idx]) { SetType.NORMAL }
+                    val repsList = MutableList(sets) { reps }
+                    val restList = MutableList(sets) { rest }
+                    val setTypes = List(sets) {
+                        if (nextSetIsWarmup && it == 0)
+                            SetType.WARMUP
+                        else
+                            SetType.NORMAL
+                    }
                     // only add to warm muscles if done in compound
 //                    warmMuscles.add(ex.primaryMuscle)
 //                    warmMuscles.addAll(ex.secondaryMuscles)
@@ -514,12 +526,7 @@ suspend fun generatePlan(
                         variation = "",
                         variationResKey = "",
                         overriddenDurationBased = ex.isDurationBased,
-                        setTypes = repsList.map {
-                            if (nextSetIsWarmup && it == 0)
-                                SetType.WARMUP
-                            else
-                                SetType.NORMAL
-                        }
+                        setTypes = setTypes
                     )
                     isFirstExercise = false
                     muscle2Exercises[muscle]?.remove(ex)

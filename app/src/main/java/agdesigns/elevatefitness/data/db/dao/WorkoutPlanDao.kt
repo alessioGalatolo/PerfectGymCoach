@@ -7,7 +7,6 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutPlanUpdateProgram
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import androidx.room.Dao
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +26,8 @@ interface WorkoutPlanDao {
     )
     fun getPlanMapPrograms(): Flow<Map<WorkoutPlan, List<WorkoutProgram>>>
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    // no REPLACE: it would delete the row and cascade to its children
+    @Insert
     suspend fun insert(plan: WorkoutPlan): Long
 
     @Update(entity = WorkoutPlan::class)

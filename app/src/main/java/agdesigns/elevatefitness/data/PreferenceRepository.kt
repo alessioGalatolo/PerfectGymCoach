@@ -1,5 +1,6 @@
 package agdesigns.elevatefitness.data
 
+import agdesigns.elevatefitness.shared.SmartRestParams
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.entity.Sex
 import agdesigns.elevatefitness.data.db.entity.Theme
@@ -256,6 +257,14 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.autoOpenWear] = newValue
     }
 
+    fun getCrashReporting(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.crashReporting] ?: true
+    }
+
+    suspend fun setCrashReporting(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.crashReporting] = newValue
+    }
+
     fun getHealthConnectBackfillOffered(): Flow<Boolean> = dataStore.data.map {
         it[PrefKeys.healthConnectBackfillOffered] ?: false
     }
@@ -294,6 +303,49 @@ class PreferenceRepository @Inject constructor(
 
     suspend fun setTempoRomTracking(newValue: Boolean) = dataStore.edit {
         it[PrefKeys.tempoRomTracking] = newValue
+    }
+
+    fun getDeveloperMode(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.developerMode] ?: false
+    }
+
+    suspend fun setDeveloperMode(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.developerMode] = newValue
+    }
+
+    fun getRecordSensorData(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.recordSensorData] ?: false
+    }
+
+    suspend fun setRecordSensorData(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.recordSensorData] = newValue
+    }
+
+    fun getSmartRest(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.smartRest] ?: false
+    }
+
+    suspend fun setSmartRest(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.smartRest] = newValue
+    }
+
+    fun getSmartRestParams(): Flow<SmartRestParams> = dataStore.data.map {
+        val defaults = SmartRestParams()
+        SmartRestParams(
+            peakLookbackSecs = it[PrefKeys.smartRestPeakLookbackSecs] ?: defaults.peakLookbackSecs,
+            smoothingWindowSecs = it[PrefKeys.smartRestSmoothingWindowSecs] ?: defaults.smoothingWindowSecs,
+            recoveryFraction = it[PrefKeys.smartRestRecoveryFraction] ?: defaults.recoveryFraction,
+            minTargetAboveBaseline = it[PrefKeys.smartRestMinTargetAboveBaseline] ?: defaults.minTargetAboveBaseline,
+            baselinePercentile = it[PrefKeys.smartRestBaselinePercentile] ?: defaults.baselinePercentile,
+        )
+    }
+
+    suspend fun setSmartRestParams(newValue: SmartRestParams) = dataStore.edit {
+        it[PrefKeys.smartRestPeakLookbackSecs] = newValue.peakLookbackSecs
+        it[PrefKeys.smartRestSmoothingWindowSecs] = newValue.smoothingWindowSecs
+        it[PrefKeys.smartRestRecoveryFraction] = newValue.recoveryFraction
+        it[PrefKeys.smartRestMinTargetAboveBaseline] = newValue.minTargetAboveBaseline
+        it[PrefKeys.smartRestBaselinePercentile] = newValue.baselinePercentile
     }
 
     fun getWearKeepScreenOn(): Flow<Boolean> = dataStore.data.map {
@@ -373,6 +425,7 @@ internal object PrefKeys {
     val language = stringPreferencesKey("Language")
     val lockHorizontalScroll = booleanPreferencesKey("Lock horizontal scroll")
     val autoOpenWear = booleanPreferencesKey("Auto open wear")
+    val crashReporting = booleanPreferencesKey("Crash reporting")
     val healthConnectBackfillOffered = booleanPreferencesKey("Health connect backfill offered")
     val dismissedPlanChangeReminders = stringPreferencesKey("Dismissed plan change reminders")
     val excludedPlanExercises = stringPreferencesKey("Plan generation excluded exercises")
@@ -380,6 +433,14 @@ internal object PrefKeys {
     val suggestWorkoutModifications = booleanPreferencesKey("Suggest workout modifications")
     val inRestHints = booleanPreferencesKey("In rest hints")
     val tempoRomTracking = booleanPreferencesKey("Tempo rom tracking")
+    val smartRest = booleanPreferencesKey("Smart rest")
+    val smartRestPeakLookbackSecs = longPreferencesKey("Smart rest peak lookback secs")
+    val smartRestSmoothingWindowSecs = longPreferencesKey("Smart rest smoothing window secs")
+    val smartRestRecoveryFraction = floatPreferencesKey("Smart rest recovery fraction")
+    val smartRestMinTargetAboveBaseline = intPreferencesKey("Smart rest min target above baseline")
+    val smartRestBaselinePercentile = floatPreferencesKey("Smart rest baseline percentile")
+    val developerMode = booleanPreferencesKey("Developer mode")
+    val recordSensorData = booleanPreferencesKey("Record sensor data")
     val wearKeepScreenOn = booleanPreferencesKey("Wear keep screen on")
     val reviewedModificationsWorkouts = stringPreferencesKey("Reviewed modifications workouts")
 }
@@ -429,6 +490,9 @@ class V1PrefsMigration(
     override suspend fun cleanUp() { /* no-op */ }
 }
 
+// see ExerciseDataMigrator
+private const val LEGACY_DB_VERSION_KEY_NAME = "Current db version"
+
 // move from context.dataStore to PreferenceDataStoreFactory
 class V2PrefsMigration(
     private val context: Context
@@ -442,6 +506,15 @@ class V2PrefsMigration(
         val out = currentData.toMutablePreferences()
 
         val old = context.dataStore.data.first()
+        // copy every pref set in the old store, the ones below only get a default on top
+        val alreadySet = currentData.asMap().keys
+        old.asMap().forEach { (key, value) ->
+            // the old store is still used for the db data migration version, leave that there
+            if (key !in alreadySet && key.name != LEGACY_DB_VERSION_KEY_NAME) {
+                @Suppress("UNCHECKED_CAST")
+                out[key as Preferences.Key<Any>] = value
+            }
+        }
         if (old[PrefKeys.currentPlan] != null) {
             out[PrefKeys.currentPlan] = old[PrefKeys.currentPlan]!!
         }

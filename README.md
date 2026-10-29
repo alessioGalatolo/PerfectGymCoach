@@ -36,7 +36,7 @@ Built with the latest Android technologies including Jetpack Compose and Materia
 - **Custom Workout Plans** - Create and manage personalized workout routines
 - **Progress Tracking** - Monitor your fitness journey over time
 - **Intuitive UX** - Designed by someone frustrated with bad fitness app UX
-- **Privacy First** - No tracking, no data collection, no analytics
+- **Privacy First** - No tracking, no analytics, your data stays on your device (only crash reports are sent, and you can turn them off)
 - **Completely Free** - No ads, no subscriptions, no paywalls
 - **Dynamic Theming** - Material You support with dynamic colors
 

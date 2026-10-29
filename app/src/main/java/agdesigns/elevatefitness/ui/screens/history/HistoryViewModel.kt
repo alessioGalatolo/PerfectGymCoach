@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordAndName
+import agdesigns.elevatefitness.data.db.entity.WorkoutAchievementAndInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,23 +14,35 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.YearMonth
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
 import java.util.Locale
 import javax.inject.Inject
 
+// minimum number of days without workouts for a break to be marked in the history
+private const val MIN_BREAK_DAYS = 7L
+
 data class HistoryScreenListItem(
     val workout: WorkoutRecordAndName,
-    val showYearHeader: Boolean,
-    val year: Int,
-    val showWeekHeader: Boolean,
-    val week: Int,
+    // set on the first (most recent) workout of a year other than the current one
+    val yearHeader: Int? = null,
+    // set on the first (most recent) workout of each month
+    val monthHeader: MonthSummary? = null,
     // first day of the week the workout belongs to, as used by the heatmap; null if the date is unknown
     val weekStart: LocalDate?,
     // set on the first workout done with a new plan, null if the plan did not change
-    val planChange: PlanChange? = null
+    val planChange: PlanChange? = null,
+    // days without workouts between this workout and the previous one, null if the break is short
+    val breakDays: Long? = null
+)
+
+data class MonthSummary(
+    val month: YearMonth,
+    val workouts: Int,
+    val volume: Float
 )
 
 data class PlanChange(
@@ -59,12 +72,13 @@ data class HeatmapYear(
 )
 
 data class HistoryState(
-    val workoutRecords: Map<Int, Map<Int, List<WorkoutRecordAndName>>> = emptyMap(),
     val mainList: List<HistoryScreenListItem> = emptyList(),
     val heatmap: List<HeatmapYear> = emptyList(),
     val maxWeeklyWorkouts: Int = 0,
     // workouts of each week (keyed by its first day), oldest first
     val weekWorkouts: Map<LocalDate, List<HeatmapWorkout>> = emptyMap(),
+    // achievements of each workout, keyed by workoutId
+    val achievements: Map<Long, List<WorkoutAchievementAndInfo>> = emptyMap(),
     val useImperialSystem: Boolean = false
 )
 
@@ -87,6 +101,11 @@ class HistoryViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            repository.getAllWorkoutAchievements().collect { achievements ->
+                _state.update { it.copy(achievements = achievements.groupBy { a -> a.extWorkoutId }) }
+            }
+        }
+        viewModelScope.launch {
             repository.getWorkoutHistoryAndName().collect { records ->
                 val filteredRecords = records
                     .filter { it.durationSeconds > 0 }
@@ -96,16 +115,6 @@ class HistoryViewModel @Inject constructor(
                         .first()
                         .firstOrNull()?.date)
                 }
-                val groupByYear = filteredRecords.groupBy { record ->
-                    recordDates[record.workoutId]?.year ?: 2025
-                }
-                val weekField = WeekFields.of(Locale.getDefault()).weekOfYear()
-                val yearToWeekToRecord = groupByYear.mapValues {
-                    it.value.groupBy { record ->
-                        recordDates[record.workoutId]?.get(weekField) ?: 42
-                    }
-                }
-
                 // a workout marks a plan change when its plan differs from the one of the previous
                 // plan-bound workout; unbound workouts are ignored
                 val planChanges = mutableMapOf<Long, PlanChange>()
@@ -123,46 +132,35 @@ class HistoryViewModel @Inject constructor(
                     previous = record
                 }
 
-                // create the main history list of records
-                val mainList = mutableListOf<HistoryScreenListItem>()
-
-                val currentYear = ZonedDateTime.now().year
-                val currentWeek = ZonedDateTime.now().get(weekField)
-
-                var yearIteration = currentYear
-                var weekIteration = currentWeek
-                for ((year, weekRecords) in yearToWeekToRecord.toSortedMap(compareByDescending { it })) {
-                    var showYearHeader = if (year != yearIteration) {
-                        yearIteration = year
-                        // we are changing year, update weekIteration
-                        // Get the last week of the previous year
-                        val lastDayOfYear = ZonedDateTime.of(year, 12, 31, 0, 0, 0, 0,
-                            ZoneId.systemDefault())
-                        weekIteration = lastDayOfYear.get(weekField)+1  // +1 so that we show the week header
-
-                        true
-                    } else false
-                    for ((week, records) in weekRecords.toSortedMap(compareByDescending { it })) {
-                        var showWeekHeader = if (week != weekIteration) {
-                            weekIteration = week
-                            true
-                        } else false
-                        records.sortedByDescending { it.startDate }.forEach {
-                            mainList.add(
-                                HistoryScreenListItem(
-                                    workout = it,
-                                    showYearHeader = showYearHeader,
-                                    showWeekHeader = showWeekHeader,
-                                    year = year,
-                                    week = week,
-                                    weekStart = recordDates[it.workoutId]?.toLocalDate()?.let(::weekStartOf),
-                                    planChange = planChanges[it.workoutId]
-                                )
-                            )
-                            showWeekHeader = false
-                            showYearHeader = false
-                        }
+                // create the main history list of records, most recent first; workouts with an
+                // unknown date go at the end, without headers
+                val sortedRecords = filteredRecords.sortedWith(
+                    compareByDescending(nullsFirst()) { recordDates[it.workoutId] }
+                )
+                val monthSummaries = sortedRecords
+                    .groupBy { recordDates[it.workoutId]?.let(YearMonth::from) }
+                    .mapNotNull { (month, records) ->
+                        month?.let { MonthSummary(it, records.size, records.sumOf { r -> r.volume.toDouble() }.toFloat()) }
                     }
+                    .associateBy { it.month }
+                val currentYear = LocalDate.now().year
+                val mainList = sortedRecords.mapIndexed { i, record ->
+                    val date = recordDates[record.workoutId]?.toLocalDate()
+                    val newer = sortedRecords.getOrNull(i - 1)?.let { recordDates[it.workoutId]?.toLocalDate() }
+                    val older = sortedRecords.getOrNull(i + 1)?.let { recordDates[it.workoutId]?.toLocalDate() }
+                    val month = date?.let(YearMonth::from)
+                    val newMonth = month != null && month != newer?.let(YearMonth::from)
+                    val newYear = date != null && date.year != (newer?.year ?: currentYear)
+                    HistoryScreenListItem(
+                        workout = record,
+                        yearHeader = if (newYear) date.year else null,
+                        monthHeader = if (newMonth) monthSummaries[month] else null,
+                        weekStart = date?.let(::weekStartOf),
+                        planChange = planChanges[record.workoutId],
+                        breakDays = if (date != null && older != null)
+                            (ChronoUnit.DAYS.between(older, date) - 1).takeIf { it >= MIN_BREAK_DAYS }
+                        else null
+                    )
                 }
 
                 val weekWorkouts = filteredRecords
@@ -175,7 +173,6 @@ class HistoryViewModel @Inject constructor(
                     .groupBy { weekStartOf(it.date.toLocalDate()) }
                 val weeklyCounts = weekWorkouts.mapValues { it.value.size }
                 _state.update { it.copy(
-                    workoutRecords = yearToWeekToRecord,
                     mainList = mainList,
                     heatmap = buildHeatmap(weeklyCounts),
                     maxWeeklyWorkouts = weeklyCounts.values.maxOrNull() ?: 0,

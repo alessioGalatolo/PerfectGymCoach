@@ -135,18 +135,14 @@ enum class OneRepMaxFormula(val displayName: String) {
     LANDER("Lander")
 }
 
+/** Estimated 1RM as total load: both sides (barbell/dumbbell) plus tare. */
 fun estimate1RM(record: ExerciseRecordAndEquipment, formula: OneRepMaxFormula = OneRepMaxFormula.EPLEY): Float {
     return record.reps.zip(record.weights).maxOfOrNull { (reps, weight) ->
-        when (record.equipment) {
-            Equipment.BARBELL, Equipment.DUMBBELL -> {
-                val totalWeight = weight * 2 + record.tare
-                (oneRepMax(totalWeight, reps, formula) - record.tare) / 2
-            }
-            else -> {
-                val actualWeight = weight + record.tare
-                oneRepMax(actualWeight, reps, formula) - record.tare
-            }
+        val totalWeight = when (record.equipment) {
+            Equipment.BARBELL, Equipment.DUMBBELL -> weight * 2 + record.tare
+            else -> weight + record.tare
         }
+        oneRepMax(totalWeight, reps, formula)
     } ?: 0f
 }
 

@@ -38,8 +38,6 @@
         android:theme="@style/Theme.ElevateFitness"
         tools:targetApi="33">
 
-        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
-
         <service android:name=".service.NotificationListener"
             android:exported="false"
             android:label="Enable media controls"
@@ -89,6 +87,19 @@
                     android:scheme="wear"
                     />
 
+            </intent-filter>
+        </service>
+        <service
+            android:name=".service.SensorRecordingListenerService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/sensor_recording"
+                    android:scheme="wear"
+                    />
             </intent-filter>
         </service>
         <service

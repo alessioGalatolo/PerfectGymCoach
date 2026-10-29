@@ -6,7 +6,6 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseReorder
 import agdesigns.elevatefitness.data.db.entity.WorkoutExerciseUpdateSetTypes
 import androidx.room.Dao
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -29,10 +28,12 @@ interface WorkoutExerciseDao {
     @Query("SELECT * FROM workoutexercise WHERE workoutExerciseId IN (:workoutExerciseIds)")
     suspend fun getWorkoutExercisesByIds(workoutExerciseIds: List<Long>): List<WorkoutExercise>
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    // no REPLACE: it would delete the row and cascade to its children
+    @Insert
     suspend fun insert(exercise: WorkoutExercise): Long
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    // no REPLACE: it would delete the row and cascade to its children
+    @Insert
     suspend fun insert(exercises: List<WorkoutExercise>)
 
     @Query("DELETE FROM workoutexercise WHERE workoutExerciseId = :workoutExerciseId")

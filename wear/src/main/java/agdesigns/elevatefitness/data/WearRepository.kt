@@ -4,7 +4,9 @@ import agdesigns.elevatefitness.data.datastore.CalibrationDataStore
 import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.data.datastore.PermissionStateDataStore
 import agdesigns.elevatefitness.service.WorkoutService
+import agdesigns.elevatefitness.shared.SENSOR_RECORDING_PATH
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
+import agdesigns.elevatefitness.utils.SensorRecorder
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -25,6 +27,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -40,6 +43,15 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.tasks.await
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
+import org.json.JSONObject
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.jvm.java
@@ -97,6 +109,7 @@ class WearRepository @Inject constructor(
         override fun onReceive(context: Context, intent: Intent) {
             // notify sensors so we can collect set data
             startSetTracking()
+            markSensorRecording("rest_alarm")
 
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -281,10 +294,22 @@ class WearRepository @Inject constructor(
     }
 
     /* Stuff for tracking reps / tempo / rom */
-    fun stopSetTracking() {
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            service.filterNotNull().first().stopSetTracking()
+
+    // Calls that wait for the service to be bound. They give up after a while and are cancelled
+    // when a new workout starts, so a late call can't hit the next workout.
+    private val serviceCallScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private fun withService(block: suspend (WorkoutService) -> Unit) {
+        serviceCallScope.launch {
+            val workoutService = withTimeoutOrNull(SERVICE_WAIT_MS) {
+                service.filterNotNull().first()
+            } ?: return@launch
+            block(workoutService)
         }
+    }
+
+    fun stopSetTracking() {
+        withService { it.stopSetTracking() }
     }
 
     fun initSetTracking(
@@ -292,20 +317,69 @@ class WearRepository @Inject constructor(
         wearRepTrackable: Workout.WearRepTrackable,
         firstPhase: Workout.FirstPhase
     ) {
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            service.filterNotNull().first().initSetTracking(exerciseId, wearRepTrackable, firstPhase)
-        }
+        withService { it.initSetTracking(exerciseId, wearRepTrackable, firstPhase) }
     }
 
     fun startSetTracking() {
         if (!tempoRomTrackingEnabled) return
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            service.filterNotNull().first().startSetTracking()
-        }
+        withService { it.startSetTracking() }
     }
 
     fun setTrackingTruthAndGetResults(exerciseId: Long, groundTruthReps: Int): RepAndTempoCounter.SetResult? {
         return service.value?.setTrackingTruthAndGetResults(exerciseId, groundTruthReps)
+    }
+
+    /* Raw sensor recording (developer option) */
+    private val sensorRecordingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val sensorRecordingSendMutex = Mutex()
+
+    fun setSensorRecording(enabled: Boolean) {
+        sensorRecordingScope.launch {
+            val workoutService = service.filterNotNull().first()
+            if (enabled) {
+                workoutService.startSensorRecording()
+                // leftovers of a previous failed send
+                sendSensorRecordings()
+            } else {
+                workoutService.stopSensorRecording()
+            }
+        }
+    }
+
+    fun markSensorRecording(name: String, extra: JSONObject? = null) {
+        service.value?.markSensorRecording(name, extra)
+    }
+
+    /** Closes the current recording with [setInfo] as ground truth and sends it to the phone. */
+    fun cutSensorRecording(setInfo: JSONObject) {
+        service.value?.cutSensorRecording(setInfo) ?: return
+        sensorRecordingScope.launch { sendSensorRecordings() }
+    }
+
+    /**
+     * Sends every completed recording as a data item, which the data layer keeps (and delivers)
+     * until the phone saves it and deletes it.
+     */
+    private suspend fun sendSensorRecordings() = sensorRecordingSendMutex.withLock {
+        val dir = SensorRecorder.recordingsDir(context)
+        val dataClient = Wearable.getDataClient(context)
+        dir.listFiles { file -> file.name.endsWith(".json") }?.forEach { metadataFile ->
+            val id = metadataFile.name.removeSuffix(".json")
+            val samplesFile = File(dir, "$id.csv.gz")
+            try {
+                val request = PutDataMapRequest.create("$SENSOR_RECORDING_PATH/$id").apply {
+                    dataMap.putString("id", id)
+                    // as an asset as well, data items are limited to 100KB
+                    dataMap.putAsset("metadata", Asset.createFromBytes(metadataFile.readBytes()))
+                    dataMap.putAsset("samples", Asset.createFromBytes(samplesFile.readBytes()))
+                }.asPutDataRequest().setUrgent()
+                dataClient.putDataItem(request).await()
+                metadataFile.delete()
+                samplesFile.delete()
+            } catch (e: Exception) {
+                Log.e("WearRepository", "Failed to send sensor recording $id", e)
+            }
+        }
     }
 
     suspend fun runCalibration(durationMs: Long = 5000L) {
@@ -338,8 +412,9 @@ class WearRepository @Inject constructor(
     var foregroundOnlyWorkoutService: WorkoutService? = null
         private set
 
-    val scrollToExerciseChannel = Channel<Int>()
-    val setRestChannel = Channel<Workout.RestPhone2Watch>()
+    // conflated: only the latest request matters, and it is kept until the ViewModel reads it
+    val scrollToExerciseChannel = Channel<Int>(Channel.CONFLATED)
+    val setRestChannel = Channel<Workout.RestPhone2Watch>(Channel.CONFLATED)
 
     fun handleScrollToExercise(exerciseIndex: Int) {
         scrollToExerciseChannel.trySend(exerciseIndex)
@@ -373,15 +448,19 @@ class WearRepository @Inject constructor(
     private var connection: ServiceConnection = createConnection()
 
     suspend fun startWorkout() {
+        // drop calls still pending from a previous workout
+        serviceCallScope.coroutineContext[Job]?.children?.forEach { it.cancel() }
         service.filterNotNull().first().startWorkout()
         registerAlarmReceivers()
     }
 
     fun stopWorkout() {
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            service.filterNotNull().first().stopWorkout()
-        }
+        // run it right away when bound: the activity may unbind the service right after this
+        service.value?.stopWorkout() ?: withService { it.stopWorkout() }
         unregisterAlarmReceivers()
+        // phone requests meant for this workout must not reach the next one
+        scrollToExerciseChannel.tryReceive()
+        setRestChannel.tryReceive()
     }
 
     fun bindForegroundOnlyService() {
@@ -407,6 +486,7 @@ class WearRepository @Inject constructor(
     fun stringResToString(@StringRes id: Int): String = context.getString(id)
 
     companion object {
+        private const val SERVICE_WAIT_MS = 10_000L
 
         // For Singleton instantiation
         @Volatile private var instance: WearRepository? = null

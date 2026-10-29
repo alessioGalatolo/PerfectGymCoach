@@ -12,19 +12,25 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.shared.BarbellType
 import agdesigns.elevatefitness.shared.Equipment
 import agdesigns.elevatefitness.shared.MEDIA_IMAGES_PATH
+import agdesigns.elevatefitness.shared.SmartRestParams
 import agdesigns.elevatefitness.shared.WORKOUT_IMAGES_PATH
 import agdesigns.elevatefitness.shared.barbellIndexFromWeight
 import agdesigns.elevatefitness.shared.bitmapFlow
 import agdesigns.elevatefitness.shared.getPlates
+import agdesigns.elevatefitness.shared.maybeKgToLb
 import agdesigns.elevatefitness.shared.grpc.Media
 import agdesigns.elevatefitness.shared.grpc.MediaServiceGrpcKt
 import agdesigns.elevatefitness.shared.grpc.Workout
 import agdesigns.elevatefitness.shared.grpc.WorkoutServiceGrpcKt
 import agdesigns.elevatefitness.shared.toProtoTimestamp
 import agdesigns.elevatefitness.shared.toZonedDateTime
+import agdesigns.elevatefitness.utils.HeartRateRecovery
 import agdesigns.elevatefitness.utils.RepAndTempoCounter
 import android.os.Build
 import android.os.SystemClock
+import org.json.JSONArray
+import org.json.JSONObject
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.data.ProtoDataStoreHelper.protoFlow
@@ -71,6 +77,7 @@ data class ExercisesState(
     val exercisesSetsDone: List<Int> = emptyList(),
     val suggestedRepsWeight: List<Workout.SuggestedRepsWeight> = emptyList(),
     val suggestedTare: List<Float> = emptyList(),
+    val suggestedBarbellTypes: List<String> = emptyList(),
     val imperialSystem: Boolean = false,
     val activeWorkout: Boolean = true,
     val lastIntensity: Float? = null,
@@ -78,14 +85,36 @@ data class ExercisesState(
     val inRestHintsEnabled: Boolean = true,
     val tempoRomTrackingEnabled: Boolean = false,
     val keepScreenOn: Boolean = false,
+    val smartRestEnabled: Boolean = false,
+    val recordSensorData: Boolean = false,
+    val heartRateRecovery: HeartRateRecovery = HeartRateRecovery(),
 )
 
 data class InRestHint(
     @param:StringRes val titleResId: Int,
-    @param:StringRes val descResId: Int,
-    val descVarArgs: List<Any>
+    @param:StringRes val descResId: Int = 0,
+    val descVarArgs: List<Any>,
+    // when set, used instead of descResId, with the first of descVarArgs as quantity
+    @param:PluralsRes val descPluralsResId: Int? = null
 )
 
+// smart rest: heart rate recovery of the last completed set, see HeartRateRecovery
+data class RecoveryState(
+    // second on the heartRateBySecond timeline at which the rest started
+    val startSecs: Long,
+    val baseline: Int,
+    val peak: Int? = null,
+    val target: Int? = null,
+    val smoothedHeartRate: Int? = null,
+    val recovered: Boolean = false,
+    // rest is over but heart rate is not recovered yet
+    val showWarning: Boolean = false,
+) {
+    val progress: Float?
+        get() = if (peak != null && target != null && smoothedHeartRate != null)
+            HeartRateRecovery.progress(peak, target, smoothedHeartRate)
+        else null
+}
 
 data class WorkoutState(
     val currentExerciseIndex: Int = 0,
@@ -138,6 +167,10 @@ data class WorkoutState(
     // metrics from watch (e.g., calories and HR) will arrive with an offset from start of workout, record that offset to align metrics with exercises and sets
     val exerciseStartEpochMillis: Long? = null,
     val firstHRTimeSinceBootSecs: Long? = null,
+    // latest second with a heart rate sample in heartRateBySecond
+    val lastHeartRateSecs: Long? = null,
+    // non-null while tracking heart rate recovery between sets
+    val recovery: RecoveryState? = null,
 )
 
 sealed class WorkoutEvent {
@@ -174,6 +207,7 @@ sealed class WorkoutEvent {
     data class ExtendRest(val additionalSeconds: Long = 5L): WorkoutEvent()
     data object StartCalibration: WorkoutEvent()
     data object DismissCalibration: WorkoutEvent()
+    data object DismissRecoveryWarning: WorkoutEvent()
 }
 
 // effects that should be propagated to the UI
@@ -181,6 +215,7 @@ sealed class WorkoutEffect {
     data object RetriableError: WorkoutEffect()
     data object NonRetriableError: WorkoutEffect()
     data object NavigateToSelectValues: WorkoutEffect()
+    data object HeartRateRecovered: WorkoutEffect()
 }
 
 @OptIn(ExperimentalHorologistApi::class, ExperimentalCoroutinesApi::class)
@@ -211,11 +246,21 @@ class WorkoutViewModel
             imperialSystem = staticData.imperialSystem,
             activeWorkout = staticData.activeWorkout,
             suggestedTare = staticData.suggestedTaresList,
+            suggestedBarbellTypes = staticData.suggestedBarbellTypesList,
             lastIntensity = if (staticData.previousIntensity == -1f) null else staticData.previousIntensity / 100f,
             suggestedModifications = staticData.suggestedModificationsList.map { if (!it.hasSuggestion) null else it },
             inRestHintsEnabled = staticData.smartFeaturesInRestHints,
             tempoRomTrackingEnabled = staticData.smartFeaturesTempoRomTracking,
             keepScreenOn = staticData.keepScreenOn,
+            smartRestEnabled = staticData.smartFeaturesSmartRest,
+            recordSensorData = staticData.recordSensorData,
+            // older phone apps do not send the params, fall back to defaults
+            heartRateRecovery = HeartRateRecovery(
+                if (staticData.hasSmartRestParams())
+                    SmartRestParams.fromProto(staticData.smartRestParams)
+                else
+                    SmartRestParams()
+            ),
         )
     }.stateIn(
         viewModelScope,
@@ -274,10 +319,17 @@ class WorkoutViewModel
         viewModelScope.launch {
             // listen for set rest requests from phone
             for (event in repository.setRestChannel) {
+                repository.markSensorRecording(
+                    "phone_set_rest",
+                    JSONObject().put("rest_secs", event.rest)
+                )
                 // TODO: superset case
                 repository.stopSetTracking()
                 _state.update {
-                    it.copy(
+                    // the phone also echoes rest extensions, keep tracking the ongoing rest then
+                    val isOngoingRest = it.recovery != null && !it.recovery.showWarning &&
+                        (it.ongoingRestSecs ?: 0L) > 0L
+                    (if (isOngoingRest) it else startRecoveryTracking(it, event.rest)).copy(
                         currentExerciseRest = event.rest,
                         restTimestamp = event.restTimestamp.toZonedDateTime(),
                         successfullySetValues = true
@@ -326,6 +378,7 @@ class WorkoutViewModel
                             } else null
                         val firstHRTimeSinceBoot = state.firstHRTimeSinceBootSecs ?: firstHeartRateTime?.div(1000L)
 
+                        var lastHeartRateSecs = state.lastHeartRateSecs
                         it.heartRates.forEach {
                             // this is time since boot
                             val timeInSeconds = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -333,7 +386,9 @@ class WorkoutViewModel
                             } else {
                                 it.first.toMillis() / 1000L
                             }
-                            secondsToHR[timeInSeconds-(firstHRTimeSinceBoot ?: 0L)] = it.second.toInt()
+                            val secs = timeInSeconds-(firstHRTimeSinceBoot ?: 0L)
+                            secondsToHR[secs] = it.second.toInt()
+                            lastHeartRateSecs = max(lastHeartRateSecs ?: secs, secs)
                         }
                         state.copy(
                             totalCalories = it.totalCalories ?: state.totalCalories,
@@ -345,8 +400,14 @@ class WorkoutViewModel
                             minHeartRate = it.minHeartRate?.toInt() ?: state.minHeartRate,
                             heartRateBySecond = secondsToHR.toMap(),
                             exerciseStartEpochMillis = estimatedWorkoutStartEpochTime,
-                            firstHRTimeSinceBootSecs = firstHRTimeSinceBoot
-                        )
+                            firstHRTimeSinceBootSecs = firstHRTimeSinceBoot,
+                            lastHeartRateSecs = lastHeartRateSecs,
+                        ).let { updated -> updateRecovery(updated) }
+                    }
+                    if (_state.value.recovery?.let { it.showWarning && it.recovered } == true) {
+                        // heart rate recovered after rest ended, warning is no longer needed
+                        _state.update { it.copy(recovery = null) }
+                        _effects.trySend(WorkoutEffect.HeartRateRecovered)
                     }
                 }
         }
@@ -357,6 +418,16 @@ class WorkoutViewModel
                 .collect { inProgress ->
                     _state.update { it.copy(showOtherAppExerciseDialog = inProgress) }
                 }
+        }
+        viewModelScope.launch {
+            exercisesState.map { it.recordSensorData }.distinctUntilChanged().collect {
+                repository.setSensorRecording(it)
+            }
+        }
+        viewModelScope.launch {
+            state.map { it.currentExerciseIndex }.distinctUntilChanged().collect {
+                repository.markSensorRecording("exercise_index", JSONObject().put("index", it))
+            }
         }
         viewModelScope.launch {
             exercisesState.map { it.tempoRomTrackingEnabled }.distinctUntilChanged().collect {
@@ -427,6 +498,8 @@ class WorkoutViewModel
     }
 
     fun onEvent(event: WorkoutEvent){
+        // every UI interaction can help segmenting the recorded sensor data
+        repository.markSensorRecording("ui_event", JSONObject().put("event", event.toString()))
         when (event) {
             is WorkoutEvent.ResetRest -> {
                 repository.cancelRestAlarm()
@@ -436,7 +509,8 @@ class WorkoutViewModel
                 }
 
                 viewModelScope.launch {
-                    _state.update { it.copy(restTimestamp = ZonedDateTime.now()) }
+                    // rest was skipped on purpose, do not warn about recovery
+                    _state.update { it.copy(restTimestamp = ZonedDateTime.now(), recovery = null) }
                 }
             }
             is WorkoutEvent.ChangeReps -> {
@@ -449,6 +523,7 @@ class WorkoutViewModel
                         successfullySetValues = false,
                         restTimestamp = null,
                         currentExerciseRest = null,
+                        recovery = null,
                     )
                 }
 
@@ -488,6 +563,8 @@ class WorkoutViewModel
                     groundTruthReps = state.value.currentReps
                 )
                 _state.update { it.copy(lastSetResult = setTrackingResults) }
+                val completedSetIndex = exercisesState.value.exercisesSetsDone
+                    .getOrNull(completedExerciseIndex) ?: -1
                 val protoTrackingResults = setTrackingResults?.toProto() ?: RepAndTempoCounter.SetResult.protoNoResult
 
                 val shouldAdvancePage =
@@ -526,9 +603,16 @@ class WorkoutViewModel
                     }
                 }
                 val equipment = Equipment.fromResKey(currentExercise.equipment)
-                val tare = if (equipment == Equipment.BARBELL)
-                    BarbellType.entries[state.value.tareIndex].weight[exercisesState.value.imperialSystem] ?: 0f
-                else 0f
+                val barbellType = if (equipment == Equipment.BARBELL)
+                    BarbellType.entries[state.value.tareIndex]
+                else null
+                val tare = if (barbellType == BarbellType.OTHER)
+                    state.value.tareBarbell
+                else
+                    barbellType?.weight[exercisesState.value.imperialSystem] ?: 0f
+                repository.cutSensorRecording(
+                    sensorRecordingSetInfo(currentExercise, completedSetIndex, tare, setTrackingResults)
+                )
                 val protoTimestamp = state.value.restTimestamp.toProtoTimestamp()
                 val queuedSetCompleted = Workout.SetCompleted.newBuilder()
                     .setWorkoutId(exercisesState.value.workoutId)
@@ -536,6 +620,7 @@ class WorkoutViewModel
                     .setReps(state.value.currentReps)
                     .setWeight(state.value.currentWeight)
                     .setTare(tare)
+                    .setBarbellTypeResKey(barbellType?.barbellResKey ?: "")
                     .setRest(state.value.currentExerciseRest ?: 0L)
                     .setRestTimestamp(protoTimestamp)
                     .setSetTracking(protoTrackingResults)
@@ -649,6 +734,7 @@ class WorkoutViewModel
                         // vibrate now to hint user to start next exercise
                         repository.scheduleRestAlarm(0L)
                         state.copy(
+                            recovery = null,
                             restTimestamp = null,
                             lastCompletedExerciseIndex = null,
                             settingSetValues = true,
@@ -665,7 +751,7 @@ class WorkoutViewModel
                         )
                     } else {
                         repository.scheduleRestAlarm((rest.toLong() - 2L) * 1000L)
-                        state.copy(
+                        startRecoveryTracking(state, rest.toLong()).copy(
                             restTimestamp = ZonedDateTime
                                 .now()
                                 .plusSeconds(
@@ -813,7 +899,8 @@ class WorkoutViewModel
                     return
                 retryJob = viewModelScope.launch {
                     val failedSets = mutableListOf<Workout.SetCompleted>()
-                    for (set in setCompletedQueue) {
+                    // iterate over a copy, the queue is modified while sending
+                    for (set in setCompletedQueue.toList()) {
                         try {
                             val result = workoutService.setCompleted(set)
                             if (!result.success) {
@@ -979,6 +1066,9 @@ class WorkoutViewModel
                     }
                 }
             }
+            is WorkoutEvent.DismissRecoveryWarning -> {
+                _state.update { it.copy(recovery = null) }
+            }
             is WorkoutEvent.DismissCalibration -> {
                 calibrationDismissedThisSession = true
                 _state.update {
@@ -991,6 +1081,48 @@ class WorkoutViewModel
             }
         }
     }
+
+    // ground truth and context of a completed set, stored alongside the raw sensor data
+    private fun sensorRecordingSetInfo(
+        exercise: Workout.Exercise,
+        setIndex: Int,
+        tare: Float,
+        trackingResult: RepAndTempoCounter.SetResult?,
+    ): JSONObject = JSONObject()
+        .put("workout_id", exercisesState.value.workoutId)
+        .put("workout_exercise_id", exercise.workoutExerciseId)
+        .put("program_exercise_id", exercise.programExerciseId)
+        .put("exercise_id", exercise.exerciseId)
+        .put("exercise_name", exercise.name)
+        .put("variation", exercise.variation)
+        .put("equipment", exercise.equipment)
+        .put("wear_rep_trackable", exercise.wearRepTrackable.name)
+        .put("first_phase", exercise.firstPhase.name)
+        .put("is_duration_based", exercise.isDurationBased)
+        .put("set_index", setIndex)
+        .put("set_type", exercise.setTypesList.getOrNull(setIndex))
+        .put("reps", state.value.currentReps)
+        .put("weight", state.value.currentWeight.toDouble())
+        .put("tare", tare.toDouble())
+        .put("imperial_system", exercisesState.value.imperialSystem)
+        .put("rest_timestamp_wall_ms", state.value.restTimestamp?.toInstant()?.toEpochMilli())
+        .put("superset_exercise", exercise.supersetExercise)
+        // output of the current detector, as a baseline
+        .put("tracking_result", trackingResult?.let { result ->
+            JSONObject()
+                .put("detected_reps", result.detectedReps)
+                .put("avg_range_of_motion_m", result.avgRangeOfMotionM.toDouble())
+                .put("avg_concentric_ms", result.avgConcentricMs)
+                .put("avg_eccentric_ms", result.avgEccentricMs)
+                .put("reps", JSONArray(result.reps.map { rep ->
+                    JSONObject()
+                        .put("index", rep.index)
+                        .put("concentric_ms", rep.concentricMs)
+                        .put("eccentric_ms", rep.eccentricMs)
+                        .put("range_of_motion_m", rep.rangeOfMotionM.toDouble())
+                        .put("peak_velocity", rep.peakVelocity.toDouble())
+                }))
+        })
 
     private fun List<Pair<Long, Int>>.interpolateMissingValues(): List<Pair<Long, Int>> {
         // Here, Long is a timestamp, Int is a heart rate value
@@ -1091,6 +1223,13 @@ class WorkoutViewModel
                 val calibrationProgress = if (it.calibrationInProgress) {
                     Duration.between(it.calibrationStarted, currentTime).toMillis().toFloat() / 5000f
                 } else it.calibrationProgress
+                // rest just ended: warn if heart rate has not recovered, otherwise stop tracking
+                val recovery = if (
+                    it.recovery != null && !it.recovery.showWarning && ongoingRestMillis == 0L
+                ) {
+                    if (it.recovery.recovered || it.recovery.target == null) null
+                    else it.recovery.copy(showWarning = true)
+                } else it.recovery
                 it.copy(
                     currentTime = currentTime,
                     ongoingRestSecs = ongoingRestSecs,
@@ -1102,11 +1241,50 @@ class WorkoutViewModel
                     ongoingExerciseTimerProgression = ongoingExerciseTimerProgression,
                     ongoingExerciseStopwatchSecs = ongoingExerciseStopwatchSecs,
                     workoutTime = workoutTime,
-                    calibrationProgress = calibrationProgress
+                    calibrationProgress = calibrationProgress,
+                    recovery = recovery,
                 )
             }
         }.launchIn(viewModelScope)
     }
+    private fun startRecoveryTracking(state: WorkoutState, restSecs: Long): WorkoutState {
+        val firstHRTimeSinceBoot = state.firstHRTimeSinceBootSecs
+        val baseline = exercisesState.value.heartRateRecovery.baseline(state.heartRateBySecond.values)
+        if (
+            !exercisesState.value.smartRestEnabled || restSecs <= 0L ||
+            firstHRTimeSinceBoot == null || baseline == null
+        ) {
+            return state.copy(recovery = null)
+        }
+        return updateRecovery(
+            state.copy(
+                recovery = RecoveryState(
+                    startSecs = SystemClock.elapsedRealtime() / 1000L - firstHRTimeSinceBoot,
+                    baseline = baseline
+                )
+            )
+        )
+    }
+
+    private fun updateRecovery(state: WorkoutState): WorkoutState {
+        val recovery = state.recovery ?: return state
+        val lastSecs = state.lastHeartRateSecs ?: return state
+        val heartRateRecovery = exercisesState.value.heartRateRecovery
+        val peak = heartRateRecovery.peak(state.heartRateBySecond, recovery.startSecs, lastSecs)
+            ?: return state
+        val target = heartRateRecovery.target(recovery.baseline, peak)
+        val smoothed = heartRateRecovery.smoothed(state.heartRateBySecond, lastSecs)
+        return state.copy(
+            recovery = recovery.copy(
+                peak = peak,
+                target = target,
+                smoothedHeartRate = smoothed,
+                // sticky, avoids flickering when heart rate hovers around the target
+                recovered = recovery.recovered || (smoothed != null && smoothed <= target)
+            )
+        )
+    }
+
     private suspend fun observeUpdateRepsWeightExercises() {
         combine(
             state.map { it.currentExerciseIndex }.distinctUntilChanged(),
@@ -1116,7 +1294,8 @@ class WorkoutViewModel
             exercisesState.map { it.exercises }.distinctUntilChanged(),
             exercisesState.map { it.imperialSystem }.distinctUntilChanged(),
             state.map { it.settingSetValues }.distinctUntilChanged(),
-            state.map { it.lastCompletedExerciseIndex }.distinctUntilChanged()
+            state.map { it.lastCompletedExerciseIndex }.distinctUntilChanged(),
+            exercisesState.map { it.suggestedBarbellTypes }.distinctUntilChanged()
         ) { values ->
             val index = values[0] as Int
             val suggestedRepsWeight = values[1] as List<Workout.SuggestedRepsWeight>
@@ -1126,15 +1305,18 @@ class WorkoutViewModel
             val imperialSystem = values[5] as Boolean
             val settingSetValues = values[6] as Boolean
             val lastCompletedIndex = values[7] as Int?
+            val barbellTypes = values[8] as List<String>
             if (settingSetValues) return@combine
             _state.update {
                 val currentExercise = exercises.getOrNull(index) ?: exercises.lastOrNull()
                 val repsWeight = suggestedRepsWeight.getOrNull(index)
                 val setsDone = allSetsDone.getOrNull(index) ?: 0
                 val suggestedTare = tares.getOrNull(index)
-                val suggestedTareIndex = suggestedTare?.let {
-                    barbellIndexFromWeight(it)
-                }
+                // prefer the type sent by the phone, the weight alone is ambiguous (e.g., 10 kg bars)
+                val suggestedTareIndex = barbellTypes.getOrNull(index)
+                    ?.let { key -> BarbellType.entries.indexOfFirst { it.barbellResKey == key } }
+                    ?.takeIf { it != -1 }
+                    ?: suggestedTare?.let { barbellIndexFromWeight(it) }
                 var suggestedWeight: String? = null
                 var suggestedReps: String? = null
                 if (repsWeight != null) {
@@ -1153,7 +1335,7 @@ class WorkoutViewModel
                 }
                 val nextSetExerciseName = if (currentExercise?.let { setsDone < it.restCount } ?: false) {
                     (currentExercise.name ?: "") + if (suggestedReps != null && suggestedWeight != null)
-                        " (${suggestedReps}x${suggestedWeight}${
+                        " (${suggestedReps}×${suggestedWeight}${
                         if (imperialSystem)
                             repository.stringResToString(sharedR.string.lb)
                         else
@@ -1167,7 +1349,9 @@ class WorkoutViewModel
                 it.copy(
                     currentWeight = suggestedWeight?.toFloatOrNull() ?: 0f,
                     currentReps = suggestedReps?.toIntOrNull() ?: it.currentReps,
-                    tareBarbell = suggestedTare ?: it.tareBarbell,
+                    // tares from the phone are in kg, the watch shows (and sends back) the user's unit
+                    tareBarbell = suggestedTare?.let { tare -> maybeKgToLb(tare, imperialSystem) }
+                        ?: it.tareBarbell,
                     tareIndex = suggestedTareIndex ?: it.tareIndex,
                     nextSetExerciseName = nextSetExerciseName,
                     // the rest screen refers to the set just completed, not to the (possibly advanced) current exercise
@@ -1327,10 +1511,10 @@ class WorkoutViewModel
 //                                        R.string.rest_hint_start_hold_title
 //                                    else
 //                                        R.string.rest_hint_start_reps_title,
-//                                    descResId = if (nextExercise.isDurationBased)
-//                                        R.string.rest_hint_start_hold
+//                                    descPluralsResId = if (nextExercise.isDurationBased)
+//                                        R.plurals.rest_hint_start_hold
 //                                    else
-//                                        R.string.rest_hint_start_reps,
+//                                        R.plurals.rest_hint_start_reps,
 //                                    descVarArgs = listOf(nextReps)
 //                                )
 //                            )
@@ -1431,10 +1615,10 @@ class WorkoutViewModel
                                             R.string.rest_hint_increase_hold_title
                                         else
                                             R.string.rest_hint_increase_reps_title,
-                                        descResId = if (currentExercise.isDurationBased)
-                                            R.string.rest_hint_increase_hold
+                                        descPluralsResId = if (currentExercise.isDurationBased)
+                                            R.plurals.rest_hint_increase_hold
                                         else
-                                            R.string.rest_hint_increase_reps,
+                                            R.plurals.rest_hint_increase_reps,
                                         descVarArgs = listOf(nextReps)
                                     )
                                 )
@@ -1445,10 +1629,10 @@ class WorkoutViewModel
                                             R.string.rest_hint_decrease_hold_title
                                         else
                                             R.string.rest_hint_decrease_reps_title,
-                                        descResId = if (currentExercise.isDurationBased)
-                                            R.string.rest_hint_decrease_hold
+                                        descPluralsResId = if (currentExercise.isDurationBased)
+                                            R.plurals.rest_hint_decrease_hold
                                         else
-                                            R.string.rest_hint_decrease_reps,
+                                            R.plurals.rest_hint_decrease_reps,
                                         descVarArgs = listOf(nextReps)
                                     )
                                 )

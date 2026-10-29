@@ -285,7 +285,7 @@ fun SharedTransitionScope.ViewExercises(
                                                 modifier = Modifier.padding(horizontal = 8.dp)
                                             ) {
                                                 val maxSuggestions =
-                                                    if (exercisesState.searchResults != null && exercisesState.searchResults!!.isNotEmpty()) {
+                                                    if (exercisesState.searchQuery.isNotBlank() && !exercisesState.searchResults.isNullOrEmpty()) {
                                                         min(2, exercisesState.recentSearches.size)
                                                     } else {
                                                         exercisesState.recentSearches.size

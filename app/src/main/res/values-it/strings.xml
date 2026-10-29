@@ -74,7 +74,6 @@
     <string name="chart_icon">Icona grafico</string>
     <string name="achievement_icon">Obiettivo</string>
     <string name="year_icon">Anno</string>
-    <string name="week_icon">Settimana</string>
     <string name="empty_history_icon">Storico vuoto</string>
     <string name="edit_program_icon">Modifica programma</string>
     <string name="quick_start_icon">Avvio rapido allenamento</string>
@@ -127,7 +126,11 @@
     <string name="previous_month">Mese precedente</string>
     <string name="next_month">Mese successivo</string>
     <string name="show_workout_activity">Mostra attività di allenamento</string>
-    <string name="week_i">Settimana %1$s</string>
+    <string name="month_summary">%1$s · %2$s</string>
+    <plurals name="days_off">
+        <item quantity="one">%1$d giorno di pausa</item>
+        <item quantity="other">%1$d giorni di pausa</item>
+    </plurals>
     <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched to -->
     <string name="plan_change_new">Nuovo piano: %1$s</string>
     <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched from -->
@@ -195,7 +198,11 @@
     <string name="no_exercises_found">Nessun esercizio trovato</string>
     <string name="exclude_all_n_results">Escludi tutti i %d risultati</string>
     <string name="clear_all_excluded">Rimuovi tutto</string>
-    <string name="n_exercises_excluded">%d esercizi esclusi</string>
+    <plurals name="n_exercises_excluded">
+        <item quantity="one">%d esercizio escluso</item>
+        <item quantity="many">%d esercizi esclusi</item>
+        <item quantity="other">%d esercizi esclusi</item>
+    </plurals>
     <string name="no_exercises_excluded">Nessun esercizio escluso</string>
     <!-- Generating plan waiting screen-->
     <string name="generating_plan_waiting_text">Generazione di un piano personalizzato…</string>
@@ -226,7 +233,11 @@
     <string name="salute_user">Ciao, %1$s</string>
     <string name="name">Nome</string>
     <string name="age">Età</string>
-    <string name="i_years">%1$s anni</string>
+    <plurals name="i_years">
+        <item quantity="one">%1$d anno</item>
+        <item quantity="many">%1$d anni</item>
+        <item quantity="other">%1$d anni</item>
+    </plurals>
     <string name="born_in">Nato nel:</string>
     <string name="year">Anno</string>
     <string name="please_enter_a_valid_year">Per favore inserisci un anno valido</string>
@@ -277,7 +288,11 @@
     <!-- ## A streak in number of weeks; a week counts when all workouts of the plan were done   -->
     <string name="streak_in_weeks">%1$s sett.</string>
     <string name="best_streak">Miglior serie</string>
-    <string name="sets_total">%1$s occorrenze • %2$s %3$s totali</string>
+    <plurals name="sets_total">
+        <item quantity="one">%1$d occorrenza • %2$s %3$s totali</item>
+        <item quantity="many">%1$d occorrenze • %2$s %3$s totali</item>
+        <item quantity="other">%1$d occorrenze • %2$s %3$s totali</item>
+    </plurals>
     <!-- View exercises -->
     <string name="search_exercise">Cerca esercizio…</string>
     <string name="search_icon">Cerca</string>
@@ -796,7 +811,11 @@
     <string name="custom_split_add_day">Aggiungi giornata</string>
     <string name="custom_split_day">Giorno %1$d</string>
     <string name="custom_split_not_configured">Tappa per configurare</string>
-    <string name="custom_split_n_days">%1$d giorni configurati</string>
+    <plurals name="custom_split_n_days">
+        <item quantity="one">%1$d giorno configurato</item>
+        <item quantity="many">%1$d giorni configurati</item>
+        <item quantity="other">%1$d giorni configurati</item>
+    </plurals>
     <string name="custom_split_invalid">Alcuni giorni nella tua divisione non sono validi</string>
     <string name="intensities_high">Alta intensità (...)</string>
     <string name="intensities_medium">Intensità normale (...)</string>
@@ -888,6 +907,8 @@
     <string name="resume_workout_fail">Non è stato possibile trovare l\'allenamento da riprendere!</string>
     <string name="lock_workout_scroll">Blocca scroll orizzontale nell\'allenamento: </string>
     <string name="auto_open_wearos">Apri automaticamente l\'app Wear OS all\'inizio dell\'allenamento</string>
+    <string name="send_crash_reports">Invia segnalazioni di arresto anomalo</string>
+    <string name="send_crash_reports_description">Se l\'app si arresta in modo anomalo, invia dettagli tecnici (modello del dispositivo, versione di Android, stack trace) per aiutare a risolvere il problema. Non sono inclusi dati di allenamento o di salute.</string>
     <string name="show_media_controls">Mostra controlli multimediali</string>
     <string name="discard_data_dialog_title">Annullare cambiamenti?</string>
     <string name="discard_data_dialog_info">Hai cambiato qualche valore per questo esercizio. Se torni indietro adesso, annullerai questi cambiamenti.</string>
@@ -898,7 +919,11 @@
 <!--    This is shown as title of the notification -->
     <string name="ongoing_workout_notification_title">Allenamento in corso</string>
     <string name="remaining_rest_notification_content">Riposo prima del prossimo esercizio: %1$d</string>
-    <string name="ongoing_workout_notification_content">Completati %1$d serie di %2$d</string>
+    <plurals name="ongoing_workout_notification_content">
+        <item quantity="one">Completate %1$d di %2$d serie</item>
+        <item quantity="many">Completate %1$d di %2$d serie</item>
+        <item quantity="other">Completate %1$d di %2$d serie</item>
+    </plurals>
     <string name="ongoing_workout_rest_finished_notification">Ora del prossimo esercizio! • %1$s</string>
     <string name="enable_ongoing_workout_notifications_title">Abilitare notifiche per allenamento in corso?</string>
     <string name="enable_ongoing_workout_notifications_info">Verrà mostrata una notifica permanente del progresso nell\'allenamento corrente e il restante riposo per quando l\'app non è in primo piano</string>
@@ -934,9 +959,44 @@
     <string name="suggest_reps_weight">Suggerisci ripetizioni e peso negli allenamenti</string>
     <string name="suggest_workout_modifications">Suggeriscie modifiche all\'allenamento in base alle sessioni precedenti</string>
     <string name="in_rest_hints_wear">Guida tra le serie per cambiare peso, ripetizioni, ecc.</string>
+    <string name="developer_options_title">Opzioni sviluppatore</string>
+    <string name="developer_mode">Modalità sviluppatore</string>
+    <string name="developer_mode_info">Funzionalità sperimentali che potrebbero non funzionare come previsto. Disattiva per nascondere questa sezione</string>
+    <string name="developer_mode_enabled">Ora sei uno sviluppatore!</string>
+    <string name="developer_mode_already_enabled">Non serve, sei già uno sviluppatore</string>
+    <plurals name="developer_mode_steps_away">
+        <item quantity="one">Ti manca %d passaggio per diventare uno sviluppatore</item>
+        <item quantity="many">Ti mancano %d passaggi per diventare uno sviluppatore</item>
+        <item quantity="other">Ti mancano %d passaggi per diventare uno sviluppatore</item>
+    </plurals>
+    <string name="smart_rest_recovery_fraction">Aumento del battito da recuperare</string>
+    <string name="smart_rest_min_target_above_baseline">Obiettivo minimo sopra il battito di base</string>
+    <string name="smart_rest_baseline_percentile">Percentile del battito di base nell\'allenamento</string>
+    <string name="smart_rest_peak_lookback">Ricerca del picco prima del recupero</string>
+    <string name="smart_rest_smoothing_window">Finestra di smussamento del battito</string>
+    <string name="smart_rest_reset_params">Ripristina i parametri del recupero smart</string>
+    <string name="unit_seconds_short">s</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="smart_rest_wear">Recupero smart: usa il battito cardiaco per capire quando hai recuperato tra le serie</string>
     <string name="tempo_rom_tracking_wear">Traccia il tempo e ROM per le singole ripetizioni (sperimentale, solo esercizi supportati)</string>
     <string name="requires_connected_watch">Richiede un orologio connesso</string>
     <string name="requires_compatible_wearable">Questa funzionalità richede un orologio compatibile</string>
+    <string name="record_sensor_data">Registra i dati dei sensori dell\'orologio</string>
+    <string name="record_sensor_data_info">Salva i dati grezzi dei sensori di movimento per ogni serie fatta con l\'orologio, per sviluppare offline il tracciamento di ripetizioni, tempo e ROM. Consuma più batteria e spazio</string>
+    <plurals name="sensor_recordings_count">
+        <item quantity="one">%d serie registrata</item>
+        <item quantity="many">%d serie registrate</item>
+        <item quantity="other">%d serie registrate</item>
+    </plurals>
+    <string name="sensor_recordings_delete_title">Eliminare le registrazioni dei sensori?</string>
+    <plurals name="sensor_recordings_delete_text">
+        <item quantity="one">I dati dei sensori di %d serie verranno eliminati definitivamente. Esportali prima se vuoi conservarli.</item>
+        <item quantity="many">I dati dei sensori di %d serie verranno eliminati definitivamente. Esportali prima se vuoi conservarli.</item>
+        <item quantity="other">I dati dei sensori di %d serie verranno eliminati definitivamente. Esportali prima se vuoi conservarli.</item>
+    </plurals>
+    <string name="sensor_recordings_export_success">Registrazioni dei sensori esportate</string>
+    <string name="sensor_recordings_export_error">Impossibile esportare le registrazioni dei sensori</string>
 
     <!-- Wearable -->
     <string name="wearable_title">Orologio</string>
@@ -973,7 +1033,11 @@
     <string name="health_connect_backfill_not_now">Non ora</string>
     <string name="health_connect_backfill_progress">Esportazione allenamenti passati (%1$d/%2$d)</string>
     <string name="health_connect_backfill_success">Allenamenti passati esportati in Health Connect</string>
-    <string name="health_connect_backfill_partial">Esportati %1$d allenamenti, %2$d non riusciti</string>
+    <plurals name="health_connect_backfill_partial">
+        <item quantity="one">Esportato %1$d allenamento, falliti: %2$d</item>
+        <item quantity="many">Esportati %1$d allenamenti, falliti: %2$d</item>
+        <item quantity="other">Esportati %1$d allenamenti, falliti: %2$d</item>
+    </plurals>
     <string name="heart_rate_bpm">Battiti (bpm)</string>
     <string name="progression_over_time">Progressione nel tempo</string>
     <string name="avg_heart_rate">Battiti medi</string>
@@ -995,7 +1059,11 @@
     <string name="hr_avg_short">Media</string>
     <string name="hr_max_short">Max</string>
     <string name="exercise_hr_summary">Media %1$d bpm · %2$d–%3$d bpm</string>
-    <string name="days_ago">" ~ %1$d giorni fa"</string>
+    <plurals name="days_ago">
+        <item quantity="one">" ~ %1$d giorno fa"</item>
+        <item quantity="many">" ~ %1$d giorni fa"</item>
+        <item quantity="other">" ~ %1$d giorni fa"</item>
+    </plurals>
     <string name="bottom_bar_current">" (attuale)"</string>
     <string name="last_set_tracking_data">Dati tracciati ultima serie</string>
     <string name="rom_cm">ROM (cm)</string>
@@ -1013,13 +1081,30 @@
     <string name="share_plan_chooser_title">Condividi piano di allenamento</string>
     <string name="share_plan_from_app">Condiviso da Elevate Fitness</string>
     <string name="receive_plan_title">Importa piano di allenamento</string>
-    <string name="receive_plan_programs">%1$d programmi</string>
-    <string name="receive_plan_exercises">%1$d esercizi</string>
+    <plurals name="receive_plan_programs">
+        <item quantity="one">%1$d programma</item>
+        <item quantity="many">%1$d programmi</item>
+        <item quantity="other">%1$d programmi</item>
+    </plurals>
+    <plurals name="receive_plan_exercises">
+        <item quantity="one">%1$d esercizio</item>
+        <item quantity="many">%1$d esercizi</item>
+        <item quantity="other">%1$d esercizi</item>
+    </plurals>
     <string name="receive_plan_import">Importa piano</string>
     <string name="receive_plan_imported">Piano importato!</string>
     <string name="receive_plan_error">Impossibile leggere il piano condiviso</string>
     <string name="receive_plan_day">Giorno %1$d</string>
-    <string name="sets_x_reps">%1$d serie × %2$d ripetizioni</string>
+    <plurals name="n_sets">
+        <item quantity="one">%1$d serie</item>
+        <item quantity="many">%1$d serie</item>
+        <item quantity="other">%1$d serie</item>
+    </plurals>
+    <plurals name="n_reps">
+        <item quantity="one">%1$d ripetizione</item>
+        <item quantity="many">%1$d ripetizioni</item>
+        <item quantity="other">%1$d ripetizioni</item>
+    </plurals>
     <string name="rest_seconds">Riposo: %1$ds</string>
     <string name="invalid_file_type">Formato file invalido</string>
 
@@ -1027,4 +1112,56 @@
     <string name="update_body_weight">Aggiorna peso corporeo?</string>
     <string name="update_bodyweight_desc">Stai facendo un esercizio a corpo libero ma non hai aggiornato il tuo peso nell\'app per più di %1$d giorni. Avere un peso aggiornato aiuta ad avere un calcolo del volume più accurato.</string>
     <string name="new_weight">nuovo peso</string>
+    <plurals name="set_i_reps">
+        <item quantity="one">Serie %1$d: %2$d ripetizione</item>
+        <item quantity="many">Serie %1$d: %2$d ripetizioni</item>
+        <item quantity="other">Serie %1$d: %2$d ripetizioni</item>
+    </plurals>
+    <string name="unit_ft">ft</string>
+    <string name="unit_in">in</string>
+    <string name="feet_inches_value">%1$sft %2$sin</string>
+    <string name="intensity_percent_label" formatted="false">Intensità (%)</string>
+    <string name="calories_kcal_label">Calorie (kcal)</string>
+    <string name="workout_time_minutes_label">Tempo di allenamento (m)</string>
+    <string name="workout_active_time_minutes_label">Tempo attivo di allenamento (m)</string>
+
+    <!-- # Achievements -->
+    <string name="achievements">Traguardi</string>
+    <plurals name="achievements_unlocked">
+        <item quantity="one">%1$d traguardo sbloccato</item>
+        <item quantity="other">%1$d traguardi sbloccati</item>
+    </plurals>
+    <string name="achievement_heaviest_weight">Peso massimo</string>
+    <string name="achievement_one_rep_max">Miglior 1RM stimato</string>
+    <string name="achievement_rep_record">Record di ripetizioni</string>
+    <string name="achievement_exercise_volume">Volume massimo</string>
+    <string name="achievement_longest_duration">Serie più lunga</string>
+    <string name="achievement_workout_volume">Record di volume assoluto</string>
+    <string name="achievement_program_volume">Miglior volume per questo allenamento</string>
+    <string name="achievement_workout_count">Traguardo allenamenti</string>
+    <string name="achievement_lifetime_volume">Traguardo di volume</string>
+    <string name="achievement_longest_streak">Striscia più lunga</string>
+    <string name="achievement_weight_reps">%1$s × %2$d</string>
+    <plurals name="achievement_reps">
+        <item quantity="one">%1$d ripetizione</item>
+        <item quantity="other">%1$d ripetizioni</item>
+    </plurals>
+    <plurals name="achievement_reps_with_weight">
+        <item quantity="one">%1$d ripetizione con %2$s</item>
+        <item quantity="other">%1$d ripetizioni con %2$s</item>
+    </plurals>
+    <plurals name="achievement_workouts_completed">
+        <item quantity="one">%1$d allenamento completato</item>
+        <item quantity="other">%1$d allenamenti completati</item>
+    </plurals>
+    <string name="achievement_lifted_in_total">%1$s sollevati in totale</string>
+    <plurals name="achievement_weeks_in_a_row">
+        <item quantity="one">%1$d settimana di fila</item>
+        <item quantity="other">%1$d settimane di fila</item>
+    </plurals>
+    <string name="achievement_previous">Precedente: %1$s</string>
+    <plurals name="achievement_new_prs">
+        <item quantity="one">Nuovo record: %2$s</item>
+        <item quantity="other">%1$d nuovi record: %2$s</item>
+    </plurals>
 </resources>

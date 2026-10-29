@@ -33,6 +33,8 @@ import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.common.AchievementsCard
+import agdesigns.elevatefitness.ui.common.ExerciseAchievementBadges
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
@@ -115,6 +117,8 @@ fun WorkoutRecap(
         viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
     }
     val volumeDialogIsOpen = rememberSaveable { mutableStateOf(false) }
+    // celebrate the achievements only once, not every time the card is scrolled back into view
+    val achievementsCelebrated = rememberSaveable(workoutId) { mutableStateOf(false) }
     val calorieDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     InfoDialog(dialogueIsOpen = volumeDialogIsOpen.value,
         toggleDialogue = { volumeDialogIsOpen.value = !volumeDialogIsOpen.value })
@@ -218,6 +222,25 @@ fun WorkoutRecap(
                         )
                     }
                 }
+                if (state.achievements.isNotEmpty()) {
+                    item {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            AchievementsCard(
+                                achievements = state.achievements,
+                                useImperialSystem = state.imperialSystem,
+                                animate = !achievementsCelebrated.value,
+                                onAnimationStarted = { achievementsCelebrated.value = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = dimensionResource(R.dimen.card_outside_padding))
+                                    .padding(bottom = 8.dp)
+                            )
+                        }
+                    }
+                }
                 // Stats grid — 2 cards per row
                 if (state.workoutRecord != null) {
                     item {
@@ -261,7 +284,7 @@ fun WorkoutRecap(
                                     StatCard(
                                         icon = {
                                             Icon(
-                                                painterResource(R.drawable.weight_icon),
+                                                Icons.Outlined.FitnessCenter,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.tertiary,
                                                 modifier = Modifier.size(28.dp)
@@ -304,7 +327,7 @@ fun WorkoutRecap(
                                     StatCard(
                                         icon = {
                                             Icon(
-                                                Icons.Outlined.FitnessCenter,
+                                                Icons.Outlined.Repeat,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.tertiary,
                                                 modifier = Modifier.size(28.dp)
@@ -505,9 +528,9 @@ fun WorkoutRecap(
                                     R.string.lb
                                 ) else stringResource(R.string.kg)
                             })",
-                            "${stringResource(R.string.fitness_center_icon_intensity)} (%)",
-                            "${stringResource(R.string.calories)} (kcal)",
-                            "${stringResource(R.string.workout_time)} (m)",
+                            stringResource(R.string.intensity_percent_label),
+                            stringResource(R.string.calories_kcal_label),
+                            stringResource(R.string.workout_time_minutes_label),
                         )
                         val legend = listOf(
                             listOf(
@@ -523,8 +546,8 @@ fun WorkoutRecap(
                                 stringResource(R.string.this_workout)
                             ),
                             listOf(
-                                "${stringResource(R.string.workout_time)} (m)",
-                                "${stringResource(R.string.workout_active_time)} (m)",
+                                stringResource(R.string.workout_time_minutes_label),
+                                stringResource(R.string.workout_active_time_minutes_label),
                                 stringResource(R.string.this_workout),
                             )
                         )
@@ -838,6 +861,13 @@ fun WorkoutRecap(
                             }
                         },
                         extraContent = { exercise ->
+                            // an exercise may have several records, show its badges on the first one
+                            val firstRecordId = state.exerciseRecords
+                                .first { it.extExerciseId == exercise.extExerciseId }.recordId
+                            if (exercise.recordId == firstRecordId)
+                                ExerciseAchievementBadges(
+                                    state.achievements.filter { it.extExerciseId == exercise.extExerciseId }
+                                )
                             state.exerciseHeartRates[exercise.recordId]?.let { heartRates ->
                                 ExerciseHeartRate(heartRates)
                             }

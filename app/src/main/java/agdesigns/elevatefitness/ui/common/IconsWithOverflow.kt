@@ -85,7 +85,10 @@ fun IconsWithOverflow(
                                     contentDescription = null,
                                 )
                             },
-                            onClick = item.onClick,
+                            onClick = {
+                                expanded = false
+                                item.onClick()
+                            },
                         )
                     }
                 }

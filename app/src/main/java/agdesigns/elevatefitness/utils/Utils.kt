@@ -43,13 +43,25 @@ fun getIntensityFromMet(met: Float): Float {
     return (met - 3f) / 0.05f
 }
 
-operator fun PaddingValues.plus(paddingValues: PaddingValues): PaddingValues {
-    return PaddingValues(
-        top = this.calculateTopPadding() + paddingValues.calculateTopPadding(),
-        bottom = this.calculateBottomPadding() + paddingValues.calculateBottomPadding(),
-        start = this.calculateLeftPadding(LayoutDirection.Ltr) + paddingValues.calculateLeftPadding(LayoutDirection.Ltr),
-        end = this.calculateRightPadding(LayoutDirection.Ltr) + paddingValues.calculateRightPadding(LayoutDirection.Ltr)
-    )
+// start/end are resolved when laid out, with the actual layout direction
+operator fun PaddingValues.plus(paddingValues: PaddingValues): PaddingValues =
+    SumPaddingValues(this, paddingValues)
+
+private data class SumPaddingValues(
+    val first: PaddingValues,
+    val second: PaddingValues
+) : PaddingValues {
+    override fun calculateTopPadding() =
+        first.calculateTopPadding() + second.calculateTopPadding()
+
+    override fun calculateBottomPadding() =
+        first.calculateBottomPadding() + second.calculateBottomPadding()
+
+    override fun calculateLeftPadding(layoutDirection: LayoutDirection) =
+        first.calculateLeftPadding(layoutDirection) + second.calculateLeftPadding(layoutDirection)
+
+    override fun calculateRightPadding(layoutDirection: LayoutDirection) =
+        first.calculateRightPadding(layoutDirection) + second.calculateRightPadding(layoutDirection)
 }
 
 fun Context.getLocalizedString(

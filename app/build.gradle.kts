@@ -42,9 +42,10 @@ android {
     defaultConfig {
         applicationId = "agdesigns.elevatefitness"
         minSdk = 26
+        // wait on targeting sdk 37 as it will break volume change from watch when workout not in foreground
         targetSdk = 36
-        versionCode = 35
-        versionName = "0.1.3"
+        versionCode = 37
+        versionName = "0.1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -58,15 +59,10 @@ android {
         release {
             isDebuggable = false
 
-            // FIXME: Optimisation currently disabled as it makes app crash upon entering
-            //  ViewExercises: Field queries_ for c.u not found (protobuf stuff)
-            //  also there are some glitches around the same screens
-            //  also breaks wear-phone connection
-            // TODO: add proper proguard rules
             // Enables code-related app optimization.
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             // Enables resource shrinking.
-            isShrinkResources = false
+            isShrinkResources = true
 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -108,7 +104,6 @@ android {
 
 dependencies {
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
     implementation(libs.health.connect)

@@ -2,6 +2,7 @@ package agdesigns.elevatefitness.shared
 
 import agdesigns.elevatefitness.shared.grpc.Info
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.res.stringResource
 import kotlin.math.round
 import androidx.compose.runtime.Composable
@@ -16,10 +17,10 @@ import com.google.android.horologist.data.WearDataLayerRegistry
 import com.google.android.horologist.data.store.impl.WearLocalDataStore
 import com.google.protobuf.Timestamp
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.time.Instant
 import java.time.ZoneId
@@ -194,15 +195,24 @@ fun calculatePlateChange(oldWeight: Float, newWeight: Float): PlateChange {
 @ExperimentalHorologistApi
 class UrgentWearLocalDataStore<T>(
     private val delegate: WearLocalDataStore<T>,
+    private val registry: WearDataLayerRegistry,
     private val serializer: Serializer<T>,
     private val path: String,
 ) : DataStore<T> by delegate {
 
     private val mutex = Mutex()
 
-    override suspend fun updateData(transform: suspend (t: T) -> T): T = mutex.withLock {
-        // Read current value
-        val oldT = delegate.data.first()
+    override suspend fun updateData(transform: suspend (t: T) -> T): T =
+        update(urgent = false, transform)
+
+    suspend fun urgentUpdateData(transform: suspend (t: T) -> T): T =
+        update(urgent = true, transform)
+
+    private suspend fun update(urgent: Boolean, transform: suspend (t: T) -> T): T = mutex.withLock {
+        // Compare against the stored data item, not delegate.data: that flow is not updated by
+        // our own writes, so a stale value could make us skip a write
+        // (e.g. activeWorkout=false never reaching the watch)
+        val oldT = readExistingValue()
         val newT = transform(oldT)
 
         if (newT == null) {
@@ -211,6 +221,8 @@ class UrgentWearLocalDataStore<T>(
         } else if (newT != oldT) {
             val request = PutDataRequest.create(path).apply {
                 data = writeBytes(newT)
+                if (urgent)
+                    setUrgent() // Add urgency flag
             }
 
             delegate.dataClient.putDataItem(request).await()
@@ -219,24 +231,17 @@ class UrgentWearLocalDataStore<T>(
         return newT
     }
 
-    suspend fun urgentUpdateData(transform: suspend (t: T) -> T): T = mutex.withLock {
-        // Read current value
-        val oldT = delegate.data.first()
-        val newT = transform(oldT)
-
-        if (newT == null) {
-            delegate.dataClient.deleteDataItems(buildUri(path))
-                .await()
-        } else if (newT != oldT) {
-            val request = PutDataRequest.create(path).apply {
-                data = writeBytes(newT)
-                setUrgent() // Add urgency flag
-            }
-
-            delegate.dataClient.putDataItem(request).await()
+    private suspend fun readExistingValue(): T {
+        try {
+            val nodeId = TargetNodeId.ThisNodeId.evaluate(registry)
+            val data = delegate.dataClient.getDataItem(WearDataLayerRegistry.buildUri(nodeId, path))
+                .await()?.data
+            if (data != null)
+                return serializer.readFrom(ByteArrayInputStream(data))
+        } catch (e: Exception) {
+            Log.w("UrgentWearLocalDataStore", "Could not read existing value for $path", e)
         }
-
-        return newT
+        return serializer.defaultValue
     }
 
     private suspend fun writeBytes(t: T): ByteArray {
@@ -262,6 +267,7 @@ inline fun <reified T : Any> WearDataLayerRegistry.urgentProtoDataStore(coroutin
             serializer = serializers.serializerForType<T>(),
             path = WearDataLayerRegistry.dataStorePath(T::class),
         ),
+        this,
         serializers.serializerForType<T>(),
         WearDataLayerRegistry.dataStorePath(T::class),
     )

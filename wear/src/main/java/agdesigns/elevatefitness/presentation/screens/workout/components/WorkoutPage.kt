@@ -135,6 +135,7 @@ fun WorkoutPage(
             ambientMode = ambientMode,
             isLastSet = workoutState.isLastSet,
             heartRate = workoutState.currentHeartRate,
+            heartRateRecovered = workoutState.recovery?.recovered == true,
             skipRest = resetRest,
             onAddSet = onAddSet,
             onExtendRest = onExtendRest,

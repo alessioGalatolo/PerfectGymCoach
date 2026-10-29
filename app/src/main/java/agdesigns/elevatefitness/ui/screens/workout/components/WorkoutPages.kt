@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -626,7 +627,7 @@ fun ExercisePage(
         }
         GroupedCard(Modifier.fillMaxWidth()) {
             subCard {
-                Text(stringResource(R.string.rest) +
+                Text(stringResource(R.string.rest) + // FIXME: loose string
                         ": ${exerciseRest}s", Modifier.align(Alignment.Start))
 
                 // if barbell, allow to add barbell weight (used for volume)
@@ -1068,7 +1069,7 @@ fun HistoricRecord(
             val formatter = DateTimeFormatter.ofPattern("d MMM (yy)")
             val daysAgo = remember { ChronoUnit.DAYS.between(record.date, ZonedDateTime.now()) }
             Text(
-                record.date.format(formatter) + stringResource(R.string.days_ago, daysAgo),
+                record.date.format(formatter) + pluralStringResource(R.plurals.days_ago, daysAgo.toInt(), daysAgo.toInt()),
                 style = MaterialTheme.typography.titleMedium,
                 fontStyle = FontStyle.Italic
             )
@@ -1426,8 +1427,13 @@ fun WorkoutRepsWeightRow(
                 tooltip = { PlainTooltip { Text(stringResource(setType.displayRes)) } },
                 state = tooltipState,
             ) {
+                val defaultColors = IconButtonDefaults.filledIconToggleButtonColors()
                 FilledIconToggleButton(
-                    enabled = toBeDone,
+                    // completed sets stay clickable (to change their type) but look done
+                    colors = if (toBeDone) defaultColors else defaultColors.copy(
+                        containerColor = defaultColors.disabledContainerColor,
+                        contentColor = defaultColors.disabledContentColor
+                    ),
                     checked = setsDone == setCount,
                     onCheckedChange = {
                         expanded = !expanded

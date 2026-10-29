@@ -5,6 +5,7 @@ import agdesigns.elevatefitness.presentation.screens.workout.components.Calibrat
 import agdesigns.elevatefitness.presentation.screens.workout.components.EndWorkoutPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.LoadingWorkoutScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.MediaPlayingPage
+import agdesigns.elevatefitness.presentation.screens.workout.components.RecoveryWarningScreen
 import agdesigns.elevatefitness.presentation.screens.workout.components.RepsTempoPage
 import agdesigns.elevatefitness.presentation.screens.workout.components.WorkoutPage
 import android.content.Intent
@@ -30,6 +31,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -169,6 +171,9 @@ fun Workout(
                 is WorkoutEffect.NavigateToSelectValues -> {
                     navigateToSelectValues()
                 }
+                is WorkoutEffect.HeartRateRecovered -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                }
             }
         }
     }
@@ -234,7 +239,14 @@ fun Workout(
             text = {
                 if (hint != null) {
                     Text(
-                        stringResource(hint.descResId, *hint.descVarArgs.toTypedArray())
+                        if (hint.descPluralsResId != null)
+                            pluralStringResource(
+                                hint.descPluralsResId,
+                                hint.descVarArgs.first() as Int,
+                                *hint.descVarArgs.toTypedArray()
+                            )
+                        else
+                            stringResource(hint.descResId, *hint.descVarArgs.toTypedArray())
                     )
                 }
             },
@@ -388,6 +400,16 @@ fun Workout(
     } else {
         LoadingWorkoutScreen(
             onBack
+        )
+    }
+    val recovery = state.recovery
+    if (recovery?.showWarning == true && recovery.target != null && exercisesState.exercises.isNotEmpty()) {
+        RecoveryWarningScreen(
+            heartRate = state.currentHeartRate,
+            targetHeartRate = recovery.target,
+            recoveryProgress = recovery.progress ?: 0f,
+            ambientMode = LocalAmbientModeManager.current?.currentAmbientMode ?: AmbientMode.Interactive,
+            onDismiss = { viewModel.onEvent(WorkoutEvent.DismissRecoveryWarning) },
         )
     }
     if (showCalibrationOverlay) {

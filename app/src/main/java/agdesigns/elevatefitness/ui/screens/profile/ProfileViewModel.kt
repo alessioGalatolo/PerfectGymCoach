@@ -5,6 +5,8 @@ import agdesigns.elevatefitness.data.BackupRepository
 import agdesigns.elevatefitness.data.HealthConnectRepository
 import agdesigns.elevatefitness.data.PreferenceRepository
 import agdesigns.elevatefitness.data.Repository
+import agdesigns.elevatefitness.data.SensorRecordingsRepository
+import agdesigns.elevatefitness.shared.SmartRestParams
 import agdesigns.elevatefitness.shared.grpc.WearInfoServiceGrpcKt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -42,6 +44,7 @@ data class ProfileState(
     val backupOutcomeResId: Int? = null,
     val lockHorizontalScroll: Boolean = false,
     val autoOpenWear: Boolean = false,
+    val crashReporting: Boolean = true,
     val isHealthConnectAvailable: Boolean = false,
     val hasHealthConnectPermissions: Boolean = false,
     val hasSomeHealthConnectPermissions: Boolean = false,
@@ -53,6 +56,12 @@ data class ProfileState(
     val suggestWorkoutModifications: Boolean = true,
     val inRestHints: Boolean = true,
     val tempoRomTracking: Boolean = false,
+    val smartRest: Boolean = false,
+    val developerMode: Boolean = false,
+    val recordSensorData: Boolean = false,
+    val sensorRecordingsCount: Int = 0,
+    val isSensorRecordingsExportLoading: Boolean = false,
+    val smartRestParams: SmartRestParams = SmartRestParams(),
     val wearKeepScreenOn: Boolean = false,
     val hasConnectedWatch: Boolean = false,
     val wearSupportsTempoRom: Boolean? = null,
@@ -91,6 +100,8 @@ sealed class ProfileEvent{
 
     data class ToggleAutoOpenWear(val newValue: Boolean): ProfileEvent()
 
+    data class ToggleCrashReporting(val newValue: Boolean): ProfileEvent()
+
     data class ChangeLanguage(val newLanguage: String?): ProfileEvent()
 
     data class ExportDatabase(val fileUri: Uri): ProfileEvent()
@@ -122,6 +133,18 @@ sealed class ProfileEvent{
 
     data class ToggleTempoRomTracking(val newValue: Boolean): ProfileEvent()
 
+    data class ToggleSmartRest(val newValue: Boolean): ProfileEvent()
+
+    data class ToggleDeveloperMode(val newValue: Boolean): ProfileEvent()
+
+    data class UpdateSmartRestParams(val newValue: SmartRestParams): ProfileEvent()
+
+    data class ToggleRecordSensorData(val newValue: Boolean): ProfileEvent()
+
+    data class ExportSensorRecordings(val fileUri: Uri): ProfileEvent()
+
+    data object DeleteSensorRecordings: ProfileEvent()
+
     data class ToggleWearKeepScreenOn(val newValue: Boolean): ProfileEvent()
 }
 
@@ -132,6 +155,7 @@ class ProfileViewModel @Inject constructor(
     private val repository: Repository,
     private val preferences: PreferenceRepository,
     private val healthConnectRepository: HealthConnectRepository,
+    private val sensorRecordingsRepository: SensorRecordingsRepository,
     private val phoneDataLayerAppHelper: PhoneDataLayerAppHelper,
     private val wearInfoService: WearInfoServiceGrpcKt.WearInfoServiceCoroutineStub,
 ): ViewModel() {
@@ -170,6 +194,11 @@ class ProfileViewModel @Inject constructor(
                 preferences.getInRestHints(),
                 preferences.getTempoRomTracking(),
                 preferences.getWearKeepScreenOn(),
+                preferences.getSmartRest(),
+                preferences.getDeveloperMode(),
+                preferences.getSmartRestParams(),
+                preferences.getRecordSensorData(),
+                preferences.getCrashReporting(),
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -193,6 +222,11 @@ class ProfileViewModel @Inject constructor(
                         inRestHints = values[17] as Boolean,
                         tempoRomTracking = values[18] as Boolean,
                         wearKeepScreenOn = values[19] as Boolean,
+                        smartRest = values[20] as Boolean,
+                        developerMode = values[21] as Boolean,
+                        smartRestParams = values[22] as SmartRestParams,
+                        recordSensorData = values[23] as Boolean,
+                        crashReporting = values[24] as Boolean,
                     )
                 }
             }.collect()
@@ -217,6 +251,13 @@ class ProfileViewModel @Inject constructor(
         }
         viewModelScope.launch {
             checkHealthConnectWeight()
+        }
+        // recordings may have arrived from the watch while the app was not showing
+        sensorRecordingsRepository.refreshCount()
+        viewModelScope.launch {
+            sensorRecordingsRepository.count.collect { count ->
+                _state.update { it.copy(sensorRecordingsCount = count) }
+            }
         }
     }
 
@@ -262,6 +303,11 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.ToggleAutoOpenWear -> {
                 viewModelScope.launch {
                     preferences.setAutoOpenWear(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleCrashReporting -> {
+                viewModelScope.launch {
+                    preferences.setCrashReporting(event.newValue)
                 }
             }
             is ProfileEvent.UpdateTheme -> {
@@ -415,6 +461,49 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.ToggleTempoRomTracking -> {
                 viewModelScope.launch {
                     preferences.setTempoRomTracking(event.newValue)
+                }
+            }
+            is ProfileEvent.UpdateSmartRestParams -> {
+                viewModelScope.launch {
+                    preferences.setSmartRestParams(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleDeveloperMode -> {
+                viewModelScope.launch {
+                    preferences.setDeveloperMode(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleRecordSensorData -> {
+                viewModelScope.launch {
+                    preferences.setRecordSensorData(event.newValue)
+                }
+            }
+            is ProfileEvent.ExportSensorRecordings -> {
+                viewModelScope.launch {
+                    _state.update { it.copy(isSensorRecordingsExportLoading = true) }
+                    val result = sensorRecordingsRepository.exportZip(event.fileUri)
+                    result.exceptionOrNull()?.let {
+                        Log.e("ProfileViewModel", "Sensor recordings export failed", it)
+                    }
+                    _state.update {
+                        it.copy(
+                            isSensorRecordingsExportLoading = false,
+                            backupOutcomeResId = if (result.isSuccess)
+                                R.string.sensor_recordings_export_success
+                            else
+                                R.string.sensor_recordings_export_error
+                        )
+                    }
+                }
+            }
+            is ProfileEvent.DeleteSensorRecordings -> {
+                viewModelScope.launch {
+                    sensorRecordingsRepository.deleteAll()
+                }
+            }
+            is ProfileEvent.ToggleSmartRest -> {
+                viewModelScope.launch {
+                    preferences.setSmartRest(event.newValue)
                 }
             }
             is ProfileEvent.ToggleWearKeepScreenOn -> {

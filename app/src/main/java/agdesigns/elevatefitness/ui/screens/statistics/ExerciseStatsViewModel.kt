@@ -139,13 +139,14 @@ class ExerciseStatsViewModel @Inject constructor(
             val sortedRecords = exerciseRecords.sortedBy { it.date }
 
             // Summary stats
+            // weights are stored per side and without tare, show the total load like volume does
+            fun ExerciseRecordAndEquipment.totalLoad(weight: Float) = when (equipment) {
+                Equipment.BARBELL, Equipment.DUMBBELL -> weight * 2 + tare
+                else -> weight + tare
+            }
             val totalSessions = sortedRecords.size
             val personalBestWeight = sortedRecords.maxOfOrNull {
-                val weight = maybeKgToLb((it.weights.maxOrNull() ?: 0f), imperialSystem)
-                if (it.equipment == Equipment.DUMBBELL || it.equipment == Equipment.BARBELL)
-                    weight / 2
-                else
-                    weight
+                maybeKgToLb(it.totalLoad(it.weights.maxOrNull() ?: 0f), imperialSystem)
             } ?: 0f
             val totalVolume = sortedRecords.sumOf { record ->
                 maybeKgToLb(
@@ -220,7 +221,7 @@ class ExerciseStatsViewModel @Inject constructor(
 
             // Per-session charts — use sortedRecords (ascending) for correct chronological order,
             // and apply imperial conversion to weight-based values
-            val maxWeights = sortedRecords.map { maybeKgToLb((it.weights.maxOrNull() ?: 0f) + it.tare, imperialSystem) }
+            val maxWeights = sortedRecords.map { maybeKgToLb(it.totalLoad(it.weights.maxOrNull() ?: 0f), imperialSystem) }
             viewModelScope.launch {
                 if (maxWeights.isEmpty())
                     return@launch
@@ -246,7 +247,9 @@ class ExerciseStatsViewModel @Inject constructor(
                     }
                 }
             }
-            val avgWeight = sortedRecords.map { maybeKgToLb(it.weights.average().toFloat() + it.tare, imperialSystem) }
+            val avgWeight = sortedRecords.map {
+                maybeKgToLb(it.totalLoad(if (it.weights.isEmpty()) 0f else it.weights.average().toFloat()), imperialSystem)
+            }
             viewModelScope.launch {
                 if (avgWeight.isEmpty())
                     return@launch

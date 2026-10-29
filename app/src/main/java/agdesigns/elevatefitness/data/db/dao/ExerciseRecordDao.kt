@@ -82,7 +82,7 @@ interface ExerciseRecordDao {
     fun getRecordsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime): Flow<List<ExerciseRecord>>
 
     @Update(entity = ExerciseRecord::class)
-    fun updateSetTypes(update: UpdateExerciseRecordSetTypes)
+    suspend fun updateSetTypes(update: UpdateExerciseRecordSetTypes)
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insert(plan: ExerciseRecord): Long
