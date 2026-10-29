@@ -1385,6 +1385,38 @@ fun PreferencesContent(
                     )
                 }
             }
+            subCard(
+                onClick = {
+                    viewModel.onEvent(ProfileEvent.ToggleCrashReporting(
+                        !profileState.crashReporting
+                    ))
+                }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.send_crash_reports),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.send_crash_reports_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = profileState.crashReporting,
+                        onCheckedChange = {
+                            viewModel.onEvent(ProfileEvent.ToggleCrashReporting(it))
+                        }
+                    )
+                }
+            }
         }
     }
 }

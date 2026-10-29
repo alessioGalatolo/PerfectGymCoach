@@ -44,6 +44,7 @@ data class ProfileState(
     val backupOutcomeResId: Int? = null,
     val lockHorizontalScroll: Boolean = false,
     val autoOpenWear: Boolean = false,
+    val crashReporting: Boolean = true,
     val isHealthConnectAvailable: Boolean = false,
     val hasHealthConnectPermissions: Boolean = false,
     val hasSomeHealthConnectPermissions: Boolean = false,
@@ -98,6 +99,8 @@ sealed class ProfileEvent{
     data class ToggleLockHorizontalScroll(val newValue: Boolean): ProfileEvent()
 
     data class ToggleAutoOpenWear(val newValue: Boolean): ProfileEvent()
+
+    data class ToggleCrashReporting(val newValue: Boolean): ProfileEvent()
 
     data class ChangeLanguage(val newLanguage: String?): ProfileEvent()
 
@@ -195,6 +198,7 @@ class ProfileViewModel @Inject constructor(
                 preferences.getDeveloperMode(),
                 preferences.getSmartRestParams(),
                 preferences.getRecordSensorData(),
+                preferences.getCrashReporting(),
             ) { values: Array<Any?> ->
                 _state.update {
                     it.copy(
@@ -222,6 +226,7 @@ class ProfileViewModel @Inject constructor(
                         developerMode = values[21] as Boolean,
                         smartRestParams = values[22] as SmartRestParams,
                         recordSensorData = values[23] as Boolean,
+                        crashReporting = values[24] as Boolean,
                     )
                 }
             }.collect()
@@ -298,6 +303,11 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.ToggleAutoOpenWear -> {
                 viewModelScope.launch {
                     preferences.setAutoOpenWear(event.newValue)
+                }
+            }
+            is ProfileEvent.ToggleCrashReporting -> {
+                viewModelScope.launch {
+                    preferences.setCrashReporting(event.newValue)
                 }
             }
             is ProfileEvent.UpdateTheme -> {

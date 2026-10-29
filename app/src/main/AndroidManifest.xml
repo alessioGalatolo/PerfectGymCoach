@@ -38,8 +38,6 @@
         android:theme="@style/Theme.ElevateFitness"
         tools:targetApi="33">
 
-        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
-
         <service android:name=".service.NotificationListener"
             android:exported="false"
             android:label="Enable media controls"

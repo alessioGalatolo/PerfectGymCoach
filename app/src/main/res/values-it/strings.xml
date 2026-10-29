@@ -904,6 +904,8 @@
     <string name="resume_workout_fail">Non è stato possibile trovare l\'allenamento da riprendere!</string>
     <string name="lock_workout_scroll">Blocca scroll orizzontale nell\'allenamento: </string>
     <string name="auto_open_wearos">Apri automaticamente l\'app Wear OS all\'inizio dell\'allenamento</string>
+    <string name="send_crash_reports">Invia segnalazioni di arresto anomalo</string>
+    <string name="send_crash_reports_description">Se l\'app si arresta in modo anomalo, invia dettagli tecnici (modello del dispositivo, versione di Android, stack trace) per aiutare a risolvere il problema. Non sono inclusi dati di allenamento o di salute.</string>
     <string name="show_media_controls">Mostra controlli multimediali</string>
     <string name="discard_data_dialog_title">Annullare cambiamenti?</string>
     <string name="discard_data_dialog_info">Hai cambiato qualche valore per questo esercizio. Se torni indietro adesso, annullerai questi cambiamenti.</string>

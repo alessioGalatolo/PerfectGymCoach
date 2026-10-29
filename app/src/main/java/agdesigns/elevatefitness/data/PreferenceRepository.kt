@@ -257,6 +257,14 @@ class PreferenceRepository @Inject constructor(
         it[PrefKeys.autoOpenWear] = newValue
     }
 
+    fun getCrashReporting(): Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.crashReporting] ?: true
+    }
+
+    suspend fun setCrashReporting(newValue: Boolean) = dataStore.edit {
+        it[PrefKeys.crashReporting] = newValue
+    }
+
     fun getHealthConnectBackfillOffered(): Flow<Boolean> = dataStore.data.map {
         it[PrefKeys.healthConnectBackfillOffered] ?: false
     }
@@ -417,6 +425,7 @@ internal object PrefKeys {
     val language = stringPreferencesKey("Language")
     val lockHorizontalScroll = booleanPreferencesKey("Lock horizontal scroll")
     val autoOpenWear = booleanPreferencesKey("Auto open wear")
+    val crashReporting = booleanPreferencesKey("Crash reporting")
     val healthConnectBackfillOffered = booleanPreferencesKey("Health connect backfill offered")
     val dismissedPlanChangeReminders = stringPreferencesKey("Dismissed plan change reminders")
     val excludedPlanExercises = stringPreferencesKey("Plan generation excluded exercises")

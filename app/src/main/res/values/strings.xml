@@ -903,6 +903,8 @@
     <string name="resume_workout_fail">Couldn\'t find the workout to resume.</string>
     <string name="lock_workout_scroll">Lock workout horizontal scroll: </string>
     <string name="auto_open_wearos">Automatically open Wear OS companion on workout start</string>
+    <string name="send_crash_reports">Send crash reports</string>
+    <string name="send_crash_reports_description">If the app crashes, send technical details (device model, Android version, stack trace) to help fix the issue. No workout or health data is included.</string>
     <string name="show_media_controls">Show media controls</string>
     <string name="discard_data_dialog_title">Discard changed data?</string>
     <string name="discard_data_dialog_info">You have changed some options for this exercise. If you go back now you will lose these changes.</string>
