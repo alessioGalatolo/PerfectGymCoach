@@ -261,7 +261,7 @@ fun WorkoutRecap(
                                     StatCard(
                                         icon = {
                                             Icon(
-                                                painterResource(R.drawable.weight_icon),
+                                                Icons.Outlined.FitnessCenter,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.tertiary,
                                                 modifier = Modifier.size(28.dp)
@@ -304,7 +304,7 @@ fun WorkoutRecap(
                                     StatCard(
                                         icon = {
                                             Icon(
-                                                Icons.Outlined.FitnessCenter,
+                                                Icons.Outlined.Repeat,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.tertiary,
                                                 modifier = Modifier.size(28.dp)

@@ -74,7 +74,6 @@
     <string name="chart_icon">Icona grafico</string>
     <string name="achievement_icon">Obiettivo</string>
     <string name="year_icon">Anno</string>
-    <string name="week_icon">Settimana</string>
     <string name="empty_history_icon">Storico vuoto</string>
     <string name="edit_program_icon">Modifica programma</string>
     <string name="quick_start_icon">Avvio rapido allenamento</string>
@@ -127,7 +126,11 @@
     <string name="previous_month">Mese precedente</string>
     <string name="next_month">Mese successivo</string>
     <string name="show_workout_activity">Mostra attività di allenamento</string>
-    <string name="week_i">Settimana %1$s</string>
+    <string name="month_summary">%1$s · %2$s</string>
+    <plurals name="days_off">
+        <item quantity="one">%1$d giorno di pausa</item>
+        <item quantity="other">%1$d giorni di pausa</item>
+    </plurals>
     <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched to -->
     <string name="plan_change_new">Nuovo piano: %1$s</string>
     <!-- ## Marker in the history list between workouts of two plans; %1$s is the plan the user switched from -->
