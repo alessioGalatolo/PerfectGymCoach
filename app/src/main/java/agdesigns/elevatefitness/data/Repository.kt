@@ -3,6 +3,7 @@ package agdesigns.elevatefitness.data
 import kotlin.math.abs
 import agdesigns.elevatefitness.R
 import agdesigns.elevatefitness.data.db.WorkoutDatabase
+import agdesigns.elevatefitness.data.db.computeWorkoutAchievements
 import agdesigns.elevatefitness.data.db.entity.Exercise
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecord
 import agdesigns.elevatefitness.data.db.entity.ProgramExercise
@@ -33,6 +34,7 @@ import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordFinish
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordHealthId
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordStart
+import agdesigns.elevatefitness.data.db.entity.WorkoutAchievementAndInfo
 import agdesigns.elevatefitness.data.db.entity.getDuplicatePlanName
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -513,6 +515,32 @@ class Repository @Inject constructor(
     suspend fun completeWorkoutRecord(workoutRecordFinish: WorkoutRecordFinish) = db.workoutRecordDao.updateFinish(workoutRecordFinish)
 
     suspend fun getWorkoutsInRange(startDate: ZonedDateTime, endDate: ZonedDateTime) = db.workoutRecordDao.getWorkoutsBetween(startDate, endDate)
+
+    /*
+     * WORKOUT ACHIEVEMENT
+     */
+    fun getWorkoutAchievements(workoutId: Long) =
+        db.workoutAchievementDao.getByWorkoutWithInfo(workoutId).map {
+            it.map { achievement -> resolveResources(achievement) }
+        }
+
+    fun getAllWorkoutAchievements() =
+        db.workoutAchievementDao.getAllWithInfo().map {
+            it.map { achievement -> resolveResources(achievement) }
+        }
+
+    fun resolveResources(achievement: WorkoutAchievementAndInfo): WorkoutAchievementAndInfo {
+        if (achievement.name == null || achievement.userDefined != false)
+            return achievement
+        return achievement.copy(name = context.getString(achievement.nameResource))
+    }
+
+    /**
+     * Computes and stores the achievements of a finished workout. Does nothing if the workout
+     * already has achievements stored, they are never recomputed.
+     */
+    suspend fun computeWorkoutAchievements(workoutId: Long, currentPlanId: Long?) =
+        db.computeWorkoutAchievements(workoutId, currentPlanId)
 
     suspend fun updateWorkoutRecordHealthId(workoutId: Long, healthRecordId: String) =
         db.workoutRecordDao.updateHealthId(

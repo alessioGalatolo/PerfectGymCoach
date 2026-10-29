@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.ExerciseRecordAndInfo
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecord
+import agdesigns.elevatefitness.data.db.entity.WorkoutAchievementAndInfo
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
@@ -49,6 +50,7 @@ data class RecapState(
     val programName: String = "",
     val olderRecords: List<WorkoutRecord> = emptyList(),
     val exerciseRecords: List<ExerciseRecordAndInfo> = emptyList(),
+    val achievements: List<WorkoutAchievementAndInfo> = emptyList(),
     val volumeChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val intensityChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
     val caloriesChartProducer: CartesianChartModelProducer = CartesianChartModelProducer(),
@@ -85,6 +87,7 @@ class RecapViewModel @Inject constructor(
 
     private var retrieveWorkoutRecordJob: Job? = null
     private var retrieveInfoJob: Job? = null
+    private var retrieveAchievementsJob: Job? = null
 
 
     init {
@@ -135,6 +138,12 @@ class RecapViewModel @Inject constructor(
             is RecapEvent.SetWorkoutId -> {
                 if (event.workoutId != state.value.workoutId) {
                     _state.update { it.copy(workoutId = event.workoutId) }
+                    retrieveAchievementsJob?.cancel()
+                    retrieveAchievementsJob = viewModelScope.launch {
+                        repository.getWorkoutAchievements(event.workoutId).collect { achievements ->
+                            _state.update { it.copy(achievements = achievements) }
+                        }
+                    }
                     retrieveWorkoutRecordJob?.cancel()
                     retrieveWorkoutRecordJob = viewModelScope.launch {
                         repository.getWorkoutRecord(event.workoutId).filterNotNull().collect{ workoutRecord ->

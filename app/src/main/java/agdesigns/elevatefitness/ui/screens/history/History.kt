@@ -23,6 +23,7 @@ import agdesigns.elevatefitness.ui.navigation.DestinationsNavigator
 import agdesigns.elevatefitness.ui.navigation.HistoryDestination
 import agdesigns.elevatefitness.ui.navigation.WorkoutRecapDestination
 import agdesigns.elevatefitness.ui.common.EmptyScreenInfo
+import agdesigns.elevatefitness.ui.common.AchievementsNote
 import agdesigns.elevatefitness.ui.screens.history.components.CompactHeatmapOverlap
 import agdesigns.elevatefitness.ui.screens.history.components.CompactWorkoutHeatmap
 import agdesigns.elevatefitness.ui.screens.history.components.WorkoutHeatmap
@@ -258,6 +259,10 @@ fun History(
                                         ),
                                         modifier = Modifier.weight(1f)
                                     )
+                                }
+                                state.achievements[listItem.workout.workoutId]?.let { achievements ->
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    AchievementsNote(achievements, state.useImperialSystem)
                                 }
                             }
                         }

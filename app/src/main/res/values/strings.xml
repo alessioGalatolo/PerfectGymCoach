@@ -1112,4 +1112,47 @@
     <string name="calories_kcal_label">Calories (kcal)</string>
     <string name="workout_time_minutes_label">Workout time (m)</string>
     <string name="workout_active_time_minutes_label">Workout active time (m)</string>
+
+    <!-- # Achievements -->
+    <string name="achievements">Achievements</string>
+    <plurals name="achievements_unlocked">
+        <item quantity="one">%1$d achievement unlocked</item>
+        <item quantity="other">%1$d achievements unlocked</item>
+    </plurals>
+    <string name="achievement_heaviest_weight">Heaviest weight</string>
+    <string name="achievement_one_rep_max">Best estimated 1RM</string>
+    <string name="achievement_rep_record">Rep record</string>
+    <string name="achievement_exercise_volume">Most volume</string>
+    <string name="achievement_longest_duration">Longest set</string>
+    <string name="achievement_workout_volume">All-time volume record</string>
+    <string name="achievement_program_volume">Best volume for this workout</string>
+    <string name="achievement_workout_count">Workout milestone</string>
+    <string name="achievement_lifetime_volume">Volume milestone</string>
+    <string name="achievement_longest_streak">Longest streak</string>
+    <!-- ## weight lifted × reps, e.g., "100 kg × 5" -->
+    <string name="achievement_weight_reps">%1$s × %2$d</string>
+    <plurals name="achievement_reps">
+        <item quantity="one">%1$d rep</item>
+        <item quantity="other">%1$d reps</item>
+    </plurals>
+    <!-- ## e.g., "12 reps with 60 kg" -->
+    <plurals name="achievement_reps_with_weight">
+        <item quantity="one">%1$d rep with %2$s</item>
+        <item quantity="other">%1$d reps with %2$s</item>
+    </plurals>
+    <plurals name="achievement_workouts_completed">
+        <item quantity="one">%1$d workout completed</item>
+        <item quantity="other">%1$d workouts completed</item>
+    </plurals>
+    <string name="achievement_lifted_in_total">%1$s lifted in total</string>
+    <plurals name="achievement_weeks_in_a_row">
+        <item quantity="one">%1$d week in a row</item>
+        <item quantity="other">%1$d weeks in a row</item>
+    </plurals>
+    <string name="achievement_previous">Previous: %1$s</string>
+    <!-- ## Shown in the history, followed by the exercises, e.g., "2 new PRs: Squat, Bench press" -->
+    <plurals name="achievement_new_prs">
+        <item quantity="one">New PR: %2$s</item>
+        <item quantity="other">%1$d new PRs: %2$s</item>
+    </plurals>
 </resources>

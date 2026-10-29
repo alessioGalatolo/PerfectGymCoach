@@ -2436,6 +2436,15 @@ class WorkoutViewModel @Inject constructor(
                 watchOffsetSeconds = watchOffsetSeconds
             )
         )
+        try {
+            repository.computeWorkoutAchievements(
+                workoutState.value.workoutId,
+                preferences.getCurrentPlan().first()
+            )
+        } catch (e: Exception) {
+            // achievements are a nice-to-have, never prevent the workout from being finished
+            Log.e("WorkoutViewModel", "Failed to compute workout achievements", e)
+        }
         val planPrograms = repository.getPlanMapPrograms().first().entries.find {
             it.value.find { it1 -> it1.programId == workoutState.value.programId } != null
         }

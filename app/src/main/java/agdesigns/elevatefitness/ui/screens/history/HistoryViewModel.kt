@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import agdesigns.elevatefitness.data.Repository
 import agdesigns.elevatefitness.data.db.entity.WorkoutRecordAndName
+import agdesigns.elevatefitness.data.db.entity.WorkoutAchievementAndInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,6 +77,8 @@ data class HistoryState(
     val maxWeeklyWorkouts: Int = 0,
     // workouts of each week (keyed by its first day), oldest first
     val weekWorkouts: Map<LocalDate, List<HeatmapWorkout>> = emptyMap(),
+    // achievements of each workout, keyed by workoutId
+    val achievements: Map<Long, List<WorkoutAchievementAndInfo>> = emptyMap(),
     val useImperialSystem: Boolean = false
 )
 
@@ -95,6 +98,11 @@ class HistoryViewModel @Inject constructor(
         viewModelScope.launch {
             preferences.getImperialSystem().collect { imperialSystem ->
                 _state.update { it.copy(useImperialSystem = imperialSystem) }
+            }
+        }
+        viewModelScope.launch {
+            repository.getAllWorkoutAchievements().collect { achievements ->
+                _state.update { it.copy(achievements = achievements.groupBy { a -> a.extWorkoutId }) }
             }
         }
         viewModelScope.launch {

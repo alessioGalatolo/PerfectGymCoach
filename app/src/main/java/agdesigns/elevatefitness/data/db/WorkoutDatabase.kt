@@ -16,6 +16,8 @@ import agdesigns.elevatefitness.data.db.dao.WorkoutPlanDao
 import agdesigns.elevatefitness.data.db.entity.WorkoutProgram
 import agdesigns.elevatefitness.data.db.dao.WorkoutProgramDao
 import agdesigns.elevatefitness.data.db.dao.WorkoutRecordDao
+import agdesigns.elevatefitness.data.db.dao.WorkoutAchievementDao
+import agdesigns.elevatefitness.data.db.entity.WorkoutAchievement
 import agdesigns.elevatefitness.data.db.entity.UpdateExerciseRecordSetTypes
 import agdesigns.elevatefitness.shared.SetType
 import agdesigns.elevatefitness.data.db.entity.UpdateProgramExerciseSetTypes
@@ -49,9 +51,10 @@ import java.util.Locale
         ExerciseRecord::class,
         WorkoutRecord::class,
         WorkoutExercise::class,
-        Exercise::class
+        Exercise::class,
+        WorkoutAchievement::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -63,6 +66,7 @@ abstract class WorkoutDatabase: RoomDatabase() {
     abstract val workoutRecordDao: WorkoutRecordDao
     abstract val exerciseDao: ExerciseDao
     abstract val workoutExerciseDao: WorkoutExerciseDao
+    abstract val workoutAchievementDao: WorkoutAchievementDao
 
     companion object {
 
@@ -107,7 +111,8 @@ abstract class WorkoutDatabase: RoomDatabase() {
                     MIGRATION_11_12,
                     MIGRATION_12_13,
                     MIGRATION_13_14,
-                    MIGRATION_14_15
+                    MIGRATION_14_15,
+                    MIGRATION_15_16
                 )
                     .build()
                     .also { instance = it }
@@ -317,6 +322,17 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
     }
 }
 
+val MIGRATION_15_16 = object : Migration(15, 16) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // achievements are computed when a workout is finished, older workouts have none
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `WorkoutAchievement` (`achievementId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `extWorkoutId` INTEGER NOT NULL, `type` TEXT NOT NULL, `extExerciseId` INTEGER, `value` REAL NOT NULL, `previousValue` REAL, `secondaryValue` REAL, FOREIGN KEY(`extWorkoutId`) REFERENCES `WorkoutRecord`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_WorkoutAchievement_extWorkoutId` ON `WorkoutAchievement` (`extWorkoutId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_WorkoutAchievement_extExerciseId` ON `WorkoutAchievement` (`extExerciseId`)")
+    }
+}
+
 
 class ExerciseDataMigrator(private val context: Context) {
     private val dbVersionKey = intPreferencesKey("Current db version")
@@ -384,6 +400,16 @@ class ExerciseDataMigrator(private val context: Context) {
                 "Found db version $dbVersion, proceeding with migration to v13"
             )
             migrateExercises12To13(db)
+        }
+        if (dbVersion < 16) {
+            Log.d(
+                "ExerciseDataMigrator",
+                "Found db version $dbVersion, backfilling workout achievements"
+            )
+            db.backfillWorkoutAchievements()
+            context.dataStore.edit {
+                it[dbVersionKey] = 16
+            }
         }
     }
 
@@ -608,6 +634,6 @@ class ExerciseDataMigrator(private val context: Context) {
 
     companion object {
         // version set by the last data migration, update when adding one
-        private const val LATEST_DATA_VERSION = 13
+        private const val LATEST_DATA_VERSION = 16
     }
 }

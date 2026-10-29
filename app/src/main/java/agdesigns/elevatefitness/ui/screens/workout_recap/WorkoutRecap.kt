@@ -33,6 +33,8 @@ import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import agdesigns.elevatefitness.ui.common.CurrentColumnKey
 import agdesigns.elevatefitness.ui.common.ExerciseRecordsList
+import agdesigns.elevatefitness.ui.common.AchievementsCard
+import agdesigns.elevatefitness.ui.common.ExerciseAchievementBadges
 import agdesigns.elevatefitness.ui.common.HorizontalPagerIndicator
 import agdesigns.elevatefitness.ui.common.columnProviderWithHighlight
 import agdesigns.elevatefitness.ui.common.highlightSeriesKey
@@ -115,6 +117,8 @@ fun WorkoutRecap(
         viewModel.onEvent(RecapEvent.SetWorkoutId(workoutId))
     }
     val volumeDialogIsOpen = rememberSaveable { mutableStateOf(false) }
+    // celebrate the achievements only once, not every time the card is scrolled back into view
+    val achievementsCelebrated = rememberSaveable(workoutId) { mutableStateOf(false) }
     val calorieDialogIsOpen = rememberSaveable { mutableStateOf(false) }
     InfoDialog(dialogueIsOpen = volumeDialogIsOpen.value,
         toggleDialogue = { volumeDialogIsOpen.value = !volumeDialogIsOpen.value })
@@ -216,6 +220,25 @@ fun WorkoutRecap(
                                 .padding(16.dp)
                                 .padding(horizontal = 16.dp)
                         )
+                    }
+                }
+                if (state.achievements.isNotEmpty()) {
+                    item {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            AchievementsCard(
+                                achievements = state.achievements,
+                                useImperialSystem = state.imperialSystem,
+                                animate = !achievementsCelebrated.value,
+                                onAnimationStarted = { achievementsCelebrated.value = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = dimensionResource(R.dimen.card_outside_padding))
+                                    .padding(bottom = 8.dp)
+                            )
+                        }
                     }
                 }
                 // Stats grid — 2 cards per row
@@ -838,6 +861,13 @@ fun WorkoutRecap(
                             }
                         },
                         extraContent = { exercise ->
+                            // an exercise may have several records, show its badges on the first one
+                            val firstRecordId = state.exerciseRecords
+                                .first { it.extExerciseId == exercise.extExerciseId }.recordId
+                            if (exercise.recordId == firstRecordId)
+                                ExerciseAchievementBadges(
+                                    state.achievements.filter { it.extExerciseId == exercise.extExerciseId }
+                                )
                             state.exerciseHeartRates[exercise.recordId]?.let { heartRates ->
                                 ExerciseHeartRate(heartRates)
                             }

@@ -1124,4 +1124,44 @@
     <string name="calories_kcal_label">Calorie (kcal)</string>
     <string name="workout_time_minutes_label">Tempo di allenamento (m)</string>
     <string name="workout_active_time_minutes_label">Tempo attivo di allenamento (m)</string>
+
+    <!-- # Achievements -->
+    <string name="achievements">Traguardi</string>
+    <plurals name="achievements_unlocked">
+        <item quantity="one">%1$d traguardo sbloccato</item>
+        <item quantity="other">%1$d traguardi sbloccati</item>
+    </plurals>
+    <string name="achievement_heaviest_weight">Peso massimo</string>
+    <string name="achievement_one_rep_max">Miglior 1RM stimato</string>
+    <string name="achievement_rep_record">Record di ripetizioni</string>
+    <string name="achievement_exercise_volume">Volume massimo</string>
+    <string name="achievement_longest_duration">Serie più lunga</string>
+    <string name="achievement_workout_volume">Record di volume assoluto</string>
+    <string name="achievement_program_volume">Miglior volume per questo allenamento</string>
+    <string name="achievement_workout_count">Traguardo allenamenti</string>
+    <string name="achievement_lifetime_volume">Traguardo di volume</string>
+    <string name="achievement_longest_streak">Striscia più lunga</string>
+    <string name="achievement_weight_reps">%1$s × %2$d</string>
+    <plurals name="achievement_reps">
+        <item quantity="one">%1$d ripetizione</item>
+        <item quantity="other">%1$d ripetizioni</item>
+    </plurals>
+    <plurals name="achievement_reps_with_weight">
+        <item quantity="one">%1$d ripetizione con %2$s</item>
+        <item quantity="other">%1$d ripetizioni con %2$s</item>
+    </plurals>
+    <plurals name="achievement_workouts_completed">
+        <item quantity="one">%1$d allenamento completato</item>
+        <item quantity="other">%1$d allenamenti completati</item>
+    </plurals>
+    <string name="achievement_lifted_in_total">%1$s sollevati in totale</string>
+    <plurals name="achievement_weeks_in_a_row">
+        <item quantity="one">%1$d settimana di fila</item>
+        <item quantity="other">%1$d settimane di fila</item>
+    </plurals>
+    <string name="achievement_previous">Precedente: %1$s</string>
+    <plurals name="achievement_new_prs">
+        <item quantity="one">Nuovo record: %2$s</item>
+        <item quantity="other">%1$d nuovi record: %2$s</item>
+    </plurals>
 </resources>
